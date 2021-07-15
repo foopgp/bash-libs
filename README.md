@@ -26,7 +26,7 @@ exposed functions should be prefixed with *bl_*.
 
 While all bash-libs *exposed* functions should be prefixed with *bl_*, bash-libs
 functions which are intended to be use only *internally* should be prefixed with
-*_bl_*.
+*\_bl_*.
 
 Also all environment variables set when sourcing a bash-libs executable should be
 prefixed by *BL_*.
@@ -45,6 +45,18 @@ All bash-libs exposed functions and executables should return zero on normal ope
 
 # FILES
 
+## pl-interactive
+
+This executable/library doesn't handle (yet) any special option.
+
+### pl_yesno
+
+Helper for a yes/no question (binary choice)
+
+### pl_chooseinlist
+
+Helper for a single choice in a list (like radiobutton)
+
 ## pl-log
 
 This executable/library contain only one exposed function: **pl_log**. So it doesn't implement a function
@@ -59,18 +71,6 @@ passed as arguments).
 ### pl_log
 
 Wrapper for logger command, which also print pretty logs on stderr.
-
-## pl-interactive
-
-This executable/library doesn't handle (yet) any special option.
-
-### pl_yesno
-
-Helper for a yes/no question (binary choice)
-
-### pl_chooseinlist
-
-Helper for a single choice in a list (like radiobutton)
 
 # EXAMPLE
 

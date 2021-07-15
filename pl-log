@@ -4,7 +4,6 @@
 # then exit if log level is more serious than PL_LOGEXITLNAME.
 #
 # Copyright © 2021 b Jean-Jacques Brucker <jjbrucker@free.fr>
-#          Confidential - All Right Reserved
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License version 3
