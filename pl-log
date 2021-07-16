@@ -21,14 +21,13 @@
 if [[ "$1" == --bash-completion ]] ; then
 	_pl_log_completion()
 	{
-		local cur prev OPTS
+		local cur OPTS
 		COMPREPLY=()
 		cur="${COMP_WORDS[COMP_CWORD]}"
-		prev="${COMP_WORDS[COMP_CWORD-1]}"
 		if grep -q -- "\<\(emerg\|alert\|crit\|err\|error\|warning\|notice\|info\|debug\)\>" <<< "${COMP_WORDS[@]}" ; then
 			return 0
 		fi
-		case $prev in
+		case ${COMP_WORDS[COMP_CWORD-1]} in
 			'-f'|'--file')
 				local IFS=$'\n'
 				compopt -o filenames

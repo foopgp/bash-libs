@@ -18,26 +18,39 @@
 #
 
 if [[ "$1" == --bash-completion ]] ; then
-	_pl_interactive_completion()
+	PL_INTERACTIVE_tmpa="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
+	PL_INTERACTIVE_tmpo=$(for a in $PL_INTERACTIVE_tmpa ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_pl_interactive_completion()
 	{
-		local cur prev coptions="--help --version --"
-		local IFS=$'\n'
+		local cur coptions="--help --version"
+		local a actions="'$PL_INTERACTIVE_tmpa'"
+		local -A aoptions=('$PL_INTERACTIVE_tmpo')
 
 		COMPREPLY=()
 		cur=${COMP_WORDS[COMP_CWORD]}
 
-		if grep -q -- "\(--version\|--help\)\>" <<< "${COMP_WORDS[@]}" ; then
-			# some options will exit without executing any actions, so don't complete anything
-			return
-		elif grep -q "\<yesno\>" <<< "${COMP_WORDS[@]}" ; then
-			COMPREPLY=( $(IFS=" " compgen -W "$coptions --default=yes --default=no --preamble" -- $cur ) )
-		elif grep -q "\<chooseinlist\>" <<< "${COMP_WORDS[@]}" ; then
-			COMPREPLY=( $(IFS=" " compgen -W "$coptions --num-per-line --preamble" -- $cur ) )
-		else
-			COMPREPLY=( $(IFS=" " compgen -W "$coptions yesno chooseinlist" -- $cur ) )
-		fi
-	}
-	complete -o filenames -F _pl_interactive_completion "$BASH_SOURCE"
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version)
+				# should exit without executing any actions, so do not complete anything
+				return 0 ;;
+			--preamble)
+				return 0 ;;
+		esac
+
+		for a in $actions ; do
+			if grep -q "\<$a\>" <<< "${COMP_WORDS[@]}" ; then
+				COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+				return 0
+			fi
+		done
+		COMPREPLY=( $(compgen -W "$coptions $actions" -- $cur ) )
+		return 0
+	}'
+	unset PL_INTERACTIVE_tmpa PL_INTERACTIVE_tmpo
+	complete -F _pl_interactive_completion "$BASH_SOURCE"
 	return 0
 fi
 
