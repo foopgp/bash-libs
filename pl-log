@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that wraps 'logger to write log on stderr or syslog,
+# Bash library and executable that wraps 'logger' to write log on stderr or syslog,
 # then exit if log level is more serious than PL_LOGEXITLNAME.
 #
 # Copyright © 2021 b Jean-Jacques Brucker <jjbrucker@free.fr>
@@ -124,7 +124,8 @@ else
 	PL_LOG_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same options."
+Reminder: when used as a library, all functions calls share the same environment variables,
+i.e. the same options passed when loading the library."
 fi
 
 
@@ -177,7 +178,7 @@ Options forwarded to 'logger':
 #TODO: explain in comment why we dont use getopts...
 _pl_log_parseoptions() {
 	local name=$1
-	[[ "$name" =~ ^- ]] && { echo -e "Usage: $FUNCNAME NAME \"\$@\"\nFor program/function named NAME: parse Options in \$@ and set ARGV array containing remaining parameters" >&2 ; return 1 ; }
+	[[ "$name" =~ ^- ]] && { echo -e "Usage: $FUNCNAME NAME \"\$@\"\nFor program/function named NAME: parse Options in \$@ and set PL_LOG_ARGV array containing remaining parameters" >&2 ; return 1 ; }
 	shift
 	for ((;$#;)) ; do
 		case "$1" in
@@ -197,15 +198,15 @@ _pl_log_parseoptions() {
 				PL_LOGGER_OPTIONS+=("$1") ;;
 			--id*|--rfc5424*|--socket-errors*|--journald*)
 				PL_LOGGER_OPTIONS+=("$1") ;;
-			-h|--h*) printf "$PL_LOG_usage\n$PL_LOG_chelpmsg\n$PL_LOG_shelpmsg\n" ; return 2 ;;
-			-V|--vers*) printf "$name $PL_LOG_VERSION\n" ; return 2 ;;
+			-h|--help) printf "$PL_LOG_usage\n$PL_LOG_chelpmsg\n$PL_LOG_shelpmsg\n" ; return 2 ;;
+			-V|--version) printf "$name $PL_LOG_VERSION\n" ; return 2 ;;
 			--) shift ; break ;;
 			-*) printf "$name: unrecognized option '$1'\n$PL_LOG_usage\nTry '$name --help' for more information.\n" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
-	ARGV=("$@")
+	PL_LOG_ARGV=("$@")
 }
 
 
@@ -214,8 +215,8 @@ pl_log() {
 	local -I PL_LOGLEVEL PL_LOGEXITLNAME PL_LOG_O_STDERR PL_LOGGER_OPTIONS PL_LOG_COLOR
 	local PL_LOG_helpmsg="$PL_LOG_chelpmsg"
 	_pl_log_parseoptions "$FUNCNAME" "$@" || return $?
-	[[ -n "${ARGV[*]}" ]] || { echo "Error: Please give at least a priority (${!PL_LOGLEVELS[@]})" >&2 ; return 2 ; }
-	set "${ARGV[@]}"
+	[[ -n "${PL_LOG_ARGV[*]}" ]] || { echo "Error: Please give at least a priority (${!PL_LOGLEVELS[@]})" >&2 ; return 2 ; }
+	set "${PL_LOG_ARGV[@]}"
 
 	local priority=$1 plname=${1##*.} filter
 	grep -q "\<$plname\>" <<<${!PL_LOGLEVELS[@]} || { echo "Error: priority's level name ($plname) is none of: ${!PL_LOGLEVELS[@]}" >&2 ; return 2 ; }
@@ -247,4 +248,4 @@ _pl_log_parseoptions "$PL_LOG_NAME" "$@"
 
 ### Run ###
 
-pl_log "${ARGV[@]}"
+pl_log "${PL_LOG_ARGV[@]}"

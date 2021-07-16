@@ -59,8 +59,8 @@ declare -r PL_INTERACTIVE_VERSION="0.0.1"
 _pl_interactive_parseoptions() {
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--h*) printf "$PL_INTERACTIVE_usage\n$PL_INTERACTIVE_chelpmsg\n$PL_INTERACTIVE_shelpmsg\n" ; return 2 ;;
-			-V|--vers*) printf "$PL_INTERACTIVE_NAME $PL_INTERACTIVE_VERSION\n" ; return 2 ;;
+			-h|--help) printf "$PL_INTERACTIVE_usage\n$PL_INTERACTIVE_chelpmsg\n$PL_INTERACTIVE_shelpmsg\n" ; return 2 ;;
+			-V|--version) printf "$PL_INTERACTIVE_NAME $PL_INTERACTIVE_VERSION\n" ; return 2 ;;
 			--) shift ; break ;;
 			-*) printf "$PL_INTERACTIVE_NAME: unrecognized option '$1'\n$PL_INTERACTIVE_usage\nTry '$BASH_SOURCE --help' for more information.\n" >&2 ; return 2 ;;
 			*) break ;;
@@ -90,8 +90,8 @@ Options:
 			--default=yes) def="yes" ;;
 			--default=no) def="no" ;;
 			-p|--pre*) shift ; pr="$1" ;;
-			-h|--h*) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--vers*) echo "$FUNCNAME $PL_INTERACTIVE_VERSION" ; return ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $PL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
 			*) break ;;
@@ -134,8 +134,8 @@ Options:
 		case "$1" in
 			-p|--pre*) shift ; pr="$1" ;;
 			-n|--num*) shift ; nperline="$1" ;;
-			-h|--h*) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--vers*) echo "$FUNCNAME $PL_INTERACTIVE_VERSION" ; return ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $PL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
 			*) break ;;

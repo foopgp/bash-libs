@@ -39,6 +39,10 @@ be passed as a first argument.
 All bash-libs executables should also support at least *--help* and *--version*
 to be passed as a first argument, even if they are sourced instead of executed.
 
+When sourced, all bash-libs executables should also support a
+*--bash-completion* option to be passed as first argument, to load a bash
+completion for the given executable.
+
 # DIAGNOSTICS
 
 All bash-libs exposed functions and executables should return zero on normal operation, non-zero on errors.
