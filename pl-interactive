@@ -18,16 +18,16 @@
 #
 
 if [[ "$1" == --bash-completion ]] ; then
-	PL_INTERACTIVE_tmpa="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
-	PL_INTERACTIVE_tmpo=$(for a in $PL_INTERACTIVE_tmpa ; do
+	BL_INTERACTIVE_tmpa="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
+	BL_INTERACTIVE_tmpo=$(for a in $BL_INTERACTIVE_tmpa ; do
 		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
 	done)
 
-	eval '_pl_interactive_completion()
+	eval '_bl_interactive_completion()
 	{
 		local cur coptions="--help --version"
-		local a actions="'$PL_INTERACTIVE_tmpa'"
-		local -A aoptions=('$PL_INTERACTIVE_tmpo')
+		local a actions="'$BL_INTERACTIVE_tmpa'"
+		local -A aoptions=('$BL_INTERACTIVE_tmpo')
 
 		COMPREPLY=()
 		cur=${COMP_WORDS[COMP_CWORD]}
@@ -49,33 +49,33 @@ if [[ "$1" == --bash-completion ]] ; then
 		COMPREPLY=( $(compgen -W "$coptions $actions" -- $cur ) )
 		return 0
 	}'
-	unset PL_INTERACTIVE_tmpa PL_INTERACTIVE_tmpo
-	complete -F _pl_interactive_completion "$BASH_SOURCE"
+	unset BL_INTERACTIVE_tmpa BL_INTERACTIVE_tmpo
+	complete -F _bl_interactive_completion "$BASH_SOURCE"
 	return 0
 fi
 
-# If sourcing while _pl_interactive_parseoptions is already set, execute the function and return without reloading rest of file.
-if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _pl_interactive_parseoptions)" == function ]] ; then
-	_pl_interactive_parseoptions "$@"
+# If sourcing while _bl_interactive_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_interactive_parseoptions)" == function ]] ; then
+	_bl_interactive_parseoptions "$@"
 	return $?
 fi
 
 
 ### Constants ###
 
-declare -r PL_INTERACTIVE_NAME="$(basename $(readlink -f "$BASH_SOURCE") )"
-declare -r PL_INTERACTIVE_VERSION="0.0.1"
+declare -r BL_INTERACTIVE_NAME="$(basename $(readlink -f "$BASH_SOURCE") )"
+declare -r BL_INTERACTIVE_VERSION="0.0.1"
 
 
 ### functions ###
 
-_pl_interactive_parseoptions() {
+_bl_interactive_parseoptions() {
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--help) printf "$PL_INTERACTIVE_usage\n$PL_INTERACTIVE_chelpmsg\n$PL_INTERACTIVE_shelpmsg\n" ; return 2 ;;
-			-V|--version) printf "$PL_INTERACTIVE_NAME $PL_INTERACTIVE_VERSION\n" ; return 2 ;;
+			-h|--help) printf "$BL_INTERACTIVE_usage\n$BL_INTERACTIVE_chelpmsg\n$BL_INTERACTIVE_shelpmsg\n" ; return 2 ;;
+			-V|--version) printf "$BL_INTERACTIVE_NAME $BL_INTERACTIVE_VERSION\n" ; return 2 ;;
 			--) shift ; break ;;
-			-*) printf "$PL_INTERACTIVE_NAME: unrecognized option '$1'\n$PL_INTERACTIVE_usage\nTry '$BASH_SOURCE --help' for more information.\n" >&2 ; return 2 ;;
+			-*) printf "$BL_INTERACTIVE_NAME: unrecognized option '$1'\n$BL_INTERACTIVE_usage\nTry '$BASH_SOURCE --help' for more information.\n" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -83,9 +83,9 @@ _pl_interactive_parseoptions() {
 }
 
 
-pl_yesno() {
+bl_yesno() {
 	local name
-	((PL_INTERACTIVE_isprogram)) && name="$PL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] QUESTION"
 	local helpmsg="
 Helper for a yes/no question (binary choice)
@@ -104,7 +104,7 @@ Options:
 			--default=no) def="no" ;;
 			-p|--pre*) shift ; pr="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $PL_INTERACTIVE_VERSION" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
 			*) break ;;
@@ -129,9 +129,9 @@ Options:
 }
 
 
-pl_chooseinlist() {
+bl_chooseinlist() {
 	local name
-	((PL_INTERACTIVE_isprogram)) && name="$PL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] ITEMS..."
 	local helpmsg="
 Helper for a single choice in a list (like radiobutton)
@@ -148,7 +148,7 @@ Options:
 			-p|--pre*) shift ; pr="$1" ;;
 			-n|--num*) shift ; nperline="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $PL_INTERACTIVE_VERSION" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
 			*) break ;;
@@ -180,30 +180,30 @@ Options:
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
 	set -e
-	declare -r PL_INTERACTIVE_isprogram=1
+	declare -r BL_INTERACTIVE_isprogram=1
 
-	PL_INTERACTIVE_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
-	PL_INTERACTIVE_shelpmsg="
+	BL_INTERACTIVE_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_INTERACTIVE_shelpmsg="
 Actions:
-$(for f in $(sed -n 's,^\(pl_[^(]*\)().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in $(sed -n 's,^\(bl_[^(]*\)().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$(echo ${f:3} | tr '_' '-')" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-$PL_INTERACTIVE_NAME is also bash library, see:
+$BL_INTERACTIVE_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"
 else
 	# run as a library (source $0)
 
-	PL_INTERACTIVE_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+	BL_INTERACTIVE_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
 
-	PL_INTERACTIVE_shelpmsg="
+	BL_INTERACTIVE_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
-$(for f in $(sed -n 's,^\(pl_[^(]*\)().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in $(sed -n 's,^\(bl_[^(]*\)().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
 fi
 
-PL_INTERACTIVE_chelpmsg="
+BL_INTERACTIVE_chelpmsg="
 Options:
   -h, --help               show this help and exit (or return)
   -V, --version            show version and exit (or return)"
@@ -212,7 +212,7 @@ Options:
 ### Init ###
 
 # Parse Options
-_pl_interactive_parseoptions "$@"
+_bl_interactive_parseoptions "$@"
 
 # Do nothing else if sourced
 [[ "$BASH_SOURCE" == "$0" ]] || return 0
@@ -220,13 +220,13 @@ _pl_interactive_parseoptions "$@"
 
 ### Run ###
 
-if grep -q "^pl_$1()" "$BASH_SOURCE" ; then
-	function="pl_$1"
+if grep -q "^bl_${1//-/_}()" "$BASH_SOURCE" ; then
+	function="bl_${1//-/_}"
 	shift
 	$function "$@"
 	exit $?
 else
-	printf "$PL_INTERACTIVE_NAME: unrecognized action '$1'\n$PL_INTERACTIVE_usage\nTry '$BASH_SOURCE --help' for more information.\n" >&2
+	printf "$BL_INTERACTIVE_NAME: unrecognized action '$1'\n$BL_INTERACTIVE_usage\nTry '$BASH_SOURCE --help' for more information.\n" >&2
 	exit 2
 fi
 
