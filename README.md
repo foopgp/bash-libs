@@ -76,13 +76,19 @@ passed as arguments).
 
 Wrapper for logger command, which also print pretty logs on stderr.
 
-# EXAMPLE
+# EXAMPLES
 
 ```bash
  . pl-log --no-act --log-level "6" --log-exit "crit"
  pl_log debug "$FUNCNAME: $@" # This won't be logged (debug <> 7)
  pl_log info "some informations" # This logs (info <> 6)
  pl_log crit "ouch" # This logs then exit(11).
+```
+
+```bash
+ ./pl-log --help
+ . ./pl-log --bash-completion
+ ./pl-log --no-act syslog.notice "Nice log !"
 ```
 
 # SEE ALSO
