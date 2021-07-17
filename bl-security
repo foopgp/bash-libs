@@ -67,7 +67,7 @@ declare -r BL_SECURITY_VERSION="0.0.1"
 
 ### functions ###
 
-. bl-interactive --
+. $(dirname "$BASH_SOURCE")/bl-interactive --
 
 _bl_security_parseoptions() {
 	for ((;$#;)) ; do
@@ -104,21 +104,23 @@ or between 0 and (MODULO - 1) if MODULO is given.
 	echo $((m?r%m:r))
 }
 
-bl_shreddir() {
+bl_shred_path() {
 	local name
-	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME $(echo ${FUNCNAME:3} | tr '_' '-')" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] PATHS..."
 	local helpmsg="
-Recursively shred all files in a directory tree.
+Recursively shred all files in given path(|s).
 Options:
   -f, --force          Change file permissions if necessary, ignore nonexistent files or dir, never prompt
   -v, --verbose        Explain what is being done (stdout)
+  -r, --remove         Also recursively remove given path(|s)
 "
-	local farg varg files
+	local farg varg files rmcmd=true
 	for ((;$#;)) ; do
 		case "$1" in
 			-f|--force) farg="-f" ;;
 			-v|--verb*) varg="-v" ;;
+			-r|--remove) rmcmd="rm" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -127,10 +129,20 @@ Options:
 		esac
 		shift
 	done
+	(($#)) || { printf "$FUNCNAME: Error: no PATH given as argument\nTry '$name --help' for more information.\n" >&2 ; return 2 ; }
+
+	local ifsbkp="$IFS"
 	IFS=$'\n' files=($(find "$@" -type f))
-	! [[ "$varg" ]] || echo "shredding and removing: ${files[@]}"
-	shred -u $farg "${files[@]}" || return 1
-	rm -r $farg $varg "$@" || return 1
+	IFS="$ifsbkp"
+
+	if [[ "$farg" != -f ]] ; then
+		bl_yesno -p "${files[*]}" "Shred and remove such file(s)" || return 0
+	fi
+
+	# Don't pass $varg to shred as it use to write too many things, and moreover on stderr instead of stdin
+	! [[ "$varg" ]] || echo "shredding: ${files[@]}"
+	shred $farg "${files[@]}" || return $?
+	$rmcmd -r $farg $varg "$@" || return $?
 }
 
 bl_gen_passphrase() {

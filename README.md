@@ -72,9 +72,9 @@ Provide some "security" features
 
 Output a good random number between 0 and 1<<32,
 
-### bl_shreddir
+### bl_shred_path
 
-Recursively shred all files in a directory tree.
+Recursively shred all files in given path(|s)
 
 ### bl_gen_passphrase
 
