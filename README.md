@@ -49,51 +49,51 @@ All bash-libs exposed functions and executables should return zero on normal ope
 
 # FILES
 
-## pl-interactive
+## bl-interactive
 
 This executable/library doesn't handle (yet) any special option.
 
-### pl_yesno
+### bl_yesno
 
 Helper for a yes/no question (binary choice)
 
-### pl_chooseinlist
+### bl_chooseinlist
 
 Helper for a single choice in a list (like radiobutton)
 
-## pl-log
+## bl-log
 
-This executable/library contain only one exposed function: **pl_log**. So it doesn't implement a function
-dispatcher and while using pl-log as an executable is *almost* the same thing than
-using pl_log function.
+This executable/library contain only one exposed function: **bl_log**. So it
+doesn't implement a function dispatcher and using bl-log as an executable is
+*almost* the same thing than using bl_log function.
 
-"*Almost*" nuance: when sourcing pl-log (using it as a bash library), we may pass
+"*Almost*" nuance: when sourcing bl-log (using it as a bash library), we may pass
 some options as arguments, which will be store in some environment variable.
-Then such options will remain for following calls of **pl_log** (with no options
+Then such options will remain for following calls of **bl_log** (with no options
 passed as arguments).
 
-### pl_log
+### bl_log
 
 Wrapper for logger command, which also print pretty logs on stderr.
 
 # EXAMPLES
 
 ```bash
- . pl-log --no-act --log-level "6" --log-exit "crit"
- pl_log debug "$FUNCNAME: $@" # This won't be logged (debug <> 7)
- pl_log info "some informations" # This logs (info <> 6)
- pl_log crit "ouch" # This logs then exit(11).
+ . bl-log --no-act --log-level "6" --log-exit "crit"
+ bl_log debug "$FUNCNAME: $@" # This won't be logged (debug <> 7)
+ bl_log info "some informations" # This logs (info <> 6)
+ bl_log crit "ouch" # This logs then exit(11).
 ```
 
 ```bash
- ./pl-log --help
- . ./pl-log --bash-completion
- ./pl-log --no-act syslog.notice "Nice log !"
+ ./bl-log --help
+ . ./bl-log --bash-completion
+ ./bl-log --no-act syslog.notice "Nice log !"
 ```
 
 # SEE ALSO
 
-**pl-log**(1), **pl-interactive**(1).
+**bl-log**(1), **bl-interactive**(1).
 
 # AUTHOR/MAINTAINER
 
