@@ -47,11 +47,13 @@ completion for the given executable.
 
 All bash-libs exposed functions and executables should return zero on normal operation, non-zero on errors.
 
+
 # FILES
+
 
 ## bl-interactive
 
-This executable/library doesn't handle (yet) any special option.
+Help managing interactive choices
 
 ### bl_yesno
 
@@ -60,6 +62,24 @@ Helper for a yes/no question (binary choice)
 ### bl_chooseinlist
 
 Helper for a single choice in a list (like radiobutton)
+
+
+## bl-security
+
+Provide some "security" features
+
+### bl_urandom
+
+Output a good random number between 0 and 1<<32,
+
+### bl_shreddir
+
+Recursively shred all files in a directory tree.
+
+### bl_gen_passphrase
+
+Generate a good random passphrase
+
 
 ## bl-log
 

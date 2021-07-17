@@ -1,0 +1,240 @@
+#!/bin/bash
+#
+# Bash library and executable that provides some "security" features
+#
+# Copyright © 2021 b Jean-Jacques Brucker <jjbrucker@free.fr>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Lesser General Public License version 3
+#    as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU Lesser General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_SECURITY_tmpa="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
+	BL_SECURITY_tmpo=$(for a in $BL_SECURITY_tmpa ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_security_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_SECURITY_tmpa'"
+		local -A aoptions=('$BL_SECURITY_tmpo')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version)
+				# should exit without executing any actions, so do not complete anything
+				return 0 ;;
+		esac
+
+		for a in $actions ; do
+			if grep -q "\<$a\>" <<< "${COMP_WORDS[@]}" ; then
+				COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+				return 0
+			fi
+		done
+		COMPREPLY=( $(compgen -W "$coptions $actions" -- $cur ) )
+		return 0
+	}'
+	unset BL_SECURITY_tmpa BL_SECURITY_tmpo
+	complete -F _bl_security_completion "$BASH_SOURCE"
+	return 0
+fi
+
+# If sourcing while _bl_security_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_security_parseoptions)" == function ]] ; then
+	_bl_security_parseoptions "$@"
+	return $?
+fi
+
+
+### Constants ###
+
+declare -r BL_SECURITY_NAME="$(basename $(readlink -f "$BASH_SOURCE") )"
+declare -r BL_SECURITY_VERSION="0.0.1"
+
+
+### functions ###
+
+. bl-interactive --
+
+_bl_security_parseoptions() {
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "$BL_SECURITY_usage\n$BL_SECURITY_chelpmsg\n$BL_SECURITY_shelpmsg\n" ; return 2 ;;
+			-V|--version) printf "$BL_SECURITY_NAME $BL_SECURITY_VERSION\n" ; return 2 ;;
+			--) shift ; break ;;
+			-*) printf "$BL_SECURITY_NAME: unrecognized option '$1'\n$BL_SECURITY_usage\nTry '$BASH_SOURCE --help' for more information.\n" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+}
+
+bl_urandom() {
+	local name
+	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [MODULO]"
+	local helpmsg="
+Output a good random number between 0 and 1<<32,
+or between 0 and (MODULO - 1) if MODULO is given.
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local m=$1 r=$(od -An -N4 -t u4 < /dev/urandom);
+	echo $((m?r%m:r))
+}
+
+bl_shreddir() {
+	local name
+	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] PATHS..."
+	local helpmsg="
+Recursively shred all files in a directory tree.
+Options:
+  -f, --force          Change file permissions if necessary, ignore nonexistent files or dir, never prompt
+  -v, --verbose        Explain what is being done (stdout)
+"
+	local farg varg files
+	for ((;$#;)) ; do
+		case "$1" in
+			-f|--force) farg="-f" ;;
+			-v|--verb*) varg="-v" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	IFS=$'\n' files=($(find "$@" -type f))
+	! [[ "$varg" ]] || echo "shredding and removing: ${files[@]}"
+	shred -u $farg "${files[@]}" || return 1
+	rm -r $farg $varg "$@" || return 1
+}
+
+bl_gen_passphrase() {
+	local dict=${LANG::2} nw=3 interactive=false sedcmd sd ret
+	local name
+	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME $(echo ${FUNCNAME:3} | tr '_' '-')" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]"
+	local helpmsg="
+Generate a good random passphrase
+Options:
+  -i, --interactive        Ask language and passphrase agreement
+  -l, --list-dicts         List available dictionaries (aspell) and return
+  -D, --dict DICTIONARY    Dictionary to use (ignored if --interactive, default: ${dict:=en})
+  -n, --nwords NUMBER      Number of words in passphrase (default: $nw)
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-i|--interactive) interactive=true ;;
+			-l|--list-dict*) aspell dump dicts ; return $? ;;
+			-D|--dict*) shift ; dict="$1" ;;
+			-n|--nword*) shift ; nw="$1" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	((! $#)) || printf "$FUNCNAME: Warning: ignoring arguments $@\n" >&2
+
+	while ((nw-- > 0)) ; do
+		sedcmd+="\$(bl_urandom \$sd)p ; "
+	done
+
+	if $interactive ; then
+		local nd aspell_dicts=( $(aspell dump dicts | grep "^[a-z]\+$") )
+		nd=$(bl_chooseinlist -n 5 -p "Prefered language to generate a good passphrase ?" "${aspell_dicts[@]}")
+		((nd--))
+		dict="${aspell_dicts[$nd]}"
+	fi
+	sd=$(aspell -d "$dict" dump master | grep -v "'" | wc -l)
+	while true ; do
+		ret="$(aspell -d "$dict" dump master | grep -v "'" | eval sed -n \""$sedcmd"\" | tr '\n' '_')"
+		ret="${ret::-1}"
+		$interactive || break
+		! bl_yesno --default=yes -p "random passphrase: $ret" "Agree" || break
+	done
+	echo "$ret"
+}
+
+
+### Genral Help Messages (and set -e if program) ###
+
+if [[ "$BASH_SOURCE" == "$0" ]] ; then
+	# run as a program
+	set -e
+	declare -r BL_SECURITY_isprogram=1
+
+	BL_SECURITY_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_SECURITY_shelpmsg="
+Actions:
+$(for f in $(sed -n 's,^\(bl_[^(]*\)().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$(echo ${f:3} | tr '_' '-')" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+$BL_SECURITY_NAME is also bash library, see:
+$ source $BASH_SOURCE --help"
+else
+	# run as a library (source $0)
+
+	BL_SECURITY_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+
+	BL_SECURITY_shelpmsg="
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+
+Functions:
+$(for f in $(sed -n 's,^\(bl_[^(]*\)().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
+fi
+
+BL_SECURITY_chelpmsg="
+Options:
+  -h, --help               show this help and exit (or return)
+  -V, --version            show version and exit (or return)"
+
+
+### Init ###
+
+# Parse Options
+_bl_security_parseoptions "$@"
+
+# Do nothing else if sourced
+[[ "$BASH_SOURCE" == "$0" ]] || return 0
+
+
+### Run ###
+
+if grep -q "^bl_${1//-/_}()" "$BASH_SOURCE" ; then
+	function="bl_${1//-/_}"
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "$BL_SECURITY_NAME: unrecognized action '$1'\n$BL_SECURITY_usage\nTry '$BASH_SOURCE --help' for more information.\n" >&2
+	exit 2
+fi
+
