@@ -36,19 +36,31 @@ if [[ "$1" == --bash-completion ]] ; then
 			--help|--version)
 				# should exit without executing any actions, so do not complete anything
 				return 0 ;;
+			--dict)
+				COMPREPLY=( $(compgen -W "$("'$BASH_SOURCE'" gen-passphrase --list-dicts)" -- $cur ) )
+				return 0 ;;
 		esac
-
-		for a in $actions ; do
-			if grep -q "\<$a\>" <<< "${COMP_WORDS[@]}" ; then
-				COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
-				return 0
-			fi
-		done
-		COMPREPLY=( $(compgen -W "$coptions $actions" -- $cur ) )
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('$(echo $BL_SECURITY_tmpa | sed 's, ,\\|,g')'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		if grep -q "\<shred-path\>" <<< "${COMP_WORDS[@]}" ; then
+			local IFS=$'\'\\n\''
+			compopt -o filenames
+			COMPREPLY=( $(compgen -f -- $cur) )
+			return 0
+		fi
+		# complete actions if none in ${COMP_WORDS[@]}
+		grep -q "\<\('$(echo $BL_SECURITY_tmpa | sed 's, ,\\|,g')'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
 		return 0
 	}'
 	unset BL_SECURITY_tmpa BL_SECURITY_tmpo
-	complete -F _bl_security_completion "$BASH_SOURCE"
+	complete -F _bl_security_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
 	return 0
 fi
 
@@ -111,7 +123,7 @@ bl_shred_path() {
 	local helpmsg="
 Recursively shred all files in given path(|s).
 Options:
-  -f, --force          Change file permissions if necessary, ignore nonexistent files or dir, never prompt
+  -f, --force          Change file permissions if necessary, never prompt
   -v, --verbose        Explain what is being done (stdout)
   -r, --remove         Also recursively remove given path(|s)
 "
@@ -135,13 +147,17 @@ Options:
 	IFS=$'\n' files=($(find "$@" -type f))
 	IFS="$ifsbkp"
 
-	if [[ "$farg" != -f ]] ; then
-		bl_yesno -p "${files[*]}" "Shred and remove such file(s)" || return 0
-	fi
+	if [[ -z "${files[*]}" ]] ; then
+		printf "$FUNCNAME: Notice: no file to shred\n" >&2
+	else
+		if [[ "$farg" != -f ]] ; then
+			bl_yesno -p "${files[*]}" "Shred such file(s)" || return 0
+		fi
 
-	# Don't pass $varg to shred as it use to write too many things, and moreover on stderr instead of stdin
-	! [[ "$varg" ]] || echo "shredding: ${files[@]}"
-	shred $farg "${files[@]}" || return $?
+		# Don't pass $varg to shred as it use to write too many things, and moreover on stderr instead of stdin
+		! [[ "$varg" ]] || echo "shredding: ${files[@]}"
+		shred $farg "${files[@]}" || return $?
+	fi
 	$rmcmd -r $farg $varg "$@" || return $?
 }
 
