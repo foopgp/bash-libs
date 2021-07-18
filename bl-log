@@ -71,7 +71,7 @@ if [[ "$1" == --bash-completion ]] ; then
 		COMPREPLY=( $(compgen -W "{,auth.,authpriv.,cron.,daemon.,ftp.,lpr.,mail.,news.,syslog.}{emerg,alert,crit,err,error,warning,notice,info,debug}" -- $cur) )
 		return 0
 	}
-	complete -F _bl_log_completion "$BASH_SOURCE"
+	complete -F _bl_log_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
 	return 0
 fi
 

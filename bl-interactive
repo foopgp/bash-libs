@@ -18,16 +18,16 @@
 #
 
 if [[ "$1" == --bash-completion ]] ; then
-	BL_INTERACTIVE_tmpa="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
-	BL_INTERACTIVE_tmpo=$(for a in $BL_INTERACTIVE_tmpa ; do
+	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
 		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
 	done)
 
 	eval '_bl_interactive_completion()
 	{
 		local cur coptions="--help --version"
-		local a actions="'$BL_INTERACTIVE_tmpa'"
-		local -A aoptions=('$BL_INTERACTIVE_tmpo')
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
 
 		COMPREPLY=()
 		cur=${COMP_WORDS[COMP_CWORD]}
@@ -39,18 +39,21 @@ if [[ "$1" == --bash-completion ]] ; then
 			--preamble)
 				return 0 ;;
 		esac
-
-		for a in $actions ; do
-			if grep -q "\<$a\>" <<< "${COMP_WORDS[@]}" ; then
-				COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
-				return 0
-			fi
-		done
-		COMPREPLY=( $(compgen -W "$coptions $actions" -- $cur ) )
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('$(echo $BL_tmp_a | sed 's, ,\\|,g')'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		# complete actions if none in ${COMP_WORDS[@]}
+		grep -q "\<\('$(echo $BL_tmp_a | sed 's, ,\\|,g')'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
 		return 0
 	}'
-	unset BL_INTERACTIVE_tmpa BL_INTERACTIVE_tmpo
-	complete -F _bl_interactive_completion "$BASH_SOURCE"
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_interactive_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
 	return 0
 fi
 
