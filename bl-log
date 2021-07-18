@@ -144,8 +144,8 @@ Options:
   -Q, --no-act             do not send message to the logs system (syslog)
       --color[=<on|off|auto>]
                            colorize messages sent to standard error (default: auto)
-  -h, --help               show this help and exit (or return)
-  -V, --version            show version and exit (or return)
+  -h, --help               show this help and exit/return
+  -V, --version            show version and exit/return
 
 Options forwarded to 'logger':
   -i                       log the logger command's PID
