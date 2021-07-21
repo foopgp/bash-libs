@@ -17,6 +17,11 @@
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+# shellcheck disable=SC2034 # variable appears unused
+# shellcheck disable=SC2086 # Double quote warning
+# shellcheck disable=SC2128 # expanding array without index warning
+# shellcheck disable=SC2207 # Split array warning
+
 
 if [[ "$1" == --bash-completion ]] ; then
 	_bl_log_completion()
@@ -83,7 +88,8 @@ fi
 
 ### Constants ###
 
-declare -r BL_LOG_NAME="$(basename $(readlink -f "$BASH_SOURCE") )"
+BL_LOG_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+declare -r BL_LOG_NAME
 declare -r BL_LOG_VERSION="0.0.1"
 
 declare -Ar BL_LOGLEVELS=(
@@ -183,7 +189,7 @@ _bl_log_parseoptions() {
 		case "$1" in
 			-l|--log-l*) shift ; BL_LOGLEVEL="$1" ; [[ "$BL_LOGLEVEL" == [0-9] ]] || { printf "Error: log-level out of range [0-7]\n" >&2 ; return 2 ; } ;;
 			-L|--log-e*) shift ; BL_LOGEXITLNAME="$1"
-				grep -q "\<$BL_LOGEXITLNAME\>" <<<${!BL_LOGLEVELS[@]} || { printf "Error: log-exit \"$BL_LOGEXITLNAME\" is none of: ${!BL_LOGLEVELS[@]}\n" >&2 ; return 2 ; } ;;
+				grep -q "\<$BL_LOGEXITLNAME\>" <<<"${!BL_LOGLEVELS[@]}" || { printf "Error: log-exit '%s' is none of: %s\n" "$BL_LOGEXITLNAME" "${!BL_LOGLEVELS[*]}" >&2 ; return 2 ; } ;;
 			-q|--quiet) BL_LOG_O_STDERR="" ;;
 			--color|--color=on) BL_LOG_COLOR=on ;;
 			--color=off) BL_LOG_COLOR=off ;;
@@ -197,10 +203,10 @@ _bl_log_parseoptions() {
 				BL_LOGGER_OPTIONS+=("$1") ;;
 			--id*|--rfc5424*|--socket-errors*|--journald*)
 				BL_LOGGER_OPTIONS+=("$1") ;;
-			-h|--help) printf "$BL_LOG_usage\n$BL_LOG_chelpmsg\n$BL_LOG_shelpmsg\n" ; return 2 ;;
-			-V|--version) printf "$name $BL_LOG_VERSION\n" ; return 2 ;;
+			-h|--help) printf "%s\n%s\n%s\n" "$BL_LOG_usage" "$BL_LOG_chelpmsg" "$BL_LOG_shelpmsg" ; return 2 ;;
+			-V|--version) printf "%s %s\n" "$name" "$BL_LOG_VERSION" ; return 2 ;;
 			--) shift ; break ;;
-			-*) printf "$name: unrecognized option '$1'\n$BL_LOG_usage\nTry '$name --help' for more information.\n" >&2 ; return 2 ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$name" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -214,16 +220,16 @@ bl_log() {
 	local -I BL_LOGLEVEL BL_LOGEXITLNAME BL_LOG_O_STDERR BL_LOGGER_OPTIONS BL_LOG_COLOR
 	local BL_LOG_helpmsg="$BL_LOG_chelpmsg"
 	_bl_log_parseoptions "$FUNCNAME" "$@" || return $?
-	[[ -n "${BL_LOG_ARGV[*]}" ]] || { echo "Error: Please give at least a priority (${!BL_LOGLEVELS[@]})" >&2 ; return 2 ; }
+	[[ -n "${BL_LOG_ARGV[*]}" ]] || { echo "Error: Please give at least a priority (${!BL_LOGLEVELS[*]})" >&2 ; return 2 ; }
 	set "${BL_LOG_ARGV[@]}"
 
 	local priority=$1 plname=${1##*.} filter
-	grep -q "\<$plname\>" <<<${!BL_LOGLEVELS[@]} || { echo "Error: priority's level name ($plname) is none of: ${!BL_LOGLEVELS[@]}" >&2 ; return 2 ; }
+	grep -q "\<$plname\>" <<<"${!BL_LOGLEVELS[@]}" || { echo "Error: priority's level name '$plname' is none of: ${!BL_LOGLEVELS[*]}" >&2 ; return 2 ; }
 	shift
 	local llevel=${BL_LOGLEVELS[$plname]}
-	if ((llevel > $BL_LOGLEVEL)) ; then
+	if ((llevel > BL_LOGLEVEL)) ; then
 		# If there is no MESSAGE, purge stdin; else do nothing.
-		[[ "$@" ]] || cat >/dev/null
+		[[ "$*" ]] || cat >/dev/null
 	else
 		if [[ "$BL_LOG_COLOR" == on ]] || [[ "$BL_LOG_COLOR" == auto ]] && [[ -t 2 ]] ; then
 			filter="2> >(sed 's,: ,: \x1b[${BL_LOGCOLORS[$llevel]}m${plname^}:\x1b[0m ,' >&2)"

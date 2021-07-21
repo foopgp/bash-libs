@@ -16,6 +16,12 @@
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+# shellcheck disable=SC2013 # To read lines rather than words
+# shellcheck disable=SC2046 # Quote this to prevent word splitting
+# shellcheck disable=SC2086 # Double quote warning
+# shellcheck disable=SC2128 # expanding array without index warning
+# shellcheck disable=SC2162 # Read without -r
+
 
 if [[ "$1" == --bash-completion ]] ; then
 	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
@@ -41,7 +47,7 @@ if [[ "$1" == --bash-completion ]] ; then
 		esac
 		case $cur in
 			-*)
-				if a=$(grep -o "\<\('$(echo $BL_tmp_a | sed 's, ,\\|,g')'\)\>" <<< "${COMP_WORDS[@]}") ; then
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
 					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
 					return 0
 				fi
@@ -49,7 +55,7 @@ if [[ "$1" == --bash-completion ]] ; then
 				return 0 ;;
 		esac
 		# complete actions if none in ${COMP_WORDS[@]}
-		grep -q "\<\('$(echo $BL_tmp_a | sed 's, ,\\|,g')'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
 		return 0
 	}'
 	unset BL_tmp_a BL_tmp_o
@@ -66,7 +72,8 @@ fi
 
 ### Constants ###
 
-declare -r BL_INTERACTIVE_NAME="$(basename $(readlink -f "$BASH_SOURCE") )"
+BL_INTERACTIVE_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+declare -r BL_INTERACTIVE_NAME
 declare -r BL_INTERACTIVE_VERSION="0.0.1"
 
 
@@ -75,10 +82,10 @@ declare -r BL_INTERACTIVE_VERSION="0.0.1"
 _bl_interactive_parseoptions() {
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--help) printf "$BL_INTERACTIVE_usage\n$BL_INTERACTIVE_chelpmsg\n$BL_INTERACTIVE_shelpmsg\n" ; return 2 ;;
-			-V|--version) printf "$BL_INTERACTIVE_NAME $BL_INTERACTIVE_VERSION\n" ; return 2 ;;
+			-h|--help) printf "%s\n%s\n%s\n" "$BL_INTERACTIVE_usage" "$BL_INTERACTIVE_chelpmsg" "$BL_INTERACTIVE_shelpmsg" ; return 2 ;;
+			-V|--version) printf "%s %s\n" "$BL_INTERACTIVE_NAME" "$BL_INTERACTIVE_VERSION" ; return 2 ;;
 			--) shift ; break ;;
-			-*) printf "$BL_INTERACTIVE_NAME: unrecognized option '$1'\n$BL_INTERACTIVE_usage\nTry '$BASH_SOURCE --help' for more information.\n" >&2 ; return 2 ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_INTERACTIVE_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -109,12 +116,12 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
-	question=" $@ (y/n)"
+	question=" $* (y/n)"
 	[[ -z "$def" ]] || question+=" [$def]"
 
 	while true ; do
@@ -153,28 +160,28 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
 	n=$#
-	((n)) || { printf "$FUNCNAME: Error: need items\nTry '$name --help' for more information.\n" >&2 ; return 1 ; }
-	printf "$pr" >&2
+	((n)) || { printf "%s: Error: need items\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 1 ; }
+	printf "%s" "$pr" >&2
 	for ((i=0;i<n;)) ; do
 		if ((i%nperline)) ; then
 			printf "\t\t" >&2
 		else
 			printf "\n\t" >&2
 		fi
-		printf "$((++i))) $1" >&2
+		printf "%d) %s" "$((++i))" "$1" >&2
 		shift
 	done
 	echo >&2
 	while ((ret<1 || ret>n)) ; do
 		read -p "Reply (1-$n) ? " ret
 	done
-	echo $ret
+	echo "$ret"
 }
 
 
@@ -188,7 +195,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	BL_INTERACTIVE_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_INTERACTIVE_shelpmsg="
 Actions:
-$(for f in $(sed -n 's,^\(bl_[^(]*\)().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$(echo ${f:3} | tr '_' '-')" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in $(sed -n 's,^\(bl_[^( ]*\) *().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$(echo ${f:3} | tr '_' '-')" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 $BL_INTERACTIVE_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"
@@ -201,7 +208,7 @@ else
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
-$(for f in $(sed -n 's,^\(bl_[^(]*\)().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in $(sed -n 's,^\(bl_[^( ]*\) *().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
 fi
@@ -223,13 +230,13 @@ _bl_interactive_parseoptions "$@"
 
 ### Run ###
 
-if grep -q "^bl_${1//-/_}()" "$BASH_SOURCE" ; then
+if grep -q "^bl_${1//-/_} *()" "$BASH_SOURCE" ; then
 	function="bl_${1//-/_}"
 	shift
 	$function "$@"
 	exit $?
 else
-	printf "$BL_INTERACTIVE_NAME: unrecognized action '$1'\n$BL_INTERACTIVE_usage\nTry '$BASH_SOURCE --help' for more information.\n" >&2
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_INTERACTIVE_NAME" "$1" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

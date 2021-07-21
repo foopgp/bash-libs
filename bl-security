@@ -16,6 +16,12 @@
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+# shellcheck disable=SC2013 # To read lines rather than words
+# shellcheck disable=SC2034 # variable appears unused
+# shellcheck disable=SC2046 # Quote this to prevent word splitting
+# shellcheck disable=SC2086 # Double quote warning
+# shellcheck disable=SC2128 # expanding array without index warning
+
 
 if [[ "$1" == --bash-completion ]] ; then
 	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
@@ -42,7 +48,7 @@ if [[ "$1" == --bash-completion ]] ; then
 		esac
 		case $cur in
 			-*)
-				if a=$(grep -o "\<\('$(echo $BL_tmp_a | sed 's, ,\\|,g')'\)\>" <<< "${COMP_WORDS[@]}") ; then
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
 					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
 					return 0
 				fi
@@ -56,7 +62,7 @@ if [[ "$1" == --bash-completion ]] ; then
 			return 0
 		fi
 		# complete actions if none in ${COMP_WORDS[@]}
-		grep -q "\<\('$(echo $BL_tmp_a | sed 's, ,\\|,g')'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
 		return 0
 	}'
 	unset BL_tmp_a BL_tmp_o
@@ -73,21 +79,23 @@ fi
 
 ### Constants ###
 
-declare -r BL_SECURITY_NAME="$(basename $(readlink -f "$BASH_SOURCE") )"
+BL_SECURITY_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+declare -r BL_SECURITY_NAME
 declare -r BL_SECURITY_VERSION="0.0.1"
 
 
 ### functions ###
 
-. $(dirname "$BASH_SOURCE")/bl-interactive --
+# shellcheck source=bl-interactive
+. "$(dirname "$BASH_SOURCE")"/bl-interactive --
 
 _bl_security_parseoptions() {
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--help) printf "$BL_SECURITY_usage\n$BL_SECURITY_chelpmsg\n$BL_SECURITY_shelpmsg\n" ; return 2 ;;
-			-V|--version) printf "$BL_SECURITY_NAME $BL_SECURITY_VERSION\n" ; return 2 ;;
+			-h|--help) printf "%s\n%s\n%s\n" "$BL_SECURITY_usage" "$BL_SECURITY_chelpmsg" "$BL_SECURITY_shelpmsg" ; return 2 ;;
+			-V|--version) printf "%s %s\n" "$BL_SECURITY_NAME" "$BL_SECURITY_VERSION" ; return 2 ;;
 			--) shift ; break ;;
-			-*) printf "$BL_SECURITY_NAME: unrecognized option '$1'\n$BL_SECURITY_usage\nTry '$BASH_SOURCE --help' for more information.\n" >&2 ; return 2 ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_SECURITY_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -105,20 +113,21 @@ or between 0 and (MODULO - 1) if MODULO is given.
 	for ((;$#;)) ; do
 		case "$1" in
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
-	local m=$1 r=$(od -An -N4 -t u4 < /dev/urandom);
+	local m=$1 r
+	r=$(od -An -N4 -t u4 < /dev/urandom)
 	echo $((m?r%m:r))
 }
 
 bl_shred_path() {
 	local name
-	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME $(echo ${FUNCNAME:3} | tr '_' '-')" || name="$FUNCNAME"
+	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME $(echo "${FUNCNAME:3}" | tr '_' '-')" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] PATHS..."
 	local helpmsg="
 Recursively shred all files in given path(|s).
@@ -134,28 +143,27 @@ Options:
 			-v|--verb*) varg="-v" ;;
 			-r|--remove) rmcmd="rm" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
-	(($#)) || { printf "$FUNCNAME: Error: no PATH given as argument\nTry '$name --help' for more information.\n" >&2 ; return 2 ; }
+	(($#)) || { printf "%s: Error: no PATH given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
-	local ifsbkp="$IFS"
-	IFS=$'\n' files=($(find "$@" -type f))
-	IFS="$ifsbkp"
+	mapfile -t files < <(find "$@" -type f)
 
 	if [[ -z "${files[*]}" ]] ; then
-		printf "$FUNCNAME: Notice: no file to shred\n" >&2
+		printf "%s: Notice: no file to shred\n" "$FUNCNAME" >&2
 	else
 		if [[ "$farg" != -f ]] ; then
-			bl_yesno -p "${files[*]}" "Shred such file(s)" || return 0
+			printf "%s\n" "${files[@]@Q}" >&2
+			bl_yesno "Shred this ${#files[@]} file(s)" || return 0
 		fi
 
 		# Don't pass $varg to shred as it use to write too many things, and moreover on stderr instead of stdin
-		! [[ "$varg" ]] || echo "shredding: ${files[@]}"
+		! [[ "$varg" ]] || echo "shredding:" "${files[@]@Q}"
 		shred $farg "${files[@]}" || return $?
 	fi
 	$rmcmd -r $farg $varg "$@" || return $?
@@ -164,7 +172,7 @@ Options:
 bl_gen_passphrase() {
 	local dict=${LANG::2} nw=3 interactive=false sedcmd sd ret
 	local name
-	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME $(echo ${FUNCNAME:3} | tr '_' '-')" || name="$FUNCNAME"
+	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME $(echo "${FUNCNAME:3}" | tr '_' '-')" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
 Generate a good random passphrase
@@ -181,26 +189,27 @@ Options:
 			-D|--dict*) shift ; dict="$1" ;;
 			-n|--nword*) shift ; nw="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: unrecognized option '%s'\nTry '$name --help' for more information.\n" "$1" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
-	((! $#)) || printf "$FUNCNAME: Warning: ignoring arguments $@\n" >&2
+	((! $#)) || printf "%s: Warning: ignoring arguments %s\n" "$FUNCNAME" "$*" >&2
 
 	while ((nw-- > 0)) ; do
 		sedcmd+="\$(bl_urandom \$sd)p ; "
 	done
 
 	if $interactive ; then
-		local nd aspell_dicts=( $(aspell dump dicts | grep "^[a-z]\+$") )
+		local nd aspell_dicts
+		mapfile -t aspell_dicts < <(aspell dump dicts | grep "^[a-z]\+$")
 		nd=$(bl_chooseinlist -n 5 -p "Prefered language to generate a good passphrase ?" "${aspell_dicts[@]}")
 		((nd--))
 		dict="${aspell_dicts[$nd]}"
 	fi
-	sd=$(aspell -d "$dict" dump master | grep -v "'" | wc -l)
+	sd=$(aspell -d "$dict" dump master | grep --count --invert-match "'")
 	while true ; do
 		ret="$(aspell -d "$dict" dump master | grep -v "'" | eval sed -n \""$sedcmd"\" | tr '\n' '_')"
 		ret="${ret::-1}"
@@ -221,7 +230,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	BL_SECURITY_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_SECURITY_shelpmsg="
 Actions:
-$(for f in $(sed -n 's,^\(bl_[^(]*\)().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$(echo ${f:3} | tr '_' '-')" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in $(sed -n 's,^\(bl_[^( ]*\) *().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$(echo "${f:3}" | tr '_' '-')" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 $BL_SECURITY_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"
@@ -234,7 +243,7 @@ else
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
-$(for f in $(sed -n 's,^\(bl_[^(]*\)().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in $(sed -n 's,^\(bl_[^( ]*\) *().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
 fi
@@ -256,13 +265,13 @@ _bl_security_parseoptions "$@"
 
 ### Run ###
 
-if grep -q "^bl_${1//-/_}()" "$BASH_SOURCE" ; then
+if grep -q "^bl_${1//-/_} *()" "$BASH_SOURCE" ; then
 	function="bl_${1//-/_}"
 	shift
 	$function "$@"
 	exit $?
 else
-	printf "$BL_SECURITY_NAME: unrecognized action '$1'\n$BL_SECURITY_usage\nTry '$BASH_SOURCE --help' for more information.\n" >&2
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_SECURITY_NAME" "$1" "$BASH_SOURCE" >&2
 	exit 2
 fi
 
