@@ -16,20 +16,20 @@ bash-libs - set of bash executables which may also be sourced as libraries
 bash-libs is a set of bash-written executables which only expose their variables
 and functions if sourced.
 
-Such executables heavily use the fact that **$BASH_SOURCE** differs from **$0** when
+Such executables heavily use the fact that **${BASH_SOURCE[0]}** differs from **$0** when
 sourced.
 
-All bash-libs executables should be prefixed with *bl-*, while all bash-libs
-exposed functions should be prefixed with *bl_*.
+All bash-libs executables should be prefixed with «bl-», while all bash-libs
+exposed functions should be prefixed with «bl_».
 
 # ENVIRONMENT VARIABLES
 
-While all bash-libs *exposed* functions should be prefixed with *bl_*, bash-libs
-functions which are intended to be use only *internally* should be prefixed with
-*\_bl_*.
+While all bash-libs exposed functions should be prefixed with «bl_», bash-libs
+functions which are intended to be use only internally should be prefixed with
+«\_bl_».
 
 Also all environment variables set when sourcing a bash-libs executable should be
-prefixed by *BL_*.
+prefixed by «BL_».
 
 # OPTIONS
 
@@ -43,6 +43,7 @@ When sourced, all bash-libs executables should also support a
 *--bash-completion* option to be passed as first argument, to load a bash
 completion for the given executable.
 
+
 # DIAGNOSTICS
 
 All bash-libs exposed functions and executables should return zero on normal operation, non-zero on errors.
@@ -50,51 +51,34 @@ All bash-libs exposed functions and executables should return zero on normal ope
 
 # FILES
 
-
 ## bl-interactive
 
-Help managing interactive choices
+Help managing interactive choices.
 
-### bl_yesno
-
-Helper for a yes/no question (binary choice)
-
-### bl_chooseinlist
-
-Helper for a single choice in a list (like radiobutton)
-
+This executable/library exposes 2 functions: **bl_yesno()** and
+**bl_chooseinlist()**. See **bl-interactive**(1) manual for more details.
 
 ## bl-security
 
-Provide some "security" features
+Provide some "security" features.
 
-### bl_urandom
-
-Output a good random number between 0 and 1<<32,
-
-### bl_shred_path
-
-Recursively shred all files in given path(|s)
-
-### bl_gen_passphrase
-
-Generate a good random passphrase
-
+This executable/library exposes 3 functions: **bl_urandom()**,
+**bl_shred_path()** and **bl_gen_passphrase()**. See **bl-security**(1) manual
+for more details.
 
 ## bl-log
 
-This executable/library contain only one exposed function: **bl_log**. So it
-doesn't implement a function dispatcher and using bl-log as an executable is
-*almost* the same thing than using bl_log function.
+Wrapper for logger command, which also print pretty logs on stderr.
 
-"*Almost*" nuance: when sourcing bl-log (using it as a bash library), we may pass
+This executable/library exposes only one exposed function: **bl_log()**. So it
+doesn't implement a function dispatcher and using **bl-log** as an executable is
+*almost* the same thing than using **bl_log()** function.
+
+"*Almost*" nuance: when sourcing **bl-log** (using it as a bash library), we may pass
 some options as arguments, which will be store in some environment variable.
-Then such options will remain for following calls of **bl_log** (with no options
+Then such options will remain for following calls of **bl_log()** (with no options
 passed as arguments).
 
-### bl_log
-
-Wrapper for logger command, which also print pretty logs on stderr.
 
 # EXAMPLES
 
@@ -113,7 +97,7 @@ Wrapper for logger command, which also print pretty logs on stderr.
 
 # SEE ALSO
 
-**bl-log**(1), **bl-interactive**(1).
+**bl-interactive**(1), **bl-security**(1), **bl-log**(1).
 
 # AUTHOR/MAINTAINER
 

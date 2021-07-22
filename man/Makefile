@@ -1,12 +1,9 @@
 MANDIR = /usr/share/man
-MANDATE = $(shell LANG=C git log -1 --format="%ad" --date="format:%d %B %Y" ../README.md)
 
-bash-libs.7.gz:
-ifeq "$(MANDATE)" ""
-	pandoc -s -t man ../README.md  | gzip > bash-libs.7.gz
-else
-	sed '1,6s;^date:.*;date: $(MANDATE);' < ../README.md | pandoc -s -t man | gzip > bash-libs.7.gz
-endif
+bash-libs.7.gz: ../README.md
+	MANDATE="$$(LANG=C git log -1 --format="%ad" --date="format:%d %B %Y" -- $<)" ;\
+	[ "$$MANDATE" ] || MANDATE="\1" ;\
+	sed "1,6s;^date:\(.*\);date: $$MANDATE;" < $< | pandoc -s -t man | gzip > $@
 
 
 all: bash-libs.7.gz
