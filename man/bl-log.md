@@ -52,7 +52,7 @@ Returns zero on normal operation, non-zero on errors.
 
 # SEE ALSO
 
-**logger**(1), [**bash-libs**](../README.me)(7).
+**logger**(1), [**bash-libs**](../README.md)(7).
 
 
 # AUTHOR

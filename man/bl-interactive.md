@@ -48,7 +48,7 @@ Returns zero on normal operation, non-zero on errors.
 
 # SEE ALSO
 
-[**bash-libs**](../README.me)(7).
+[**bash-libs**](../README.md)(7).
 
 
 # AUTHOR

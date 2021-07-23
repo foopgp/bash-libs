@@ -51,7 +51,7 @@ Returns zero on normal operation, non-zero on errors.
 
 # SEE ALSO
 
-**shred**(1), **aspell**(1), [**bl-interactive**](bl-interactive.md)(1), [**bash-libs**](../README.me)(7).
+**shred**(1), **aspell**(1), [**bl-interactive**](bl-interactive.md)(1), [**bash-libs**](../README.md)(7).
 
 
 # AUTHOR
