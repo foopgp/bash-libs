@@ -110,6 +110,11 @@ bl_urandom() {
 Output a good random number between 0 and 1<<32,
 or between 0 and (MODULO - 1) if MODULO is given.
 "
+	local r=$SRANDOM s=$SRANDOM
+	[[ "$r" == "$s"  ]] || helpmsg+="
+NOTE: Since GNU bash version 5.1.0 introduce SRANDOM variable,
+this function became useless and will be deprecated.
+"
 	for ((;$#;)) ; do
 		case "$1" in
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -120,8 +125,8 @@ or between 0 and (MODULO - 1) if MODULO is given.
 		esac
 		shift
 	done
-	local m=$1 r
-	r=$(od -An -N4 -t u4 < /dev/urandom)
+	local m=$1
+	[[ "$r" != "$s"  ]] || r=$(od -An -N4 -t u4 < /dev/urandom)
 	echo $((m?r%m:r))
 }
 
