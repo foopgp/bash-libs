@@ -29,9 +29,32 @@ passed as arguments).
 
 # ENVIRONMENT VARIABLES
 
-# DIAGNOSTICS
+# RETURN STATUS
 
-Returns zero on normal operation, non-zero on errors.
+**0**    Successful execution.
+
+**2**    Misuse of arguments (options, parameters, etc.)
+
+# EXIT STATUS
+
+They have been choose to match priority numeric values and according to
+https://tldp.org/LDP/abs/html/exitcodes.html:
+
+**168**  When priority's level == 'emerg'
+
+**169**  When priority's level == 'alert', and --log-exit seriousness ≤ 'alert'
+
+**170**  When priority's level == 'crit', and --log-exit seriousness ≤ 'crit'
+
+**171**  When priority's level == 'err' (or deprecated 'error'), and --log-exit seriousness ≤ 'err'.
+
+**172**  When priority's level == 'warning', and --log-exit seriousness ≤ 'warning'.
+
+**173**  When priority's level == 'notice', and --log-exit seriousness ≤ 'notice'.
+
+**174**  When priority's level == 'info', and --log-exit seriousness ≤ 'info'.
+
+**175**  When priority's level == 'debug', and --log-exit seriousness = 'debug'.
 
 
 # EXAMPLES
@@ -40,7 +63,7 @@ Returns zero on normal operation, non-zero on errors.
  . bl-log --no-act --log-level "6" --log-exit "crit"
  bl_log debug "$FUNCNAME: $@" # This won't be logged (debug <> 7)
  bl_log info "some informations" # This logs (info <> 6)
- bl_log crit "ouch" # This logs then exit(11).
+ bl_log crit "ouch" # This logs then exit(170).
 ```
 
 ```bash
@@ -52,7 +75,7 @@ Returns zero on normal operation, non-zero on errors.
 
 # SEE ALSO
 
-**logger**(1), [**bash-libs**](../README.md)(7).
+**logger**(1), [**bash-libs**](../README.md)(7), sys/syslog.h.
 
 
 # AUTHOR

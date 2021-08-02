@@ -87,7 +87,7 @@ passed as arguments). See [**bl-log**](man/bl-log.md)(1) manual for more details
  . bl-log --no-act --log-level "6" --log-exit "crit"
  bl_log debug "$FUNCNAME: $@" # This won't be logged (debug <> 7)
  bl_log info "some informations" # This logs (info <> 6)
- bl_log crit "ouch" # This logs then exit(11).
+ bl_log crit "ouch" # This logs then exit(170).
 ```
 
 ```bash

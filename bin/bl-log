@@ -138,14 +138,15 @@ fi
 
 BL_LOG_chelpmsg="
 Wrapper for logger command, which also print pretty logs on stderr.
-PRIORITY list: $(declare -p BL_LOGLEVELS)
+PRIORITY is a \"facility.level\" pair. The default facility is [user]=1.
+Levels: $(declare -p BL_LOGLEVELS)
 If PRIORITY's level is under BL_LOGLEVEL=$BL_LOGLEVEL, don't log anything.
 If PRIORITY's level name is more serious than BL_LOGEXITLNAME=$BL_LOGEXITLNAME, exit(8+'PRIORITY's level')
 If there is no MESSAGE in command line, read it from stdin.
 
 Options:
   -l, --log-level LEVEL    log level: emerg<1=alert<crit<3=err<warning<5=notice<info<7=debug (current: $BL_LOGLEVEL)
-  -L, --log-exit PRIORITY  log exit priority: emerg|alert|crit|err|warning|... (current: $BL_LOGEXITLNAME )
+  -L, --log-exit LEVELNAME exit level: emerg|alert|crit|err|warning|... (current: $BL_LOGEXITLNAME )
   -q, --quiet              do not output message to standard error
   -Q, --no-act             do not send message to the logs system (syslog)
       --color[=<on|off|auto>]
@@ -238,7 +239,7 @@ bl_log() {
 		fi
 		eval 'logger -p "$priority" $BL_LOG_O_STDERR --id=$$ --tag "${0##*/}" ${BL_LOGGER_OPTIONS[@]} -- "$@" '"$filter"
 	fi
-	((llevel > BL_LOGLEVELS[$BL_LOGEXITLNAME] )) || exit $((8+llevel))
+	((llevel > BL_LOGLEVELS[$BL_LOGEXITLNAME] )) || exit $((168+llevel))
 }
 
 
