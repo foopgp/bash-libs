@@ -1,0 +1,210 @@
+#!/bin/bash
+#
+# Bash library and executable to test conformity of executables or bash libraries
+#
+# ...to some standards like:
+# https://www.gnu.org/prep/standards/standards.html#Command_002dLine-Interfaces
+#
+# Copyright © 2021 Jean-Jacques Brucker <jjbrucker@free.fr>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Lesser General Public License version 3
+#    as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU Lesser General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# shellcheck disable=SC2046 # Quote this to prevent word splitting
+# shellcheck disable=SC2086 # Double quote warning
+# shellcheck disable=SC2128 # expanding array without index warning
+
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_test_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version)
+				# should exit without executing any actions, so do not complete anything
+				return 0 ;;
+		esac
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		# complete actions if none in ${COMP_WORDS[@]}
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		return 0
+	}'
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_test_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	return 0
+fi
+
+# If sourcing while _bl_test_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_test_parseoptions)" == function ]] ; then
+	_bl_test_parseoptions "$@"
+	return $?
+fi
+
+
+### Constants ###
+
+BL_TEST_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+declare -r BL_TEST_NAME
+declare -r BL_TEST_VERSION="0.0.1"
+declare -r BL_TEST_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+
+
+### functions ###
+
+. "$(dirname "$BASH_SOURCE")"/bl-log --no-act
+
+_bl_test_parseoptions() {
+	local earlyend
+	"${BL_TEST_isprogram:-false}" && earlyend="exit" || earlyend="return"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s\n%s\n" "$BL_TEST_usage" "$BL_TEST_chelpmsg" "$BL_TEST_shelpmsg" ; $earlyend 0 ;;
+			-V|--version) printf "%s %s\n" "$BL_TEST_NAME (bash-libs)" "$BL_TEST_VERSION" ; $earlyend 0 ;;
+			--) shift ; break ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_TEST_NAME" "$1" "$BASH_SOURCE" >&2 ; $earlyend 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+}
+
+bl_test__version() {
+	#TODO: isolate at best execution:
+	# * env --ignore-environment --chdir $TEMPDDIR is only a minimalist isolation
+	# * switch to an user with minimalist permission in a chroot will be better (but it's quite heavy)
+	# * there are probalbly other and better solution
+	local name
+	"${BL_TEST_isprogram:-false}" && name="$BL_TEST_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name COMMANDE [ARG]..."
+	local helpmsg="
+Test if \"COMMANDE [ARG]... --version\" matches GNU standard.
+Cf: https://www.gnu.org/prep/standards/standards.html#g_t_002d_002dversion
+"
+	local nberr=0 all ret errsize
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return 0 ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME ($BL_TEST_NAME)" "$BL_TEST_VERSION" ; return 0 ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	if ! type "$1" 1> >(bl_log info) ; then
+		ret=$?
+		printf "Try '%s --help' for more information.\n" "$name" >&2
+		return $ret
+	fi
+	all=$(env --ignore-environment "$@" --version 2> >(wc -c) 1> >(sed -n '1s,^[[:alnum:]_]\+.*\<[0-9]\+\.[0-9]\+\>,&,p') ) && ret=0 || ret=$?
+	if ((ret)) ; then
+		bl_log err "\"$* --version\" expected exit code: '0', got: '"$ret"'."
+		((++nberr))
+	fi
+	errsize=$(sed -n '/^[0-9]\+$/p' <<<"$all")
+	if ((errsize)) ; then
+		bl_log err "\"$* --version\" expected nothing on stderr, got: ""$errsize ""bytes."
+		((++nberr))
+	fi
+	if [[ $(wc -l <<<"$all") != 2 ]] ; then
+		bl_log err "\"$* --version\" don't give a name and a version on first line of stdout."
+		((++nberr))
+	elif ! grep -q "^[[:alnum:]_]\+.*\<[0-9]\+\.[0-9]\+\.[0-9]\+\>" <<<"$all" ; then
+		bl_log warning "$1 versioning does not match semantic standard, cf: https://semver.org/"
+	fi
+	if ((nberr)) ; then
+		echo "env --ignore-environment $* --version: [Failed] (nberr=$nberr)"
+		return $((nberr+80))
+	fi
+	echo "env --ignore-environment $* --version: [OK]"
+	return 0
+}
+
+### General Help Messages (and set -e if program) ###
+
+BL_TEST_chelpmsg="
+Options:
+  -h, --help               show this help and exit/return
+  -V, --version            show version and exit/return"
+
+### Init ###
+
+if [[ "$BASH_SOURCE" == "$0" ]] ; then
+	# run as a program
+	set -e
+	declare -r BL_TEST_isprogram=true
+
+	#! if bl_$0 is an exposed function written above (eg: symlink --> readlink -f $BASH_SOURCE), execute it NOW (with default global parameters)
+	if function=$(grep -o "\<bl_$(basename "$0")\>" <<< "${BL_TEST_FUNCTIONS[@]}") ; then
+		$function "$@"
+		exit $?
+	fi
+
+	BL_TEST_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_TEST_shelpmsg="
+Actions:
+$(for f in "${BL_TEST_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+$BL_TEST_NAME is also bash library, see:
+$ source $BASH_SOURCE --help"
+
+else
+	# run as a library (source $0)
+
+	BL_TEST_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+
+	BL_TEST_shelpmsg="
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+
+Functions:
+$(for f in "${BL_TEST_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
+
+fi
+
+### Run ###
+
+# Parse Options
+_bl_test_parseoptions "$@"
+
+# Do nothing else if sourced
+$BL_TEST_isprogram return $?
+
+if function=$(grep -o "\<bl_$1\>" <<< "${BL_TEST_FUNCTIONS[@]}") ; then
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_TEST_NAME" "$1" "$BASH_SOURCE" >&2
+	exit 2
+fi
+
