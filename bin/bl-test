@@ -126,7 +126,7 @@ Cf: https://www.gnu.org/prep/standards/standards.html#g_t_002d_002dversion
 	fi
 	all=$(env --ignore-environment "$@" --version 2> >(wc -c) 1> >(sed -n '1s,^[[:alnum:]_]\+.*\<[0-9]\+\.[0-9]\+\>,&,p') ) && ret=0 || ret=$?
 	if ((ret)) ; then
-		bl_log err "\"$* --version\" expected exit code: '0', got: '"$ret"'."
+		bl_log err "\"$* --version\" expected exit code: '0', got: '$ret'."
 		((++nberr))
 	fi
 	errsize=$(sed -n '/^[0-9]\+$/p' <<<"$all")

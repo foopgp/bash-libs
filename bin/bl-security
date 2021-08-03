@@ -2,7 +2,7 @@
 #
 # Bash library and executable that provides some "security" features
 #
-# Copyright © 2021 b Jean-Jacques Brucker <jjbrucker@free.fr>
+# Copyright © 2021 Jean-Jacques Brucker <jjbrucker@free.fr>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License version 3
@@ -82,6 +82,7 @@ fi
 BL_SECURITY_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_SECURITY_NAME
 declare -r BL_SECURITY_VERSION="0.0.1"
+declare -r BL_SECURITY_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 
 ### functions ###
@@ -132,7 +133,7 @@ this function became useless and will be deprecated.
 
 bl_shred_path() {
 	local name
-	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME $(echo "${FUNCNAME:3}" | tr '_' '-')" || name="$FUNCNAME"
+	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] PATHS..."
 	local helpmsg="
 Recursively shred all files in given path(|s).
@@ -177,7 +178,7 @@ Options:
 bl_gen_passphrase() {
 	local dict=${LANG::2} nw=3 interactive=false sedcmd sd ret
 	local name
-	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME $(echo "${FUNCNAME:3}" | tr '_' '-')" || name="$FUNCNAME"
+	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
 Generate a good random passphrase
@@ -225,7 +226,7 @@ Options:
 }
 
 
-### Genral Help Messages (and set -e if program) ###
+### General Help Messages (and set -e if program) ###
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
@@ -235,7 +236,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	BL_SECURITY_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_SECURITY_shelpmsg="
 Actions:
-$(for f in $(sed -n 's,^\(bl_[^( ]*\) *().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$(echo "${f:3}" | tr '_' '-')" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in "${BL_SECURITY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 $BL_SECURITY_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"
@@ -248,7 +249,7 @@ else
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
-$(for f in $(sed -n 's,^\(bl_[^( ]*\) *().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in "${BL_SECURITY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
 fi
@@ -270,8 +271,7 @@ _bl_security_parseoptions "$@"
 
 ### Run ###
 
-if grep -q "^bl_${1//-/_} *()" "$BASH_SOURCE" ; then
-	function="bl_${1//-/_}"
+if function=$(grep -o "\<bl_$1\>" <<< "${BL_SECURITY_FUNCTIONS[@]}") ; then
 	shift
 	$function "$@"
 	exit $?

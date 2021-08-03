@@ -2,7 +2,7 @@
 #
 # Bash library and executable that helps managing interactive choices
 #
-# Copyright © 2021 b Jean-Jacques Brucker <jjbrucker@free.fr>
+# Copyright © 2021 Jean-Jacques Brucker <jjbrucker@free.fr>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License version 3
@@ -75,6 +75,7 @@ fi
 BL_INTERACTIVE_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_INTERACTIVE_NAME
 declare -r BL_INTERACTIVE_VERSION="0.0.1"
+declare -r BL_INTERACTIVE_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 
 ### functions ###
@@ -195,7 +196,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	BL_INTERACTIVE_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_INTERACTIVE_shelpmsg="
 Actions:
-$(for f in $(sed -n 's,^\(bl_[^( ]*\) *().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$(echo ${f:3} | tr '_' '-')" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 $BL_INTERACTIVE_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"
@@ -208,7 +209,7 @@ else
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
-$(for f in $(sed -n 's,^\(bl_[^( ]*\) *().*, \1,p' "$BASH_SOURCE") ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
 fi
@@ -230,8 +231,7 @@ _bl_interactive_parseoptions "$@"
 
 ### Run ###
 
-if grep -q "^bl_${1//-/_} *()" "$BASH_SOURCE" ; then
-	function="bl_${1//-/_}"
+if function=$(grep -o "\<bl_$1\>" <<< "${BL_INTERACTIVE_FUNCTIONS[@]}") ; then
 	shift
 	$function "$@"
 	exit $?
