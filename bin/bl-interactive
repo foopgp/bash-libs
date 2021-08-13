@@ -77,6 +77,9 @@ declare -r BL_INTERACTIVE_NAME
 declare -r BL_INTERACTIVE_VERSION="0.0.1"
 declare -r BL_INTERACTIVE_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
+### Default option values ###
+
+
 
 ### functions ###
 
@@ -108,7 +111,7 @@ Options:
       --default=<yes|no>   Set a default answer
   -p, --preamble TEXT      Text to display before the question
 "
-	local def pr question
+	local def pr
 	for ((;$#;)) ; do
 		case "$1" in
 			--default=yes) def="yes" ;;
@@ -122,7 +125,13 @@ Options:
 		esac
 		shift
 	done
-	question=" $* (y/n)"
+	if [[ "$BL_INTERACTIVE_FRONTEND" == whiptail ]] ; then
+		[[ "$def" == no ]] && def="--defaultno" || unset def
+		# using ( subshell ) for factorization : it automatically close {fd}>&- while carrying whiptail return value
+		( whiptail $def --yesno "$pr"$'\n'"  $* ?" 0 0 {fd}>&1 1>&2 2>&${fd} )
+		return $?
+	fi
+	local question=" $* (y/n)"
 	[[ -z "$def" ]] || question+=" [$def]"
 
 	while true ; do
@@ -168,6 +177,21 @@ Options:
 	done
 	n=$#
 	((n)) || { printf "%s: Error: need items\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 1 ; }
+	if [[ "$BL_INTERACTIVE_FRONTEND" == whiptail ]] ; then
+		local rv entry_options=()
+		for ((i=1;i<=n;i++)) ; do
+			entry_options+=($i)
+			entry_options+=("$1")
+			entry_options+=("OFF")
+			shift
+		done
+		while ((ret<1 || ret>n)) ; do
+			ret=$(whiptail --notags --nocancel --radiolist "$pr" 0 0 $n "${entry_options[@]}" {fd}>&1 1>&2 2>&${fd})
+			rv=$?
+			echo "$ret"
+		done
+		return $rv
+	fi
 	printf "%s" "$pr" >&2
 	for ((i=0;i<n;)) ; do
 		if ((i%nperline)) ; then
