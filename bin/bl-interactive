@@ -97,6 +97,43 @@ _bl_interactive_parseoptions() {
 }
 
 
+bl_input() {
+	local name
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] QUESTION"
+	local helpmsg="
+Helper to ask for a string
+
+Options:
+  -d, --default STRING     Default initialized string
+  -p, --preamble TEXT      Text to display before the question
+"
+	local def pr
+	for ((;$#;)) ; do
+		case "$1" in
+			-d|--default) shift ; def="$1" ;;
+			-p|--pre*) shift ; pr="$1" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	if [[ "$BL_INTERACTIVE_FRONTEND" == whiptail ]] ; then
+		# using ( subshell ) for factorization : it automatically close {fd}>&- while carrying whiptail return value
+		( whiptail --nocancel --inputbox "$pr"$'\n'"  $* ?" 0 $((COLUMNS/2)) "$def" {fd}>&1 1>&2 2>&${fd} )
+		return $?
+	fi
+	local rep question=" $*"
+	[[ -z "$def" ]] || question+=" [$def]"
+	echo "$pr" >&2
+	read -p " $question ? " rep
+	echo ${rep:-${def}}
+}
+
+
 bl_yesno() {
 	local name
 	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
@@ -131,7 +168,7 @@ Options:
 		( whiptail $def --yesno "$pr"$'\n'"  $* ?" 0 0 {fd}>&1 1>&2 2>&${fd} )
 		return $?
 	fi
-	local question=" $* (y/n)"
+	local rep question=" $* (y/n)"
 	[[ -z "$def" ]] || question+=" [$def]"
 
 	while true ; do
@@ -180,7 +217,7 @@ Options:
 	if [[ "$BL_INTERACTIVE_FRONTEND" == whiptail ]] ; then
 		local rv entry_options=()
 		for ((i=1;i<=n;i++)) ; do
-			entry_options+=($i)
+			entry_options+=("$i")
 			entry_options+=("$1")
 			entry_options+=("OFF")
 			shift
