@@ -106,13 +106,13 @@ Helper to ask for a string
 
 Options:
   -d, --default STRING     Default initialized string
-  -p, --preamble TEXT      Text to display before the question
+  -t, --text TEXT          Text to display related to the question
 "
 	local def pr
 	for ((;$#;)) ; do
 		case "$1" in
 			-d|--default) shift ; def="$1" ;;
-			-p|--pre*) shift ; pr="$1" ;;
+			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -121,15 +121,22 @@ Options:
 		esac
 		shift
 	done
+
+	local question="$*"
 	if [[ "$BL_INTERACTIVE_FRONTEND" == whiptail ]] ; then
+		# because whiptail can't scroll to the end when its text is very big. Duplicate the question at its begining.
+		# Note: we could use LINES and COLUMNS instead of an arbitrary strlen value, but there are not enough reliable.
+		((${#pr}<512)) || pr="  $question"$' ?\n\n'"$pr"
 		# using ( subshell ) for factorization : it automatically close {fd}>&- while carrying whiptail return value
-		( whiptail --nocancel --inputbox "$pr"$'\n'"  $* ?" 0 $((COLUMNS/2)) "$def" {fd}>&1 1>&2 2>&${fd} )
+		( whiptail --nocancel --inputbox "$pr"$'\n\n'"  $question ?" 0 $((COLUMNS/2)) "$def" {fd}>&1 1>&2 2>&${fd} )
 		return $?
 	fi
-	local rep question=" $*"
+
+	local rep
+	question=$'\e[1m'"$question"$'\e[0m'
 	[[ -z "$def" ]] || question+=" [$def]"
 	echo "$pr" >&2
-	read -p " $question ? " rep
+	read -p "  $question"$' \e[1m?\e[0m ' rep
 	echo ${rep:-${def}}
 }
 
@@ -146,14 +153,14 @@ Else loop asking the question.
 
 Options:
       --default=<yes|no>   Set a default answer
-  -p, --preamble TEXT      Text to display before the question
+  -t, --text TEXT          Text to display related to the question
 "
 	local def pr
 	for ((;$#;)) ; do
 		case "$1" in
 			--default=yes) def="yes" ;;
 			--default=no) def="no" ;;
-			-p|--pre*) shift ; pr="$1" ;;
+			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -162,18 +169,29 @@ Options:
 		esac
 		shift
 	done
+
+	local question="$*"
+
 	if [[ "$BL_INTERACTIVE_FRONTEND" == whiptail ]] ; then
-		[[ "$def" == no ]] && def="--defaultno" || unset def
+		if [[ "$def" == no ]] ; then
+			def="--defaultno"
+		else
+			unset def
+		fi
+		# because whiptail can't scroll to the end when its text is very big. Duplicate the question at its begining.
+		((${#pr}<512)) || pr="  $question"$' ?\n\n'"$pr"
 		# using ( subshell ) for factorization : it automatically close {fd}>&- while carrying whiptail return value
-		( whiptail $def --yesno "$pr"$'\n'"  $* ?" 0 0 {fd}>&1 1>&2 2>&${fd} )
+		( whiptail $def --yesno "$pr"$'\n\n'"  $question ?" 0 0 {fd}>&1 1>&2 2>&${fd} )
 		return $?
 	fi
-	local rep question=" $* (y/n)"
+
+	local rep
+	question=$'\e[1m'"$question"$'\e[0m (y/n)'
 	[[ -z "$def" ]] || question+=" [$def]"
 
 	while true ; do
 		echo "$pr" >&2
-		read -p " $question ? " rep
+		read -p "  $question"$' \e[1m?\e[0m ' rep
 		rep=${rep:-$def}
 		case "${rep,,}" in
 		  y|yes|oui|'sí'|ja|si|'да')
@@ -185,7 +203,8 @@ Options:
 	done
 }
 
-
+#TODO: manage a default response
+#TODO: rename this function -> bl_radiolist
 bl_chooseinlist() {
 	local name
 	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
@@ -196,13 +215,13 @@ Display (stderr) numbered list of item and loop asking for a number in this list
 Then echo (stdout) selected number (1-n).
 
 Options:
-  -p, --preamble     TEXT    Text/Question to display before the list
+  -t, --text TEXT            Text/Question to display before the list
   -n, --num-per-line NUMBER  Number of items per line (default: 3)
 "
 	local pr nperline=3 n i ret=0
 	for ((;$#;)) ; do
 		case "$1" in
-			-p|--pre*) shift ; pr="$1" ;;
+			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-n|--num*) shift ; nperline="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
@@ -222,11 +241,11 @@ Options:
 			entry_options+=("OFF")
 			shift
 		done
-		while ((ret<1 || ret>n)) ; do
+		while (( (!rv) && (ret<1 || ret>n) )) ; do
 			ret=$(whiptail --notags --nocancel --radiolist "$pr" 0 0 $n "${entry_options[@]}" {fd}>&1 1>&2 2>&${fd})
 			rv=$?
-			echo "$ret"
 		done
+		echo "$ret"
 		return $rv
 	fi
 	printf "%s" "$pr" >&2
@@ -241,7 +260,7 @@ Options:
 	done
 	echo >&2
 	while ((ret<1 || ret>n)) ; do
-		read -p "Reply (1-$n) ? " ret
+		read -p $'  \e[1m'"Reply"$'\e[0m'" (1-$n)"$' \e[1m?\e[0m ' ret
 	done
 	echo "$ret"
 }
