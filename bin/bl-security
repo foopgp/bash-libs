@@ -164,8 +164,7 @@ Options:
 		printf "%s: Notice: no file to shred\n" "$FUNCNAME" >&2
 	else
 		if [[ "$farg" != -f ]] ; then
-			printf "%s\n" "${files[@]@Q}" >&2
-			bl_yesno "Shred this ${#files[@]} file(s)" || return 0
+			bl_yesno --default=no --text "$(printf "%s\n" "${files[@]@Q}")" "Shred this ${#files[@]} file(s)" || return 0
 		fi
 
 		# Don't pass $varg to shred as it use to write too many things, and moreover on stderr instead of stdin
@@ -211,16 +210,17 @@ Options:
 	if $interactive ; then
 		local nd aspell_dicts
 		mapfile -t aspell_dicts < <(aspell dump dicts | grep "^[a-z]\+$")
-		nd=$(bl_chooseinlist -n 5 -p "Prefered language to generate a good passphrase ?" "${aspell_dicts[@]}")
+		nd=$(bl_chooseinlist -n 5 -p "Prefered language to generate a good passphrase:" "${aspell_dicts[@]}") || return $?
 		((nd--))
 		dict="${aspell_dicts[$nd]}"
 	fi
-	sd=$(aspell -d "$dict" dump master | grep --count --invert-match "'")
+	# We use multiple time aspell dump, to avoid a big variable (using some Mo of RAM)
+	sd=$(aspell -d "$dict" dump master | grep --count --invert-match "'" ; exit ${PIPESTATUS[0]}) || return $?
 	while true ; do
 		ret="$(aspell -d "$dict" dump master | grep -v "'" | eval sed -n \""$sedcmd"\" | tr '\n' '_')"
 		ret="${ret::-1}"
 		$interactive || break
-		! bl_yesno --default=yes -p "random passphrase: $ret" "Agree" || break
+		! bl_yesno --default=yes --text "random passphrase: $ret" "Agree" || break
 	done
 	echo "$ret"
 }
