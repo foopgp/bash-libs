@@ -42,7 +42,7 @@ if [[ "$1" == --bash-completion ]] ; then
 			--help|--version)
 				# should exit without executing any actions, so do not complete anything
 				return 0 ;;
-			--preamble)
+			--text)
 				return 0 ;;
 		esac
 		case $cur in
@@ -96,6 +96,66 @@ _bl_interactive_parseoptions() {
 	done
 }
 
+# using ( subshell ) for factorization : all new variables are "local" and {fd} is automatically close >&- while carrying return value
+_bl_interactive_frontend() (
+	unset last mtext rtext
+	for ((;$#;)) ; do
+		case "$1" in
+			--mtext) shift ; mtext="$1" ;;
+			--rtext) shift ; rtext="$1" ;;
+			--last) shift ; last+=("$1") ;;
+			--) shift ; break ;;
+			-*) printf "%s: unrecognized option '%s'\n" "$FUNCNAME" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	# because whiptail don't scroll to the end when its text is very big. Duplicate the main text at its begining.
+	# Note: we could use LINES and COLUMNS instead of an arbitrary strlen value, but there are not enough reliable.
+	((${#rtext}<512)) || rtext="  $mtext"$'\n\n'"$rtext"
+	if [[ ${#last[@]} -gt 0 ]] ; then
+		$BL_INTERACTIVE_FRONTEND "$@" "$rtext"$'\n\n'"  $mtext" 0 $((COLUMNS/2)) "${last[@]}" {fd}>&1 1>&2 2>&${fd}
+	else
+		$BL_INTERACTIVE_FRONTEND "$@" "$rtext"$'\n\n'"  $mtext" 0 $((COLUMNS/2)) {fd}>&1 1>&2 2>&${fd}
+	fi
+)
+
+
+bl_msgstop() {
+	local name
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] MESSAGE"
+	local helpmsg="
+Display a message and wait for user to press [Enter]
+
+Options:
+  -t, --text TEXT          Text to display related to the message
+"
+	local pr
+	for ((;$#;)) ; do
+		case "$1" in
+			-t|--text) shift ; pr="$1" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local message="$*"
+	if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
+		_bl_interactive_frontend --rtext "$pr" --mtext "$message" -- --msgbox
+		return $?
+	fi
+
+	local rep
+	message=$'\e[1m'"$message"$'\e[0m'
+	echo "$pr" >&2
+	read -p "  $message"$' \e[2m(press Enter to continue)\e[0m ' rep
+}
+
 
 bl_input() {
 	local name
@@ -123,12 +183,8 @@ Options:
 	done
 
 	local question="$*"
-	if [[ "$BL_INTERACTIVE_FRONTEND" == whiptail ]] ; then
-		# because whiptail can't scroll to the end when its text is very big. Duplicate the question at its begining.
-		# Note: we could use LINES and COLUMNS instead of an arbitrary strlen value, but there are not enough reliable.
-		((${#pr}<512)) || pr="  $question"$' ?\n\n'"$pr"
-		# using ( subshell ) for factorization : it automatically close {fd}>&- while carrying whiptail return value
-		( whiptail --nocancel --inputbox "$pr"$'\n\n'"  $question ?" 0 $((COLUMNS/2)) "$def" {fd}>&1 1>&2 2>&${fd} )
+	if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
+		_bl_interactive_frontend --rtext "$pr" --mtext "$question ?" --last "$def" -- --nocancel --inputbox
 		return $?
 	fi
 
@@ -172,21 +228,18 @@ Options:
 
 	local question="$*"
 
-	if [[ "$BL_INTERACTIVE_FRONTEND" == whiptail ]] ; then
+	if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
 		if [[ "$def" == no ]] ; then
 			def="--defaultno"
 		else
 			unset def
 		fi
-		# because whiptail can't scroll to the end when its text is very big. Duplicate the question at its begining.
-		((${#pr}<512)) || pr="  $question"$' ?\n\n'"$pr"
-		# using ( subshell ) for factorization : it automatically close {fd}>&- while carrying whiptail return value
-		( whiptail $def --yesno "$pr"$'\n\n'"  $question ?" 0 0 {fd}>&1 1>&2 2>&${fd} )
+		_bl_interactive_frontend --rtext "$pr" --mtext "$question ?" -- $def --yesno
 		return $?
 	fi
 
 	local rep
-	question=$'\e[1m'"$question"$'\e[0m (y/n)'
+	question=$'\e[1m'"$question"$'\e[0m \e[2m(y/n)\e[0m'
 	[[ -z "$def" ]] || question+=" [$def]"
 
 	while true ; do
@@ -233,7 +286,7 @@ Options:
 	done
 	n=$#
 	((n)) || { printf "%s: Error: need items\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 1 ; }
-	if [[ "$BL_INTERACTIVE_FRONTEND" == whiptail ]] ; then
+	if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
 		local rv entry_options=()
 		for ((i=1;i<=n;i++)) ; do
 			entry_options+=("$i")
@@ -242,7 +295,7 @@ Options:
 			shift
 		done
 		while (( (!rv) && (ret<1 || ret>n) )) ; do
-			ret=$(whiptail --notags --nocancel --radiolist "$pr" 0 0 $n "${entry_options[@]}" {fd}>&1 1>&2 2>&${fd})
+			ret=$($BL_INTERACTIVE_FRONTEND --notags --nocancel --radiolist " $pr" 0 0 $n "${entry_options[@]}" {fd}>&1 1>&2 2>&${fd})
 			rv=$?
 		done
 		echo "$ret"
@@ -260,7 +313,7 @@ Options:
 	done
 	echo >&2
 	while ((ret<1 || ret>n)) ; do
-		read -p $'  \e[1m'"Reply"$'\e[0m'" (1-$n)"$' \e[1m?\e[0m ' ret
+		read -p $'  \e[1m'"Reply"$'\e[0m \e[2m'"(1-$n)"$'\e[0m \e[1m?\e[0m ' ret
 	done
 	echo "$ret"
 }
