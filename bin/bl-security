@@ -176,23 +176,27 @@ Options:
 
 bl_gen_passphrase() {
 	local dict=${LANG::2} nw=3 interactive=false sedcmd sd ret
-	local name
+	local name delim="_" showsize=false listdicts=false
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
 Generate a good random passphrase
 Options:
-  -i, --interactive        Ask language and passphrase agreement
-  -l, --list-dicts         List available dictionaries (aspell) and return
-  -D, --dict DICTIONARY    Dictionary to use (ignored if --interactive, default: ${dict:=en})
-  -n, --nwords NUMBER      Number of words in passphrase (default: $nw)
+  -i, --interactive         Ask language and passphrase agreement
+  -l, --list-dicts          List available dictionaries (aspell) and return
+  -D, --dict DICTIONARY     Dictionary to use (ignored if --interactive, default: ${dict:=en})
+  -n, --num NUMBER          Number of words in passphrase (default: $nw)
+  -d, --delimiter DELIMITER Separate words by DELIMITER (default: '$delim')
+  -S, --show-size           Also output size of dictionary (number of usable words)
 "
 	for ((;$#;)) ; do
 		case "$1" in
 			-i|--interactive) interactive=true ;;
-			-l|--list-dict*) aspell dump dicts ; return $? ;;
+			-l|--list-dict*) listdicts=true ;;
 			-D|--dict*) shift ; dict="$1" ;;
-			-n|--nword*) shift ; nw="$1" ;;
+			-n|--num*) shift ; nw="$1" ;;
+			-d|--delim*) shift ; delim="$1" ;;
+			-S|--show-size) showsize=true ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -203,6 +207,19 @@ Options:
 	done
 	((! $#)) || printf "%s: Warning: ignoring arguments %s\n" "$FUNCNAME" "$*" >&2
 
+	if $listdicts ; then
+		if $showsize ; then
+			aspell dump dicts | while read dict ; do
+				echo "$(aspell -d "$dict" dump master | grep --count --invert-match "'") $dict"
+			done
+			return ${PIPESTATUS[0]}
+		else
+			aspell dump dicts
+			return $?
+		fi
+	fi
+
+	((nw>0)) || { printf "%s: Error: invalid number of words (%s)\n" "$FUNCNAME" "$nw" >&2 ; return 2 ; }
 	while ((nw-- > 0)) ; do
 		sedcmd+="\$(bl_urandom \$sd)p ; "
 	done
@@ -217,12 +234,14 @@ Options:
 	# We use multiple time aspell dump, to avoid a big variable (using some Mo of RAM)
 	sd=$(aspell -d "$dict" dump master | grep --count --invert-match "'" ; exit ${PIPESTATUS[0]}) || return $?
 	while true ; do
-		ret="$(aspell -d "$dict" dump master | grep -v "'" | eval sed -n \""$sedcmd"\" | tr '\n' '_')"
+		ret="$(aspell -d "$dict" dump master | grep -v "'" | eval sed -n \""$sedcmd"\" | tr '\n' "$delim")"
 		ret="${ret::-1}"
 		$interactive || break
 		! bl_yesno --default=yes --text "random passphrase: $ret" "Agree" || break
 	done
+	! $showsize || echo -n "$sd "
 	echo "$ret"
+	exit $?
 }
 
 
