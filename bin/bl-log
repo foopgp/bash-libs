@@ -218,7 +218,13 @@ _bl_log_parseoptions() {
 
 bl_log() {
 	local BL_LOG_usage="Usage: $FUNCNAME [OPTIONS]... PRIORITY [MESSAGE]..."
-	local -I BL_LOGLEVEL BL_LOGEXITLNAME BL_LOG_O_STDERR BL_LOGGER_OPTIONS BL_LOG_COLOR
+
+	# -I flag is only available since bash >= 5.1. ...
+	#local -I BL_LOGLEVEL BL_LOGEXITLNAME BL_LOG_O_STDERR BL_LOGGER_OPTIONS BL_LOG_COLOR
+	# TODO: replace next 2 lines by previous commented line once bash 5.1 is widely used and deployed
+	local BL_LOGLEVEL="$BL_LOGLEVEL" BL_LOGEXITLNAME="$BL_LOGEXITLNAME" BL_LOG_COLOR="$BL_LOG_COLOR"
+	local BL_LOG_O_STDERR="$BL_LOG_O_STDERR" BL_LOGGER_OPTIONS=("${BL_LOGGER_OPTIONS[@]}")
+
 	local BL_LOG_helpmsg="$BL_LOG_chelpmsg"
 	_bl_log_parseoptions "$FUNCNAME" "$@" || return $?
 	[[ -n "${BL_LOG_ARGV[*]}" ]] || { echo "Error: Please give at least a priority (${!BL_LOGLEVELS[*]})" >&2 ; return 2 ; }
