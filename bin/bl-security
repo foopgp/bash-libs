@@ -186,7 +186,7 @@ Options:
   -l, --list-dicts          List available dictionaries (aspell) and return
   -D, --dict DICTIONARY     Dictionary to use (ignored if --interactive, default: ${dict:=en})
   -n, --num NUMBER          Number of words in passphrase (default: $nw)
-  -d, --delimiter DELIMITER Separate words by DELIMITER (default: '$delim')
+  -d, --delimiter STRING    Separate words by this STRING (default: '$delim')
   -S, --show-size           Also output size of dictionary (number of usable words)
 "
 	for ((;$#;)) ; do
@@ -234,8 +234,7 @@ Options:
 	# We use multiple time aspell dump, to avoid a big variable (using some Mo of RAM)
 	sd=$(aspell -d "$dict" dump master | grep --count --invert-match "'" ; exit ${PIPESTATUS[0]}) || return $?
 	while true ; do
-		ret="$(aspell -d "$dict" dump master | grep -v "'" | eval sed -n \""$sedcmd"\" | tr '\n' "$delim")"
-		ret="${ret::-1}"
+		ret="$(aspell -d "$dict" dump master | grep -v "'" | eval sed -n \""$sedcmd"\" | sed ':a;N;$!ba;s/\n/'"$delim"'/g')"
 		$interactive || break
 		! bl_yesno --default=yes --text "random passphrase: $ret" "Agree" || break
 	done
