@@ -258,24 +258,25 @@ Options:
 	done
 }
 
-#TODO: manage a default response
 #TODO: rename this function -> bl_radiolist
 bl_chooseinlist() {
 	local name
 	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] ITEMS..."
+	local def=0 pr nperline=3 n i ret=0
 	local helpmsg="
 Helper for a single choice in a list (like radiobutton)
 Display (stderr) numbered list of item and loop asking for a number in this list
 Then echo (stdout) selected number (1-n).
 
 Options:
+  -d, --default NUMBER       Set a default answer, negative count from the end (default: $def)
   -t, --text TEXT            Text/Question to display before the list
-  -n, --num-per-line NUMBER  Number of items per line (default: 3)
+  -n, --num-per-line NUMBER  Number of items per line (default: $nperline)
 "
-	local pr nperline=3 n i ret=0
 	for ((;$#;)) ; do
 		case "$1" in
+			-d|--default) shift ; def="$1" ;;
 			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-n|--num*) shift ; nperline="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -288,12 +289,12 @@ Options:
 	done
 	n=$#
 	((n)) || { printf "%s: Error: need items\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 1 ; }
+	((def>=0)) || ((def=n+1+def))
 	if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
 		local rv entry_options=()
 		for ((i=1;i<=n;i++)) ; do
-			entry_options+=("$i")
-			entry_options+=("$1")
-			entry_options+=("OFF")
+			entry_options+=("$i" "$1")
+			((i==def)) && entry_options+=("ON") || entry_options+=("OFF")
 			shift
 		done
 		while (( (!rv) && (ret<1 || ret>n) )) ; do
@@ -314,8 +315,12 @@ Options:
 		shift
 	done
 	echo >&2
+
+	local question=$'\e[1m'"Reply"$'\e[0m \e[2m'"(1-$n)"$'\e[0m'
+	((!def)) || question+=" [$def]"
 	while ((ret<1 || ret>n)) ; do
-		read -p $'  \e[1m'"Reply"$'\e[0m \e[2m'"(1-$n)"$'\e[0m \e[1m?\e[0m ' ret
+		read -p "  $question"$' \e[1m?\e[0m ' ret
+		ret=${ret:-$def}
 	done
 	echo "$ret"
 }
