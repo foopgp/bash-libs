@@ -302,8 +302,8 @@ Options:
 			-i|--output-index) output=index ;;
 			-v|--output-value) output=value ;;
 			-d|--default) shift ; def="$1" ;;
-			-d|--default-index) shift ; def=$(($1<0?$1:$1+1)) ;;
-			-d|--default-value) shift ; def_value="$1" ;;
+			-I|--default-index) shift ; def=$(($1<0?$1:$1+1)) ;;
+			-D|--default-value) shift ; def_value="$1" ;;
 			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-n|--num*) shift ; nperline="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;

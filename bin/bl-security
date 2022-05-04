@@ -209,7 +209,7 @@ Options:
 
 	if $listdicts ; then
 		if $showsize ; then
-			aspell dump dicts | while read dict ; do
+			aspell dump dicts | while read -r dict ; do
 				echo "$(aspell -d "$dict" dump master | grep --count --invert-match "'") $dict"
 			done
 			return ${PIPESTATUS[0]}
