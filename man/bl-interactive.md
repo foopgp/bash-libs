@@ -17,7 +17,7 @@ bl-interactive - Help managing interactive choices
 # DESCRIPTION
 
 This executable/library exposes 2 functions: **bl_yesno()** and
-**bl_chooseinlist()**.
+**bl_radiolist()**.
 
 # GENERAL OPTIONS
 
@@ -32,7 +32,7 @@ This executable/library exposes 2 functions: **bl_yesno()** and
 **yesno** / **bl_yesno()**
 :  Helper for a yes/no question (binary choice)
 
-**chooseinlist** / **bl_chooseinlist()**
+**radiolist** / **bl_radiolist()**
 :  Helper for a single choice in a list (like radiobutton)
 
 # SPECIFIC OPTIONS

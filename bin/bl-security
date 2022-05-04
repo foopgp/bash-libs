@@ -225,11 +225,9 @@ Options:
 	done
 
 	if $interactive ; then
-		local nd aspell_dicts
+		local aspell_dicts
 		mapfile -t aspell_dicts < <(aspell dump dicts | grep "^[a-z]\+$")
-		nd=$(bl_chooseinlist -n 5 -p "Prefered language to generate a good passphrase:" "${aspell_dicts[@]}") || return $?
-		((nd--))
-		dict="${aspell_dicts[$nd]}"
+		dict=$(bl_radiolist -n 5 -v -p "Prefered language to generate a good passphrase:" "${aspell_dicts[@]}") || return $?
 	fi
 	# We use multiple time aspell dump, to avoid a big variable (using some Mo of RAM)
 	sd=$(aspell -d "$dict" dump master | grep --count --invert-match "'" ; exit ${PIPESTATUS[0]}) || return $?

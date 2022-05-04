@@ -56,7 +56,7 @@ All bash-libs exposed functions and executables should return zero on normal ope
 Help managing interactive choices.
 
 This executable/library exposes 2 functions: **bl_yesno()** and
-**bl_chooseinlist()**. See [**bl-interactive**](man/bl-interactive.md)(1) manual for more details.
+**bl_radiolist()**. See [**bl-interactive**](man/bl-interactive.md)(1) manual for more details.
 
 ## bl-security
 

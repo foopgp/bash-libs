@@ -278,8 +278,7 @@ Options:
 	done
 }
 
-#TODO: rename this function -> bl_radiolist
-bl_chooseinlist() {
+bl_radiolist() {
 	local name
 	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [--] ITEMS..."
@@ -290,8 +289,8 @@ Display (stderr) numbered list of item and loop asking for a number in this list
 Then echo (stdout) selected number (1-n).
 
 Options:
-  -i, --index                Output index (= number - 1) instead of number
-  -v, --value                Output value instead of number
+  -i, --output-index         Output index (= number - 1) instead of number
+  -v, --output-value         Output value instead of number
   -d, --default NUMBER       Set given number as a default answer, negative count from the end
   -I, --default-index INDEX  Set given index as a default answer, negative count from the end
   -D, --default-value STRING Set first occurence of value as a default answer
@@ -300,8 +299,8 @@ Options:
 "
 	for ((;$#;)) ; do
 		case "$1" in
-			-i|--index) output=index ;;
-			-v|--value) output=value ;;
+			-i|--output-index) output=index ;;
+			-v|--output-value) output=value ;;
 			-d|--default) shift ; def="$1" ;;
 			-d|--default-index) shift ; def=$(($1<0?$1:$1+1)) ;;
 			-d|--default-value) shift ; def_value="$1" ;;
