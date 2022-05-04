@@ -122,6 +122,26 @@ _bl_interactive_frontend() (
 	fi
 )
 
+_bl_interactive_indexof() {
+	for ((;$#;)) ; do
+		case "$1" in
+			--) shift ; break ;;
+			-*) printf "Usage: %s [--] VALUE ARRAY...\n" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local asize value=$1
+	shift
+	asize=$#
+	((asize)) || { printf "Usage: %s [--] VALUE ARRAY...\n" "$FUNCNAME" >&2 ; return 2 ;}
+	while (($#)) ; do
+		[[ "$1" != "${value}" ]] || break
+		shift
+	done
+	(($#)) || return 1
+	echo $((asize-$#))
+}
 
 bl_msgstop() {
 	local name
@@ -262,21 +282,29 @@ Options:
 bl_chooseinlist() {
 	local name
 	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] ITEMS..."
-	local def=0 pr nperline=3 n i ret=0
+	local usage="Usage: $name [OPTIONS] [--] ITEMS..."
+	local output def pr nperline=3 n i ret=0 rv=0 inarray
 	local helpmsg="
 Helper for a single choice in a list (like radiobutton)
 Display (stderr) numbered list of item and loop asking for a number in this list
 Then echo (stdout) selected number (1-n).
 
 Options:
-  -d, --default NUMBER       Set a default answer, negative count from the end (default: $def)
+  -i, --index                Output index (= number - 1) instead of number
+  -v, --value                Output value instead of number
+  -d, --default NUMBER       Set given number as a default answer, negative count from the end
+  -I, --default-index INDEX  Set given index as a default answer, negative count from the end
+  -D, --default-value STRING Set first occurence of value as a default answer
   -t, --text TEXT            Text/Question to display before the list
   -n, --num-per-line NUMBER  Number of items per line (default: $nperline)
 "
 	for ((;$#;)) ; do
 		case "$1" in
+			-i|--index) output=index ;;
+			-v|--value) output=value ;;
 			-d|--default) shift ; def="$1" ;;
+			-d|--default-index) shift ; def=$(($1<0?$1:$1+1)) ;;
+			-d|--default-value) shift ; def_value="$1" ;;
 			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-n|--num*) shift ; nperline="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -289,7 +317,21 @@ Options:
 	done
 	n=$#
 	((n)) || { printf "%s: Error: need items\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 1 ; }
+
+	if [[ -v def_value ]] ; then
+		# Search index of given default value
+		if def="$(_bl_interactive_indexof "$def_value" "$@")" ; then
+			# if found, translate index to number
+			((++def))
+		fi
+	fi
+
+	# Save ITEMS in inarray if output == "value"
+	if [[ "$output" == "value" ]] ; then inarray=("$@") ; fi
+
+	# Manage negative number
 	((def>=0)) || ((def=n+1+def))
+
 	if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
 		local rv entry_options=()
 		for ((i=1;i<=n;i++)) ; do
@@ -301,28 +343,33 @@ Options:
 			ret=$($BL_INTERACTIVE_FRONTEND --notags --nocancel --radiolist " $pr" 0 0 $n "${entry_options[@]}" {fd}>&1 1>&2 2>&${fd})
 			rv=$?
 		done
-		echo "$ret"
-		return $rv
-	fi
-	printf "%s" "$pr" >&2
-	for ((i=0;i<n;)) ; do
-		if ((i%nperline)) ; then
-			printf "\t\t" >&2
-		else
-			printf "\n\t" >&2
-		fi
-		printf "%d) %s" "$((++i))" "$1" >&2
-		shift
-	done
-	echo >&2
+	else
+		printf "%s" "$pr" >&2
+		for ((i=0;i<n;)) ; do
+			if ((i%nperline)) ; then
+				printf "\t\t" >&2
+			else
+				printf "\n\t" >&2
+			fi
+			printf "%d) %s" "$((++i))" "$1" >&2
+			shift
+		done
+		echo >&2
 
-	local question=$'\e[1m'"Reply"$'\e[0m \e[2m'"(1-$n)"$'\e[0m'
-	((!def)) || question+=" [$def]"
-	while ! ((ret>0 && ret<=n)) ; do
-		read -p "  $question"$' \e[1m?\e[0m ' ret
-		ret=${ret:-$def}
-	done
-	echo "$ret"
+		local question=$'\e[1m'"Reply"$'\e[0m \e[2m'"(1-$n)"$'\e[0m'
+		((!def)) || question+=" [$def]"
+		while ! ((ret>0 && ret<=n)) ; do
+			read -p "  $question"$' \e[1m?\e[0m ' ret
+			ret=${ret:-$def}
+		done
+	fi
+
+	case "$output" in
+		index) echo $((ret-1)) ;;
+		value) echo "${inarray[$((ret-1))]}" ;;
+		*) echo "$ret" ;;
+	esac
+	return $rv
 }
 
 
