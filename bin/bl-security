@@ -238,7 +238,7 @@ Options:
 	done
 	! $showsize || echo -n "$sd "
 	echo "$ret"
-	exit $?
+	return 0
 }
 
 

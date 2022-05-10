@@ -357,6 +357,7 @@ Options:
 
 		local question=$'\e[1m'"Reply"$'\e[0m \e[2m'"(1-$n)"$'\e[0m'
 		((!def)) || question+=" [$def]"
+		# the '!' in following test allow to re-ask the question if ret is not a number
 		while ! ((ret>0 && ret<=n)) ; do
 			read -p "  $question"$' \e[1m?\e[0m ' ret
 			ret=${ret:-$def}
