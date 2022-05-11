@@ -91,6 +91,7 @@ declare -r BL_SECURITY_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH
 . "$(dirname "$BASH_SOURCE")"/bl-interactive --
 
 _bl_security_parseoptions() {
+	local npp=$#
 	for ((;$#;)) ; do
 		case "$1" in
 			-h|--help) printf "%s\n%s\n%s\n" "$BL_SECURITY_usage" "$BL_SECURITY_chelpmsg" "$BL_SECURITY_shelpmsg" ; return 2 ;;
@@ -101,6 +102,7 @@ _bl_security_parseoptions() {
 		esac
 		shift
 	done
+	BL_SECURITY_NOPTIONS=$((npp-$#))
 }
 
 bl_urandom() {
@@ -286,7 +288,7 @@ _bl_security_parseoptions "$@"
 
 
 ### Run ###
-
+shift $BL_SECURITY_NOPTIONS
 if function=$(grep -o "\<bl_$1\>" <<< "${BL_SECURITY_FUNCTIONS[@]}") ; then
 	shift
 	$function "$@"
