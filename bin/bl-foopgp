@@ -1,0 +1,262 @@
+#!/bin/bash
+#
+# Bash library and executable that calculate how many foopgp token will be offered by the foopgp association
+#
+# Copyright © 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Lesser General Public License version 3
+#    as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU Lesser General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# shellcheck disable=SC2013 # To read lines rather than words
+# shellcheck disable=SC2034 # variable appears unused
+# shellcheck disable=SC2046 # Quote this to prevent word splitting
+# shellcheck disable=SC2086 # Double quote warning
+# shellcheck disable=SC2128 # expanding array without index warning
+
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_foopgp_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version)
+				# should exit without executing any actions, so do not complete anything
+				return 0 ;;
+		esac
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		# complete actions if none in ${COMP_WORDS[@]}
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		return 0
+	}'
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_foopgp_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	return 0
+fi
+
+# If sourcing while _bl_foopgp_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_foopgp_parseoptions)" == function ]] ; then
+	_bl_foopgp_parseoptions "$@"
+	return $?
+fi
+
+
+### Constants ###
+
+BL_FOOPGP_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+declare -r BL_FOOPGP_NAME
+declare -r BL_FOOPGP_VERSION="0.0.1"
+declare -r BL_FOOPGP_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+
+### Default option values ###
+
+BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-1}"
+
+### functions ###
+
+# shellcheck source=bl-interactive
+. "$(dirname "$BASH_SOURCE")"/bl-interactive --
+
+_bl_foopgp_parseoptions() {
+	local npp=$#
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s\n%s\n" "$BL_FOOPGP_usage" "$BL_FOOPGP_chelpmsg" "$BL_FOOPGP_shelpmsg" ; return 2 ;;
+			-V|--version) printf "%s %s\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_VERSION" ; return 2 ;;
+			-s|--stingy*) shift ; BL_FOOPGP_STINGYNALTY="$1" ;;
+			--) shift ; break ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_FOOPGP_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	BL_FOOPGP_NOPTIONS=$((npp-$#))
+}
+
+bl_foopgp_g2t() {
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] VALUE ..."
+	local helpmsg="
+Calculate how many foopgp tokens would be created from a gift.
+Options:
+  -c, --currency CODE  Set gift currency (defaut: EUR €)
+  -u, --udid UDID      If it is not an initial gift, retrieve total gift and number of token created for a given individual.
+"
+	local i udid ccode="€"
+	for ((;$#;)) ; do
+		case "$1" in
+			-c|--currency) shift ; ccode="$1" ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
+			-u|--udid) shift ; udid="$1" ; printf "%s: Warning: --udid is not yet implemented" "$FUNCNAME" >&2 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
+
+	for i in "$@" ; do
+		#echo -n "| $i | "
+		#bc -l <<<"y=l($i+1)/l(2)/$BL_FOOPGP_STINGYNALTY ; scale=6 ; y=y*1000 ; print y/1000,\" |\" ; scale=16 "
+		bc -l <<<"y=l($i+1)/l(2)/$BL_FOOPGP_STINGYNALTY ; scale=6 ; y=y*1000 ; y/1000 ; scale=16 "
+	done
+}
+
+bl_foopgp_t2g() {
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] VALUE ..."
+	local helpmsg="
+Calculate how much should be given to create a number of tokens.
+Options:
+  -c, --currency CODE  Set gift currency (defaut: EUR €)
+  -u, --udid UDID      If it is not an initial gift, retrieve total gift and number of token created for a given individual.
+"
+	local i udid ccode="€"
+	for ((;$#;)) ; do
+		case "$1" in
+			-c|--currency) shift ; ccode="$1" ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
+			-u|--udid) shift ; udid="$1" ; printf "%s: Warning: --udid is not yet implemented" "$FUNCNAME" >&2 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
+
+	for i in "$@" ; do
+		#bc -l <<<"for (i=1;i<13;i++) { z=e(l(2)*1.08*i)-1 ; scale=2 ; z=z*100+1 ; z/100 ; scale=16 }"
+		bc -l <<<"z=e(l(2)*$BL_FOOPGP_STINGYNALTY*$i)-1 ; scale=2 ; z=z*100+1 ; z/100 ; scale=16"
+	done
+}
+
+bl_foopgp_giftarray() {
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]"
+	local helpmsg="
+Display an array to indicate how many token gonna be created from a gift.
+Options:
+  -c, --currency CODE  Set gift currency (defaut: EUR €)
+  -u, --udid UDID      If it is not an initial gift, retrieve total gift and number of token created for a given individual.
+  -m, --max VALUE      Set the limit in term of token (defaut: 12)
+"
+	local max=12 udid ccode="€"
+	local t g j=1
+	for ((;$#;)) ; do
+		case "$1" in
+			-c|--currency) shift ; ccode="$1" ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
+			-u|--udid) shift ; udid="$1" ; printf "%s: Warning: --udid is not yet implemented" "$FUNCNAME" >&2 ;;
+			-m|--max) shift ; max=$(($1)) ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	j=1
+	for ((i=1;i<=$max;i++)) ; do
+		g=$(bl_foopgp_t2g $i)
+		while (( $(echo "$j < $g" | bc -l) )) ; do
+			LC_NUMERIC=POSIX printf "| %7s.00$ccode | %9s |\n" "$j" "$(bl_foopgp_g2t $j)"
+			((j*=2))
+			j=$(tr '4' '5' <<<"$j")
+		done
+		LC_NUMERIC=POSIX printf "| %10s$ccode | %2s.000000 |\n" "$g" "$i"
+	done | uniq
+}
+
+
+
+
+### General Help Messages (and set -e if program) ###
+
+if [[ "$BASH_SOURCE" == "$0" ]] ; then
+	# run as a program
+	set -e
+	declare -r BL_FOOPGP_isprogram=1
+
+	BL_FOOPGP_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_FOOPGP_shelpmsg="
+Actions:
+$(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+$BL_FOOPGP_NAME is also bash library, see:
+$ source $BASH_SOURCE --help"
+else
+	# run as a library (source $0)
+
+	BL_FOOPGP_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+
+	BL_FOOPGP_shelpmsg="
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+
+Functions:
+$(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
+fi
+
+BL_FOOPGP_chelpmsg="
+Options:
+  -h, --help               show this help and exit/return
+  -V, --version            show version and exit/return
+  -s, --stingynalty VALUE  set STINGYNALTY (current: $BL_FOOPGP_STINGYNALTY)"
+
+
+### Init ###
+
+# Parse Options
+_bl_foopgp_parseoptions "$@"
+
+# Do nothing else if sourced
+[[ "$BASH_SOURCE" == "$0" ]] || return 0
+
+
+### Run ###
+shift $BL_FOOPGP_NOPTIONS
+if function=$(grep -o "\<bl_$1\>" <<< "${BL_FOOPGP_FUNCTIONS[@]}") ; then
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_FOOPGP_NAME" "$1" "$BASH_SOURCE" >&2
+	exit 2
+fi
+
