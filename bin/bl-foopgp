@@ -194,11 +194,11 @@ Options:
 	for ((i=1;i<=$max;i++)) ; do
 		g=$(bl_foopgp_t2g $i)
 		while (( $(echo "$j < $g" | bc -l) )) ; do
-			LC_NUMERIC=POSIX printf "| %7s.00$ccode | %9s |\n" "$j" "$(bl_foopgp_g2t $j)"
+			LC_NUMERIC=POSIX printf "| %7s.00 $ccode | %9s Ɉ |\n" "$j" "$(bl_foopgp_g2t $j)"
 			((j*=2))
 			j=$(tr '4' '5' <<<"$j")
 		done
-		LC_NUMERIC=POSIX printf "| %10s$ccode | %2s.000000 |\n" "$g" "$i"
+		LC_NUMERIC=POSIX printf "| %10s $ccode | %2s.000000 Ɉ |\n" "$g" "$i"
 	done | uniq
 }
 
