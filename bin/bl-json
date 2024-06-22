@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Bash library to manipulate json 
+# Bash library to manipulate json
 #
-# Copyright © 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+# Copyright © 2024 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License version 3
@@ -77,11 +77,10 @@ declare -r BL_JSON_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOU
 
 ### Default option values ###
 
-### functions ###
+### external functions ###
 
-# shellcheck source=bl-interactive
-. "$(dirname "$BASH_SOURCE")"/bl-interactive --
 
+### internal functions ###
 
 _bl_json_parseoptions() {
 	local npp=$#
@@ -97,6 +96,8 @@ _bl_json_parseoptions() {
 	done
 	BL_JSON_NOPTIONS=$((npp-$#))
 }
+
+### public functions / program actions ###
 
 bl_json_from_str() {
 	local helpmsg="Usage: $FUNCNAME [--] [STRING]...

@@ -2,7 +2,7 @@
 #
 # Bash library and executable that calculate how many foopgp token will be offered by the foopgp association
 #
-# Copyright © 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+# Copyright © 2024 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License version 3
@@ -79,10 +79,10 @@ declare -r BL_FOOPGP_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_S
 
 BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-1}"
 
-### functions ###
+### external functions ###
 
-# shellcheck source=bl-interactive
-. "$(dirname "$BASH_SOURCE")"/bl-interactive --
+
+### internal functions ###
 
 _bl_foopgp_parseoptions() {
 	local npp=$#
@@ -99,6 +99,8 @@ _bl_foopgp_parseoptions() {
 	done
 	BL_FOOPGP_NOPTIONS=$((npp-$#))
 }
+
+### public functions / program actions ###
 
 bl_foopgp_g2t() {
 	local name
@@ -201,8 +203,6 @@ Options:
 		LC_NUMERIC=POSIX printf "| %10s $ccode | %2s.000000 Ɉ |\n" "$g" "$i"
 	done | uniq
 }
-
-
 
 
 ### General Help Messages (and set -e if program) ###
