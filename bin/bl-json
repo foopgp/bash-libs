@@ -146,6 +146,8 @@ Options:
 
 	local lb notstarted=true
 	local -n aa=$1
+
+	[[ -v "$1" ]] || echo "$FUNCNAME: Warning: unset variable $1. Maybe see: https://www.mail-archive.com/bug-bash@gnu.org/msg01774.html" >&2
 	! ((shft)) || lb=$(eval printf '\\t%.0s' {1..$shft})
 	printf "$lb{\n"
 	for i in "${!aa[@]}"; do
