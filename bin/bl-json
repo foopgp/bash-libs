@@ -1,0 +1,218 @@
+#!/bin/bash
+#
+# Bash library to manipulate json 
+#
+# Copyright © 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Lesser General Public License version 3
+#    as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU Lesser General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# shellcheck disable=SC2013 # To read lines rather than words
+# shellcheck disable=SC2034 # variable appears unused
+# shellcheck disable=SC2046 # Quote this to prevent word splitting
+# shellcheck disable=SC2086 # Double quote warning
+# shellcheck disable=SC2128 # expanding array without index warning
+
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_json_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version)
+				# should exit without executing any actions, so do not complete anything
+				return 0 ;;
+		esac
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		# complete actions if none in ${COMP_WORDS[@]}
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		return 0
+	}'
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_json_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	return 0
+fi
+
+# If sourcing while _bl_json_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_json_parseoptions)" == function ]] ; then
+	_bl_json_parseoptions "$@"
+	return $?
+fi
+
+
+### Constants ###
+
+BL_JSON_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+declare -r BL_JSON_NAME
+declare -r BL_JSON_VERSION="0.0.1"
+declare -r BL_JSON_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+
+### Default option values ###
+
+### functions ###
+
+# shellcheck source=bl-interactive
+. "$(dirname "$BASH_SOURCE")"/bl-interactive --
+
+
+_bl_json_parseoptions() {
+	local npp=$#
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s\n%s\n" "$BL_JSON_usage" "$BL_JSON_chelpmsg" "$BL_JSON_shelpmsg" ; return 2 ;;
+			-V|--version) printf "%s %s\n" "$BL_JSON_NAME" "$BL_JSON_VERSION" ; return 2 ;;
+			--) shift ; break ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_JSON_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	BL_JSON_NOPTIONS=$((npp-$#))
+}
+
+bl_json_from_str() {
+	local helpmsg="Usage: $FUNCNAME [--] [STRING]...
+"'Escape "\" and [/"\b\f\n\r\t] characters as required by JSON format.
+If there is no STRING in command line, read it from stdin.
+'
+
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--h*) echo "$helpmsg" ; return ;;
+			-V|--vers*) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+	done
+
+	local from='cat'
+	! (($#)) || from='eval echo "$@"'
+	$from | sed 's,\\,\\\\,g; s,/,\\/,g; s,",\\",g; s,\x08,\\b,g; s,\x0c,\\f,g; s,\r,\\r,g; s,\t,\\t,g;' | sed ':a;N;$!ba; s,\n,\\n,g;'
+}
+
+bl_json_from_var() {
+	local nested=false shft=0
+	local helpmsg="Usage: $FUNCNAME [OPTIONS] VARNAME
+Output content of VARNAME in a JSON format.
+
+Options:
+    -n, --nested        Assume any value beginning with \"declare -[aA]\" are nested data to be translate to JSON format
+    -s, --shift NUMBER  Number of tabs shifting of each line (default $shft)
+"
+#TODO: one more options to display non-associative array as json array, and to manage arrays with non-contiguous indices.
+#TODO: ... Maybe a selector <on|auto|off>, whith 'auto' to detect if array indices are non-contiguous.
+	for ((;$#;)) ; do
+		case "$1" in
+			-n|--nest*) nested=true ;;
+			-s|--shift) shift ; shft=$(($1)) ;;
+			-h|--h*) echo "$helpmsg" ; return ;;
+			-V|--vers*) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local lb notstarted=true
+	local -n aa=$1
+	! ((shft)) || lb=$(eval printf '\\t%.0s' {1..$shft})
+	printf "$lb{\n"
+	for i in "${!aa[@]}"; do
+		$notstarted || printf ",\n"
+		notstarted=false
+		#TODO: Maybe use and depend on "jq". cf. https://stackoverflow.com/questions/44792241/constructing-a-json-hash-from-a-bash-associative-array
+		if $nested && [[ "${aa[$i]}" =~ ^declare" "-[Aa][a-zA-Z]*" "([a-zA-Z_][a-zA-Z0-9_]*)= ]] ; then
+			local "${BASH_REMATCH[1]}"
+			eval "${aa[$i]}"
+			echo -n "$lb	\"$(bl_json_from_str -- "$i")\":"$'\n'"$(bl_json_from_var --nested --shift $((shft+2)) "${BASH_REMATCH[1]}")"
+		else
+			echo -n "$lb	\"$(bl_json_from_str -- "$i")\": \"$(bl_json_from_str -- "${aa[$i]}")\""
+		fi
+	done
+	printf "\n$lb}\n"
+}
+
+
+### General Help Messages (and set -e if program) ###
+
+if [[ "$BASH_SOURCE" == "$0" ]] ; then
+	# run as a program
+	set -e
+	declare -r BL_JSON_isprogram=1
+
+	BL_JSON_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_JSON_shelpmsg="
+Actions:
+$(for f in "${BL_JSON_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+$BL_JSON_NAME is also bash library, see:
+$ source $BASH_SOURCE --help"
+else
+	# run as a library (source $0)
+
+	BL_JSON_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+
+	BL_JSON_shelpmsg="
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+
+Functions:
+$(for f in "${BL_JSON_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
+fi
+
+BL_JSON_chelpmsg="
+Options:
+  -h, --help               show this help and exit/return
+  -V, --version            show version and exit/return"
+
+
+### Init ###
+
+# Parse Options
+_bl_json_parseoptions "$@"
+
+# Do nothing else if sourced
+[[ "$BASH_SOURCE" == "$0" ]] || return 0
+
+### Run ###
+shift $BL_JSON_NOPTIONS
+if function=$(grep -o "\<bl_$1\>" <<< "${BL_JSON_FUNCTIONS[@]}") ; then
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_JSON_NAME" "$1" "$BASH_SOURCE" >&2
+	exit 2
+fi
+
