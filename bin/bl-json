@@ -100,17 +100,21 @@ _bl_json_parseoptions() {
 ### public functions / program actions ###
 
 bl_json_from_str() {
-	local helpmsg="Usage: $FUNCNAME [--] [STRING]...
-"'Escape "\" and [/"\b\f\n\r\t] characters as required by JSON format.
+	local name
+	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [--] [STRING]..."
+	local helpmsg='
+Escape "\" and [/"\b\f\n\r\t] characters as required by JSON format.
+
 If there is no STRING in command line, read it from stdin.
 '
 
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--h*) echo "$helpmsg" ; return ;;
-			-V|--vers*) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_JSON_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 	done
@@ -121,8 +125,10 @@ If there is no STRING in command line, read it from stdin.
 }
 
 bl_json_from_var() {
-	local nested=false shft=0
-	local helpmsg="Usage: $FUNCNAME [OPTIONS] VARNAME
+	local name
+	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name OPTIONS] VARNAME"
+	local helpmsg="
 Output content of VARNAME in a JSON format.
 
 Options:
@@ -135,16 +141,17 @@ Reminder: bash arrays are not exportable to sub shells (cf. https://www.mail-arc
           Then to use this function as an action, you should use the (dangerous) --nested option with \"declare -p\"
 	  eg: bl-json json_from_var --nested "'"$(declare -p VARNAME)"'
 
+	local nested=false shft=0
 #TODO: one more options to display non-associative array as json array, and to manage arrays with non-contiguous indices.
 #TODO: ... Maybe a selector <on|auto|off>, whith 'auto' to detect if array indices are non-contiguous.
 	for ((;$#;)) ; do
 		case "$1" in
 			-n|--nest*) nested=true ;;
 			-s|--shift) shift ; shft=$(($1)) ;;
-			-h|--h*) echo "$helpmsg" ; return ;;
-			-V|--vers*) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_JSON_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -175,6 +182,56 @@ Reminder: bash arrays are not exportable to sub shells (cf. https://www.mail-arc
 		fi
 	done
 	printf "\n$lb}\n"
+}
+
+bl_json_type() {
+	local name
+	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [JSON_TEXT]"
+	local helpmsg="
+Expect JSON type regarding the begining of JSONTEXT.
+
+Like jq 'type' filter whithout needing a full valid JSON input,
+as it only check the begining to determine expected json type between:
+number, string, boolean, array, object, null.
+
+If there is no JSON_TEXT in command line, read it from stdin.
+If no type can be determined, output nothing and return non-zero value.
+"
+
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_JSON_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local first
+
+	(($#)) && first="$1" || read first
+
+	# remove leading whitespace
+	first="$(sed 's,^[[:space:]]*,,' <<<"$first")"
+
+	case "$first" in
+		null) echo "null" ; return ;;
+		{*) echo "object" ; return ;;
+		\[*) echo "array" ; return ;;
+		true|false) echo "boolean" ; return ;;
+		\"*) echo "string" ; return ;;
+	esac
+
+	if [[ "$first" =~ ^-?[0-9]*\.?[0-9]+$ ]] ; then
+		echo "number"
+		return
+	else
+		echo "$FUNCNAME: Warning: Can't expect json type of ${first::5}..." >&2
+		return 1
+	fi
 }
 
 
