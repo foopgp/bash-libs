@@ -127,9 +127,9 @@ If there is no STRING in command line, read it from stdin.
 bl_json_from_var() {
 	local name
 	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
-	local usage="Usage: $name OPTIONS] VARNAME"
+	local usage="Usage: $name [OPTIONS] VARNAME"
 	local helpmsg="
-Output content of VARNAME in a JSON format.
+Output content of VARNAME in a JSON object.
 
 Options:
     -n, --nested        Assume any value beginning with \"declare -[aA]\" are nested data to be translate to JSON format
@@ -161,7 +161,7 @@ Reminder: bash arrays are not exportable to sub shells (cf. https://www.mail-arc
 
 	if $nested && [[ "$1" =~ ^declare" "-[Aa][a-zA-Z]*" "([a-zA-Z_][a-zA-Z0-9_]*)=\(.*" "\)$ ]] ; then
 			local "${BASH_REMATCH[1]}"
-			eval "$1"
+			eval "$1" # dangerous as previous regexp isn't sufficient to prevent security issues
 			local -n aa=${BASH_REMATCH[1]}
 	else
 		local -n aa=$1
@@ -175,7 +175,7 @@ Reminder: bash arrays are not exportable to sub shells (cf. https://www.mail-arc
 		#TODO: Maybe use and depend on "jq". cf. https://stackoverflow.com/questions/44792241/constructing-a-json-hash-from-a-bash-associative-array
 		if $nested && [[ "${aa[$i]}" =~ ^declare" "-[Aa][a-zA-Z]*" "([a-zA-Z_][a-zA-Z0-9_]*)=\(.*" "\)$ ]] ; then
 			local "${BASH_REMATCH[1]}"
-			eval "${aa[$i]}"
+			eval "${aa[$i]}" # dangerous as previous regexp isn't sufficient to prevent security issues
 			echo -n "$lb	\"$(bl_json_from_str -- "$i")\":"$'\n'"$(bl_json_from_var --nested --shift $((shft+2)) "${BASH_REMATCH[1]}")"
 		else
 			echo -n "$lb	\"$(bl_json_from_str -- "$i")\": \"$(bl_json_from_str -- "${aa[$i]}")\""
