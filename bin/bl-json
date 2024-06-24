@@ -218,20 +218,90 @@ If no type can be determined, output nothing and return non-zero value.
 	first="$(sed 's,^[[:space:]]*,,' <<<"$first")"
 
 	case "$first" in
-		null) echo "null" ; return ;;
+		null|null,) echo "null" ; return ;;
 		{*) echo "object" ; return ;;
 		\[*) echo "array" ; return ;;
-		true|false) echo "boolean" ; return ;;
+		true|false|true,|false,) echo "boolean" ; return ;;
 		\"*) echo "string" ; return ;;
 	esac
 
-	if [[ "$first" =~ ^-?[0-9]*\.?[0-9]+$ ]] ; then
+	if [[ "$first" =~ ^-?[0-9]*\.?[0-9]+,?$ ]] ; then
 		echo "number"
 		return
 	else
 		echo "$FUNCNAME: Warning: Can't expect json type of ${first::5}..." >&2
 		return 1
 	fi
+}
+
+bl_json_to_var() {
+	local name
+	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] [JSON_TEXT]"
+	local helpmsg="
+Output string to be put into bash variable or array.
+
+Options:
+    -d, --declare VARNAME  output \"declare -[aA-] VARNAME=...\" statement to be use with 'eval ...'.
+    -r, --recurse          also parse JSON arrays or objects nested in JSON_TEXT.
+
+Examples:
+* if JSON_TEXT refer to JSON boolean, string or number: bash_var=\$($name [JSON_TEXT])
+* if JSON_TEXT refer to JSON array or object: bash_array=( \$($name [JSON_TEXT]) )
+"
+
+	local recurse=false varname
+	for ((;$#;)) ; do
+		case "$1" in
+			-d|--declare) shift
+				[[ "${varname:=$1}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]] || { echo "$FUNCNAME: Error: VARNAME is not a valid posix name ${varname::5}..." >&2  ; return 2 ; }
+				;;
+			-r|--recurs*) recurse=true ; echo "$FUNCNAME: Error: option $1 is not supported yet." >&2 ; return 3 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_JSON_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local lines jsontype
+
+	# validate and format json
+	if (($#)) then
+		mapfile -t lines < <(jq <<<"$@" )
+	else
+		mapfile -t lines < <(jq)
+	fi
+
+	jsontype="$(bl_json_type "${lines[0]}")"
+	case "$jsontype" in
+		null)
+			[[ "$varname" ]] || echo "null"
+			# TODO Maybe: add an warning message to explain this case.
+			return
+			;;
+		boolean|string|number)
+			[[ "$varname" ]] && printf "declare -- $varname="
+			echo "${lines[0]%,}" # remove eventual trailing comma
+			return
+			;;
+
+		array) [[ "$varname" ]] && echo "declare -a $varname=(" ;;
+		object) [[ "$varname" ]] && echo "declare -A $varname=(" ;;
+		*) echo "$FUNCNAME: Error: Invalid JSON." >&2
+		   return 2 ;;
+	esac
+
+	for key in $(echo "${lines[@]}" | jq '. | keys' | sed 's,^.,, ; s/,$// ' ) ; do
+		echo "[$key]=\"$(jq --compact-output --join-output ".[$key]" <<<"${lines[@]}" | sed 's,",\\",g' )\""
+		#echo "[$key]=$(jq ".[$key]" <<<"${lines[@]}" | bl_json_to_var)"
+	done
+
+	[[ "$varname" ]] && echo ")"
+
+	return 0
 }
 
 
