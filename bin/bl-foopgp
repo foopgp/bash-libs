@@ -24,7 +24,7 @@
 
 
 if [[ "$1" == --bash-completion ]] ; then
-	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
+	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z2_-]\+\>\).*,\1,p' )"
 	BL_tmp_o=$(for a in $BL_tmp_a ; do
 		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
 	done)
