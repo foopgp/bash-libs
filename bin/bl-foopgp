@@ -81,6 +81,8 @@ BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-1}"
 
 ### external functions ###
 
+# shellcheck source=bl-interactive
+. "$(dirname "$BASH_SOURCE")"/bl-interactive --
 
 ### internal functions ###
 
@@ -101,6 +103,47 @@ _bl_foopgp_parseoptions() {
 }
 
 ### public functions / program actions ###
+
+bl_foopgp_checkqif() {
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] FILE.qif ..."
+	local helpmsg="
+Parse qif file, and ask some questions for each entries to manage foopgp tockens, expenses, inventory....
+Options:
+  -p, --path PATH      Set the destination path (default: dirname of input files)
+"
+	local path qiffd line
+	for ((;$#;)) ; do
+		case "$1" in
+			-p|--path) shift ; path="$1" ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
+
+
+	for f in "$@" ; do
+		exec {qiffd}<"$f"
+		while read line <&${qiffd} ; do
+			local -A entry
+			if [[ ${line::1} == "^" ]] ; then
+				declare -p entry
+				r=$(bl_radiolist --output-value --default -1 --text "Something to rectify ?" "${!entry[@]}" "nothing")
+				echo "$r"
+				unset entry
+			else
+				entry[${line::1}]=${line:1}
+			fi
+		done
+		exec {qiffd}<&-
+	done
+}
 
 bl_foopgp_g2t() {
 	local name
