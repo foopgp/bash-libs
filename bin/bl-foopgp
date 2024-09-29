@@ -102,6 +102,15 @@ _bl_foopgp_parseoptions() {
 	BL_FOOPGP_NOPTIONS=$((npp-$#))
 }
 
+_bl_foopgp_tonatnum() {
+	(($#)) && sed 's/[,.]// ; s/^0*//' <<<"$1" || sed 's/[,.]// ; s/^0*//'
+}
+
+_bl_foopgp_todecnum() {
+	(($#)) && sed 's/.\{2\}$/,&/' <<<"$1" || sed 's/.\{2\}$/,&/'
+}
+
+
 ### public functions / program actions ###
 
 bl_foopgp_checkqif() {
@@ -111,12 +120,12 @@ bl_foopgp_checkqif() {
 	local helpmsg="
 Parse qif file, and ask some questions for each entries to manage foopgp tockens, expenses, inventory....
 Options:
-  -p, --path PATH      Set the destination path (default: dirname of input files)
+  -p, --path PATH      Set the path to the account dir (default: assume input files are in)
 "
-	local path qiffd line
+	local path
 	for ((;$#;)) ; do
 		case "$1" in
-			-p|--path) shift ; path="$1" ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
+			-p|--path) shift ; path="$1" ; printf "%s: Warning: --path not implemented.\n" "$FUNCNAME" >&2 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -127,16 +136,55 @@ Options:
 	done
 	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
+	local categories etypes rtypes
+	local qiffd line rectify i=0 j k
+	local sum count countdec
+	local -A entry
 
 	for f in "$@" ; do
+		path="$(readlink -f "$(dirname $f)"/../../../)"
+		mapfile -t categories < "$path/categories"
+		mapfile -t etypes < "$path/expense_types"
+		mapfile -t rtypes < "$path/revenue_types"
+
 		exec {qiffd}<"$f"
 		while read line <&${qiffd} ; do
-			local -A entry
 			if [[ ${line::1} == "^" ]] ; then
-				declare -p entry
-				r=$(bl_radiolist --output-value --default -1 --text "Something to rectify ?" "${!entry[@]}" "nothing")
-				echo "$r"
+				echo -e "\n--- entry #$((++i)) ---"
+				while true ; do
+					echo
+					for k in "${!entry[@]}" ; do
+						echo "$k${entry[$k]}"
+					done
+					for k in T D P ; do
+						if [[  -z "${entry[$k]}" ]] ; then
+							printf "%s: Error: entry #%s is missing %k field.\n" "$FUNCNAME" "$i" "$k" >&2
+							return 3
+						fi
+					done
+					if [[ ${entry[T]::1} == "-" ]] ; then
+						sum=$(_bl_foopgp_tonatnum ${entry[T]:1})
+						count=0
+						j=0
+						while true ; do
+							((++j))
+							countdec=$(bl_input --default "$(_bl_foopgp_todecnum $((sum-count)))" "Debit: ${entry[T]:1} Expense #$j")
+							((count+=$(_bl_foopgp_tonatnum "$countdec")))
+							if ((count>sum)) ; then
+								printf "%s: Error: Expenses (%s) are greater than Debit (%s).\n" "$FUNCNAME" "$(_bl_foopgp_todecnum "$count")" "${entry[T]:1}"  >&2
+								return 3
+							fi
+							cat=$(bl_radiolist --output-value --default -1 --text "Expense $countdec - Categorie" "${categories[@]}")
+							typ=$(bl_radiolist --output-value --default -1 --text "Expense $countdec - Type" "${etypes[@]}")
+							echo "$cat / Expense / $typ : $countdec"
+							((count!=sum)) || break
+						done
+					fi
+
+					bl_yesno --default=no "Did you make a mistake" || break
+				done
 				unset entry
+				local -A entry
 			else
 				entry[${line::1}]=${line:1}
 			fi
