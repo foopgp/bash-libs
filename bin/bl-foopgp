@@ -103,11 +103,14 @@ _bl_foopgp_parseoptions() {
 }
 
 _bl_foopgp_tonatnum() {
-	(($#)) && sed 's/[,.]// ; s/^0*//' <<<"$1" || sed 's/[,.]// ; s/^0*//'
+	(($#)) && sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/' <<<"$1" || sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/'
 }
 
 _bl_foopgp_todecnum() {
-	(($#)) && sed 's/.\{2\}$/,&/' <<<"$1" || sed 's/.\{2\}$/,&/'
+	local in
+	(($#)) && in=$1 || read in etc
+	in=$(printf "% 04d" "$in")
+	sed 's/.\{2\}$/,&/' <<<"$in"
 }
 
 
@@ -136,53 +139,88 @@ Options:
 	done
 	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
-	local categories etypes rtypes
-	local qiffd line rectify i=0 j k
-	local sum count countdec
+	local -a categories etypes rtypes log
+	local fqif qiffd logfd line rectify i=0 j k
+	local direction countdec cat typ
 	local -A entry
 
-	for f in "$@" ; do
-		path="$(readlink -f "$(dirname $f)"/../../../)"
+	for fqif in "$@" ; do
+		path="$(readlink -f "$(dirname "$fqif")"/../../../)"
 		mapfile -t categories < "$path/categories"
 		mapfile -t etypes < "$path/expense_types"
 		mapfile -t rtypes < "$path/revenue_types"
 
-		exec {qiffd}<"$f"
+		exec {qiffd}<"$fqif"
+		exec {logfd}>"$fqif.log"
 		while read line <&${qiffd} ; do
 			if [[ ${line::1} == "^" ]] ; then
-				echo -e "\n--- entry #$((++i)) ---"
+				echo -e "\n--- Entry #$((++i)) ---"
+				#for k in "${!entry[@]}" ; do
+				#	echo "  $k${entry[$k]}"
+				#done
+				for k in T D P ; do
+					if [[  -z "${entry[$k]}" ]] ; then
+						printf "%s: Error: entry #%s is missing %k field.\n" "$FUNCNAME" "$i" "$k" >&2
+						return 3
+					fi
+				done
+				if [[ ${entry[T]::1} == "-" ]] ; then
+					entry[U]=${entry[T]:1}
+					entry[Mtype]="Debit"
+				else
+					[[ ${entry[T]::1} == "+" ]] && entry[U]=${entry[T]:1} || entry[U]=${entry[T]}
+					entry[Mtype]="Credit"
+				fi
+				echo -e "${entry[D]} - ${entry[Mtype]}: ${entry[U]}\n${entry[P]}\n----------------"
+				entry[Msum]=$(($(_bl_foopgp_tonatnum ${entry[T]})))
+
+				j=0
 				while true ; do
+					((++j))
+					if ((entry[Msum]<0)) ; then
+						entry[Mdefdir]="Expense"
+					else
+						entry[Mdefdir]="Revenue"
+					fi
 					echo
-					for k in "${!entry[@]}" ; do
-						echo "$k${entry[$k]}"
-					done
-					for k in T D P ; do
-						if [[  -z "${entry[$k]}" ]] ; then
-							printf "%s: Error: entry #%s is missing %k field.\n" "$FUNCNAME" "$i" "$k" >&2
-							return 3
-						fi
-					done
-					if [[ ${entry[T]::1} == "-" ]] ; then
-						sum=$(_bl_foopgp_tonatnum ${entry[T]:1})
-						count=0
-						j=0
-						while true ; do
-							((++j))
-							countdec=$(bl_input --default "$(_bl_foopgp_todecnum $((sum-count)))" "Debit: ${entry[T]:1} Expense #$j")
-							((count+=$(_bl_foopgp_tonatnum "$countdec")))
-							if ((count>sum)) ; then
-								printf "%s: Error: Expenses (%s) are greater than Debit (%s).\n" "$FUNCNAME" "$(_bl_foopgp_todecnum "$count")" "${entry[T]:1}"  >&2
-								return 3
-							fi
-							cat=$(bl_radiolist --output-value --default -1 --text "Expense $countdec - Categorie" "${categories[@]}")
-							typ=$(bl_radiolist --output-value --default -1 --text "Expense $countdec - Type" "${etypes[@]}")
-							echo "$cat / Expense / $typ : $countdec"
-							((count!=sum)) || break
-						done
+					remain=$(_bl_foopgp_todecnum "${entry[Msum]}")
+					direction=$(bl_radiolist --output-value --default-value "${entry[Mdefdir]}" --text "  entry #$i ($remain). Select the nature of subflow #$j" "Revenue" "Expense")
+					countdec=$(bl_input --default "$(tr -d -- '+-' <<<"$remain" )" "entry #$i ($remain). Enter the amount of subflow #$j ($direction)")
+					if [[ $countdec =~ ^[0-9]+$ ]] ; then
+						countdec+=",00"
+					fi
+					if ! [[ $countdec =~ ^[0-9]+[.,][0-9][0-9]$ ]] ; then
+						printf "%s: Error: Invalid number %s.\n" "$FUNCNAME" "$countdec" >&2
+						return 3
 					fi
 
-					bl_yesno --default=no "Did you make a mistake" || break
+					cat=$(bl_radiolist --output-value --default 1 --text "  Entry #$i. Select the sub-account for subflow #$j" "${categories[@]}")
+					if [[ $direction == "Expense" ]] ; then
+						: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
+						typ=$(bl_radiolist --output-value --text "  Entry #$i. Select the type of expense for subflow #$j (-$countdec)" "${etypes[@]}")
+					else
+						: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
+						typ=$(bl_radiolist --output-value --text "  Entry #$i. Select the type of revenue for subflow #$j (+$countdec)" "${rtypes[@]}")
+					fi
+					log+=("$cat | $direction | $typ | $countdec | ${entry[D]} | ${entry[P]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j")
+					if [[ $typ == "Internal" ]] ; then
+						((j++))
+						cat=$(bl_radiolist --output-value --text "  Entry #$i. Select the sub-account for Internal subflow #$j" "${categories[@]}")
+						if [[ $direction == "Expense" ]] ; then
+							direction="Revenue"
+							: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
+						else
+							direction="Expense"
+							: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
+						fi
+						log+=("$cat | $direction | $typ | $countdec | ${entry[D]} | ${entry[P]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j")
+					fi
+					if ((entry[Msum]==0)) ; then
+						! bl_yesno --default=yes "Count reached. Next step" || break
+					fi
 				done
+				printf "%s\n" "${log[@]}" # >&{logfd}
+
 				unset entry
 				local -A entry
 			else
@@ -190,6 +228,7 @@ Options:
 			fi
 		done
 		exec {qiffd}<&-
+		exec {logfd}>&-
 	done
 }
 
