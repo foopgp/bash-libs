@@ -141,7 +141,7 @@ Options:
 
 	local -a subaccounts etypes rtypes log
 	local fqif qiffd logfd line rectify i=0 j k
-	local remain direction countdec subacc typ srcdest
+	local remain direction countdec isub1 ityp typ srcdest
 	local -A entry
 
 	for fqif in "$@" ; do
@@ -196,18 +196,21 @@ Options:
 							return 3
 						fi
 
-						subacc=$(bl_radiolist --output-value --default 1 --text "  Entry #$i. Select the sub-account for subflow #$j" "${subaccounts[@]}")
+						isub1=$(bl_radiolist --output-index --default 1 --text "  Entry #$i. Select the sub-account for subflow #$j" "${subaccounts[@]#*:}")
 						if [[ $direction == "Expense" ]] ; then
 							: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
-							typ=$(bl_radiolist --output-value --text "  Entry #$i. Select the type of expense for subflow #$j (-$countdec)" "${etypes[@]}")
+							ityp=$(bl_radiolist --output-index --text "  Entry #$i. Select the type of expense for subflow #$j (-$countdec)" "${etypes[@]#*:}")
+							typ=${etypes[$ityp]}
 						else
 							: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
-							typ=$(bl_radiolist --output-value --text "  Entry #$i. Select the type of revenue for subflow #$j (+$countdec)" "${rtypes[@]}")
+							ityp=$(bl_radiolist --output-index --text "  Entry #$i. Select the type of revenue for subflow #$j (+$countdec)" "${rtypes[@]#*:}")
+							typ=${rtypes[$ityp]}
 						fi
-						if [[ $typ == "Internal" ]] ; then
+						if [[ ${typ%%:*} == 1 ]] ; then # 1:Internal
 							((j++))
-							srcdest=$(bl_radiolist --output-value --text "  Entry #$i. Select the sub-account for Internal subflow #$j" "${subaccounts[@]}")
-							log+=("$(printf "%15s | %7s | %11s | %9s | %15s | ${entry[D]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "$subacc" "$direction" "$typ" "$countdec" "$srcdest")")
+							local isub2
+							isub2=$(bl_radiolist --output-index --text "  Entry #$i. Select the sub-account for Internal subflow #$j" "${subaccounts[@]#*:}")
+							log+=("$(printf "%15s | %7s | %11s | %9s | %15s | ${entry[D]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "${subaccounts[$isub2]}")")
 							if [[ $direction == "Expense" ]] ; then
 								direction="Revenue"
 								: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
@@ -215,14 +218,13 @@ Options:
 								direction="Expense"
 								: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
 							fi
-							local tmp=$subacc
-							subacc=$srcdest
-							srcdest=$subacc
-						#elif [[ $typ =~ ^Donation: ]] ; then
+							srcdest=${subaccounts[$isub1]}
+							isub1=$isub2
+						#elif [[ ${typ%%:*} == 2 ]] ; then # 2:Donation
 						else
-							srcdest=$(bl_input --default "${entry[P]}" "Entry #$i ($subacc/$direction/$typ/$countdec). Enter description, source or destination of subflow #$j")
+							srcdest=$(bl_input --default "${entry[P]}" "Entry #$i (${subaccounts[$isub1]#*:}/$direction/${typ#*:}/$countdec). Enter description, source or destination of subflow #$j")
 						fi
-						log+=("$(printf "%15s | %7s | %11s | %9s | %15s | ${entry[D]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "$subacc" "$direction" "$typ" "$countdec" "$srcdest")")
+						log+=("$(printf "%15s | %7s | %11s | %9s | %15s | ${entry[D]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "$srcdest")")
 						if ((entry[Msum]==0)) ; then
 							! bl_yesno --default=yes "Count reached. Next step" || break
 						fi
