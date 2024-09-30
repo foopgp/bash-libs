@@ -139,16 +139,16 @@ Options:
 	done
 	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
-	local -a categories etypes rtypes log
+	local -a subaccounts etypes rtypes log
 	local fqif qiffd logfd line rectify i=0 j k
-	local direction countdec cat typ
+	local remain direction countdec subacc typ srcdest
 	local -A entry
 
 	for fqif in "$@" ; do
 		path="$(readlink -f "$(dirname "$fqif")"/../../../)"
-		mapfile -t categories < "$path/categories"
-		mapfile -t etypes < "$path/expense_types"
-		mapfile -t rtypes < "$path/revenue_types"
+		mapfile -t subaccounts < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/subaccounts")
+		mapfile -t etypes < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/expense_types")
+		mapfile -t rtypes < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/revenue_types")
 
 		exec {qiffd}<"$fqif"
 		exec {logfd}>"$fqif.log"
@@ -172,54 +172,68 @@ Options:
 					entry[Mtype]="Credit"
 				fi
 				echo -e "${entry[D]} - ${entry[Mtype]}: ${entry[U]}\n${entry[P]}\n----------------"
-				entry[Msum]=$(($(_bl_foopgp_tonatnum ${entry[T]})))
 
-				j=0
 				while true ; do
-					((++j))
-					if ((entry[Msum]<0)) ; then
-						entry[Mdefdir]="Expense"
-					else
-						entry[Mdefdir]="Revenue"
-					fi
-					echo
-					remain=$(_bl_foopgp_todecnum "${entry[Msum]}")
-					direction=$(bl_radiolist --output-value --default-value "${entry[Mdefdir]}" --text "  entry #$i ($remain). Select the nature of subflow #$j" "Revenue" "Expense")
-					countdec=$(bl_input --default "$(tr -d -- '+-' <<<"$remain" )" "entry #$i ($remain). Enter the amount of subflow #$j ($direction)")
-					if [[ $countdec =~ ^[0-9]+$ ]] ; then
-						countdec+=",00"
-					fi
-					if ! [[ $countdec =~ ^[0-9]+[.,][0-9][0-9]$ ]] ; then
-						printf "%s: Error: Invalid number %s.\n" "$FUNCNAME" "$countdec" >&2
-						return 3
-					fi
-
-					cat=$(bl_radiolist --output-value --default 1 --text "  Entry #$i. Select the sub-account for subflow #$j" "${categories[@]}")
-					if [[ $direction == "Expense" ]] ; then
-						: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
-						typ=$(bl_radiolist --output-value --text "  Entry #$i. Select the type of expense for subflow #$j (-$countdec)" "${etypes[@]}")
-					else
-						: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
-						typ=$(bl_radiolist --output-value --text "  Entry #$i. Select the type of revenue for subflow #$j (+$countdec)" "${rtypes[@]}")
-					fi
-					log+=("$cat | $direction | $typ | $countdec | ${entry[D]} | ${entry[P]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j")
-					if [[ $typ == "Internal" ]] ; then
-						((j++))
-						cat=$(bl_radiolist --output-value --text "  Entry #$i. Select the sub-account for Internal subflow #$j" "${categories[@]}")
-						if [[ $direction == "Expense" ]] ; then
-							direction="Revenue"
-							: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
+					j=0
+					entry[Msum]=$(($(_bl_foopgp_tonatnum ${entry[T]})))
+					log=()
+					while true ; do
+						((++j))
+						if ((entry[Msum]<0)) ; then
+							entry[Mdefdir]="Expense"
 						else
-							direction="Expense"
-							: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
+							entry[Mdefdir]="Revenue"
 						fi
-						log+=("$cat | $direction | $typ | $countdec | ${entry[D]} | ${entry[P]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j")
-					fi
-					if ((entry[Msum]==0)) ; then
-						! bl_yesno --default=yes "Count reached. Next step" || break
+						echo
+						remain=$(_bl_foopgp_todecnum "${entry[Msum]}")
+						direction=$(bl_radiolist --output-value --default-value "${entry[Mdefdir]}" --text "  Entry #$i ($remain). Select the nature of subflow #$j" "Revenue" "Expense")
+						countdec=$(bl_input --default "$(tr -d -- '+-' <<<"$remain" )" "Entry #$i ($remain). Enter the amount of subflow #$j ($direction)")
+						if [[ $countdec =~ ^[0-9]+$ ]] ; then
+							countdec+=",00"
+						fi
+						if ! [[ $countdec =~ ^[0-9]+[.,][0-9][0-9]$ ]] ; then
+							printf "%s: Error: Invalid number %s.\n" "$FUNCNAME" "$countdec" >&2
+							return 3
+						fi
+
+						subacc=$(bl_radiolist --output-value --default 1 --text "  Entry #$i. Select the sub-account for subflow #$j" "${subaccounts[@]}")
+						if [[ $direction == "Expense" ]] ; then
+							: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
+							typ=$(bl_radiolist --output-value --text "  Entry #$i. Select the type of expense for subflow #$j (-$countdec)" "${etypes[@]}")
+						else
+							: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
+							typ=$(bl_radiolist --output-value --text "  Entry #$i. Select the type of revenue for subflow #$j (+$countdec)" "${rtypes[@]}")
+						fi
+						if [[ $typ == "Internal" ]] ; then
+							((j++))
+							srcdest=$(bl_radiolist --output-value --text "  Entry #$i. Select the sub-account for Internal subflow #$j" "${subaccounts[@]}")
+							log+=("$(printf "%15s | %7s | %11s | %9s | %15s | ${entry[D]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "$subacc" "$direction" "$typ" "$countdec" "$srcdest")")
+							if [[ $direction == "Expense" ]] ; then
+								direction="Revenue"
+								: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
+							else
+								direction="Expense"
+								: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
+							fi
+							local tmp=$subacc
+							subacc=$srcdest
+							srcdest=$subacc
+						#elif [[ $typ =~ ^Donation: ]] ; then
+						else
+							srcdest=$(bl_input --default "${entry[P]}" "Entry #$i ($subacc/$direction/$typ/$countdec). Enter description, source or destination of subflow #$j")
+						fi
+						log+=("$(printf "%15s | %7s | %11s | %9s | %15s | ${entry[D]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "$subacc" "$direction" "$typ" "$countdec" "$srcdest")")
+						if ((entry[Msum]==0)) ; then
+							! bl_yesno --default=yes "Count reached. Next step" || break
+						fi
+					done
+					echo
+					printf "%s\n" "${log[@]}"
+					if bl_yesno --default=yes "Validate entry #$i" ; then
+						printf "%s\n" "${log[@]}" >&${logfd}
+						break
 					fi
 				done
-				printf "%s\n" "${log[@]}" # >&{logfd}
 
 				unset entry
 				local -A entry
