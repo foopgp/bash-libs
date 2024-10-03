@@ -104,7 +104,7 @@ _bl_interactive_parseoptions() {
 
 # using ( subshell ) for factorization : all new variables are "local" and {fd} is automatically close >&- while carrying return value
 _bl_interactive_frontend() (
-	unset last mtext rtext
+	unset last mtext rtext # localy clean such eventual global variables
 	for ((;$#;)) ; do
 		case "$1" in
 			--mtext) shift ; mtext="$1" ;;
@@ -193,12 +193,14 @@ bl_input() {
 Helper to ask for a string
 
 Options:
+  -e, --email              Expect an email address
   -d, --default STRING     Default initialized string
   -t, --text TEXT          Text to display related to the question
 "
-	local def pr
+	local def pr emailaddr=false
 	for ((;$#;)) ; do
 		case "$1" in
+			-e|--email) emailaddr=true ;;
 			-d|--default) shift ; def="$1" ;;
 			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -210,17 +212,26 @@ Options:
 		shift
 	done
 
-	local question="$*"
-	if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
-		_bl_interactive_frontend --rtext "$pr" --mtext "$question ?" --last "$def" -- --nocancel --inputbox
-		return $?
-	fi
+	local question="$*" rep
 
-	local rep
-	question=$'\e[1m'"$question"$'\e[0m'
-	[[ -z "$def" ]] || question+=" [$def]"
-	echo "$pr" >&2
-	read -p "  $question"$' \e[1m?\e[0m ' rep
+	if ! [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
+		question=$'\e[1m'"$question"$'\e[0m'
+		[[ -z "$def" ]] || question+=" [$def]"
+	fi
+	while true ; do
+		if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
+			rep=$(_bl_interactive_frontend --rtext "$pr" --mtext "$question ?" --last "$def" -- --nocancel --inputbox)
+		else
+			echo "$pr" >&2
+			read -p "  $question"$' \e[1m?\e[0m ' rep
+		fi
+		rep=${rep:-$def}
+		if $emailaddr && ! [[ "$rep" =~ ^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$ ]] ; then
+			pr="> Please enter a valid email address. <"
+			continue
+		fi
+		break
+	done
 	echo ${rep:-${def}}
 }
 
