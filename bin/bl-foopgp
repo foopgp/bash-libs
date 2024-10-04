@@ -107,12 +107,19 @@ _bl_foopgp_tonatnum() {
 }
 
 _bl_foopgp_todecnum() {
-	local in
+	local in etc
 	(($#)) && in=$1 || read in etc
 	in=$(printf "% 04d" "$in")
 	sed 's/.\{2\}$/,&/' <<<"$in"
 }
 
+_bl_foopgp_dateFR2ISO8601() {
+	local in
+	(($#)) && in=$@ || read in
+	in=$(sed  's,[^0-9],,g' <<<"$in")
+	((${#in}==8)) || printf "%s: Error: Invalid date %s.\n" "$FUNCNAME" "$in" >&2
+	echo "${in:4:4}-${in:2:2}-${in::2}"
+}
 
 ### public functions / program actions ###
 
@@ -171,6 +178,7 @@ Options:
 					[[ ${entry[T]::1} == "+" ]] && entry[U]=${entry[T]:1} || entry[U]=${entry[T]}
 					entry[Mtype]="Credit"
 				fi
+				entry[D]=$(_bl_foopgp_dateFR2ISO8601 ${entry[D]})
 				entry[Mdesc]="$(echo -e "--- Entry #$i ---\n${entry[D]} - ${entry[Mtype]}: ${entry[U]}\n${entry[P]}\n----------------")"
 
 				while true ; do
@@ -187,14 +195,15 @@ Options:
 						echo
 						remain=$(_bl_foopgp_todecnum "${entry[Msum]}")
 						direction=$(bl_radiolist --output-value --default-value "${entry[Mdefdir]}" --text "${entry[Mdesc]}"$'\n'$'\n'"  Entry #$i ($remain). Select the nature of subflow #$j" "Revenue" "Expense")
-						countdec=$(bl_input --default "$(tr -d -- '+-' <<<"$remain" )" "Entry #$i ($remain). Enter the amount of subflow #$j ($direction)" | tr -d ' ')
-						if [[ $countdec =~ ^[0-9]+$ ]] ; then
-							countdec+=",00"
-						fi
-						if ! [[ $countdec =~ ^[0-9]+[.,][0-9][0-9]$ ]] ; then
-							printf "%s: Error: Invalid number %s.\n" "$FUNCNAME" "$countdec" >&2
-							return 3
-						fi
+						while true ; do
+							countdec=$(bl_input --default "$(tr -d -- '+-' <<<"$remain" )" --text "  Entry #$i ($remain)." "Enter the amount of subflow #$j ($direction)" | tr -d ' ')
+							if [[ $countdec =~ ^[0-9]+$ ]] ; then
+								countdec+=",00"
+							fi
+							if [[ $countdec =~ ^[0-9]+[.,][0-9][0-9]$ ]] ; then
+								break
+							fi
+						done
 
 						isub1=$(bl_radiolist --output-index --default 1 --text "  Entry #$i. Select the sub-account for subflow #$j" "${subaccounts[@]#*:}")
 						if [[ $direction == "Expense" ]] ; then
@@ -209,7 +218,7 @@ Options:
 						if [[ ${typ%%:*} == 1 ]] ; then # 1:Internal
 							local isub2
 							isub2=$(bl_radiolist --output-index --text "  Entry #$i. Select the sub-account for Internal subflow #$j" "${subaccounts[@]#*:}")
-							flow+=("$(printf "%15s | %7s | %11s | %9s | %15s | ${entry[D]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "${subaccounts[$isub2]}")")
+							flow+=("$(printf "${entry[D]} | %-11s | %7s | %-11s | %9s | %38s | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "${subaccounts[$isub2]}")")
 							((++j))
 							if [[ $direction == "Expense" ]] ; then
 								direction="Revenue"
@@ -223,12 +232,12 @@ Options:
 						elif [[ ${typ%%:*} == 2 ]] ; then # 2:Donation of cash
 							local question dtype
 							[[ $direction == "Expense" ]] && question="To whom was this donation made" || question="In whose name was this donation made"
-							srcdest=$(bl_input --default "${entry[P]}" "Entry #$i (${subaccounts[$isub1]#*:}/$direction/${typ#*:}/$countdec). $question")
+							srcdest=$(bl_input --default "${entry[P]}" --email --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${typ#*:}/$countdec)." "$question (email address)")
 						#elif [[ ${typ%%:*} == 3 ]] ; then # 3:Stock Inventory flow will be managed by a futur fonction "flow2stock()"
 						else
-							srcdest=$(bl_input --default "${entry[P]}" "Entry #$i (${subaccounts[$isub1]#*:}/$direction/${typ#*:}/$countdec). Enter description, source or destination of subflow #$j")
+							srcdest=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${typ#*:}/$countdec)." "Enter description, source or destination of subflow #$j")
 						fi
-						flow+=("$(printf "%15s | %7s | %11s | %9s | %15s | ${entry[D]} | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "$srcdest")")
+						flow+=("$(printf "${entry[D]} | %-11s | %7s | %-11s | %9s | %38s | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "$srcdest")")
 						if ((entry[Msum]==0)) ; then
 							! bl_yesno --default=yes "Count reached. Next step" || break
 						fi
