@@ -1,5 +1,9 @@
 # These are supported funding model platforms
 
+# © 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+#
+# SPDX-License-Identifier: CC0-1.0+
+
 github: [jbar, mmuman]
 patreon: # Replace with a single Patreon username
 open_collective: # Replace with a single Open Collective username

@@ -1,3 +1,9 @@
+<!--
+© 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+
+SPDX-License-Identifier: LGPL-3.0-only
+-->
+
 ---
 title: BASH-LIBS
 section: 7
