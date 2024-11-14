@@ -2,36 +2,21 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 
-MAKEDIRS = man
+SHELL := /bin/sh
 
+.POSIX:
+.SUFFIXES:
+.DELETE_ON_ERROR:
 
-all: check
-	for md in $(MAKEDIRS) ; do \
-		$(MAKE) -C $$md $@ ; \
-	done
+all:: check
 
-check:
+check:: build
 	reuse lint
 
-clean:
-	for md in $(MAKEDIRS) ; do \
-		$(MAKE) -C $$md $@ ; \
-	done
-	make -C test clean
+all check build clean install uninstall::
+	$(MAKE) -C man $@
 
-#install:
-#	for md in $(MAKEDIRS) ; do \
-#		$(MAKE) -C $$md $@ ; \
-#	done
-#
-#uninstall:
-#	for md in $(MAKEDIRS) ; do \
-#		$(MAKE) -C $$md $@ ; \
-#	done
+.PHONY: all check build clean install uninstall
 
-test: test.forced
-
-test.forced:
-	$(MAKE) -C test test
-
-.PHONY: all check clean test test.forced
+man/%:
+	$(MAKE) -C man $*
