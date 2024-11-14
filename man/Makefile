@@ -2,38 +2,50 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 
-MANDIR = /usr/share/man
+TARGETS           := bash-libs.7 $(basename $(wildcard *.md))
 
-.PHONY: all clean install uninstall
+GZIPPED_TARGETS   := $(addsuffix .gz, $(TARGETS))
+MANDIR            := $(DESTDIR)/usr/share/man
+DEST_TARGETS      := $(foreach ITEM, $(TARGETS), \
+                       $(MANDIR)/man$(subst .,,$(suffix $(ITEM)))/$(ITEM).gz)
+DEST_TARGETS_DIRS := $(sort $(dir $(DEST_TARGETS)))
 
-%.1.gz: %.md
-	MANDATE="$$(LANG=C git log -1 --format="%ad" --date="format:%d %B %Y" -- $<)" ;\
-	[ "$$MANDATE" ] || MANDATE="\1" ;\
-	sed "1,6s;^date:\(.*\);date: $$MANDATE;" < $< | pandoc -s -t man | gzip > $@
+SHELL             := /bin/sh
+INSTALL           := install --mode 644
+TO_MAN            := pandoc  --standalone --to=man
+GIT_DATE          := LANG=C git log --max-count 1
+GIT_DATE          += --format='%ad' --date='format:%d %B %Y' --
 
-bash-libs.7.gz: ../README.md
-	MANDATE="$$(LANG=C git log -1 --format="%ad" --date="format:%d %B %Y" -- $<)" ;\
-	[ "$$MANDATE" ] || MANDATE="\1" ;\
-	sed "1,6s;^date:\(.*\);date: $$MANDATE;" < $< | pandoc -s -t man | gzip > $@
+.POSIX:
+.SUFFIXES:
+.DELETE_ON_ERROR:
 
-all: bash-libs.7.gz bl-log.1.gz bl-interactive.1.gz bl-security.1.gz
+all: check
+
+build: $(GZIPPED_TARGETS)
+
+check: build
 
 clean:
-	rm -f bash-libs.7.gz bl-*.1.gz
+	$(RM) $(TARGETS) $(GZIPPED_TARGETS)
 
-install: bash-libs.7.gz bl-log.1.gz bl-interactive.1.gz bl-security.1.gz
-	mkdir -p $(DESTDIR)$(MANDIR)/man{1,7}
-	install -m644 bash-libs.7.gz \
-		$(DESTDIR)$(MANDIR)/man7
-	install -m644 bl-*.1.gz \
-		$(DESTDIR)$(MANDIR)/man1
-	#mkdir -p $(DESTDIR)$(MANDIR)/fr/man7
-	#install -m644 bash-libs.fr.7.gz \
-	#	$(DESTDIR)$(MANDIR)/fr/man7/bash-libs.7.gz
+install: build | $(DEST_TARGETS_DIRS)
+	$(foreach ITEM, $(DEST_TARGETS), \
+	  $(INSTALL) $(notdir $(ITEM)) $(dir $(ITEM)) &&) true
 
 uninstall:
-	rm $(DESTDIR)$(MANDIR)/man7/bash-libs.7.gz
-	rm $(DESTDIR)$(MANDIR)/man1/bl-log.gz
-	rm $(DESTDIR)$(MANDIR)/man1/bl-interactive.gz
-	rm $(DESTDIR)$(MANDIR)/man1/bl-security.1.gz
-	#rm $(DESTDIR)$(MANDIR)/fr/man7/bash-libs.7.gz
+	$(RM) $(DEST_TARGETS)
+
+.PHONY: all build clean install uninstall
+
+bash-libs.7: ../README.md Makefile
+	$(TO_MAN) --metadata date:"$$($(GIT_DATE) $<)" < $< > $@
+
+%:: %.md Makefile
+	$(TO_MAN) --metadata date:"$$($(GIT_DATE) $<)" < $< > $@
+
+%.gz: %
+	gzip < $< > $@
+
+$(DEST_TARGETS_DIRS):
+	mkdir -p $@

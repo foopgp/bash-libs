@@ -9,7 +9,6 @@ title: BASH-LIBS
 section: 7
 header: Miscellaneous informations
 footer: bash-libs
-date: July 2021
 ---
 
 # NAME

@@ -9,7 +9,6 @@ title: BL-SECURITY
 section: 1
 header: User Commands
 footer: bash-libs
-date: July 2021
 ---
 
 # NAME
