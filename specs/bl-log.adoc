@@ -1,0 +1,158 @@
+= bl-log specifications
+Henri GEIST <hgeist@hopimedical.com>
+:copyright: © 2024 Henri GEIST <geist.henri@laposte.net>
+:SPDX-License-Identifier: CC-BY-SA-4.0
+:doctype:  book
+:toc:      left
+:numbered:
+:toclevel: 3
+:product_name: bl-log
+
+
+== Horned beast
+
+[ditaa, "horned_beast"]
+....
+Who is it for ?           On what does it act ?
+/-------------\             /--------------\
+| Programmers |             | Bash scripts |
+\-----+-------/             \-------+------/
+      |                             |
+      |         The product         |
+      |      /---------------\      |
+      \------+ bl‑log script +--+---/
+             \---------------/  |
+                                |
+                     /----------/
+                     |
+                     V
+          /----------+----------\
+          | Easily writing logs |
+          |  from bash scripts  |
+          \---------------------/
+                   Why ?
+....
+
+The `bl-log` script enable programmers to easily write some logs from their
+bash scripts for the users.
+
+
+== Octopus
+
+[graphviz, "octopus", layout=twopi]
+----
+graph octopus
+{
+    ranksep = 3
+    root    = "bl-log"
+
+    "Maintainers" -- "bl-log"      [label = Fc_1]
+    "Programmers" -- "bl-log"      [label = Fc_2]
+    "Users"       -- "bl-log"      [label = Fc_3]
+
+    "Programmers" -- "Users"       [label = Fp_1]
+}
+----
+
+
+== Requirements
+
+=== Principal functions
+
+[cols="12%,~a"]
+|====
+| Id          | Description
+
+| <<Fp_1_1>>  | Enable writing a log with any standard _syslog_ `log_level` on
+                `stderr` with the command `bl-log log_level "message"`.
+|====
+
+
+<<<
+
+=== Constraint functions
+
+==== Maintainers constraints
+
+[cols="12%,~a"]
+|====
+| Id          | Description
+
+| <<Fc_1_1>>  | Must match the code style provided by `shfmt --space-redirects`
+| <<Fc_1_2>>  | Must pass `shellcheck --enable all` linter without warning.
+|====
+
+
+==== Programmers constraints
+
+[cols="12%,~a"]
+|====
+| Id          | Description
+
+| <<Fc_2_1>>  | Must provide some `-h` and `--help` option to get the script
+                usage grammar.
+|====
+
+
+==== Users constraints
+
+[cols="12%,~a"]
+|====
+| Id          | Description
+
+| <<Fc_3_1>>  | Must colorize _loglevels_ by default when connect to a _TTY_.
+| <<Fc_3_2>>  | Must not use color by default when not connect to a _TTY_.
+|====
+
+<<<
+
+== Rationals
+
+=== For principal functions
+
+==== Log to standard error (Fp_1_1)
+
+[[Fp_1_1]]
+
+This is the main reason why we are doing all that stuff.
+
+=== For constraint functions
+
+==== Maintainers constraints
+
+===== Coding style (Fc_1_1)
+
+[[Fc_1_1]]
+
+Following a defined and common coding style is important for:
+
+  - Readability
+  - Cohesion between developers
+  - Avoiding indefinite indecisions and code refactoring.
+
+===== Linter (Fc_1_2)
+
+[[Fc_1_2]]
+
+This is important to maintain good code quality and lower the number of bugs.
+
+===== Help option (Fc_2_1)
+
+[[Fc_2_1]]
+
+This is for quickly help programmers to found the command syntax they need.
+
+
+===== Colorize output (Fc_3_1)
+
+[[Fc_3_1]]
+
+This greatly help users to see rapidly what is more important and what is
+less important.
+And to find quickly some thing they are looking for in the middle of the logs.
+
+===== Uncolorized output (Fc_3_2)
+
+[[Fc_3_2]]
+
+This is better for automatic parsing.

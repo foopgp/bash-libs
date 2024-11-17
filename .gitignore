@@ -4,3 +4,10 @@
 
 man/*.gz
 man/*.[17]
+specs/.asciidoctor/
+specs/images/
+specs/*.html
+specs/*.pdf
+specs/*.xml
+specs/*.md
+specs/*.req

@@ -2,21 +2,29 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 
-SHELL := /bin/sh
+SHELL            := /bin/sh
+LICENCES_CHECKER := reuse lint
+SUB_MAKE_DIRS    := specs man
 
 .POSIX:
 .SUFFIXES:
 .DELETE_ON_ERROR:
 
-all:: check
+all: check
 
-check:: build
-	reuse lint
+check: check_licenses build
 
-all check build clean install uninstall::
-	$(MAKE) -C man $@
+check_licenses:
+	RESULT=$$($(LICENCES_CHECKER) 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)
 
-.PHONY: all check build clean install uninstall
+all check build clean:
+	$(MAKE) -C specs $@
+	$(MAKE) -C man   $@
 
-man/%:
-	$(MAKE) -C man $*
+install uninstall:
+	$(MAKE) -C man   $@
+
+.PHONY: all specs check check_licenses build clean install uninstall phony
+
+$(addsuffix /%, $(SUB_MAKE_DIRS)): phony
+	$(MAKE) -C $(patsubst %/$*, %, $@) $*
