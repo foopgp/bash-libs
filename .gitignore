@@ -11,3 +11,5 @@ specs/*.pdf
 specs/*.xml
 specs/*.md
 specs/*.req
+tests/results/
+tests/*.req

@@ -4,7 +4,7 @@
 
 SHELL            := /bin/sh
 LICENCES_CHECKER := reuse lint
-SUB_MAKE_DIRS    := specs man
+SUB_MAKE_DIRS    := specs man tests
 
 .POSIX:
 .SUFFIXES:
@@ -17,9 +17,10 @@ check: check_licenses build
 check_licenses:
 	RESULT=$$($(LICENCES_CHECKER) 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)
 
-all check build clean:
+check build clean:
 	$(MAKE) -C specs $@
 	$(MAKE) -C man   $@
+	$(MAKE) -C tests $@
 
 install uninstall:
 	$(MAKE) -C man   $@
