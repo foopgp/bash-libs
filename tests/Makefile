@@ -45,7 +45,7 @@ clean:
 
 .PHONY: all build check clean phony
 
-# CAUTION: you need to keep the two blank line between 'define' and 'endef'
+# CAUTION: you need to keep the two blank lines between 'define' and 'endef'
 define NEWLINE
 
 
