@@ -4,15 +4,20 @@
 
 TARGETS           := bash-libs.7 $(basename $(wildcard *.md))
 
+prefix            ?= /usr/local
+datarootdir       ?= $(prefix)/share
+mandir            ?= $(datarootdir)/man
+
 GZIPPED_TARGETS   := $(addsuffix .gz, $(TARGETS))
-MANDIR            := $(DESTDIR)/usr/share/man
+MANDIR            := $(DESTDIR)$(mandir)
 DEST_TARGETS      := $(foreach ITEM, $(TARGETS), \
                        $(MANDIR)/man$(subst .,,$(suffix $(ITEM)))/$(ITEM).gz)
 DEST_TARGETS_DIRS := $(sort $(dir $(DEST_TARGETS)))
 
 SHELL             := /bin/sh
-INSTALL           := install --mode 644
-TO_MAN            := pandoc  --standalone --to=man
+INSTALL           := install
+INSTALL_DATA      := $(INSTALL) --mode 644
+TO_MAN            := pandoc --standalone --to=man
 GIT_DATE          := LANG=C git log --max-count 1
 GIT_DATE          += --format='%ad' --date='format:%d %B %Y' --
 
@@ -20,7 +25,7 @@ GIT_DATE          += --format='%ad' --date='format:%d %B %Y' --
 .SUFFIXES:
 .DELETE_ON_ERROR:
 
-all: check
+all: build
 
 build: $(GZIPPED_TARGETS)
 
@@ -30,8 +35,8 @@ clean:
 	$(RM) $(TARGETS) $(GZIPPED_TARGETS)
 
 install: build | $(DEST_TARGETS_DIRS)
-	$(foreach ITEM, $(DEST_TARGETS), \
-	  $(INSTALL) $(notdir $(ITEM)) $(dir $(ITEM)) &&) true
+	-$(foreach ITEM, $(DEST_TARGETS), \
+	   $(INSTALL_DATA) $(notdir $(ITEM)) $(dir $(ITEM)) &&) true
 
 uninstall:
 	$(RM) $(DEST_TARGETS)
@@ -48,4 +53,4 @@ bash-libs.7: ../README.md Makefile
 	gzip < $< > $@
 
 $(DEST_TARGETS_DIRS):
-	mkdir -p $@
+	-mkdir -p $@

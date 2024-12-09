@@ -57,17 +57,17 @@ RATIONALS_OPT         += -nocov
 .SECONDARY:
 .DELETE_ON_ERROR:
 
-all: check
+all: build
 
-build: pdfs htmls dockbooks markdowns
+build: pdf html docbook markdown
 
-pdfs:      $(DOCUMENTS:.adoc=.pdf)
+pdf:      $(DOCUMENTS:.adoc=.pdf)
 
-htmls:     $(DOCUMENTS:.adoc=.html)
+html:     $(DOCUMENTS:.adoc=.html)
 
-dockbooks: $(DOCUMENTS:.adoc=.xml)
+docbook:  $(DOCUMENTS:.adoc=.xml)
 
-markdowns: $(DOCUMENTS:.adoc=.md)
+markdown: $(DOCUMENTS:.adoc=.md)
 
 check: build $(patsubst %.adoc, check_%, $(DOCUMENTS))
 
@@ -80,7 +80,7 @@ clean:
 	$(RM) -r $(IMAGES_DIR)
 	$(RM) -r .asciidoctor
 
-.PHONY: all build pdfs htmls dockbooks markdowns check clean phony
+.PHONY: all build pdf html docbook markdown check clean phony
 
 check_%: %.req phony
 	RESULT=$$($(REQFLOW) -c $< 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)

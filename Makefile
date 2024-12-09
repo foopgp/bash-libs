@@ -10,22 +10,32 @@ SUB_MAKE_DIRS    := specs man tests
 .SUFFIXES:
 .DELETE_ON_ERROR:
 
-all: check
+all: build
 
-check: check_licenses build
+build:
+	$(MAKE) -C man
 
 check_licenses:
 	RESULT=$$($(LICENCES_CHECKER) 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)
 
-check build clean:
+check: check_licenses build
+
+check clean:
 	$(MAKE) -C specs $@
 	$(MAKE) -C man   $@
 	$(MAKE) -C tests $@
 
+html pdf docbook markdown:
+	$(MAKE) -C specs $@
+
 install uninstall:
 	$(MAKE) -C man   $@
 
-.PHONY: all specs check check_licenses build clean install uninstall phony
+.PHONY: all build check check_licenses clean install uninstall $(SUB_MAKE_DIRS)
+.PHONY: phony
 
 $(addsuffix /%, $(SUB_MAKE_DIRS)): phony
 	$(MAKE) -C $(patsubst %/$*, %, $@) $*
+
+$(SUB_MAKE_DIRS): %:
+	$(MAKE) -C $*
