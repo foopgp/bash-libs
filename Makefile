@@ -31,11 +31,16 @@ html pdf docbook markdown:
 install uninstall:
 	$(MAKE) -C man   $@
 
+install-pre-commit-hook: .git/hooks/pre-commit
+
 .PHONY: all build check check_licenses clean install uninstall $(SUB_MAKE_DIRS)
-.PHONY: phony
+.PHONY: phony install-pre-commit-hook
 
 $(addsuffix /%, $(SUB_MAKE_DIRS)): phony
 	$(MAKE) -C $(patsubst %/$*, %, $@) $*
 
 $(SUB_MAKE_DIRS): %:
 	$(MAKE) -C $*
+
+.git/hooks/pre-commit: pre-commit.hook
+	cp --interactive $< $@

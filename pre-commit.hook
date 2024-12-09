@@ -1,0 +1,34 @@
+#!/bin/sh -e
+
+# © 2024 Henri GEIST <geist.henri@laposte.net>
+#
+# SPDX-License-Identifier: LGPL-3.0-only
+
+# Redirect stdout to stderr.
+exec 1>&2
+
+OLD_STASH=$(git rev-parse --quiet --verify refs/stash) || true
+
+cleanup ()
+{
+	EXIT_STATUS=$?
+	NEW_STASH=$(git rev-parse --quiet --verify refs/stash) || true
+
+	trap - EXIT TERM QUIT INT HUP ABRT
+
+	if [ "$OLD_STASH" != "$NEW_STASH" ]
+	then
+		git reset --hard
+		git stash pop --index --quiet
+	fi
+
+	exit $EXIT_STATUS
+}
+
+trap 'cleanup' EXIT
+trap 'exit 3'  TERM QUIT INT HUP ABRT
+
+# To execute tests on what will be committed and not what is in work tree.
+git stash push --keep-index --include-untracked --quiet
+
+make check
