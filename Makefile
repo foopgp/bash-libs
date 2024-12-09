@@ -2,9 +2,19 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 
+TARGETS          := $(wildcard bin/*)
+
 SHELL            := /bin/sh
+INSTALL          := install
+INSTALL_PROGRAM  := $(INSTALL)
 LICENCES_CHECKER := reuse lint
 SUB_MAKE_DIRS    := specs man tests
+
+prefix           ?= /usr/local
+exec_prefix      ?= $(prefix)
+bindir           ?= $(exec_prefix)/bin
+
+BINDIR           := $(DESTDIR)$(bindir)
 
 .POSIX:
 .SUFFIXES:
@@ -28,8 +38,13 @@ check clean:
 html pdf docbook markdown:
 	$(MAKE) -C specs $@
 
-install uninstall:
+install: | $(BINDIR)
 	$(MAKE) -C man   $@
+	$(INSTALL_PROGRAM) $(TARGETS) $(BINDIR)
+
+uninstall:
+	$(MAKE) -C man   $@
+	$(RM) $(addprefix $(BINDIR)/, $(notdir $(TARGETS)))
 
 install-pre-commit-hook: .git/hooks/pre-commit
 
@@ -44,3 +59,6 @@ $(SUB_MAKE_DIRS): %:
 
 .git/hooks/pre-commit: pre-commit.hook
 	cp --interactive $< $@
+
+$(BINDIR):
+	mkdir -p $@
