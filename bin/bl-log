@@ -6,79 +6,71 @@
 # Copyright © 2021 Jean-Jacques Brucker <jjbrucker@free.fr>
 #
 # SPDX-License-Identifier: LGPL-3.0-only
-#
-# shellcheck disable=SC2034 # variable appears unused
-# shellcheck disable=SC2086 # Double quote warning
-# shellcheck disable=SC2128 # expanding array without index warning
-# shellcheck disable=SC2207 # Split array warning
 
 
 if [[ "$1" == --bash-completion ]] ; then
+	_BL_LOG_LEVELS_NAMES="emerg alert crit err error warning notice info debug"
+	_BL_LOG_LEVELS_REGEX=$(awk '{ OFS="\\|"; NF=NF; print "\\<\\("$0"\\)\\>" }' <<< "$_BL_LOG_LEVELS_NAMES")
+	_BL_LOG_LEVELS_LIST=$(awk  '{ OFS=",";   NF=NF; print      "{"$0"}" }'      <<< "$_BL_LOG_LEVELS_NAMES")
+	readonly _BL_LOG_LEVELS_NAMES _BL_LOG_LEVELS_REGEX _BL_LOG_LEVELS_LIST
+
+	_BL_LOG_SYSLOG_PORT=$(awk '$1 ~ /^syslog$/  {split($2, a, "/"); print a[1]}' /etc/services)
+	_BL_LOG_SOCKET_LIST=$(awk '$NF ~ /^\// {print $NF}'                          /proc/net/unix)
+	readonly _BL_LOG_SYSLOG_PORT  _BL_LOG_SOCKET_LIST
+
+	_BL_LOG_OPTIONS="--help --version --msgid --id= --log-level --log-exit"
+	_BL_LOG_OPTIONS="$_BL_LOG_OPTIONS --prio-prefix --rfc3164 --rfc5424="
+	_BL_LOG_OPTIONS="$_BL_LOG_OPTIONS --server --port --tcp --udp --socket"
+	_BL_LOG_OPTIONS="$_BL_LOG_OPTIONS --socket-errors --socket-errors="
+	_BL_LOG_OPTIONS="$_BL_LOG_OPTIONS --size --no-act --octet-count --quiet"
+	_BL_LOG_OPTIONS="$_BL_LOG_OPTIONS --stderr --file --tag --skip-empty"
+	_BL_LOG_OPTIONS="$_BL_LOG_OPTIONS --journald --journald= --color --color="
+	_BL_LOG_FACILITIES="{auth,authpriv,cron,daemon,ftp,lpr,mail,news,syslog}"
+	readonly _BL_LOG_OPTIONS _BL_LOG_FACILITIES
+
+	_bl_log_compgen ()
+	{
+		mapfile -t COMPREPLY < <(compgen "$@" || true)
+	}
+
 	_bl_log_completion()
 	{
-		local cur OPTS
+		local cur
 		COMPREPLY=()
 		cur="${COMP_WORDS[COMP_CWORD]}"
-		if grep -q -- "\<\(emerg\|alert\|crit\|err\|error\|warning\|notice\|info\|debug\)\>" <<< "${COMP_WORDS[@]}" ; then
-			return 0
-		fi
+		grep -q -- "$_BL_LOG_LEVELS_REGEX" <<< "${COMP_WORDS[@]}" ||
 		case ${COMP_WORDS[COMP_CWORD-1]} in
-			'-f'|'--file')
-				local IFS=$'\n'
-				compopt -o filenames
-				COMPREPLY=( $(compgen -f -- $cur) )
-				return 0 ;;
-			'-n'|'--server')
-				COMPREPLY=( $(compgen -A hostname -- $cur) )
-				return 0 ;;
-			'-P'|'--port')
-				COMPREPLY=( $(compgen -W "$(awk '$1 ~ /^syslog$/  {split($2, a, "/"); print a[1]}' /etc/services)" -- $cur) )
-				return 0 ;;
-			'-t'|'--tag')
-				COMPREPLY=( $(compgen -W "tag" -- $cur) )
-				return 0 ;;
-			'-u'|'--socket')
-				COMPREPLY=( $(compgen -W "$(awk '$NF ~ /^\// {print $NF}' /proc/net/unix)" -- $cur) )
-				return 0 ;;
-			'--msgid')
-				COMPREPLY=( $(compgen -W "msgid" -- $cur) )
-				return 0 ;;
-			'-h'|'--help'|'-V'|'--version')
-				return 0 ;;
-			'--log-exit')
-				COMPREPLY=( $(compgen -W "{emerg,alert,crit,err,error,warning,notice,info,debug}" -- $cur) )
-				return 0 ;;
+			'-h'|'--help'|'-V'|'--version')                                     ;;
+			'-t'|'--tag')    _bl_log_compgen -W "tag"                  -- "$cur";;
+			'--msgid')       _bl_log_compgen -W "msgid"                -- "$cur";;
+			'-n'|'--server') _bl_log_compgen -A hostname               -- "$cur";;
+			'-P'|'--port')   _bl_log_compgen -W "$_BL_LOG_SYSLOG_PORT" -- "$cur";;
+			'-u'|'--socket') _bl_log_compgen -W "$_BL_LOG_SOCKET_LIST" -- "$cur";;
+			'--log-exit')    _bl_log_compgen -W "$_BL_LOG_LEVELS_LIST" -- "$cur";;
+			'-f'|'--file')   local IFS=$'\n'; compopt -o filenames; _bl_log_compgen -f -- "$cur";;
+			*)
+				case $cur in
+					'--journald'*)                 local IFS=$'\n'; compopt -o filenames; _bl_log_compgen -P "--journald=" -f -- "${cur:12}";;
+					'--socket-errors'*|'--color'*) _bl_log_compgen -W "--{socket-errors,color}={on,off,auto}"    -- "$cur";;
+					-*)                            _bl_log_compgen -W "${_BL_LOG_OPTIONS}"                       -- "$cur";;
+					*)                             _bl_log_compgen -W "$_BL_LOG_FACILITIES.$_BL_LOG_LEVELS_LIST" -- "$cur";;
+				esac;;
 		esac
-		case $cur in
-			'--socket-errors'*|'--color'*)
-				COMPREPLY=( $(compgen -W "--{socket-errors,color}={on,off,auto}" -- "$cur" ) )
-				return 0 ;;
-			'--journald'*)
-				local IFS=$'\n'
-				compopt -o filenames
-				COMPREPLY=( $(compgen -P "--journald=" -f -- "${cur:12}" ) )
-				return 0 ;;
-			-*)
-				OPTS="--file --help --id= --journald --journald= --msgid --no-act --octet-count --port --prio-prefix --rfc3164 --rfc5424= --server --size --skip-empty --socket --socket-errors --socket-errors= --stderr --tag --tcp --udp --version --log-level --log-exit --color --color= --quiet "
-				COMPREPLY=( $(compgen -W "${OPTS}" -- $cur) )
-				return 0 ;;
-		esac
-		COMPREPLY=( $(compgen -W "{,auth.,authpriv.,cron.,daemon.,ftp.,lpr.,mail.,news.,syslog.}{emerg,alert,crit,err,error,warning,notice,info,debug}" -- $cur) )
-		return 0
 	}
-	complete -F _bl_log_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+
+	complete -F _bl_log_completion "$(basename "${BASH_SOURCE[0]}")" "${BASH_SOURCE[0]}"
 	return 0
 fi
 
 # If sourcing while _bl_log_parseoptions is already set, execute the function and return without reloading rest of file.
-if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_log_parseoptions)" == function ]] ; then
+if [[ "${BASH_SOURCE[0]}" != "$0" ]] && [[ "$(type -t _bl_log_parseoptions)" == function ]] ; then
 	_bl_log_parseoptions "$BL_LOG_NAME" "$@"
 	return $?
 fi
 
 ### Constants ###
 
-BL_LOG_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+BL_LOG_NAME="$(basename "$(readlink -f "${BASH_SOURCE[0]}")" )"
 declare -r BL_LOG_NAME
 declare -r BL_LOG_VERSION="0.0.1"
 
@@ -101,23 +93,23 @@ BL_LOG_O_STDERR="--stderr"
 BL_LOGGER_OPTIONS=""
 BL_LOG_COLOR="auto"
 
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
+if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
 	# run as a program
 	set -e
 	BL_LOGEXITLNAME="${BL_LOGEXITLNAME:-err}"
 
-	BL_LOG_usage="Usage: $BASH_SOURCE [OPTIONS]... PRIORITY [MESSAGE]..."
+	BL_LOG_usage="Usage: ${BASH_SOURCE[0]} [OPTIONS]... PRIORITY [MESSAGE]..."
 	BL_LOG_shelpmsg="
 $BL_LOG_NAME is also bash library, see:
-$ source $BASH_SOURCE --help"
+$ source ${BASH_SOURCE[0]} --help"
 else
 	# run as a library (source $0)
 	BL_LOGEXITLNAME="${BL_LOGEXITLNAME:-emerg}"
 
-	BL_LOG_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+	BL_LOG_usage="Usage: source ${BASH_SOURCE[0]} [OPTIONS]..."
 
 	BL_LOG_shelpmsg="
-      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+      --bash-completion    set completion for ${BASH_SOURCE[0]} program and return (without loading anything else)
 
 Reminder: when used as a library, all functions calls share the same environment variables,
 i.e. the same options passed when loading the library."
@@ -174,7 +166,7 @@ Options forwarded to 'logger':
 #TODO: explain in comment why we dont use getopts...
 _bl_log_parseoptions() {
 	local name=$1
-	[[ "$name" =~ ^- ]] && { echo -e "Usage: $FUNCNAME NAME \"\$@\"\nFor program/function named NAME: parse Options in \$@ and set BL_LOG_ARGV array containing remaining parameters" >&2 ; return 1 ; }
+	[[ "$name" =~ ^- ]] && { echo -e "Usage: ${FUNCNAME[0]} NAME \"\$@\"\nFor program/function named NAME: parse Options in \$@ and set BL_LOG_ARGV array containing remaining parameters" >&2 ; return 1 ; }
 	shift
 	for ((;$#;)) ; do
 		case "$1" in
@@ -207,7 +199,7 @@ _bl_log_parseoptions() {
 
 
 bl_log() {
-	local BL_LOG_usage="Usage: $FUNCNAME [OPTIONS]... PRIORITY [MESSAGE]..."
+	local BL_LOG_usage="Usage: ${FUNCNAME[0]} [OPTIONS]... PRIORITY [MESSAGE]..."
 
 	# -I flag is only available since bash >= 5.1. ...
 	#local -I BL_LOGLEVEL BL_LOGEXITLNAME BL_LOG_O_STDERR BL_LOGGER_OPTIONS BL_LOG_COLOR
@@ -215,7 +207,7 @@ bl_log() {
 	local BL_LOGLEVEL="$BL_LOGLEVEL" BL_LOGEXITLNAME="$BL_LOGEXITLNAME" BL_LOG_COLOR="$BL_LOG_COLOR"
 	local BL_LOG_O_STDERR="$BL_LOG_O_STDERR" BL_LOGGER_OPTIONS=("${BL_LOGGER_OPTIONS[@]}")
 
-	_bl_log_parseoptions "$FUNCNAME" "$@" || return $?
+	_bl_log_parseoptions "${FUNCNAME[0]}" "$@" || return $?
 	[[ -n "${BL_LOG_ARGV[*]}" ]] || { echo "Error: Please give at least a priority (${!BL_LOGLEVELS[*]})" >&2 ; return 2 ; }
 	set "${BL_LOG_ARGV[@]}"
 
@@ -225,7 +217,7 @@ bl_log() {
 	local llevel=${BL_LOGLEVELS[$plname]}
 	if ((llevel > BL_LOGLEVEL)) ; then
 		# If there is no MESSAGE, purge stdin; else do nothing.
-		[[ "$*" ]] || cat >/dev/null
+		[[ -n "$*" ]] || cat >/dev/null
 	else
 		if [[ "$BL_LOG_COLOR" == on ]] || [[ "$BL_LOG_COLOR" == auto ]] && [[ -t 2 ]] ; then
 			filter="2> >(sed 's,: ,: \x1b[${BL_LOGCOLORS[$llevel]}m${plname^}:\x1b[0m ,' >&2)"
@@ -244,7 +236,7 @@ bl_log() {
 _bl_log_parseoptions "$BL_LOG_NAME" "$@"
 
 # Do nothing else if sourced
-[[ "$BASH_SOURCE" == "$0" ]] || return 0
+[[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
 
 
 ### Run ###

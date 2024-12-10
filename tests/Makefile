@@ -9,7 +9,7 @@ RESULTS_DIR        := results
 SHELL              := /bin/sh
 REQFLOW            := reqflow stat -s
 TAP_CONSUMER       := tappy --verbose
-SHELLCHECK         := shellcheck --enable all
+SHELLCHECK         := shellcheck
 
 BATS_FLAGS         := -F tap13
 REQFLOW_COMMON_OPT := -type        "txt"
@@ -56,7 +56,7 @@ $(foreach ITEM, $(TARGETS), check_$(ITEM:.tap=): $(RESULTS_DIR)/$(ITEM)$(NEWLINE
 check_%: %.req phony
 	RESULT=$$($(REQFLOW) -c $< 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)
 
-$(RESULTS_DIR)/%.tap: %.bats ../bin/% Makefile | $(RESULTS_DIR)
+$(RESULTS_DIR)/%.tap: %.bats ../bin/% ../.shellcheckrc Makefile | $(RESULTS_DIR)
 	-./$< $(BATS_FLAGS) > $@
 
 %.req: Makefile

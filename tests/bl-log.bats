@@ -33,7 +33,7 @@ setup () {
 }
 
 @test "test_Fc_1_2_linter # TODO" {
-	shellcheck --enable all "${TARGET}"
+	shellcheck "${TARGET}"
 }
 
 @test "test_Fc_2_1_help_option # TODO" {

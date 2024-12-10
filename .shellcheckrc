@@ -1,0 +1,6 @@
+# © 2024 Henri GEIST <geist.henri@laposte.net>
+#
+# SPDX-License-Identifier: CC0-1.0+
+
+enable=all
+disable=SC2250 # Suggest putting braces around all variable references
