@@ -39,8 +39,8 @@ setup () {
 		do
 			level="${LOG_LEVELS[$LEVEL]}"
 
-			echo "${TARGET}" --no-act --log-exit "${threshold}" "${level}"
 			run --separate-stderr "${TARGET}" --no-act --log-exit "${threshold}" "${level}" "message"
+			echo "$BATS_RUN_COMMAND"
 			if [[ "$LEVEL" -le "$TRESHOLD" ]]
 			then
 				assert_equal "$status" $(( 168 + LEVEL ))
@@ -63,8 +63,8 @@ setup () {
 		do
 			level="${LOG_LEVELS[$LEVEL]}"
 
-			echo "${TARGET}" --no-act --log-level "${TRESHOLD}" "${level}"
 			run --separate-stderr "${TARGET}" --no-act --log-level "${TRESHOLD}" "${level}" "message"
+			echo "$BATS_RUN_COMMAND"
 			assert_equal "${#lines[@]}"        "0"
 			if [[ "$LEVEL" -le "$TRESHOLD" ]]
 			then
@@ -73,6 +73,29 @@ setup () {
 				assert_equal "${#stderr_lines[@]}" "0"
 			fi
 		done
+	done
+}
+
+@test "test_Fp_1_4_default_exit_level" {
+	LOG_LEVELS=(emerg alert crit err warning notice info debug)
+	LEVEL_INDEXS="  0     1    2   3       4      5    6     7"
+	TRESHOLD=3
+	threshold="${LOG_LEVELS[$TRESHOLD]}"
+
+	for LEVEL in $LEVEL_INDEXS
+	do
+		level="${LOG_LEVELS[$LEVEL]}"
+
+		run --separate-stderr "${TARGET}" --no-act "${level}" "message"
+		echo "$BATS_RUN_COMMAND"
+		if [[ "$LEVEL" -le "$TRESHOLD" ]]
+		then
+			assert_equal "$status" $(( 168 + LEVEL ))
+		else
+			assert_success
+		fi
+		assert_equal "${#lines[@]}"        "0"
+		assert_equal "${#stderr_lines[@]}" "1"
 	done
 }
 

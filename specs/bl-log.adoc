@@ -72,6 +72,7 @@ graph octopus
 | <<Fp_1_3>>  | Enable setting a `log_level` under witch the message output is
                 simply dropped with a `--log-level` option and an value from
                 `0` to `7`.
+| <<Fp_1_4>>  | Having a default `--log-exit` level of `err` when not specified.
 |====
 
 
@@ -142,6 +143,14 @@ To not bother with unimportant logs when not needed.
 
 NOTE: Why using a numeric value from `0` to `7` for the `--log-level` option
   while using a semantic value for the `--log-exit` option.
+
+==== Default log-exit level (Fp_1_4)
+
+[[Fp_1_4]]
+
+Because as long as we have the --log-exit functionality something need to be
+defined as default.
+And we need at least an error to want to stop the program.
 
 === For constraint functions
 
