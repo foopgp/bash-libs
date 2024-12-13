@@ -69,6 +69,9 @@ graph octopus
                 immediate program exit with an `EXIT STATUS` of
                `168 + log_level` just after dumping the log with a `--log-exit`
                 option.
+| <<Fp_1_3>>  | Enable setting a `log_level` under witch the message output is
+                simply dropped with a `--log-level` option and an value from
+                `0` to `7`.
 |====
 
 
@@ -130,6 +133,15 @@ NOTE: The principle is good but I do not think it is the duty of a log
   library. It is more the duty of an assertion library witch can use a log
   library. It is against the principle of doing only one thing and doing it
   well.
+
+==== Do not log low criticality (Fp_1_3)
+
+[[Fp_1_3]]
+
+To not bother with unimportant logs when not needed.
+
+NOTE: Why using a numeric value from `0` to `7` for the `--log-level` option
+  while using a semantic value for the `--log-exit` option.
 
 === For constraint functions
 
