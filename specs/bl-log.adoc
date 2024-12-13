@@ -65,6 +65,10 @@ graph octopus
 
 | <<Fp_1_1>>  | Enable writing a log with any standard _syslog_ `log_level` on
                 `stderr` with the command `bl-log log_level "message"`.
+| <<Fp_1_2>>  | Enable setting a `log_level` over witch any log trigger an
+                immediate program exit with an `EXIT STATUS` of
+               `168 + log_level` just after dumping the log with a `--log-exit`
+                option.
 |====
 
 
@@ -115,6 +119,17 @@ graph octopus
 [[Fp_1_1]]
 
 This is the main reason why we are doing all that stuff.
+
+==== Exit on level above threshold (Fp_1_2)
+
+[[Fp_1_2]]
+
+It is to log and exit early instead of continuing with an erroneous program.
+
+NOTE: The principle is good but I do not think it is the duty of a log
+  library. It is more the duty of an assertion library witch can use a log
+  library. It is against the principle of doing only one thing and doing it
+  well.
 
 === For constraint functions
 

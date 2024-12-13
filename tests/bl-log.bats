@@ -15,16 +15,41 @@ setup () {
 	TARGET="${BATS_TEST_DIRNAME}"/../bin/$(basename "${BATS_TEST_FILENAME}" .bats)
 }
 
-@test "test_Fp_1_1_log_to_stderr # TODO" {
+@test "test_Fp_1_1_log_to_stderr" {
 	for ITEM in Debug Info Notice Warning Error Crit Alert Emerg
 	do
 		item=$(echo "${ITEM}" | tr '[:upper:]' '[:lower:]')
 
-		run --separate-stderr "${TARGET}" "${item}" "message"
-		assert_success
+		run --separate-stderr "${TARGET}" --no-act "${item}" "message"
 		assert_equal "${#lines[@]}"        "0"
 		assert_equal "${#stderr_lines[@]}" "1"
 		assert_regex "${stderr_lines[0]}"  "${ITEM}: message$"
+	done
+}
+
+@test "test_Fp_1_2_exit_on_level_above_threshold" {
+	LOG_LEVELS=(emerg alert crit err warning notice info debug)
+	LEVEL_INDEXS="  0     1    2   3       4      5    6     7"
+
+	for TRESHOLD in $LEVEL_INDEXS
+	do
+		threshold="${LOG_LEVELS[$TRESHOLD]}"
+
+		for LEVEL in $LEVEL_INDEXS
+		do
+			level="${LOG_LEVELS[$LEVEL]}"
+
+			echo "${TARGET}" --no-act --log-exit "${threshold}" "${level}"
+			run --separate-stderr "${TARGET}" --no-act --log-exit "${threshold}" "${level}" "message"
+			if [[ "$LEVEL" -le "$TRESHOLD" ]]
+			then
+				assert_equal "$status" $(( 168 + LEVEL ))
+			else
+				assert_success
+			fi
+			assert_equal "${#lines[@]}"        "0"
+			assert_equal "${#stderr_lines[@]}" "1"
+		done
 	done
 }
 
@@ -49,7 +74,7 @@ setup () {
 }
 
 @test "test_Fc_3_1_color" {
-	run --separate-stderr ptywrap "${TARGET}" notice "message"
+	run --separate-stderr ptywrap "${TARGET}" --no-act notice "message"
 	assert_success
 	assert_equal "${#lines[@]}"        "0"
 	assert_equal "${#stderr_lines[@]}" "1"
@@ -57,7 +82,7 @@ setup () {
 }
 
 @test "test_Fc_3_2_no_color" {
-	run --separate-stderr "${TARGET}" notice "message"
+	run --separate-stderr "${TARGET}" --no-act notice "message"
 	assert_success
 	assert_equal "${#lines[@]}"        "0"
 	assert_equal "${#stderr_lines[@]}" "1"
