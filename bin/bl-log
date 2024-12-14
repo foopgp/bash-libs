@@ -63,14 +63,14 @@ if [[ "$1" == --bash-completion ]] ; then
 fi
 
 # If sourcing while _bl_log_parseoptions is already set, execute the function and return without reloading rest of file.
-if [[ "${BASH_SOURCE[0]}" != "$0" ]] && [[ "$(type -t _bl_log_parseoptions)" == function ]] ; then
+if [[ "${BASH_SOURCE[0]}" != "$0" ]] && [[ "$(type -t _bl_log_parseoptions || true)" == function ]] ; then
 	_bl_log_parseoptions "$BL_LOG_NAME" "$@"
 	return $?
 fi
 
 ### Constants ###
 
-BL_LOG_NAME="$(basename "$(readlink -f "${BASH_SOURCE[0]}")" )"
+BL_LOG_NAME="$(basename "$(readlink -f "${BASH_SOURCE[0]}" || true)" )"
 declare -r BL_LOG_NAME
 declare -r BL_LOG_VERSION="0.0.1"
 
@@ -207,11 +207,14 @@ bl_log() {
 	local BL_LOGLEVEL="$BL_LOGLEVEL" BL_LOGEXITLNAME="$BL_LOGEXITLNAME" BL_LOG_COLOR="$BL_LOG_COLOR"
 	local BL_LOG_O_STDERR="$BL_LOG_O_STDERR" BL_LOGGER_OPTIONS=("${BL_LOGGER_OPTIONS[@]}")
 
+	# shellcheck disable=2310 # we need the '|| return' when this bash-lib is used as a library (without set -e)
 	_bl_log_parseoptions "${FUNCNAME[0]}" "$@" || return $?
 	[[ -n "${BL_LOG_ARGV[*]}" ]] || { echo "Error: Please give at least a priority (${!BL_LOGLEVELS[*]})" >&2 ; return 2 ; }
 	set "${BL_LOG_ARGV[@]}"
 
-	local priority=$1 plname=${1##*.} filter
+	# shellcheck disable=2034 # priority escapes shellcheck because it is used in a 'eval' statement
+	local priority=$1
+	local plname=${1##*.} filter
 	grep -q "\<$plname\>" <<<"${!BL_LOGLEVELS[@]}" || { echo "Error: priority's level name '$plname' is none of: ${!BL_LOGLEVELS[*]}" >&2 ; return 2 ; }
 	shift
 	local llevel=${BL_LOGLEVELS[$plname]}
