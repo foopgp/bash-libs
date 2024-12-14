@@ -99,6 +99,30 @@ setup () {
 	done
 }
 
+@test "test_Fp_1_5_forward_to_syslog" {
+	forward_to_syslog_test ()
+	{
+		printf "" | timeout 10s socat - UDP6-LISTEN:0 & TIMEOUT_PID=$!
+
+		FAKE_SYSLOG_PORT=""
+		while [[ "$FAKE_SYSLOG_PORT" = "" ]] && ps -p "$TIMEOUT_PID" > /dev/null
+		do
+			FAKE_SYSLOG_PID=$(ps --ppid "$TIMEOUT_PID" -o pid=)
+			LSOF_RES=$(lsof -ai -p "$FAKE_SYSLOG_PID" || true)
+			FAKE_SYSLOG_PORT=$(awk -F ':' '/UDP/ { print $NF }' <<< "$LSOF_RES")
+		done
+
+		"${TARGET}" --server ::1 --port "$FAKE_SYSLOG_PORT" debug "message"
+
+		wait "$TIMEOUT_PID"
+	}
+
+	run --separate-stderr forward_to_syslog_test
+	assert_success
+	assert_equal "${#lines[@]}" '1'
+	assert_regex "${lines[0]}"  '^<15>.* bl-log .* message$'
+}
+
 @test "test_Fc_1_1_coding_style # TODO" {
 	shfmt --space-redirects --diff "${TARGET}"
 }

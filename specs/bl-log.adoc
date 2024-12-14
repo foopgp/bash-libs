@@ -73,6 +73,7 @@ graph octopus
                 simply dropped with a `--log-level` option and an value from
                 `0` to `7`.
 | <<Fp_1_4>>  | Having a default `--log-exit` level of `err` when not specified.
+| <<Fp_1_5>>  | Enable to forward logs to a `syslog` daemon.
 |====
 
 
@@ -151,6 +152,15 @@ NOTE: Why using a numeric value from `0` to `7` for the `--log-level` option
 Because as long as we have the --log-exit functionality something need to be
 defined as default.
 And we need at least an error to want to stop the program.
+
+==== Forward to syslog (Fp_1_5)
+
+To easily manage logs in a standard fashion or over the network on a remote
+host.
+
+
+[[Fp_1_5]]
+
 
 === For constraint functions
 
