@@ -163,34 +163,81 @@ Options forwarded to 'logger':
 
 ### functions ###
 
+_bl_log_print_help ()
+{
+	echo "$BL_LOG_usage"
+	echo "$BL_LOG_chelpmsg"
+	echo "$BL_LOG_shelpmsg"
+}
+
+_bl_log_print_version ()
+{
+	local name="$1"
+	printf "%s %s\n" "$name" "$BL_LOG_VERSION"
+}
+
+_bl_log_parse_exit ()
+{
+	BL_LOGEXITLNAME="$1"
+	if ! grep -q "\<$BL_LOGEXITLNAME\>" <<<"${!BL_LOGLEVELS[@]}"
+	then
+		echo "Error: log-exit '$1' is none of: ${!BL_LOGLEVELS[*]}" >&2
+		return_value=2
+	else
+		return_value=0
+	fi
+}
+
+_bl_log_parse_level ()
+{
+	BL_LOGLEVEL="$1";
+	if [[ "$BL_LOGLEVEL" != [0-9] ]]
+	then
+		echo "Error: log-level out of range [0-7]" >&2
+		return_value=2
+	else
+		return_value=0
+	fi
+}
+
 #TODO: explain in comment why we dont use getopts...
 _bl_log_parseoptions() {
 	local name=$1
-	[[ "$name" =~ ^- ]] && { echo -e "Usage: ${FUNCNAME[0]} NAME \"\$@\"\nFor program/function named NAME: parse Options in \$@ and set BL_LOG_ARGV array containing remaining parameters" >&2 ; return 1 ; }
+	return_value=0
+
+	if [[ "$name" =~ ^- ]]
+	then
+		echo "Usage: ${FUNCNAME[0]} NAME" '"$@"'                                                                              >&2
+		echo 'For program/function named NAME: parse Options in $@ and set BL_LOG_ARGV array containing remaining parameters' >&2
+		return 1
+	fi
+
+	_bl_log_print_bad_option ()
+	{
+		echo "${name}: unrecognized option '$1'"          >&2
+		echo                                              >&2
+		echo "Try '${name} --help' for more information." >&2
+	}
+
 	shift
+
 	for ((;$#;)) ; do
 		case "$1" in
-			-l|--log-l*) shift ; BL_LOGLEVEL="$1" ; [[ "$BL_LOGLEVEL" == [0-9] ]] || { printf "Error: log-level out of range [0-7]\n" >&2 ; return 2 ; } ;;
-			-L|--log-e*) shift ; BL_LOGEXITLNAME="$1"
-				grep -q "\<$BL_LOGEXITLNAME\>" <<<"${!BL_LOGLEVELS[@]}" || { printf "Error: log-exit '%s' is none of: %s\n" "$BL_LOGEXITLNAME" "${!BL_LOGLEVELS[*]}" >&2 ; return 2 ; } ;;
-			-q|--quiet) BL_LOG_O_STDERR="" ;;
-			--color|--color=on) BL_LOG_COLOR=on ;;
-			--color=off) BL_LOG_COLOR=off ;;
-			--color=auto) BL_LOG_COLOR=auto ;;
-			-Q|--no-act) BL_LOGGER_OPTIONS+=("--no-act") ;;
-			-i|-e|--skip-empty|--octet-count|--prio-prefix|-T|--tcp|-d|--udp|--rfc3164)
-				BL_LOGGER_OPTIONS+=("$1") ;;
-			-f|--file|-S|--size|-t|--tag|-n|--server|-P|--port|--sd-id|--sd-param|--msgid|-u|--socket)
-				BL_LOGGER_OPTIONS+=("$1")
-				shift
-				BL_LOGGER_OPTIONS+=("$1") ;;
-			--id*|--rfc5424*|--socket-errors*|--journald*)
-				BL_LOGGER_OPTIONS+=("$1") ;;
-			-h|--help) printf "%s\n%s\n%s\n" "$BL_LOG_usage" "$BL_LOG_chelpmsg" "$BL_LOG_shelpmsg" ; return 2 ;;
-			-V|--version) printf "%s %s\n" "$name" "$BL_LOG_VERSION" ; return 2 ;;
-			--) shift ; break ;;
-			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$name" "$1" "$name" >&2 ; return 2 ;;
-			*) break ;;
+			--color|--color=on)                                                                        BL_LOG_COLOR=on;;
+			--color=off)                                                                               BL_LOG_COLOR=off;;
+			--color=auto)                                                                              BL_LOG_COLOR=auto;;
+			-q|--quiet)                                                                                BL_LOG_O_STDERR="";;
+			-Q|--no-act)                                                                               BL_LOGGER_OPTIONS+=("--no-act");;
+			-i|-e|--skip-empty|--octet-count|--prio-prefix|-T|--tcp|-d|--udp|--rfc3164)                BL_LOGGER_OPTIONS+=("$1");;
+			-f|--file|-S|--size|-t|--tag|-n|--server|-P|--port|--sd-id|--sd-param|--msgid|-u|--socket) BL_LOGGER_OPTIONS+=("$1"); shift; BL_LOGGER_OPTIONS+=("$1");;
+			--id*|--rfc5424*|--socket-errors*|--journald*)                                             BL_LOGGER_OPTIONS+=("$1");;
+			-l|--log-l*)                                                                               shift; _bl_log_parse_level "$1"; [[ "$return_value" == 0 ]] || return;;
+			-L|--log-e*)                                                                               shift; _bl_log_parse_exit  "$1"; [[ "$return_value" == 0 ]] || return;;
+			-h|--help)                                                                                 _bl_log_print_help;            return_value=2; return;;
+			-V|--version)                                                                              _bl_log_print_version "$name"; return_value=2; return;;
+			--)                                                                                        shift;                                         break;;
+			-*)                                                                                        _bl_log_print_bad_option "$1"; return_value=2; return;;
+			*)                                                                                         break;;
 		esac
 		shift
 	done
@@ -200,34 +247,47 @@ _bl_log_parseoptions() {
 
 bl_log() {
 	local BL_LOG_usage="Usage: ${FUNCNAME[0]} [OPTIONS]... PRIORITY [MESSAGE]..."
+	local return_value
 
-	# -I flag is only available since bash >= 5.1. ...
-	#local -I BL_LOGLEVEL BL_LOGEXITLNAME BL_LOG_O_STDERR BL_LOGGER_OPTIONS BL_LOG_COLOR
-	# TODO: replace next 2 lines by previous commented line once bash 5.1 is widely used and deployed
-	local BL_LOGLEVEL="$BL_LOGLEVEL" BL_LOGEXITLNAME="$BL_LOGEXITLNAME" BL_LOG_COLOR="$BL_LOG_COLOR"
-	local BL_LOG_O_STDERR="$BL_LOG_O_STDERR" BL_LOGGER_OPTIONS=("${BL_LOGGER_OPTIONS[@]}")
+	_bl_log_parseoptions "${FUNCNAME[0]}" "$@"
+	[[ "$return_value" == 0 ]] || return "$return_value"
 
-	# shellcheck disable=2310 # we need the '|| return' when this bash-lib is used as a library (without set -e)
-	_bl_log_parseoptions "${FUNCNAME[0]}" "$@" || return $?
-	[[ -n "${BL_LOG_ARGV[*]}" ]] || { echo "Error: Please give at least a priority (${!BL_LOGLEVELS[*]})" >&2 ; return 2 ; }
+	if [[ -z "${BL_LOG_ARGV[*]}" ]]
+	then
+		echo "Error: Please give at least a priority (${!BL_LOGLEVELS[*]})" >&2
+		return 2
+	fi
+
 	set "${BL_LOG_ARGV[@]}"
 
-	# shellcheck disable=2034 # priority escapes shellcheck because it is used in a 'eval' statement
 	local priority=$1
 	local plname=${1##*.} filter
-	grep -q "\<$plname\>" <<<"${!BL_LOGLEVELS[@]}" || { echo "Error: priority's level name '$plname' is none of: ${!BL_LOGLEVELS[*]}" >&2 ; return 2 ; }
+	if ! grep -q "\<$plname\>" <<<"${!BL_LOGLEVELS[@]}"
+	then
+		echo "Error: priority's level name '$plname' is none of: ${!BL_LOGLEVELS[*]}" >&2
+		return 2
+	fi
+
 	shift
+
 	local llevel=${BL_LOGLEVELS[$plname]}
-	if ((llevel > BL_LOGLEVEL)) ; then
+
+	if ((llevel > BL_LOGLEVEL))
+	then
 		# If there is no MESSAGE, purge stdin; else do nothing.
 		[[ -n "$*" ]] || cat >/dev/null
 	else
-		if [[ "$BL_LOG_COLOR" == on ]] || [[ "$BL_LOG_COLOR" == auto ]] && [[ -t 2 ]] ; then
-			filter="2> >(sed 's,: ,: \x1b[${BL_LOGCOLORS[$llevel]}m${plname^}:\x1b[0m ,' >&2)"
+		if [[ "$BL_LOG_COLOR" == on ]] || [[ "$BL_LOG_COLOR" == auto ]] && [[ -t 2 ]]
+		then
+			local SET_COLOR="\x1b[${BL_LOGCOLORS[$llevel]}m"
+			local RESET_COLOR="\x1b[0m"
 		else
-			filter="2> >(sed 's,: ,: ${plname^}: ,' >&2)"
+			local SET_COLOR=""
+			local RESET_COLOR=""
 		fi
-		eval 'logger -p "$priority" $BL_LOG_O_STDERR --id=$$ --tag "${0##*/}" ${BL_LOGGER_OPTIONS[@]} -- "$@" '"$filter"
+		filter="2> >(sed 's,: ,: ""${SET_COLOR}${plname^}:${RESET_COLOR}"" ,' >&2)"
+
+		eval 'logger -p' "$priority" "$BL_LOG_O_STDERR" '--id=$$ --tag "${0##*/}" ${BL_LOGGER_OPTIONS[@]} -- "$@" '"$filter"
 	fi
 	((llevel > BL_LOGLEVELS[$BL_LOGEXITLNAME] )) || exit $((168+llevel))
 }

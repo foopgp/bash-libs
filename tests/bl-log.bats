@@ -127,7 +127,7 @@ setup () {
 	shfmt --space-redirects --diff "${TARGET}"
 }
 
-@test "test_Fc_1_2_linter # TODO" {
+@test "test_Fc_1_2_linter" {
 	shellcheck "${TARGET}"
 }
 
