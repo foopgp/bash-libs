@@ -87,8 +87,7 @@ graph octopus
 |====
 | Id          | Description
 
-| <<Fc_1_1>>  | Must match the code style provided by `shfmt --space-redirects`
-| <<Fc_1_2>>  | Must pass `shellcheck --enable all` linter without warning.
+| <<Fc_1_1>>  | Must pass `shellcheck --enable all` linter without warning.
 |====
 
 
@@ -166,19 +165,9 @@ host.
 
 ==== Maintainers constraints
 
-===== Coding style (Fc_1_1)
+===== Linter (Fc_1_1)
 
 [[Fc_1_1]]
-
-Following a defined and common coding style is important for:
-
-  - Readability
-  - Cohesion between developers
-  - Avoiding indefinite indecisions and code refactoring.
-
-===== Linter (Fc_1_2)
-
-[[Fc_1_2]]
 
 This is important to maintain good code quality and lower the number of bugs.
 

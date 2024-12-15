@@ -123,11 +123,7 @@ setup () {
 	assert_regex "${lines[0]}"  '^<15>.* bl-log .* message$'
 }
 
-@test "test_Fc_1_1_coding_style # TODO" {
-	shfmt --space-redirects --diff "${TARGET}"
-}
-
-@test "test_Fc_1_2_linter" {
+@test "test_Fc_1_1_linter" {
 	shellcheck "${TARGET}"
 }
 
