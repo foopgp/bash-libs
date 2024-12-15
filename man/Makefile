@@ -43,9 +43,6 @@ uninstall:
 
 .PHONY: all build clean install uninstall
 
-bash-libs.7: ../README.md Makefile
-	$(TO_MAN) --metadata date:"$$($(GIT_DATE) $<)" < $< > $@
-
 %:: %.md Makefile
 	$(TO_MAN) --metadata date:"$$($(GIT_DATE) $<)" < $< > $@
 
