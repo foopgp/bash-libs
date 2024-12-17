@@ -261,7 +261,8 @@ bl_log() {
 	set "${BL_LOG_ARGV[@]}"
 
 	local priority=$1
-	local plname=${1##*.} filter
+	local plname=${1##*.}
+	local result
 	if ! grep -q "\<$plname\>" <<<"${!BL_LOGLEVELS[@]}"
 	then
 		echo "Error: priority's level name '$plname' is none of: ${!BL_LOGLEVELS[*]}" >&2
@@ -285,9 +286,9 @@ bl_log() {
 			local SET_COLOR=""
 			local RESET_COLOR=""
 		fi
-		filter="2> >(sed 's,: ,: ""${SET_COLOR}${plname^}:${RESET_COLOR}"" ,' >&2)"
 
-		eval 'logger -p' "$priority" "$BL_LOG_O_STDERR" '--id=$$ --tag "${0##*/}" ${BL_LOGGER_OPTIONS[@]} -- "$@" '"$filter"
+		result=$(eval logger -p "$priority" "$BL_LOG_O_STDERR" "--id=$$" "--tag ${0##*/}" '${BL_LOGGER_OPTIONS[@]} -- "$@"' 2>&1)
+		echo -e "${result/: /: ${SET_COLOR}${plname^}:${RESET_COLOR} }" 1>&2
 	fi
 	((llevel > BL_LOGLEVELS[$BL_LOGEXITLNAME] )) || exit $((168+llevel))
 }
