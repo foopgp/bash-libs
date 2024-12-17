@@ -70,7 +70,7 @@ graph octopus
                `168 + log_level` just after dumping the log with a `--log-exit`
                 option.
 | <<Fp_1_3>>  | Enable setting a `log_level` under witch the message output is
-                simply dropped with a `--log-level` option and an value from
+                simply dropped with a `--log-level` option and a value from
                 `0` to `7`.
 | <<Fp_1_4>>  | Having a default `--log-exit` level of `err` when not specified.
 | <<Fp_1_5>>  | Enable to forward logs to a `syslog` daemon.
@@ -130,7 +130,7 @@ This is the main reason why we are doing all that stuff.
 
 It is to log and exit early instead of continuing with an erroneous program.
 
-NOTE: The principle is good but I do not think it is the duty of a log
+NOTE: The principle is good, but I do not think it is the duty of a log
   library. It is more the duty of an assertion library witch can use a log
   library. It is against the principle of doing only one thing and doing it
   well.
@@ -184,7 +184,7 @@ This is for quickly help programmers to found the command syntax they need.
 
 This greatly help users to see rapidly what is more important and what is
 less important.
-And to find quickly some thing they are looking for in the middle of the logs.
+And to find quickly something they are looking for in the middle of the logs.
 
 ===== Uncolorized output (Fc_3_2)
 
