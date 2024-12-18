@@ -182,9 +182,9 @@ _bl_log_parse_exit ()
 	if ! grep -q "\<$BL_LOGEXITLNAME\>" <<<"${!BL_LOGLEVELS[@]}"
 	then
 		echo "Error: log-exit '$1' is none of: ${!BL_LOGLEVELS[*]}" >&2
-		return_value=2
+		_BL_LOG_RETVAL=2
 	else
-		return_value=0
+		_BL_LOG_RETVAL=0
 	fi
 }
 
@@ -194,16 +194,15 @@ _bl_log_parse_level ()
 	if [[ "$BL_LOGLEVEL" != [0-9] ]]
 	then
 		echo "Error: log-level out of range [0-7]" >&2
-		return_value=2
+		_BL_LOG_RETVAL=2
 	else
-		return_value=0
+		_BL_LOG_RETVAL=0
 	fi
 }
 
 #TODO: explain in comment why we dont use getopts...
 _bl_log_parseoptions() {
 	local name=$1
-	return_value=0
 
 	if [[ "$name" =~ ^- ]]
 	then
@@ -231,12 +230,12 @@ _bl_log_parseoptions() {
 			-i|-e|--skip-empty|--octet-count|--prio-prefix|-T|--tcp|-d|--udp|--rfc3164)                BL_LOGGER_OPTIONS+=("$1");;
 			-f|--file|-S|--size|-t|--tag|-n|--server|-P|--port|--sd-id|--sd-param|--msgid|-u|--socket) BL_LOGGER_OPTIONS+=("$1"); shift; BL_LOGGER_OPTIONS+=("$1");;
 			--id*|--rfc5424*|--socket-errors*|--journald*)                                             BL_LOGGER_OPTIONS+=("$1");;
-			-l|--log-l*)                                                                               shift; _bl_log_parse_level "$1"; [[ "$return_value" == 0 ]] || return;;
-			-L|--log-e*)                                                                               shift; _bl_log_parse_exit  "$1"; [[ "$return_value" == 0 ]] || return;;
-			-h|--help)                                                                                 _bl_log_print_help;            return_value=2; return;;
-			-V|--version)                                                                              _bl_log_print_version "$name"; return_value=2; return;;
-			--)                                                                                        shift;                                         break;;
-			-*)                                                                                        _bl_log_print_bad_option "$1"; return_value=2; return;;
+			-l|--log-l*)                                                                               shift; _bl_log_parse_level "$1"; [[ "$_BL_LOG_RETVAL" == 0 ]] || return "$_BL_LOG_RETVAL";;
+			-L|--log-e*)                                                                               shift; _bl_log_parse_exit  "$1"; [[ "$_BL_LOG_RETVAL" == 0 ]] || return "$_BL_LOG_RETVAL";;
+			-h|--help)                                                                                 _bl_log_print_help;            return 2;;
+			-V|--version)                                                                              _bl_log_print_version "$name"; return 2;;
+			--)                                                                                        shift;                         break;;
+			-*)                                                                                        _bl_log_print_bad_option "$1"; return 2;;
 			*)                                                                                         break;;
 		esac
 		shift
@@ -248,8 +247,13 @@ _bl_log_parseoptions() {
 bl_log() {
 	local BL_LOG_usage="Usage: ${FUNCNAME[0]} [OPTIONS]... PRIORITY [MESSAGE]..."
 	local return_value
+	local saved_flags="$-"
 
-	_bl_log_parseoptions "${FUNCNAME[0]}" "$@"
+	set +e
+	(set "-$saved_flags"; _bl_log_parseoptions "${FUNCNAME[0]}" "$@")
+	return_value=$?
+	set "-$saved_flags"
+
 	[[ "$return_value" == 0 ]] || return "$return_value"
 
 	if [[ -z "${BL_LOG_ARGV[*]}" ]]
