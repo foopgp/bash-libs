@@ -99,6 +99,9 @@ graph octopus
 
 | <<Fc_2_1>>  | Must provide some `-h` and `--help` option to get the script
                 usage grammar.
+| <<Fc_2_2>>  | Must provide some `-V` and `--version` option to get the
+                script unique semantic version number. See `https://semver.org/`
+                matching the exact _VCS_ state.
 |====
 
 
@@ -177,6 +180,13 @@ This is important to maintain good code quality and lower the number of bugs.
 
 This is for quickly help programmers to found the command syntax they need.
 
+==== Version option (Fc_2_2)
+
+[[Fc_2_2]]
+
+  . To be able to match a usage behavior with a specific repo commit.
+  . To be able to check if the current script has a specific behavior.
+  . To be able to know if we use an up to date version.
 
 ===== Colorize output (Fc_3_1)
 

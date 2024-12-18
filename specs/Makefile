@@ -18,7 +18,7 @@ GIT_DATE              += --date=format:"%-d/%-m/%-Y"
 GIT_DATE              += --pretty=format:"%cd"
 COMMIT_DATE           := $(shell $(GIT_DATE))
 
-GIT_DESCRIBE          := git describe --dirty --broken --always
+GIT_DESCRIBE          := git describe --dirty --broken --always --match "v[0-9]*.[0-9]*.[0-9]*"
 DIRTY_BROKEN          := \(dirty\|broken\)
 COMMIT_COUNT          := \([1-9][0-9]*\)
 COMMIT_HASH           := \(g[0-9a-f]\+\)

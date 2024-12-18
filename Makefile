@@ -2,19 +2,26 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 
-TARGETS          := $(wildcard bin/*)
+TARGETS               := $(wildcard bin/*)
 
-SHELL            := /bin/sh
-INSTALL          := install
-INSTALL_PROGRAM  := $(INSTALL)
-LICENCES_CHECKER := reuse lint
-SUB_MAKE_DIRS    := specs man tests
+SHELL                 := /bin/sh
+LICENCES_CHECKER      := reuse lint
+SUB_MAKE_DIRS         := specs man tests
 
-prefix           ?= /usr/local
-exec_prefix      ?= $(prefix)
-bindir           ?= $(exec_prefix)/bin
+prefix                ?= /usr/local
+exec_prefix           ?= $(prefix)
+bindir                ?= $(exec_prefix)/bin
 
-BINDIR           := $(DESTDIR)$(bindir)
+BINDIR                := $(DESTDIR)$(bindir)
+
+GIT_DESCRIBE          := git describe --dirty --broken --always --match "v[0-9]*.[0-9]*.[0-9]*"
+DIRTY_BROKEN          := \(dirty\|broken\)
+COMMIT_COUNT          := \([1-9][0-9]*\)
+COMMIT_HASH           := \(g[0-9a-f]\+\)
+OPTIONAL_DIRTY_BROKEN := \(-$(DIRTY_BROKEN)\|\)
+PLUS_POST_TAG_ID      := -e 's/-$(COMMIT_COUNT)-$(COMMIT_HASH)$(OPTIONAL_DIRTY_BROKEN)$$/+\1.\2\3/1'
+PLUS_DIRTY_BROKEN     := -e 's/-$(DIRTY_BROKEN)$$/+\1/1'
+COMMIT_DESCRIPTION    := $(shell $(GIT_DESCRIBE) | sed $(PLUS_POST_TAG_ID) $(PLUS_DIRTY_BROKEN))
 
 .POSIX:
 .SUFFIXES:
@@ -38,9 +45,8 @@ check clean:
 html pdf docbook markdown:
 	$(MAKE) -C specs $@
 
-install: | $(BINDIR)
+install: $(addprefix $(BINDIR)/, $(notdir $(TARGETS)))
 	$(MAKE) -C man   $@
-	$(INSTALL_PROGRAM) $(TARGETS) $(BINDIR)
 
 uninstall:
 	$(MAKE) -C man   $@
@@ -53,6 +59,10 @@ install-pre-commit-hook: .git/hooks/pre-commit
 
 $(addsuffix /%, $(SUB_MAKE_DIRS)): phony
 	$(MAKE) -C $(patsubst %/$*, %, $@) $*
+
+$(BINDIR)/%: bin/% phony | $(BINDIR)
+	sed 's/^\(BL_[A-Z]\+_VERSION=\).*$$/\1"$(COMMIT_DESCRIPTION)"/1' $< > $@
+	chmod 755 $@
 
 $(SUB_MAKE_DIRS): %:
 	$(MAKE) -C $*
