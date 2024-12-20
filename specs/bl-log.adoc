@@ -102,6 +102,8 @@ graph octopus
 | <<Fc_2_2>>  | Must provide some `-V` and `--version` option to get the
                 script unique semantic version number. See `https://semver.org/`
                 matching the exact _VCS_ state.
+| <<Fc_2_3>>  | Must permit to be used as a `bl_log` function when sourced in
+                an bash witch have non changeable options like `-s` or `-i`.
 |====
 
 
@@ -187,6 +189,12 @@ This is for quickly help programmers to found the command syntax they need.
   . To be able to match a usage behavior with a specific repo commit.
   . To be able to check if the current script has a specific behavior.
   . To be able to know if we use an up to date version.
+
+==== Sourced in bash with any options (Fc_2_3)
+
+[[Fc_2_3]]
+
+This is needed to ensure functioning in more context.
 
 ===== Colorize output (Fc_3_1)
 

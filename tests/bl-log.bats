@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 
 # shellcheck disable=SC2154
+# shellcheck source=/dev/null
 
 setup_file () {
 	bats_require_minimum_version 1.5.0
@@ -167,6 +168,19 @@ setup () {
 	assert_equal "${lines[0]}"         "${expected}"
 	assert_equal "${#lines[@]}"        "1"
 	assert_equal "${#stderr_lines[@]}" "0"
+}
+
+@test "test_Fc_2_3_source_in_bash_with_any_options" {
+	source "${TARGET}"
+
+	run --separate-stderr bash -s << EOF
+	source "${TARGET}"
+	bl_log --no-act Notice "message"
+EOF
+	assert_success
+	assert_equal "${#lines[@]}"        "0"
+	assert_equal "${#stderr_lines[@]}" "1"
+	assert_regex "${stderr_lines[0]}"  "Notice: message$"
 }
 
 @test "test_Fc_3_1_color" {
