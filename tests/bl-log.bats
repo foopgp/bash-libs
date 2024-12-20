@@ -83,7 +83,7 @@ setup () {
 @test "test_Fp_1_4_default_exit_level" {
 	LOG_LEVELS=(emerg alert crit err warning notice info debug)
 	LEVEL_INDEXS="  0     1    2   3       4      5    6     7"
-	TRESHOLD=3
+	TRESHOLD=0
 	threshold="${LOG_LEVELS[$TRESHOLD]}"
 
 	for LEVEL in $LEVEL_INDEXS

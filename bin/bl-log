@@ -99,11 +99,11 @@ BL_LOGLEVEL="${BL_LOGLEVEL:-7}"
 BL_LOG_O_STDERR="--stderr"
 BL_LOGGER_OPTIONS=""
 BL_LOG_COLOR="auto"
+BL_LOGEXITLNAME="${BL_LOGEXITLNAME:-emerg}"
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
 	# run as a program
 	set -e
-	BL_LOGEXITLNAME="${BL_LOGEXITLNAME:-err}"
 
 	BL_LOG_usage="Usage: ${BASH_SOURCE[0]} [OPTIONS]... PRIORITY [MESSAGE]..."
 	BL_LOG_shelpmsg="
@@ -111,7 +111,6 @@ $BL_LOG_NAME is also bash library, see:
 $ source ${BASH_SOURCE[0]} --help"
 else
 	# run as a library (source $0)
-	BL_LOGEXITLNAME="${BL_LOGEXITLNAME:-emerg}"
 
 	BL_LOG_usage="Usage: source ${BASH_SOURCE[0]} [OPTIONS]..."
 
