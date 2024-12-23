@@ -20,7 +20,10 @@ setup () {
 }
 
 @test "test_Fp_1_1_log_to_stderr" {
-	for ITEM in Debug Info Notice Warning Error Crit Alert Emerg
+	LOG_LEVELS=(Emerg Alert Crit Error Warning Notice Info Debug)
+	LEVEL_INDEXS="  0     1    2     3       4      5    6     7"
+
+	for ITEM in "${LOG_LEVELS[@]}"
 	do
 		item=$(echo "${ITEM}" | tr '[:upper:]' '[:lower:]')
 
@@ -28,6 +31,14 @@ setup () {
 		assert_equal "${#lines[@]}"        "0"
 		assert_equal "${#stderr_lines[@]}" "1"
 		assert_regex "${stderr_lines[0]}"  "${ITEM}: message$"
+	done
+
+	for ITEM in ${LEVEL_INDEXS}
+	do
+		run --separate-stderr "${TARGET}" --no-act "${ITEM}" "message"
+		assert_equal "${#lines[@]}"        "0"
+		assert_equal "${#stderr_lines[@]}" "1"
+		assert_regex "${stderr_lines[0]}"  "${LOG_LEVELS[$ITEM]}: message$"
 	done
 }
 
@@ -53,6 +64,17 @@ setup () {
 			fi
 			assert_equal "${#lines[@]}"        "0"
 			assert_equal "${#stderr_lines[@]}" "1"
+
+			run --separate-stderr "${TARGET}" --no-act --log-exit "${TRESHOLD}" "${level}" "message"
+			echo "$BATS_RUN_COMMAND"
+			if [[ "$LEVEL" -le "$TRESHOLD" ]]
+			then
+				assert_equal "$status" $(( 168 + LEVEL ))
+			else
+				assert_success
+			fi
+			assert_equal "${#lines[@]}"        "0"
+			assert_equal "${#stderr_lines[@]}" "1"
 		done
 	done
 }
@@ -63,9 +85,21 @@ setup () {
 
 	for TRESHOLD in $LEVEL_INDEXS
 	do
+		threshold="${LOG_LEVELS[$TRESHOLD]}"
+
 		for LEVEL in $LEVEL_INDEXS
 		do
 			level="${LOG_LEVELS[$LEVEL]}"
+
+			run --separate-stderr "${TARGET}" --no-act --log-level "${threshold}" "${level}" "message"
+			echo "$BATS_RUN_COMMAND"
+			assert_equal "${#lines[@]}"        "0"
+			if [[ "$LEVEL" -le "$TRESHOLD" ]]
+			then
+				assert_equal "${#stderr_lines[@]}" "1"
+			else
+				assert_equal "${#stderr_lines[@]}" "0"
+			fi
 
 			run --separate-stderr "${TARGET}" --no-act --log-level "${TRESHOLD}" "${level}" "message"
 			echo "$BATS_RUN_COMMAND"

@@ -185,6 +185,16 @@ _bl_log_print_version ()
 _bl_log_parse_exit ()
 {
 	BL_LOGEXITLNAME="$1"
+
+	for item in "${!BL_LOGLEVELS[@]}"
+	do
+		if [[ ${BL_LOGLEVELS[$item]} == "${BL_LOGEXITLNAME}" ]]
+		then
+			BL_LOGEXITLNAME="${item}"
+			break
+		fi
+	done
+
 	if ! grep -q "\<$BL_LOGEXITLNAME\>" <<<"${!BL_LOGLEVELS[@]}"
 	then
 		echo "Error: log-exit '$1' is none of: ${!BL_LOGLEVELS[*]}" >&2
@@ -197,7 +207,17 @@ _bl_log_parse_exit ()
 _bl_log_parse_level ()
 {
 	BL_LOGLEVEL="$1";
-	if [[ "$BL_LOGLEVEL" != [0-9] ]]
+
+	for item in "${!BL_LOGLEVELS[@]}"
+	do
+		if [[ "${BL_LOGLEVEL}" = "${item}" ]]
+		then
+			BL_LOGLEVEL="${BL_LOGLEVELS[${item}]}"
+			break
+		fi
+	done
+
+	if [[ "$BL_LOGLEVEL" != [0-7] ]]
 	then
 		echo "Error: log-level out of range [0-7]" >&2
 		_BL_LOG_RETVAL=2
@@ -275,6 +295,16 @@ bl_log() {
 	local priority=$1
 	local plname=${1##*.}
 	local result
+
+	for item in "${!BL_LOGLEVELS[@]}"
+	do
+		if [[ ${BL_LOGLEVELS[$item]} == "${plname}" ]]
+		then
+			plname="${item}"
+			break
+		fi
+	done
+
 	if ! grep -q "\<$plname\>" <<<"${!BL_LOGLEVELS[@]}"
 	then
 		echo "Error: priority's level name '$plname' is none of: ${!BL_LOGLEVELS[*]}" >&2

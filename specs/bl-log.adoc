@@ -65,13 +65,17 @@ graph octopus
 
 | <<Fp_1_1>>  | Enable writing a log with any standard _syslog_ `log_level` on
                 `stderr` with the command `bl-log log_level "message"`.
+                `log_level` can be specified as a number from `0` to `7` or as
+                a name from `emerg` to `debug`.
 | <<Fp_1_2>>  | Enable setting a `log_level` over witch any log trigger an
                 immediate program exit with an `EXIT STATUS` of
                `168 + log_level` just after dumping the log with a `--log-exit`
                 option.
+                `log_level` can be specified as a number from `0` to `7` or as
+                a name from `emerg` to `debug`.
 | <<Fp_1_3>>  | Enable setting a `log_level` under witch the message output is
                 simply dropped with a `--log-level` option and a value from
-                `0` to `7`.
+                `0` to `7` or name from `emerg` to `debug`.
 | <<Fp_1_4>>  | Having a default `--log-exit` level of `emerg` when not
                 specified.
 | <<Fp_1_5>>  | Enable to forward logs to a `syslog` daemon.
@@ -146,9 +150,6 @@ NOTE: The principle is good, but I do not think it is the duty of a log
 [[Fp_1_3]]
 
 To not bother with unimportant logs when not needed.
-
-NOTE: Why using a numeric value from `0` to `7` for the `--log-level` option
-  while using a semantic value for the `--log-exit` option.
 
 ==== Default log-exit level (Fp_1_4)
 
