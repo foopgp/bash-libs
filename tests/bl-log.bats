@@ -10,7 +10,13 @@
 setup_file () {
 	bats_require_minimum_version 1.5.0
 
-	make -C "${BATS_TEST_DIRNAME}"/.. install DESTDIR="${BATS_FILE_TMPDIR}"
+	make -C "${BATS_TEST_DIRNAME}"/..   install DESTDIR="${BATS_FILE_TMPDIR}"
+}
+
+teardown_file () {
+	make -C "${BATS_TEST_DIRNAME}"/.. uninstall DESTDIR="${BATS_FILE_TMPDIR}"
+	file_list=$(ls -ARp1 "${BATS_FILE_TMPDIR}")
+	run -1 grep '[^:/]$' <<< "${file_list}"
 }
 
 setup () {
