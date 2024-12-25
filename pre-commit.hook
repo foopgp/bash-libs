@@ -12,9 +12,10 @@ OLD_STASH=$(git rev-parse --quiet --verify refs/stash) || true
 cleanup ()
 {
 	EXIT_STATUS=$?
-	NEW_STASH=$(git rev-parse --quiet --verify refs/stash) || true
 
 	trap - EXIT TERM QUIT INT HUP ABRT
+
+	NEW_STASH=$(git rev-parse --quiet --verify refs/stash) || true
 
 	if [ "$OLD_STASH" != "$NEW_STASH" ]
 	then
@@ -22,7 +23,7 @@ cleanup ()
 		git stash pop --index --quiet
 	fi
 
-	exit $EXIT_STATUS
+	exit "${EXIT_STATUS}"
 }
 
 trap 'cleanup' EXIT
