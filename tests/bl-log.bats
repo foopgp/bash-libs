@@ -155,7 +155,7 @@ load ./setup_teardown.bash
 	shellcheck "${TARGET}"
 }
 
-@test "test_Fc_2_1_help_option # TODO" {
+@test "test_Fc_2_1_help_option" {
 	target_base_name=$(basename "${TARGET}")
 
 	run --separate-stderr "${TARGET}" -h

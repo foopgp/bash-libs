@@ -105,7 +105,7 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
 	# run as a program
 	set -e
 
-	BL_LOG_usage="Usage: ${BASH_SOURCE[0]} [OPTIONS]... PRIORITY [MESSAGE]..."
+	BL_LOG_usage="Usage: $(basename "${BASH_SOURCE[0]}") [OPTIONS]... PRIORITY [MESSAGE]..."
 	BL_LOG_shelpmsg="
 $BL_LOG_NAME is also bash library, see:
 $ source ${BASH_SOURCE[0]} --help"
