@@ -260,8 +260,8 @@ _bl_log_parseoptions() {
 			--id*|--rfc5424*|--socket-errors*|--journald*)                                             BL_LOGGER_OPTIONS+=("$1");;
 			-l|--log-l*)                                                                               shift; _bl_log_parse_level "$1"; [[ "$_BL_LOG_RETVAL" == 0 ]] || return "$_BL_LOG_RETVAL";;
 			-L|--log-e*)                                                                               shift; _bl_log_parse_exit  "$1"; [[ "$_BL_LOG_RETVAL" == 0 ]] || return "$_BL_LOG_RETVAL";;
-			-h|--help)                                                                                 _bl_log_print_help;            return 2;;
-			-V|--version)                                                                              _bl_log_print_version "$name"; return 2;;
+			-h|--help)                                                                                 _bl_log_print_help;            return 1;;
+			-V|--version)                                                                              _bl_log_print_version "$name"; return 1;;
 			--)                                                                                        shift;                         break;;
 			-*)                                                                                        _bl_log_print_bad_option "$1"; return 2;;
 			*)                                                                                         break;;
@@ -341,10 +341,12 @@ bl_log() {
 # Parse Options
 _BL_LOG_RESTORE_ERREXIT=$(shopt -po errexit) || true
 _bl_log_parseoptions "$BL_LOG_NAME" "$@"
+_BL_LOG_RETVAL="$?"
 
 # Do nothing else if sourced
 [[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
 
+[[ "$_BL_LOG_RETVAL"   != "1"  ]] || exit 0
 
 ### Run ###
 
