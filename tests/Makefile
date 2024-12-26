@@ -36,7 +36,7 @@ all: check
 build: $(addprefix $(RESULTS_DIR)/, $(TARGETS))
 
 check: $(patsubst %.tap, check_%, $(TARGETS))
-	$(SHELLCHECK)   $(TARGETS:.tap=.bats)
+	$(SHELLCHECK)   $(TARGETS:.tap=.bats) setup_teardown.bash
 	$(TAP_CONSUMER) $(RESULTS_DIR)
 
 clean:
@@ -45,18 +45,12 @@ clean:
 
 .PHONY: all build check clean phony
 
-# CAUTION: you need to keep the two blank lines between 'define' and 'endef'
-define NEWLINE
-
-
-endef
-
-$(foreach ITEM, $(TARGETS), check_$(ITEM:.tap=): $(RESULTS_DIR)/$(ITEM)$(NEWLINE))
+$(foreach ITEM, $(TARGETS),$(eval check_$(ITEM:.tap=): $(RESULTS_DIR)/$(ITEM)))
 
 check_%: %.req phony
 	RESULT=$$($(REQFLOW) -c $< 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)
 
-$(RESULTS_DIR)/%.tap: %.bats ../bin/% ../.shellcheckrc Makefile | $(RESULTS_DIR)
+$(RESULTS_DIR)/%.tap: %.bats ../bin/% setup_teardown.bash ../.shellcheckrc Makefile | $(RESULTS_DIR)
 	-./$< $(BATS_FLAGS) > $@
 
 %.req: Makefile

@@ -67,8 +67,10 @@ fi
 
 BL_INTERACTIVE_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_INTERACTIVE_NAME
-declare -r BL_INTERACTIVE_VERSION="0.0.1"
 declare -r BL_INTERACTIVE_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+BL_INTERACTIVE_VERSION=$(git describe --dirty --broken --always --match "v[0-9]*.[0-9]*.[0-9]*")
+BL_INTERACTIVE_VERSION=$(sed 's/-\([1-9][0-9]*\)-\(g[0-9a-f]\+\)\(-dirty\|-broken\|\)$/+\1.\2\3/; s/-\(dirty\|broken\)$/+\1/' <<< "$BL_INTERACTIVE_VERSION")
+readonly BL_INTERACTIVE_VERSION
 
 ### Default option values ###
 

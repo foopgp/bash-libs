@@ -1,0 +1,131 @@
+= bl-interactive specifications
+Henri GEIST <hgeist@hopimedical.com>
+:copyright: © 2024 Henri GEIST <geist.henri@laposte.net>
+:SPDX-License-Identifier: CC-BY-SA-4.0
+:doctype:  book
+:toc:      left
+:numbered:
+:toclevel: 3
+
+
+== Horned beast
+
+[ditaa, "horned_beast"]
+....
+Who is it for ?            On what does it act ?
+/-------------\              /--------------\
+| Programmers |              | Bash scripts |
+\-----+-------/              \-------+------/
+      |                              |
+      |         The product          |
+      |  /----------------------\    |
+      \--+ bl‑interactive script +-+-/
+         \----------------------/  |
+                                   |
+                     /-------------/
+                     |
+                     V
+          /----------+-----------\
+          | Easily present input |
+          | request to users     |
+          | from bash scripts    |
+          \----------------------/
+                   Why ?
+....
+
+The `bl-interactive` script enable programmers to easily write some input
+request to users in their bash scripts.
+
+
+== Octopus
+
+[graphviz, "octopus", layout=twopi]
+----
+graph octopus
+{
+    ranksep = 3
+    root    = "bl-interactive"
+
+    "Maintainers" -- "bl-interactive" [label = Fc_1]
+    "Programmers" -- "bl-interagtive" [label = Fc_2]
+    "Users"       -- "bl-interactive" [label = Fc_3]
+
+    "Programmers" -- "Users"          [label = Fp_1]
+}
+----
+
+
+== Requirements
+
+=== Principal functions
+
+[cols="12%,~a"]
+|====
+| Id          | Description
+|====
+
+
+<<<
+
+=== Constraint functions
+
+==== Maintainers constraints
+
+[cols="12%,~a"]
+|====
+| Id          | Description
+
+| <<Fc_1_1>>  | Must pass `shellcheck --enable all` linter without warning.
+|====
+
+
+==== Programmers constraints
+
+[cols="12%,~a"]
+|====
+| Id          | Description
+
+| <<Fc_2_1>>  | Must provide some `-h` and `--help` option to get the script
+                usage grammar.
+| <<Fc_2_2>>  | Must provide some `-V` and `--version` option to get the
+                script unique semantic version number. See `https://semver.org/`
+                matching the exact _VCS_ state.
+|====
+
+
+==== Users constraints
+
+[cols="12%,~a"]
+|====
+| Id          | Description
+|====
+
+<<<
+
+== Rationals
+
+=== For principal functions
+
+=== For constraint functions
+
+==== Maintainers constraints
+
+===== Linter (Fc_1_1)
+
+[[Fc_1_1]]
+
+This is important to maintain good code quality and lower the number of bugs.
+
+===== Help option (Fc_2_1)
+
+[[Fc_2_1]]
+
+This is for quickly help programmers to found the command syntax they need.
+
+==== Version option (Fc_2_2)
+
+[[Fc_2_2]]
+
+  . To be able to match a usage behavior with a specific repo commit.
+  . To be able to check if the current script has a specific behavior.
+  . To be able to know if we use an up-to-date version.
