@@ -25,7 +25,7 @@ load ./setup_teardown.bash
 	assert_equal "${#stderr_lines[@]}" "0"
 }
 
-@test "test_Fc_2_2_version_option # TODO" {
+@test "test_Fc_2_2_version_option" {
 	dirty_or_broken='\(dirty\|broken\)'
 	commit_count='\([1-9][0-9]*\)'
 	commit_hash='\(g[0-9a-f]\+\)'
