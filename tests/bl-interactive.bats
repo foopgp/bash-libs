@@ -13,7 +13,7 @@ load ./setup_teardown.bash
 	shellcheck "${TARGET}"
 }
 
-@test "test_Fc_2_1_help_option # TODO" {
+@test "test_Fc_2_1_help_option" {
 	run --separate-stderr "${TARGET}" -h
 	assert_success
 	assert_line --index 0 --regexp "^Usage: "$(basename "${TARGET}")
