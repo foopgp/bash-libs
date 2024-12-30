@@ -5,25 +5,30 @@
 # Copyright © 2021 Jean-Jacques Brucker <jjbrucker@free.fr>
 #
 # SPDX-License-Identifier: LGPL-3.0-only
-#
-# shellcheck disable=SC2013 # To read lines rather than words
-# shellcheck disable=SC2046 # Quote this to prevent word splitting
-# shellcheck disable=SC2086 # Double quote warning
-# shellcheck disable=SC2128 # expanding array without index warning
-# shellcheck disable=SC2162 # Read without -r
 
+_bl_interactive_list_actions_options ()
+{
+	local action act_help options foo
+
+	for action in $1
+	do
+		act_help=$("${BASH_SOURCE[0]}" "$action" --help)
+		options=$(sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' <<< "$act_help")
+		foo=$(    sed    's_<_{_ ; s_|_,_g ; s_>_}_ '           <<< "$options")
+		echo "[$action]=\"$foo\""
+	done
+}
 
 if [[ "$1" == --bash-completion ]] ; then
-	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z_-]\+\>\).*,\1,p' )"
-	BL_tmp_o=$(for a in $BL_tmp_a ; do
-		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
-	done)
+	BL_tmp_a=$("${BASH_SOURCE[0]}" --help)
+	BL_tmp_a=$(sed -n 's,^   \([a-z_-]\+\>\).*,\1,p'    <<< "$BL_tmp_a")
+	BL_tmp_o=$(set -e; _bl_interactive_list_actions_options "$BL_tmp_a")
 
 	eval '_bl_interactive_completion()
 	{
 		local cur coptions="--help --version"
-		local a actions="'$BL_tmp_a'"
-		local -A aoptions=('$BL_tmp_o')
+		local a actions="'"$BL_tmp_a"'"
+		local -A aoptions=('"$BL_tmp_o"')
 
 		COMPREPLY=()
 		cur=${COMP_WORDS[COMP_CWORD]}
@@ -40,7 +45,7 @@ if [[ "$1" == --bash-completion ]] ; then
 		esac
 		case $cur in
 			-*)
-				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+				if a=$(grep -o "\<\('"${BL_tmp_a//$'\n'/\\|}"'\)\>" <<< "${COMP_WORDS[@]}") ; then
 					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
 					return 0
 				fi
@@ -48,16 +53,18 @@ if [[ "$1" == --bash-completion ]] ; then
 				return 0 ;;
 		esac
 		# complete actions if none in ${COMP_WORDS[@]}
-		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		grep -q "\<\('"${BL_tmp_a//$'\n'/\\|}"'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
 		return 0
 	}'
 	unset BL_tmp_a BL_tmp_o
-	complete -F _bl_interactive_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	complete -F _bl_interactive_completion "$(basename "${BASH_SOURCE[0]}")" "${BASH_SOURCE[0]}"
 	return 0
 fi
 
 # If sourcing while _bl_interactive_parseoptions is already set, execute the function and return without reloading rest of file.
-if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_interactive_parseoptions)" == function ]] ; then
+_BL_INTERACTIVE_PARSEOPTION_TYPE=$(type -t _bl_interactive_parseoptions)
+if [[ "${BASH_SOURCE[0]}" != "$0" ]] && [[ "$_BL_INTERACTIVE_PARSEOPTION_TYPE" == function ]]
+then
 	_bl_interactive_parseoptions "$@"
 	return $?
 fi
@@ -65,12 +72,12 @@ fi
 
 ### Constants ###
 
-BL_INTERACTIVE_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
-declare -r BL_INTERACTIVE_NAME
-declare -r BL_INTERACTIVE_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+BL_INTERACTIVE_FUNCTIONS=$(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "${BASH_SOURCE[0]}")
+mapfile -t BL_INTERACTIVE_FUNCTIONS <<< "$BL_INTERACTIVE_FUNCTIONS"
+BL_INTERACTIVE_NAME="$(basename "$(readlink -f "${BASH_SOURCE[0]}" || true)" )"
 BL_INTERACTIVE_VERSION=$(git describe --dirty --broken --always --match "v[0-9]*.[0-9]*.[0-9]*")
 BL_INTERACTIVE_VERSION=$(sed 's/-\([1-9][0-9]*\)-\(g[0-9a-f]\+\)\(-dirty\|-broken\|\)$/+\1.\2\3/; s/-\(dirty\|broken\)$/+\1/' <<< "$BL_INTERACTIVE_VERSION")
-readonly BL_INTERACTIVE_VERSION
+readonly BL_INTERACTIVE_VERSION BL_INTERACTIVE_FUNCTIONS BL_INTERACTIVE_NAME
 
 ### Default option values ###
 
@@ -82,12 +89,12 @@ _bl_interactive_parseoptions() {
 	local npp=$#
 	for ((;$#;)) ; do
 		case "$1" in
-			-f|--frontend) shift ; BL_INTERACTIVE_FRONTEND="$1" ;; # WARNING: dialog use to be compatible with whiptail, but it's very buggy.
-			-h|--help) printf "%s\n%s\n%s\n" "$BL_INTERACTIVE_usage" "$BL_INTERACTIVE_chelpmsg" "$BL_INTERACTIVE_shelpmsg" ; return 2 ;;
-			-V|--version) printf "%s %s\n" "$BL_INTERACTIVE_NAME" "$BL_INTERACTIVE_VERSION" ; return 2 ;;
-			--) shift ; break ;;
-			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_INTERACTIVE_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
-			*) break ;;
+			-f|--frontend) shift; BL_INTERACTIVE_FRONTEND="$1";; # WARNING: dialog use to be compatible with whiptail, but it's very buggy.
+			-h|--help)     printf "%s\n%s\n%s\n" "$BL_INTERACTIVE_usage" "$BL_INTERACTIVE_chelpmsg" "$BL_INTERACTIVE_shelpmsg"; return 2 ;;
+			-V|--version)  printf "%s %s\n" "$BL_INTERACTIVE_NAME" "$BL_INTERACTIVE_VERSION"; return 2 ;;
+			--)            shift; break;;
+			-*)            printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_INTERACTIVE_NAME" "$1" "${BASH_SOURCE[0]}" >&2; return 2;;
+			*)             break;;
 		esac
 		shift
 	done
@@ -99,12 +106,12 @@ _bl_interactive_frontend() (
 	unset last mtext rtext # localy clean such eventual global variables
 	for ((;$#;)) ; do
 		case "$1" in
-			--mtext) shift ; mtext="$1" ;;
-			--rtext) shift ; rtext="$1" ;;
-			--last) shift ; last+=("$1") ;;
-			--) shift ; break ;;
-			-*) printf "%s: unrecognized option '%s'\n" "$FUNCNAME" "$1" >&2 ; return 2 ;;
-			*) break ;;
+			--mtext) shift; mtext="$1";;
+			--rtext) shift; rtext="$1";;
+			--last)  shift; last+=("$1");;
+			--)      shift; break;;
+			-*)      printf "%s: unrecognized option '%s'\n" "${FUNCNAME[0]}" "$1" >&2; return 2;;
+			*)       break;;
 		esac
 		shift
 	done
@@ -112,10 +119,10 @@ _bl_interactive_frontend() (
 	# Note: we could use LINES and COLUMNS instead of an arbitrary strlen value, but there are not enough reliable.
 	((${#rtext}<512)) || rtext="  $mtext"$'\n\n'"$rtext"
 	if [[ ${#last[@]} -gt 0 ]] ; then
-		$BL_INTERACTIVE_FRONTEND "$@" "$rtext"$'\n\n'"  $mtext" 0 $((COLUMNS/2)) "${last[@]}" {fd}>&1 1>&2 2>&${fd}
+		$BL_INTERACTIVE_FRONTEND "$@" "$rtext"$'\n\n'"  $mtext" 0 $((COLUMNS/2)) "${last[@]}" {fd}>&1 1>&2 2>&"${fd}"
 		exit $?
 	else
-		$BL_INTERACTIVE_FRONTEND "$@" "$rtext"$'\n\n'"  $mtext" 0 $((COLUMNS/2)) {fd}>&1 1>&2 2>&${fd}
+		$BL_INTERACTIVE_FRONTEND "$@" "$rtext"$'\n\n'"  $mtext" 0 $((COLUMNS/2)) {fd}>&1 1>&2 2>&"${fd}"
 		exit $?
 	fi
 )
@@ -124,26 +131,26 @@ _bl_interactive_indexof() {
 	for ((;$#;)) ; do
 		case "$1" in
 			--) shift ; break ;;
-			-*) printf "Usage: %s [--] VALUE ARRAY...\n" "$FUNCNAME" >&2 ; return 2 ;;
-			*) break ;;
+			-*) printf "Usage: %s [--] VALUE ARRAY...\n" "${FUNCNAME[0]}" >&2 ; return;;
+			*)  break ;;
 		esac
 		shift
 	done
 	local asize value=$1
 	shift
 	asize=$#
-	((asize)) || { printf "Usage: %s [--] VALUE ARRAY...\n" "$FUNCNAME" >&2 ; return 2 ;}
+	((asize)) || { printf "Usage: %s [--] VALUE ARRAY...\n" "${FUNCNAME[0]}" >&2 ; return ;}
 	while (($#)) ; do
 		[[ "$1" != "${value}" ]] || break
 		shift
 	done
-	(($#)) || return 1
+	(($#)) || return
 	echo $((asize-$#))
 }
 
 bl_msgstop() {
 	local name
-	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="${FUNCNAME[0]}"
 	local usage="Usage: $name [OPTIONS] MESSAGE"
 	local helpmsg="
 Display a message and wait for user to press [Enter]
@@ -156,9 +163,9 @@ Options:
 		case "$1" in
 			-t|--text) shift ; pr="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
+			-V|--version) echo "${FUNCNAME[0]} $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "${FUNCNAME[0]}" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -173,13 +180,13 @@ Options:
 	local rep
 	message=$'\e[1m'"$message"$'\e[0m'
 	echo "$pr" >&2
-	read -p "  $message"$' \e[2m(press Enter to continue)\e[0m ' rep
+	read -rp "  $message"$' \e[2m(press Enter to continue)\e[0m ' rep
 }
 
 
 bl_input() {
 	local name
-	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="${FUNCNAME[0]}"
 	local usage="Usage: $name [OPTIONS] QUESTION"
 	local helpmsg="
 Helper to ask for a string
@@ -196,9 +203,9 @@ Options:
 			-d|--default) shift ; def="$1" ;;
 			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
+			-V|--version) echo "${FUNCNAME[0]} $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "${FUNCNAME[0]}" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -212,10 +219,10 @@ Options:
 	fi
 	while true ; do
 		if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
-			rep=$(_bl_interactive_frontend --rtext "$pr" --mtext "$question ?" --last "$def" -- --nocancel --inputbox)
+			rep=$(set -e; _bl_interactive_frontend --rtext "$pr" --mtext "$question ?" --last "$def" -- --nocancel --inputbox)
 		else
 			echo "$pr" >&2
-			read -p "  $question"$' \e[1m?\e[0m ' rep
+			read -rp "  $question"$' \e[1m?\e[0m ' rep
 		fi
 		rep=${rep:-$def}
 		if $emailaddr && ! [[ "$rep" =~ ^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$ ]] ; then
@@ -224,13 +231,13 @@ Options:
 		fi
 		break
 	done
-	echo ${rep:-${def}}
+	echo "${rep:-${def}}"
 }
 
 
 bl_yesno() {
 	local name
-	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="${FUNCNAME[0]}"
 	local usage="Usage: $name [OPTIONS] QUESTION"
 	local helpmsg="
 Helper for a yes/no question (binary choice)
@@ -249,9 +256,9 @@ Options:
 			--default=no) def="no" ;;
 			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
+			-V|--version) echo "${FUNCNAME[0]} $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "${FUNCNAME[0]}" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -265,7 +272,7 @@ Options:
 		else
 			unset def
 		fi
-		_bl_interactive_frontend --rtext "$pr" --mtext "$question ?" -- $def --yesno
+		_bl_interactive_frontend --rtext "$pr" --mtext "$question ?" -- "$def" --yesno
 		return $?
 	fi
 
@@ -275,7 +282,7 @@ Options:
 
 	while true ; do
 		echo "$pr" >&2
-		read -p "  $question"$' \e[1m?\e[0m ' rep
+		read -rp "  $question"$' \e[1m?\e[0m ' rep
 		rep=${rep:-$def}
 		case "${rep,,}" in
 		  y|yes|oui|'sí'|ja|si|'да')
@@ -289,7 +296,7 @@ Options:
 
 bl_radiolist() {
 	local name
-	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="${FUNCNAME[0]}"
 	local usage="Usage: $name [OPTIONS] [--] ITEMS..."
 	local output def pr nperline=3 n i ret=0 rv=0 inarray
 	local helpmsg="
@@ -316,22 +323,20 @@ Options:
 			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-n|--num*) shift ; nperline="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
+			-V|--version) echo "${FUNCNAME[0]} $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "${FUNCNAME[0]}" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
 	n=$#
-	((n)) || { printf "%s: Error: need items\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 1 ; }
+	((n)) || { printf "%s: Error: need items\nTry '%s --help' for more information.\n" "${FUNCNAME[0]}" "$name" >&2 ; return 1 ; }
 
 	if [[ -v def_value ]] ; then
 		# Search index of given default value
-		if def="$(_bl_interactive_indexof "$def_value" "$@")" ; then
-			# if found, translate index to number
-			((++def))
-		fi
+		def="$(set -e; _bl_interactive_indexof "$def_value" "$@")"
+		[[ -z "$def" ]] || ((++def))
 	fi
 
 	# Save ITEMS in inarray if output == "value"
@@ -348,7 +353,7 @@ Options:
 			shift
 		done
 		while (( (!rv) && (ret<1 || ret>n) )) ; do
-			ret=$($BL_INTERACTIVE_FRONTEND --notags --nocancel --radiolist " $pr" 0 0 $n "${entry_options[@]}" {fd}>&1 1>&2 2>&${fd})
+			ret=$($BL_INTERACTIVE_FRONTEND --notags --nocancel --radiolist " $pr" 0 0 "$n" "${entry_options[@]}" {fd}>&1 1>&2 2>&"${fd}")
 			rv=$?
 		done
 	else
@@ -368,7 +373,7 @@ Options:
 		((!def)) || question+=" [$def]"
 		# the '!' in following test allow to re-ask the question if ret is not a number
 		while ! ((ret>0 && ret<=n)) ; do
-			read -p "  $question"$' \e[1m?\e[0m ' ret
+			read -rp "  $question"$' \e[1m?\e[0m ' ret
 			ret=${ret:-$def}
 		done
 	fi
@@ -378,34 +383,48 @@ Options:
 		value) echo "${inarray[$((ret-1))]}" ;;
 		*) echo "$ret" ;;
 	esac
-	return $rv
+	return "$rv"
 }
 
 
 ### Help Messages (and set -e if program) ###
 
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
+print_functions ()
+{
+	local func_help_output parsed_output offset
+	offset="$1"
+
+	for f in "${BL_INTERACTIVE_FUNCTIONS[@]}"
+	do
+		func_help_output=$($f --help)
+		parsed_output=$(sed -n '/^$/{n;p;q}' <<< "$func_help_output")
+		printf "   %-19s%s\n" "${f:$offset}" "$parsed_output"
+	done
+}
+
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
 	# run as a program
 	set -e
 	declare -r BL_INTERACTIVE_isprogram=1
 
-	BL_INTERACTIVE_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_INTERACTIVE_usage="Usage: ${BASH_SOURCE[0]} [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_INTERACTIVE_shelpmsg="
 Actions:
-$(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(set -e; print_functions 3)
 
 $BL_INTERACTIVE_NAME is also bash library, see:
-$ source $BASH_SOURCE --help"
+$ source ${BASH_SOURCE[0]} --help"
 else
 	# run as a library (source $0)
 
-	BL_INTERACTIVE_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+	BL_INTERACTIVE_usage="Usage: source ${BASH_SOURCE[0]} [OPTIONS]..."
 
 	BL_INTERACTIVE_shelpmsg="
-      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+      --bash-completion    set completion for ${BASH_SOURCE[0]} program and return (without loading anything else)
 
 Functions:
-$(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(set -e; print_functions 0)
 
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
 fi
@@ -423,16 +442,16 @@ Options:
 _bl_interactive_parseoptions "$@"
 
 # Do nothing else if sourced
-[[ "$BASH_SOURCE" == "$0" ]] || return 0
+[[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
 
 ### Run ###
-shift $BL_INTERACTIVE_NOPTIONS
+shift "$BL_INTERACTIVE_NOPTIONS"
 if function=$(grep -o "\<bl_$1\>" <<< "${BL_INTERACTIVE_FUNCTIONS[@]}") ; then
 	shift
 	$function "$@"
 	exit $?
 else
-	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_INTERACTIVE_NAME" "$1" "$BASH_SOURCE" >&2
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_INTERACTIVE_NAME" "$1" "${BASH_SOURCE[0]}" >&2
 	exit 2
 fi
 

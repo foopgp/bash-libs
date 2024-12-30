@@ -9,7 +9,7 @@
 
 load ./setup_teardown.bash
 
-@test "test_Fc_1_1_linter # TODO" {
+@test "test_Fc_1_1_linter" {
 	shellcheck "${TARGET}"
 }
 
