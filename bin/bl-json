@@ -230,6 +230,7 @@ bl_json_to_var() {
 	local usage="Usage: $name [OPTIONS] [JSON_TEXT]"
 	local helpmsg="
 Output string to be put into bash variable or array.
+If JSON_TEXT is not given, read JSON from sdtdin.
 
 Options:
     -d, --declare VARNAME  output \"declare -[aA-] VARNAME=...\" statement to be use with 'eval ...'.
@@ -238,13 +239,14 @@ Options:
 Examples:
 * if JSON_TEXT refer to JSON boolean, string or number: bash_var=\$($name [JSON_TEXT])
 * if JSON_TEXT refer to JSON array or object: bash_array=( \$($name [JSON_TEXT]) )
+* if you just have a json file to be put in a bash variable: eval \$($name --declare bash_variable < file.json)
 "
 
 	local recurse=false varname
 	for ((;$#;)) ; do
 		case "$1" in
 			-d|--declare) shift
-				[[ "${varname:=$1}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]] || { echo "$FUNCNAME: Error: VARNAME is not a valid posix name ${varname::5}..." >&2  ; return 2 ; }
+				[[ "${varname:=$1}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]] || { echo "$FUNCNAME: Error: given VARNAME is not a valid posix name ${varname::5}..." >&2  ; return 2 ; }
 				;;
 			-r|--recurs*) recurse=true ; echo "$FUNCNAME: Error: option $1 is not supported yet." >&2 ; return 3 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
