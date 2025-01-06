@@ -73,6 +73,7 @@ BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-1}"
 
 # shellcheck source=bl-interactive
 . "$(dirname "$BASH_SOURCE")"/bl-interactive --
+. "$(dirname "$BASH_SOURCE")"/bl-log --no-act --log-level "6" --log-exit "crit"
 
 ### internal functions ###
 
@@ -107,7 +108,7 @@ _bl_foopgp_dateFRtoISO8601() {
 	local in
 	(($#)) && in=$@ || read in
 	in=$(sed  's,[^0-9],,g' <<<"$in")
-	((${#in}==8)) || printf "%s: Error: Invalid date %s.\n" "$FUNCNAME" "$in" >&2
+	((${#in}==8)) || return 2
 	echo "${in:4:4}-${in:2:2}-${in::2}"
 }
 
@@ -115,7 +116,7 @@ _bl_foopgp_dateISO8601toFR() {
 	local in
 	(($#)) && in=$@ || read in
 	in=$(sed  's,[^0-9],,g' <<<"$in")
-	((${#in}==8)) || printf "%s: Error: Invalid date %s.\n" "$FUNCNAME" "$in" >&2
+	((${#in}==8)) || return 2
 	echo "${in:6:2}/${in:4:2}/${in::4}"
 }
 
@@ -124,13 +125,19 @@ _bl_foopgp_dateISO8601toFR() {
 bl_foopgp_qiftobash() {
 	local name
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
-	local usage="Usage: $name FILE.qif ..."
+	local usage="Usage: $name [OPTIONS] FILES.qif ..."
 	local helpmsg="
-Convert each qif entry to a  \"declare -A ...\" statement to be loaded with eval
+Convert each qif entry to a  \"declare -A ...\" statement to be loaded with eval.
+Options:
+  -s, --sort           Sort by date.
+  -u, --uniq           Remove duplicate entries. Imply --sort.
 "
 	local path=${PWD}
+	local filter="cat"
 	for ((;$#;)) ; do
 		case "$1" in
+			-s|--sort) [[ "${filter}" != ^cat$ ]] || filter="sort" ;;
+			-u|--uniq) filter="sort -u" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -141,33 +148,135 @@ Convert each qif entry to a  \"declare -A ...\" statement to be loaded with eval
 	done
 	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
-	local typ fqif qiffd line
+	local qiftype fqif qiffd line validentry
 	local -A entry
 
 	for fqif in "$@" ; do
-		typ="undefined"
-		exec {qiffd}<"$fqif"
+		exec {qiffd}<${fqif} || { bl_log warning "$FUNCNAME: unable to open file: ${fqif}" ; continue ; }
+		read line <&${qiffd}
+		line=${line%$'\r'}  # Remove eventual CR character
+		if [[ ${line} =~ "!Type:" ]] ; then
+			qiftype=${line:6}
+		else
+			bl_log warning "$FUNCNAME: unexpected file: ${fqif}"
+			exec {qiffd}<&-
+			continue
+		fi
+		bl_log info "$FUNCNAME: Parsing file: ${fqif} ..."
 		while read line <&${qiffd} ; do
 			line=${line%$'\r'}  # Remove eventual CR character
-			if [[ ${line,,} =~ "!type:" ]]
-			then
-				typ=${line:6}
-			elif [[ ${line::1} == "!" ]] || [[ -z ${line} ]] # Skip comment or empty line
-			then
+			if [[ ${line::1} == "!" ]] || [[ -z ${line} ]] ; then # Skip comment or empty line
 				continue
-			elif [[ ${line::1} != "^" ]]
-			then
+			elif [[ ${line::1} != "^" ]] ; then
 				entry[${line::1}]=${line:1}
-			else
-				entry[type]=${typ}
-				declare -p entry
+			else # [[ ${line::1} == "^" ]] which means end of entry
+				validentry=true
+				for k in T D P ; do
+					if [[ -z "${entry[$k]}" ]] ; then
+						bl_log warning "$FUNCNAME: no entry[$k], skipping $(declare -p entry)"
+						validentry="false"
+						break
+					fi
+				done
+				if $validentry && ! date=$(_bl_foopgp_dateFRtoISO8601 "${entry[D]}") ; then
+					bl_log warning "${FUNCNAME}: Invalid date '${entry[D]}', skipping $(declare -p entry)"
+					validentry="false"
+				fi
+				if $validentry ; then
+					printf "%10.10s " "${date}"
+					entry[qifType]=${qiftype}
+					declare -p entry
+				fi
 				unset entry
 				local -A entry
 			fi
 		done
 		exec {qiffd}<&-
-	done
+	done | ${filter} | sed 's/^.\{11\}//'
 }
+
+bl_foopgp_qiftojrnal() {
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] JOURNAL_NAME FILES.qif ..."
+	local helpmsg="
+Reorganize qif entries to maintain coherent monthly journal
+in files 'journal/by-month/{YEAR}/{MONTH}/{CODE}/{JOURNAL_NAME}.qif'
+By default remove all duplicate entries.
+Options:
+  -p, --path PATH      Set the path to the account dir (default: assume 'journal/by-month/' is in current dir)
+  -c, --currency CODE  Set currency (defaut: EUR)
+  -d, --allow-dupes    Prompt before removing any duplicate entry
+Exemple:
+$ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
+"
+	local path=${PWD}
+	local currency="EUR"
+	for ((;$#;)) ; do
+		case "$1" in
+			-p|--path) shift ; path="$1" ;;
+			-c|--currency) shift ; currency="$1" ;;
+			-d|--allow-dupes) printf "%s: Error: --interactive not implemented yet.\n" "$FUNCNAME" >&2 ; return 2 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	journalname=${1} ; shift
+	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
+
+	local toeval ftomerge line qiftype
+	local -A entry filestomerge
+
+
+	bl_log notice "${FUNCNAME}: Step 1: Reading and merging $# input files ..."
+	toeval=$(bl_foopgp_qiftobash --uniq "$@") || bl_log crit "${FUNCNAME}: Can't parse given files."
+
+	while read line ; do
+		bl_log debug "${FUNCNAME}: eval '${line}'"
+		eval "${line}"
+		month=$(_bl_foopgp_dateFRtoISO8601 ${entry[D]} | sed ' s,-,/, ; s,-.*,, ')
+		[[ "$month" =~ ^[0-9]{4}/[01][0-9]$ ]] || bl_log crit "Unexpected date ${entry[D]}"
+		# Use associative array to efficiently remove dupes
+		ftomerge="${path}/journal/by-month/${month}/${currency}/${journalname}.qif"
+		if [[ -f "${ftomerge}" ]] ; then
+			filestomerge[${ftomerge}]=""
+		else
+			mkdir -p "${path}/journal/by-month/${month}/${currency}"
+		fi
+	done <<<"${toeval}"
+
+	bl_log notice "${FUNCNAME}: Step 2: Merging input files with existing files ..."
+	toeval=$(bl_foopgp_qiftobash --uniq --sort "$@" "${!filestomerge[@]}") || bl_log crit "${FUNCNAME}: Can't parse files to merge."
+
+	bl_log notice "${FUNCNAME}: Step 3: (Re)writing journal files ..."
+	while read line ; do
+		bl_log debug "${FUNCNAME}: eval '${line}'"
+		eval "${line}"
+		month=$(_bl_foopgp_dateFRtoISO8601 ${entry[D]} | sed ' s,-,/, ; s,-.*,, ')
+		[[ "$month" =~ ^[0-9]{4}/[01][0-9]$ ]] || bl_log crit "Unexpected date ${entry[D]}"
+		ftomerge="${path}/journal/by-month/${month}/${currency}/${journalname}.qif"
+		if [[ -z "${filestomerge[${ftomerge}]}" ]] ; then
+			filestomerge[${ftomerge}]="writing"
+			bl_log info "${FUNCNAME}: ${filestomerge[${ftomerge}]} ${ftomerge} ..."
+			qiftype=${entry[qifType]}
+			echo "!Type:${qiftype}" > "${ftomerge}"
+		fi
+		[[ "${entry[qifType]}" == $qiftype ]] || bl_log warning "qif entry type (${entry[qifType]}) unmatch qif file type (${qiftype})"
+		echo "D${entry[D]}" >> "${ftomerge}"
+		unset entry[qifType] entry[D]
+		for k in ${!entry[@]}
+		do
+			echo "${k}${entry[$k]}"
+		done >> "${ftomerge}"
+		echo "^" >> "${ftomerge}"
+	done <<<"${toeval}"
+}
+
 
 bl_foopgp_qiftoflow() {
 	local name
@@ -207,15 +316,6 @@ Options:
 		while read line < <(bl_foopgp_qiftobash "$fqif") ; do
 			eval "$line"
 			((++i))
-			#for k in "${!entry[@]}" ; do
-			#	echo "  $k${entry[$k]}"
-			#done
-			for k in T D P ; do
-				if [[  -z "${entry[$k]}" ]] ; then
-					printf "%s: Error: entry #%s is missing %k field.\n" "$FUNCNAME" "$i" "$k" >&2
-					return 3
-				fi
-			done
 			if [[ ${entry[T]::1} == "-" ]] ; then
 				entry[U]=${entry[T]:1}
 				entry[Mtype]="Debit"
@@ -223,7 +323,7 @@ Options:
 				[[ ${entry[T]::1} == "+" ]] && entry[U]=${entry[T]:1} || entry[U]=${entry[T]}
 				entry[Mtype]="Credit"
 			fi
-			entry[D]=$(_bl_foopgp_dateFRtoISO8601 ${entry[D]})
+			entry[D]=$(_bl_foopgp_dateFRtoISO8601 ${entry[D]}) || bl_log crit "${FUNCNAME}: Invalid date ${entry[D]}"
 			entry[Mdesc]="$(echo -e "--- Entry #$i ---\n${entry[D]} - ${entry[Mtype]}: ${entry[U]}\n${entry[P]}\n----------------")"
 
 			while true ; do
