@@ -73,7 +73,6 @@ BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-1}"
 
 # shellcheck source=bl-interactive
 . "$(dirname "$BASH_SOURCE")"/bl-interactive --
-. "$(dirname "$BASH_SOURCE")"/bl-log --no-act --log-level "6" --log-exit "crit"
 
 ### internal functions ###
 
@@ -81,7 +80,7 @@ _bl_foopgp_parseoptions() {
 	local npp=$#
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--help) printf "%s\n%s\n%s\n" "$BL_FOOPGP_usage" "$BL_FOOPGP_chelpmsg" "$BL_FOOPGP_shelpmsg" ; return 2 ;;
+			-h|--help) printf "%s\n%s%s" "$BL_FOOPGP_usage" "$BL_FOOPGP_chelpmsg" "$BL_FOOPGP_shelpmsg" ; return 2 ;;
 			-V|--version) printf "%s %s\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_VERSION" ; return 2 ;;
 			-s|--stingy*) shift ; BL_FOOPGP_STINGYNALTY="$1" ;;
 			--) shift ; break ;;
@@ -93,309 +92,7 @@ _bl_foopgp_parseoptions() {
 	BL_FOOPGP_NOPTIONS=$((npp-$#))
 }
 
-_bl_foopgp_tonatnum() {
-	(($#)) && sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/' <<<"$1" || sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/'
-}
-
-_bl_foopgp_todecnum() {
-	local in etc
-	(($#)) && in=$1 || read in etc
-	in=$(printf "% 04d" "$in")
-	sed 's/.\{2\}$/,&/' <<<"$in"
-}
-
-_bl_foopgp_dateFRtoISO8601() {
-	local in
-	(($#)) && in=$@ || read in
-	in=$(sed  's,[^0-9],,g' <<<"$in")
-	((${#in}==8)) || return 2
-	echo "${in:4:4}-${in:2:2}-${in::2}"
-}
-
-_bl_foopgp_dateISO8601toFR() {
-	local in
-	(($#)) && in=$@ || read in
-	in=$(sed  's,[^0-9],,g' <<<"$in")
-	((${#in}==8)) || return 2
-	echo "${in:6:2}/${in:4:2}/${in::4}"
-}
-
 ### public functions / program actions ###
-
-bl_foopgp_qiftobash() {
-	local name
-	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] FILES.qif ..."
-	local helpmsg="
-Convert each qif entry to a  \"declare -A ...\" statement to be loaded with eval.
-Options:
-  -s, --sort           Sort by date.
-  -u, --uniq           Remove duplicate entries. Imply --sort.
-"
-	local path=${PWD}
-	local filter="cat"
-	for ((;$#;)) ; do
-		case "$1" in
-			-s|--sort) [[ "${filter}" != ^cat$ ]] || filter="sort" ;;
-			-u|--uniq) filter="sort -u" ;;
-			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
-			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
-			*) break ;;
-		esac
-		shift
-	done
-	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
-
-	local qiftype fqif qiffd line validentry
-	local -A entry
-
-	for fqif in "$@" ; do
-		exec {qiffd}<${fqif} || { bl_log warning "$FUNCNAME: unable to open file: ${fqif}" ; continue ; }
-		read line <&${qiffd}
-		line=${line%$'\r'}  # Remove eventual CR character
-		if [[ ${line} =~ "!Type:" ]] ; then
-			qiftype=${line:6}
-		else
-			bl_log warning "$FUNCNAME: unexpected file: ${fqif}"
-			exec {qiffd}<&-
-			continue
-		fi
-		bl_log info "$FUNCNAME: Parsing file: ${fqif} ..."
-		while read line <&${qiffd} ; do
-			line=${line%$'\r'}  # Remove eventual CR character
-			if [[ ${line::1} == "!" ]] || [[ -z ${line} ]] ; then # Skip comment or empty line
-				continue
-			elif [[ ${line::1} != "^" ]] ; then
-				entry[${line::1}]=${line:1}
-			else # [[ ${line::1} == "^" ]] which means end of entry
-				validentry=true
-				for k in T D P ; do
-					if [[ -z "${entry[$k]}" ]] ; then
-						bl_log warning "$FUNCNAME: no entry[$k], skipping $(declare -p entry)"
-						validentry="false"
-						break
-					fi
-				done
-				if $validentry && ! date=$(_bl_foopgp_dateFRtoISO8601 "${entry[D]}") ; then
-					bl_log warning "${FUNCNAME}: Invalid date '${entry[D]}', skipping $(declare -p entry)"
-					validentry="false"
-				fi
-				if $validentry ; then
-					printf "%10.10s " "${date}"
-					entry[qifType]=${qiftype}
-					declare -p entry
-				fi
-				unset entry
-				local -A entry
-			fi
-		done
-		exec {qiffd}<&-
-	done | ${filter} | sed 's/^.\{11\}//'
-}
-
-bl_foopgp_qiftojrnal() {
-	local name
-	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] JOURNAL_NAME FILES.qif ..."
-	local helpmsg="
-Reorganize qif entries to maintain coherent monthly journal
-in files 'journal/by-month/{YEAR}/{MONTH}/{CODE}/{JOURNAL_NAME}.qif'
-By default remove all duplicate entries.
-Options:
-  -p, --path PATH      Set the path to the account dir (default: assume 'journal/by-month/' is in current dir)
-  -c, --currency CODE  Set currency (defaut: EUR)
-  -d, --allow-dupes    Prompt before removing any duplicate entry
-Exemple:
-$ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
-"
-	local path=${PWD}
-	local currency="EUR"
-	for ((;$#;)) ; do
-		case "$1" in
-			-p|--path) shift ; path="$1" ;;
-			-c|--currency) shift ; currency="$1" ;;
-			-d|--allow-dupes) printf "%s: Error: --interactive not implemented yet.\n" "$FUNCNAME" >&2 ; return 2 ;;
-			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
-			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
-			*) break ;;
-		esac
-		shift
-	done
-
-	journalname=${1} ; shift
-	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
-
-	local toeval ftomerge line qiftype
-	local -A entry filestomerge
-
-
-	bl_log notice "${FUNCNAME}: Step 1: Reading and merging $# input files ..."
-	toeval=$(bl_foopgp_qiftobash --uniq "$@") || bl_log crit "${FUNCNAME}: Can't parse given files."
-
-	while read line ; do
-		bl_log debug "${FUNCNAME}: eval '${line}'"
-		eval "${line}"
-		month=$(_bl_foopgp_dateFRtoISO8601 ${entry[D]} | sed ' s,-,/, ; s,-.*,, ')
-		[[ "$month" =~ ^[0-9]{4}/[01][0-9]$ ]] || bl_log crit "Unexpected date ${entry[D]}"
-		# Use associative array to efficiently remove dupes
-		ftomerge="${path}/journal/by-month/${month}/${currency}/${journalname}.qif"
-		if [[ -f "${ftomerge}" ]] ; then
-			filestomerge[${ftomerge}]=""
-		else
-			mkdir -p "${path}/journal/by-month/${month}/${currency}"
-		fi
-	done <<<"${toeval}"
-
-	bl_log notice "${FUNCNAME}: Step 2: Merging input files with existing files ..."
-	toeval=$(bl_foopgp_qiftobash --uniq --sort "$@" "${!filestomerge[@]}") || bl_log crit "${FUNCNAME}: Can't parse files to merge."
-
-	bl_log notice "${FUNCNAME}: Step 3: (Re)writing journal files ..."
-	while read line ; do
-		bl_log debug "${FUNCNAME}: eval '${line}'"
-		eval "${line}"
-		month=$(_bl_foopgp_dateFRtoISO8601 ${entry[D]} | sed ' s,-,/, ; s,-.*,, ')
-		[[ "$month" =~ ^[0-9]{4}/[01][0-9]$ ]] || bl_log crit "Unexpected date ${entry[D]}"
-		ftomerge="${path}/journal/by-month/${month}/${currency}/${journalname}.qif"
-		if [[ -z "${filestomerge[${ftomerge}]}" ]] ; then
-			filestomerge[${ftomerge}]="writing"
-			bl_log info "${FUNCNAME}: ${filestomerge[${ftomerge}]} ${ftomerge} ..."
-			qiftype=${entry[qifType]}
-			echo "!Type:${qiftype}" > "${ftomerge}"
-		fi
-		[[ "${entry[qifType]}" == $qiftype ]] || bl_log warning "qif entry type (${entry[qifType]}) unmatch qif file type (${qiftype})"
-		echo "D${entry[D]}" >> "${ftomerge}"
-		unset entry[qifType] entry[D]
-		for k in ${!entry[@]}
-		do
-			echo "${k}${entry[$k]}"
-		done >> "${ftomerge}"
-		echo "^" >> "${ftomerge}"
-	done <<<"${toeval}"
-}
-
-
-bl_foopgp_qiftoflow() {
-	local name
-	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] FILE.qif ..."
-	local helpmsg="
-Parse qif file, and ask some questions for each entries to manage foopgp tockens, expenses, inventory....
-Options:
-  -p, --path PATH      Set the path to the account dir (default: assume input files are in current dir)
-"
-	local path=${PWD}
-	for ((;$#;)) ; do
-		case "$1" in
-			-p|--path) shift ; path="$1" ;;
-			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
-			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
-			*) break ;;
-		esac
-		shift
-	done
-	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
-
-	local -a subaccounts etypes rtypes flow
-	local fqif flowfd line rectify i=0 j k
-	local remain direction countdec isub1 ityp typ srcdest
-	local -A entry
-
-	mapfile -t subaccounts < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/subaccounts.list")
-	mapfile -t etypes < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/expense_types.list")
-	mapfile -t rtypes < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/revenue_types.list")
-	( [[ "${subaccounts#*:}" ]] && [[ "${etypes#*:}" ]] && [[ "${rtypes#*:}" ]] ) || return 2
-
-	for fqif in "$@" ; do
-		exec {flowfd}>"$fqif.flow"
-		while read line < <(bl_foopgp_qiftobash "$fqif") ; do
-			eval "$line"
-			((++i))
-			if [[ ${entry[T]::1} == "-" ]] ; then
-				entry[U]=${entry[T]:1}
-				entry[Mtype]="Debit"
-			else
-				[[ ${entry[T]::1} == "+" ]] && entry[U]=${entry[T]:1} || entry[U]=${entry[T]}
-				entry[Mtype]="Credit"
-			fi
-			entry[D]=$(_bl_foopgp_dateFRtoISO8601 ${entry[D]}) || bl_log crit "${FUNCNAME}: Invalid date ${entry[D]}"
-			entry[Mdesc]="$(echo -e "--- Entry #$i ---\n${entry[D]} - ${entry[Mtype]}: ${entry[U]}\n${entry[P]}\n----------------")"
-
-			while true ; do
-				j=0
-				entry[Msum]=$(($(_bl_foopgp_tonatnum ${entry[T]})))
-				flow=()
-				while true ; do
-					((++j))
-					if ((entry[Msum]<0)) ; then
-						entry[Mdefdir]="Expense"
-					else
-						entry[Mdefdir]="Revenue"
-					fi
-					echo
-					remain=$(_bl_foopgp_todecnum "${entry[Msum]}")
-					direction=$(bl_radiolist --output-value --default-value "${entry[Mdefdir]}" --text "${entry[Mdesc]}"$'\n'$'\n'"  Entry #$i ($remain). Select the nature of subflow #$j" "Revenue" "Expense")
-					while true ; do
-						countdec=$(bl_input --default "$(tr -d -- '+-' <<<"$remain" )" --text "  Entry #$i ($remain)." "Enter the amount of subflow #$j ($direction)" | tr -d ' ')
-						if [[ $countdec =~ ^[0-9]+$ ]] ; then
-							countdec+=",00"
-						fi
-						if [[ $countdec =~ ^[0-9]+[.,][0-9][0-9]$ ]] ; then
-							break
-						fi
-					done
-
-					isub1=$(bl_radiolist --output-index --default 1 --text "  Entry #$i. Select the sub-account for subflow #$j" "${subaccounts[@]#*:}")
-					if [[ $direction == "Expense" ]] ; then
-						: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
-						ityp=$(bl_radiolist --output-index --text "  Entry #$i. Select the type of expense for subflow #$j (-$countdec)" "${etypes[@]#*:}")
-						typ=${etypes[$ityp]}
-					else
-						: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
-						ityp=$(bl_radiolist --output-index --default 1 --text "  Entry #$i. Select the type of revenue for subflow #$j (+$countdec)" "${rtypes[@]#*:}")
-						typ=${rtypes[$ityp]}
-					fi
-					if [[ ${typ%%:*} == 1 ]] ; then # 1:Internal
-						local isub2
-						isub2=$(bl_radiolist --output-index --text "  Entry #$i. Select the sub-account for Internal subflow #$j" "${subaccounts[@]#*:}")
-						flow+=("$(printf "${entry[D]} | %-11s | %7s | %-11s | %9s | %38s | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "${subaccounts[$isub2]}")")
-						((++j))
-						if [[ $direction == "Expense" ]] ; then
-							direction="Revenue"
-							: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
-						else
-							direction="Expense"
-							: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
-						fi
-						srcdest=${subaccounts[$isub1]}
-						isub1=$isub2
-					elif [[ ${typ%%:*} == 2 ]] ; then # 2:Donation of cash
-						local question dtype
-						[[ $direction == "Expense" ]] && question="To whom was this donation made" || question="In whose name was this donation made"
-						srcdest=$(bl_input --default "${entry[P]}" --email --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${typ#*:}/$countdec)." "$question (email address)")
-					#elif [[ ${typ%%:*} == 3 ]] ; then # 3:Stock Inventory flow will be managed by a futur fonction "flow2stock()"
-					else
-						srcdest=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${typ#*:}/$countdec)." "Enter description, source or destination of subflow #$j")
-					fi
-					flow+=("$(printf "${entry[D]} | %-11s | %7s | %-11s | %9s | %38s | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "$srcdest")")
-					if ((entry[Msum]==0)) ; then
-						! bl_yesno --default=yes "Count reached. Next step" || break
-					fi
-				done
-				if bl_yesno --text "$(printf "%s\n" "${flow[@]}")" --default=yes "Validate entry #$i" ; then
-					printf "%s\n" "${flow[@]}" >&${flowfd}
-					break
-				fi
-			done
-		done
-		exec {flowfd}>&-
-	done
-}
 
 bl_foopgp_g2t() {
 	local name
@@ -513,7 +210,8 @@ Actions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 $BL_FOOPGP_NAME is also bash library, see:
-$ source $BASH_SOURCE --help"
+$ source $BASH_SOURCE --help
+"
 else
 	# run as a library (source $0)
 
@@ -525,15 +223,16 @@ else
 Functions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"
 fi
 
 BL_FOOPGP_chelpmsg="
 Options:
   -h, --help               show this help and exit/return
   -V, --version            show version and exit/return
-  -s, --stingynalty VALUE  set STINGYNALTY (current: $BL_FOOPGP_STINGYNALTY)"
-
+  -s, --stingynalty VALUE  set STINGYNALTY (current: $BL_FOOPGP_STINGYNALTY)
+"
 
 ### Init ###
 
