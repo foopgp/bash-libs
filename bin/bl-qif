@@ -139,24 +139,30 @@ Options:
 	done
 	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
-	local qiftype fqif qiffd line validentry
+	local previoustype fqif qiffd line validentry
 	local -A entry
 
 	for fqif in "$@" ; do
 		exec {qiffd}<${fqif} || { bl_log warning "$FUNCNAME: unable to open file: ${fqif}" ; continue ; }
+		# Read first line
 		read line <&${qiffd}
 		line=${line%$'\r'}  # Remove eventual CR character
-		if [[ ${line} =~ "!Type:" ]] ; then
-			qiftype=${line:6}
+		if [[ ${line} =~ ^!Type: ]] ; then
+			entry["!Type:"]=${line:6}
+			previoustype=${entry["!Type:"]} # Store entry type for following entries which doesn't precise "!Type:"
 		else
 			bl_log warning "$FUNCNAME: unexpected file: ${fqif}"
 			exec {qiffd}<&-
 			continue
 		fi
 		bl_log info "$FUNCNAME: Parsing file: ${fqif} ..."
+		# Read other lines
 		while read line <&${qiffd} ; do
 			line=${line%$'\r'}  # Remove eventual CR character
-			if [[ ${line::1} == "!" ]] || [[ -z ${line} ]] ; then # Skip comment or empty line
+			if [[ "${line}" =~ ^!Type: ]] ; then
+				entry["!Type:"]=${line:6}
+				previoustype=${entry["!Type:"]}
+			elif [[ ${line::1} == "!" ]] || [[ -z ${line} ]] ; then # Skip unknow header or empty lines
 				continue
 			elif [[ ${line::1} != "^" ]] ; then
 				entry[${line::1}]=${line:1}
@@ -175,11 +181,11 @@ Options:
 				fi
 				if $validentry ; then
 					printf "%10.10s " "${date}"
-					entry[qifType]=${qiftype}
 					declare -p entry
 				fi
 				unset entry
 				local -A entry
+				entry["!Type:"]=${previoustype} # Set previous entry type as default type for new entry
 			fi
 		done
 		exec {qiffd}<&-
@@ -220,7 +226,8 @@ $ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
 	journalname=${1} ; shift
 	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
-	local toeval ftomerge line qiftype
+	local toeval ftomerge line
+	local previousqiftype="(unknown)"
 	local -A entry filestomerge
 
 
@@ -254,12 +261,16 @@ $ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
 		if [[ -z "${filestomerge[${ftomerge}]}" ]] ; then
 			filestomerge[${ftomerge}]="writing"
 			bl_log info "${FUNCNAME}: ${filestomerge[${ftomerge}]} ${ftomerge} ..."
-			qiftype=${entry[qifType]}
-			echo "!Type:${qiftype}" > "${ftomerge}"
+			echo "!Type:${entry["!Type:"]}" > "${ftomerge}"
+			previousqiftype=${entry["!Type:"]}
 		fi
-		[[ "${entry[qifType]}" == $qiftype ]] || bl_log warning "qif entry type (${entry[qifType]}) unmatch qif file type (${qiftype})"
+		if [[ "${entry["!Type:"]}" != $previousqiftype ]] ; then
+			bl_log notice "qif entry «!Type:${entry["!Type:"]}» unmatch previous entry «!Type:${previousqiftype}»"
+			echo "!Type:${entry["!Type:"]}" >> "${ftomerge}"
+		fi
+		previousqiftype=${entry["!Type:"]}
 		echo "D${entry[D]}" >> "${ftomerge}"
-		unset entry[qifType] entry[D]
+		unset entry["!Type:"] entry[D]
 		for k in ${!entry[@]}
 		do
 			echo "${k}${entry[$k]}"
