@@ -164,17 +164,22 @@ bl_foopgp_giftarray() {
 	local helpmsg="
 Display an array to indicate how many token gonna be created from a gift.
 Options:
-  -c, --currency CODE  Set gift currency (defaut: EUR €)
+  -c, --currency CODE  Set gift currency (defaut: EUR -> €)
   -u, --udid UDID      If it is not an initial gift, retrieve total gift and number of token created for a given individual.
   -m, --max VALUE      Set the limit in term of token (defaut: 12)
+  -H, --header-only    Only display header line, and return.
+  -F, --with-header    Also display header line and separation line at the beginning of array.
 "
-	local max=12 udid ccode="€"
+	local max=12 udid header=0 onlyheader=0 ccode=EUR
 	local t g j=1
+	local -A csymb=([DJE]="Ɉ" [EUR]="€")
 	for ((;$#;)) ; do
 		case "$1" in
-			-c|--currency) shift ; ccode="$1" ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
+			-c|--currency) shift ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
 			-u|--udid) shift ; udid="$1" ; printf "%s: Warning: --udid is not yet implemented" "$FUNCNAME" >&2 ;;
 			-m|--max) shift ; max=$(($1)) ;;
+			-H|--header-only) onlyheader=1 header=1 ;;
+			-F|--with-header) onlyheader=0 header=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -183,16 +188,18 @@ Options:
 		esac
 		shift
 	done
-
+	((!header)) || printf "| %12s | %11s |\n" "EUR" "DJE"
+	((!onlyheader)) || return
+	((!header)) || echo "|--------------|-------------|"
 	j=1
 	for ((i=1;i<=$max;i++)) ; do
 		g=$(bl_foopgp_t2g $i)
 		while (( $(echo "$j < $g" | bc -l) )) ; do
-			LC_NUMERIC=POSIX printf "| %7s.00 $ccode | %9s Ɉ |\n" "$j" "$(bl_foopgp_g2t $j)"
+			LC_NUMERIC=POSIX printf "| %7s.00 ${csymb[EUR]} | %9s Ɉ |\n" "$j" "$(bl_foopgp_g2t $j)"
 			((j*=2))
 			j=$(tr '4' '5' <<<"$j")
 		done
-		LC_NUMERIC=POSIX printf "| %10s $ccode | %2s.000000 Ɉ |\n" "$g" "$i"
+		LC_NUMERIC=POSIX printf "| %10s ${csymb[EUR]} | %2s.000000 Ɉ |\n" "$g" "$i"
 	done | uniq
 }
 
