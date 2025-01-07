@@ -65,7 +65,7 @@ declare -r BL_QIF_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOUR
 
 # shellcheck source=bl-interactive
 . "$(dirname "$BASH_SOURCE")"/bl-interactive --
-. "$(dirname "$BASH_SOURCE")"/bl-log --no-act --log-level "6" --log-exit "crit"
+. "$(dirname "$BASH_SOURCE")"/bl-log --no-act --log-level "${BL_LOGLEVEL:-5}" --log-exit "crit"
 
 ### internal functions ###
 
@@ -226,7 +226,7 @@ $ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
 	journalname=${1} ; shift
 	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
-	local toeval ftomerge line
+	local toeval ftomerge line month
 	local previousqiftype="(unknown)"
 	local -A entry filestomerge
 
@@ -237,7 +237,7 @@ $ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
 	while read line ; do
 		bl_log debug "${FUNCNAME}: eval '${line}'"
 		eval "${line}"
-		month=$(_bl_qif_dateFRtoISO8601 ${entry[D]} | sed ' s,-,/, ; s,-.*,, ')
+		month=$(_bl_qif_dateFRtoISO8601 "${entry[D]}" | sed ' s,-,/, ; s,-.*,, ')
 		[[ "$month" =~ ^[0-9]{4}/[01][0-9]$ ]] || bl_log crit "Unexpected date ${entry[D]}"
 		# Use associative array to efficiently remove dupes
 		ftomerge="${path}/journal/by-month/${month}/${currency}/${journalname}.qif"
@@ -248,19 +248,19 @@ $ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
 		fi
 	done <<<"${toeval}"
 
-	bl_log notice "${FUNCNAME}: Step 2: Merging input files with existing files ..."
+	bl_log notice "${FUNCNAME}: Step 2: Merging $# input files with ${#filestomerge[@]} existing files ..."
 	toeval=$(bl_qif_tobash --uniq --sort "$@" "${!filestomerge[@]}") || bl_log crit "${FUNCNAME}: Can't parse files to merge."
 
 	bl_log notice "${FUNCNAME}: Step 3: (Re)writing journal files ..."
 	while read line ; do
 		bl_log debug "${FUNCNAME}: eval '${line}'"
 		eval "${line}"
-		month=$(_bl_qif_dateFRtoISO8601 ${entry[D]} | sed ' s,-,/, ; s,-.*,, ')
+		month=$(_bl_qif_dateFRtoISO8601 "${entry[D]}" | sed ' s,-,/, ; s,-.*,, ')
 		[[ "$month" =~ ^[0-9]{4}/[01][0-9]$ ]] || bl_log crit "Unexpected date ${entry[D]}"
 		ftomerge="${path}/journal/by-month/${month}/${currency}/${journalname}.qif"
 		if [[ -z "${filestomerge[${ftomerge}]}" ]] ; then
 			filestomerge[${ftomerge}]="writing"
-			bl_log info "${FUNCNAME}: ${filestomerge[${ftomerge}]} ${ftomerge} ..."
+			bl_log notice "${FUNCNAME}: ${filestomerge[${ftomerge}]} ${ftomerge} ..."
 			echo "!Type:${entry["!Type:"]}" > "${ftomerge}"
 			previousqiftype=${entry["!Type:"]}
 		fi
@@ -278,6 +278,62 @@ $ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
 		echo "^" >> "${ftomerge}"
 	done <<<"${toeval}"
 }
+
+bl_qif_stat() {
+	local name
+	((BL_QIF_isprogram)) && name="$BL_QIF_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] FILES.qif ..."
+	local helpmsg="
+Extract stats from Given .qif files
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_QIF_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
+
+	local toeval line natnum
+	local -A entry
+	local nbrevenues=0 sumrevenues=0
+	local nbexpenses=0 sumexpenses=0
+
+
+	bl_log debug "${FUNCNAME}: Reading $# input files ..."
+	toeval=$(bl_qif_tobash --uniq "$@") || bl_log crit "${FUNCNAME}: Can't parse given files."
+
+	while read line ; do
+		bl_log debug "${FUNCNAME}: eval '${line}'"
+		eval "${line}"
+
+		[[ "${entry[T]}" =~ ^[-+]?([0-9]+[,.][0-9]+) ]] || bl_log error "Unexpected entry field T${entry[T]}"
+		natnum=$(_bl_qif_tonatnum "${BASH_REMATCH[1]}")
+		if [[ ${entry[T]::1} == "-" ]] ; then
+			((++nbexpenses))
+			((sumexpenses+=natnum))
+			bl_log debug "${FUNCNAME}: $((nbrevenues+nbexpenses)) ${entry[T]} -> -$natnum $sumexpenses"
+		else
+			((++nbrevenues))
+			((sumrevenues+=natnum))
+			bl_log debug "${FUNCNAME}: $((nbrevenues+nbexpenses)) ${entry[T]} -> +$natnum $sumrevenues"
+		fi
+	done <<<"${toeval}"
+
+	echo "nbrevenues=$nbrevenues # Number of revenue entries"
+	echo "nbexpenses=$nbexpenses # Number of expense entries"
+	echo "sumrevenues=$(_bl_qif_todecnum "$sumrevenues") # Total revenues"
+	echo "sumexpenses=$(_bl_qif_todecnum "$sumexpenses") # Total expenses"
+	echo "nbentries=$((nbrevenues+nbexpenses)) # Number of entries"
+	echo "balance=$(_bl_qif_todecnum "$((sumrevenues-sumexpenses))") # Total balance"
+}
+
+
 
 
 bl_qif_toflow() {
@@ -325,7 +381,7 @@ Options:
 				[[ ${entry[T]::1} == "+" ]] && entry[U]=${entry[T]:1} || entry[U]=${entry[T]}
 				entry[Mtype]="Credit"
 			fi
-			entry[D]=$(_bl_qif_dateFRtoISO8601 ${entry[D]}) || bl_log crit "${FUNCNAME}: Invalid date ${entry[D]}"
+			entry[D]=$(_bl_qif_dateFRtoISO8601 "${entry[D]}") || bl_log crit "${FUNCNAME}: Invalid date ${entry[D]}"
 			entry[Mdesc]="$(echo -e "--- Entry #$i ---\n${entry[D]} - ${entry[Mtype]}: ${entry[U]}\n${entry[P]}\n----------------")"
 
 			while true ; do
