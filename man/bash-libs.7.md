@@ -61,14 +61,14 @@ All bash-libs exposed functions and executables should return zero on normal ope
 Help managing interactive choices.
 
 This executable/library exposes 2 functions: **bl_yesno()** and
-**bl_radiolist()**. See [**bl-interactive**](man/bl-interactive.md)(1) manual for more details.
+**bl_radiolist()**. See [**bl-interactive**](bl-interactive.1.md)(1) manual for more details.
 
 ## bl-security
 
 Provide some "security" features.
 
 This executable/library exposes 3 functions: **bl_urandom()**,
-**bl_shred_path()** and **bl_gen_passphrase()**. See [**bl-security**](man/bl-security.md)(1) manual
+**bl_shred_path()** and **bl_gen_passphrase()**. See [**bl-security**](bl-security.1.md)(1) manual
 for more details.
 
 ## bl-log
@@ -82,7 +82,7 @@ doesn't implement a function dispatcher and using **bl-log** as an executable is
 "*Almost*" nuance: when sourcing **bl-log** (using it as a bash library), we may pass
 some options as arguments, which will be store in some environment variable.
 Then such options will remain for following calls of **bl_log()** (with no options
-passed as arguments). See [**bl-log**](man/bl-log.md)(1) manual for more details.
+passed as arguments). See [**bl-log**](bl-log.1.md)(1) manual for more details.
 
 
 
@@ -103,9 +103,10 @@ passed as arguments). See [**bl-log**](man/bl-log.md)(1) manual for more details
 
 # SEE ALSO
 
-[**bl-interactive**](man/bl-interactive.md)(1), [**bl-security**](man/bl-security.md)(1), [**bl-log**](man/bl-log.md)(1).
+[**bl-interactive**](bl-interactive.1.md)(1), [**bl-security**](bl-security.1.md)(1), [**bl-log**](bl-log.1.md)(1).
 
-# AUTHOR/MAINTAINER
+# AUTHORS/MAINTAINERS
 
-Jean-Jacques Brucker
+* Jean-Jacques BRUCKER
+* Henri GEIST
 
