@@ -120,15 +120,21 @@ bl_qif_tobash() {
 	local helpmsg="
 Convert each qif entry to a  \"declare -A ...\" statement to be loaded with eval.
 Options:
-  -s, --sort           Sort by date.
-  -u, --uniq           Remove duplicate entries. Imply --sort.
+  -d, --declare VARNAME Set name in declare -A VARNAME=(... statement (default: \"entry\")
+  -s, --sort            Sort by date.
+  -u, --uniq            Remove duplicate entries. Imply --sort.
 "
-	local path=${PWD}
-	local filter="cat"
+	local varname
+	local sortfilter="cat"
+
 	for ((;$#;)) ; do
 		case "$1" in
-			-s|--sort) [[ "${filter}" != ^cat$ ]] || filter="sort" ;;
-			-u|--uniq) filter="sort -u" ;;
+			-d|--declare)
+				shift
+				[[ "${varname:=$1}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]] || { echo "$FUNCNAME: Error: given VARNAME is not a valid posix name ${varname::5}..." >&2  ; return 2 ; }
+				;;
+			-s|--sort) [[ "${sortfilter}" != ^cat$ ]] || sortfilter="sort" ;;
+			-u|--uniq) sortfilter="sort -u" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_QIF_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -181,7 +187,11 @@ Options:
 				fi
 				if $validentry ; then
 					printf "%10.10s " "${date}"
-					declare -p entry
+					if [[ "${varname}" ]] ; then
+						declare -p entry | sed "0,/^declare -A entry=/{s//declare -A ${varname}=/}"
+					else
+						declare -p entry
+					fi
 				fi
 				unset entry
 				local -A entry
@@ -189,7 +199,7 @@ Options:
 			fi
 		done
 		exec {qiffd}<&-
-	done | ${filter} | sed 's/^.\{11\}//'
+	done | ${sortfilter} | sed 's/^.\{11\}//'
 }
 
 bl_qif_tojournal() {
