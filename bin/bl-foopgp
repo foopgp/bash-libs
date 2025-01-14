@@ -142,14 +142,20 @@ bl_foopgp_g2t() {
 	local helpmsg="
 Calculate how many foopgp tokens would be created from a gift.
 Options:
-  -c, --currency CODE  Set gift currency (defaut: EUR €)
-  -u, --udid UDID      If it is not an initial gift, retrieve total gift and number of token created for a given individual.
+  -t, --tokens DJESUM  Set the base of tokens Ɉ already created (default: 0)
+  -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
 "
-	local i udid ccode="€"
+	local i t=0 g=0
 	for ((;$#;)) ; do
 		case "$1" in
-			-c|--currency) shift ; ccode="$1" ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
-			-u|--udid) shift ; udid="$1" ; printf "%s: Warning: --udid is not yet implemented" "$FUNCNAME" >&2 ;;
+			-t|--tokens)
+				shift ; t=${1/,/.}
+				[[ "$t" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$t" >&2 ; return 2 ; }
+				;;
+			-g|--gifts)
+				shift ; g=${1/,/.}
+				[[ "$g" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$g" >&2 ; return 2 ; }
+				;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -161,9 +167,7 @@ Options:
 	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
 	for i in "$@" ; do
-		#echo -n "| $i | "
-		#bc -l <<<"y=l($i+1)/l(2)/$BL_FOOPGP_STINGYNALTY ; scale=6 ; y=y*1000 ; print y/1000,\" |\" ; scale=16 "
-		bc -l <<<"y=l($i+1)/l(2)/$BL_FOOPGP_STINGYNALTY ; scale=6 ; y=y*1000 ; y/1000 ; scale=16 "
+		bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; y/1000 ; scale=16 "
 	done
 }
 
@@ -174,14 +178,22 @@ bl_foopgp_t2g() {
 	local helpmsg="
 Calculate how much should be given to create a number of tokens.
 Options:
-  -c, --currency CODE  Set gift currency (defaut: EUR €)
-  -u, --udid UDID      If it is not an initial gift, retrieve total gift and number of token created for a given individual.
+  -t, --tokens DJESUM  Set the base of tokens Ɉ already created (default: 0)
+  -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
 "
 	local i udid ccode="€"
 	for ((;$#;)) ; do
 		case "$1" in
-			-c|--currency) shift ; ccode="$1" ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
-			-u|--udid) shift ; udid="$1" ; printf "%s: Warning: --udid is not yet implemented" "$FUNCNAME" >&2 ;;
+			-t|--tokens)
+				shift ; t=${1/,/.}
+				[[ "$t" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$t" >&2 ; return 2 ; }
+				printf "%s: Warning: --token is not yet implemented" "$FUNCNAME" >&2
+				;;
+			-g|--gifts)
+				shift ; g=${1/,/.}
+				[[ "$g" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$g" >&2 ; return 2 ; }
+				printf "%s: Warning: --gifts is not yet implemented" "$FUNCNAME" >&2
+				;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -197,6 +209,7 @@ Options:
 		bc -l <<<"z=e(l(2)*$BL_FOOPGP_STINGYNALTY*$i)-1 ; scale=2 ; z=z*100+1 ; z/100 ; scale=16"
 	done
 }
+
 
 bl_foopgp_giftarray() {
 	local name
