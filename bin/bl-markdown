@@ -127,17 +127,8 @@ Options:
 
 	read line
 	readarray -t fields < <(sed ' s,^|\?,, ; s, *|\?$,, ; s, \+|,\n,g ' <<<"$line" | sed 's,^ *,,' )
+	fieldnames=("${fields[@]}")
 	nbcol=${#fields[@]}
-	read line
-	if [[ "$line" =~ ^[|:-]+$ ]] ; then
-		# second line is a separation line so first line was fieldnames
-		fieldnames=("${fields[@]}")
-		#shopt -s extglob
-		#fieldnames=("${fields[@]##*( )}")
-		header=true
-	else
-		header=false
-	fi
 
 	# Overwrite any fieldnames whith those given on command line (and non-empty)
 	i=0
@@ -155,6 +146,17 @@ Options:
 	if [[ ${#entry[@]} != $nbcol ]] ; then
 		echo "$FUNCNAME: Error: expected $nbcol unique fieldnames, got ${#entry[@]}." >&2
 		return 1
+	fi
+
+	if ! read line ; then
+		#Only one line -> no header.
+		declare -p entry | sed "0,/^declare -A entry=/{s//declare -A ${varname}=/}"
+		return
+	elif [[ "$line" =~ ^[|:-]+$ ]] ; then
+		# second line is a separation line so first line was fieldnames
+		header=true
+	else
+		header=false
 	fi
 
 	if ! $header ; then # Interpret 2 first lines
