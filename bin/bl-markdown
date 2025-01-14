@@ -1,0 +1,234 @@
+#!/bin/bash
+#
+# Bash library and executable that manipulate [markdown](https://en.wikipedia.org/wiki/Markdown)
+#
+# Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-only
+#
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z2_-]\+\>\).*,\1,p' )"
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_md_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version)
+				# should exit without executing any actions, so do not complete anything
+				return 0 ;;
+		esac
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		# complete actions if none in ${COMP_WORDS[@]}
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		return 0
+	}'
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_md_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	return 0
+fi
+
+# If sourcing while _bl_md_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_md_parseoptions)" == function ]] ; then
+	_bl_md_parseoptions "$@"
+	return $?
+fi
+
+
+### Constants ###
+
+BL_MD_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+declare -r BL_MD_NAME
+declare -r BL_MD_VERSION="0.0.1"
+declare -r BL_MD_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+
+### Default option values ###
+
+### external functions ###
+
+### internal functions ###
+
+_bl_md_parseoptions() {
+	local npp=$#
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s%s" "$BL_MD_usage" "$BL_MD_chelpmsg" "$BL_MD_shelpmsg" ; return 2 ;;
+			-V|--version) printf "%s %s\n" "$BL_MD_NAME" "$BL_MD_VERSION" ; return 2 ;;
+			--) shift ; break ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_MD_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	BL_MD_NOPTIONS=$((npp-$#))
+}
+
+_bl_md_tonatnum() {
+	(($#)) && sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/' <<<"$1" || sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/'
+}
+
+_bl_md_todecnum2() {
+	local in etc
+	(($#)) && in=$1 || read in etc
+	in=$(printf "% 04d" "$in")
+	sed 's/.\{2\}$/,&/' <<<"$in"
+}
+
+### public functions / program actions ###
+
+bl_md_arraytobash() {
+	local name
+	((BL_MD_isprogram)) && name="$BL_MD_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] FIELD_NAMES ..."
+	local helpmsg="
+Convert each line of a markdown array to a  \"declare -A ...\" statement to be loaded with eval.
+Options:
+  -d, --declare VARNAME Set name in declare -A VARNAME=(... statement (default: \"entry\")
+"
+	local varname=entry
+	local sortfilter="cat"
+
+	for ((;$#;)) ; do
+		case "$1" in
+			-d|--declare)
+				shift ; varname="$1"
+				[[ "${varname}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]] || { echo "$FUNCNAME: Error: given VARNAME is not a valid posix name ${varname::5}..." >&2  ; return 2 ; }
+				;;
+			-s|--sort) [[ "${sortfilter}" != ^cat$ ]] || sortfilter="sort" ;;
+			-u|--uniq) sortfilter="sort -u" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_MD_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local line
+	local -a fields fieldnames
+	local -A entry
+
+	read line
+	readarray -t fields < <(sed ' s,^|\?,, ; s, *|\?$,, ; s, \+|,\n,g ' <<<"$line" | sed 's,^ *,,' )
+	nbcol=${#fields[@]}
+	read line
+	if [[ "$line" =~ ^[|:-]+$ ]] ; then
+		# second line is a separation line so first line was fieldnames
+		fieldnames=("${fields[@]}")
+		#shopt -s extglob
+		#fieldnames=("${fields[@]##*( )}")
+		header=true
+	else
+		header=false
+	fi
+
+	# Overwrite any fieldnames whith those given on command line (and non-empty)
+	i=0
+	for field in "$@" ; do
+		[[ -z "$field" ]] || fieldnames[$i]="$field"
+		((++i))
+	done
+
+	# create first associative array to check fieldname uniqness
+	for ((i=0;i<nbcol;i++)) ; do
+		# [[ "${fieldnames[$i]}" ]] || fieldnames[$i]="$i"
+		entry[${fieldnames[$i]}]=${fields[$i]}
+	done
+
+	if [[ ${#entry[@]} != $nbcol ]] ; then
+		echo "$FUNCNAME: Error: expected $nbcol unique fieldnames, got ${#entry[@]}." >&2
+		return 1
+	fi
+
+	if ! $header ; then # Interpret 2 first lines
+		declare -p entry | sed "0,/^declare -A entry=/{s//declare -A ${varname}=/}"
+		readarray -t fields < <(sed ' s,^|\?,, ; s, *|\?$,, ; s, \+|,\n,g ' <<<"$line" | sed 's,^ *,,' )
+		for ((i=0;i<nbcol;i++)) ; do
+			entry[${fieldnames[$i]}]=${fields[$i]}
+		done
+		declare -p entry | sed "0,/^declare -A entry=/{s//declare -A ${varname}=/}"
+	fi
+
+	while read line ; do
+		readarray -t fields < <(sed ' s,^|\?,, ; s, *|\?$,, ; s, \+|,\n,g ' <<<"$line" | sed 's,^ *,,' )
+		for ((i=0;i<nbcol;i++)) ; do
+			entry[${fieldnames[$i]}]=${fields[$i]}
+		done
+		declare -p entry | sed "0,/^declare -A entry=/{s//declare -A ${varname}=/}"
+	done
+}
+
+### General Help Messages (and set -e if program) ###
+
+if [[ "$BASH_SOURCE" == "$0" ]] ; then
+	# run as a program
+	set -e
+	declare -r BL_MD_isprogram=1
+
+	BL_MD_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_MD_shelpmsg="
+Actions:
+$(for f in "${BL_MD_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+$BL_MD_NAME is also bash library, see:
+$ source $BASH_SOURCE --help
+"
+else
+	# run as a library (source $0)
+
+	BL_MD_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+
+	BL_MD_shelpmsg="
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+
+Functions:
+$(for f in "${BL_MD_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"
+fi
+
+BL_MD_chelpmsg="
+Options:
+  -h, --help               show this help and exit/return
+  -V, --version            show version and exit/return
+"
+
+### Init ###
+
+# Parse Options
+_bl_md_parseoptions "$@"
+
+# Do nothing else if sourced
+[[ "$BASH_SOURCE" == "$0" ]] || return 0
+
+
+### Run ###
+shift $BL_MD_NOPTIONS
+if function=$(grep -o "\<bl_$1\>" <<< "${BL_MD_FUNCTIONS[@]}") ; then
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_MD_NAME" "$1" "$BASH_SOURCE" >&2
+	exit 2
+fi
+

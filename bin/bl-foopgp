@@ -213,7 +213,7 @@ Options:
 "
 	local max=12 udid header=0 onlyheader=0 ccode=EUR
 	local t g j=1
-	local -A csymb=([DJE]="Ɉ" [EUR]="€")
+	local -A csymb=([DJE]="Ɉ" [EUR]="€") # cf. ISO-4217 + https://en.wikipedia.org/wiki/Currency_symbol
 	for ((;$#;)) ; do
 		case "$1" in
 			-c|--currency) shift ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
