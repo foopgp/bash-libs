@@ -96,14 +96,15 @@ _bl_md_todecnum2() {
 bl_md_arraytobash() {
 	local name
 	((BL_MD_isprogram)) && name="$BL_MD_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] FIELD_NAMES ..."
+	local usage="Usage: $name [OPTIONS] [FIELD_NAMES]..."
 	local helpmsg="
-Convert each line of a markdown array to a  \"declare -A ...\" statement to be loaded with eval.
+Expect sdtin to be a markdwon array (with or whithout header),
+and convert each line of this array to a  \"declare -A ...\" statement to be loaded with eval.
+If first line of input isn't an array header, use positional parameter to set (or overwrite) field names.
 Options:
   -d, --declare VARNAME Set name in declare -A VARNAME=(... statement (default: \"entry\")
 "
 	local varname=entry
-	local sortfilter="cat"
 
 	for ((;$#;)) ; do
 		case "$1" in
@@ -111,8 +112,6 @@ Options:
 				shift ; varname="$1"
 				[[ "${varname}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]] || { echo "$FUNCNAME: Error: given VARNAME is not a valid posix name ${varname::5}..." >&2  ; return 2 ; }
 				;;
-			-s|--sort) [[ "${sortfilter}" != ^cat$ ]] || sortfilter="sort" ;;
-			-u|--uniq) sortfilter="sort -u" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_MD_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -147,10 +146,10 @@ Options:
 		((++i))
 	done
 
-	# create first associative array to check fieldname uniqness
+	# create first associative array to check fieldname uniqness, unescaping '|' characters
 	for ((i=0;i<nbcol;i++)) ; do
 		# [[ "${fieldnames[$i]}" ]] || fieldnames[$i]="$i"
-		entry[${fieldnames[$i]}]=${fields[$i]}
+		entry[${fieldnames[$i]}]=${fields[$i]//\\|/|}
 	done
 
 	if [[ ${#entry[@]} != $nbcol ]] ; then
@@ -162,7 +161,7 @@ Options:
 		declare -p entry | sed "0,/^declare -A entry=/{s//declare -A ${varname}=/}"
 		readarray -t fields < <(sed ' s,^|\?,, ; s, *|\?$,, ; s, \+|,\n,g ' <<<"$line" | sed 's,^ *,,' )
 		for ((i=0;i<nbcol;i++)) ; do
-			entry[${fieldnames[$i]}]=${fields[$i]}
+			entry[${fieldnames[$i]}]=${fields[$i]//\\|/|}
 		done
 		declare -p entry | sed "0,/^declare -A entry=/{s//declare -A ${varname}=/}"
 	fi
@@ -170,11 +169,88 @@ Options:
 	while read line ; do
 		readarray -t fields < <(sed ' s,^|\?,, ; s, *|\?$,, ; s, \+|,\n,g ' <<<"$line" | sed 's,^ *,,' )
 		for ((i=0;i<nbcol;i++)) ; do
-			entry[${fieldnames[$i]}]=${fields[$i]}
+			entry[${fieldnames[$i]}]=${fields[$i]//\\|/|}
 		done
 		declare -p entry | sed "0,/^declare -A entry=/{s//declare -A ${varname}=/}"
 	done
 }
+
+bl_md_arrayfrombash() {
+	local name
+	((BL_MD_isprogram)) && name="$BL_MD_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] [FIELD_NAMES]..."
+	local helpmsg="
+Expect sdtin to be lines of \"declare -A ...\" statement with the identical indexes/fieldnames.
+Then eval and output markdown array ; using [FIELD_NAMES]... to order columns.
+Options:
+  -H, --header-only    Only display header line, and return.
+  -F, --with-header    Also display header line and separation line at the beginning of array.
+"
+	local header=0 onlyheader=0
+
+	for ((;$#;)) ; do
+		case "$1" in
+			-H|--header-only) onlyheader=1 header=1 ;;
+			-F|--with-header) onlyheader=0 header=1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_MD_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local -a fieldnames
+
+	while read line ; do
+		if ! [[ "$line" =~ ^declare" "-[Aa][a-zA-Z]*" "([a-zA-Z_][a-zA-Z0-9_]*)=\(.*" "\)$ ]] ; then
+			printf "%s: Warning: unexpected line %s\n" "$FUNCNAME" "${line::21}..." >&2
+			continue
+		else
+			local "${BASH_REMATCH[1]}"
+			eval "$line" # dangerous as previous regexp isn't sufficient to prevent security issues
+			local -n aa=${BASH_REMATCH[1]}
+		fi
+		# Construct fieldnames
+		if [[ -z "$fieldnames" ]] ; then
+			for f in "$@" ; do
+				#if printf '%s\0' "${!aa[@]//|/\\|}" | grep -Fxqz -- "$f" ; then
+				if printf '%s\0' "${!aa[@]}" | grep -Fxqz -- "$f" ; then
+					fieldnames+=("$f")
+				else
+					printf "%s: Warning: no matching FIELD_NAME '%s'. Ignoring...\n" "$FUNCNAME" "$f" >&2
+				fi
+			done
+			#for f in "${!aa[@]//|/\\|}" ; do
+			for f in "${!aa[@]}" ; do
+				if ! printf '%s\0' "${fieldnames[@]}" | grep -Fxqz -- "$f" ; then
+					fieldnames+=("$f")
+				fi
+			done
+		fi
+
+		if ((header)) ; then
+			printf "|"
+			printf " %-16s |" "${fieldnames[@]}"
+			printf "\n"
+		fi
+		((!onlyheader)) || return
+		if ((header)) ; then
+			printf "|"
+			printf -- "------------------%.0s|" "${!aa[@]}"
+			printf "\n"
+			header=0
+		fi
+		printf "|"
+		for f in "${fieldnames[@]}" ; do
+			printf " %-16s |" "${aa[${f}]//|/\\|}"
+		done
+		#TODO (maybe): change size of field if its a date, or right aling if its numbers
+		printf "\n"
+	done
+}
+
 
 ### General Help Messages (and set -e if program) ###
 
