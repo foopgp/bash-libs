@@ -108,7 +108,7 @@ declare -Ar BL_FOOPGP_STINGYNALTYS=(
 
 ### Default option values ###
 
-BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-${BL_FOOPGP_STINGYNALTYS[$(date -I | head -c 7)]}}"
+BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-${BL_FOOPGP_STINGYNALTYS[$(date --iso-8601 | head -c 7)]}}"
 
 ### external functions ###
 
@@ -119,11 +119,13 @@ BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-${BL_FOOPGP_STINGYNALTYS[$(date 
 
 _bl_foopgp_parseoptions() {
 	local npp=$#
+	local date
 	for ((;$#;)) ; do
 		case "$1" in
 			-h|--help) printf "%s\n%s%s" "$BL_FOOPGP_usage" "$BL_FOOPGP_chelpmsg" "$BL_FOOPGP_shelpmsg" ; return 2 ;;
 			-V|--version) printf "%s %s\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_VERSION" ; return 2 ;;
 			-s|--stingy*) shift ; BL_FOOPGP_STINGYNALTY="$1" ;;
+			-d|--date) shift ; BL_FOOPGP_STINGYNALTY=${BL_FOOPGP_STINGYNALTYS[$(date --iso-8601 --date "$1"  | head -c 7)]} ;;
 			--) shift ; break ;;
 			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_FOOPGP_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
@@ -131,6 +133,13 @@ _bl_foopgp_parseoptions() {
 		shift
 	done
 	BL_FOOPGP_NOPTIONS=$((npp-$#))
+	#TODO(maybe): use bl_log instead of next 2 'printf'
+	if [[ "$BL_FOOPGP_STINGYNALTY" =~ ^[0-9]+\.?[0-9]*$ ]] ; then
+		printf "%s: Info: stingynalty=%s\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_STINGYNALTY" >&2
+	else
+		printf "%s: Error: stingynalty: invalid number '%s'\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_STINGYNALTY" >&2
+		return 2
+	fi
 }
 
 ### public functions / program actions ###
@@ -297,6 +306,7 @@ Options:
   -h, --help               show this help and exit/return
   -V, --version            show version and exit/return
   -s, --stingynalty VALUE  set STINGYNALTY (current: $BL_FOOPGP_STINGYNALTY)
+  -d, --date STRING        set STINGYNALTY according to given date (cf. <https://www.gnu.org/software/coreutils/date>)
 "
 
 ### Init ###
