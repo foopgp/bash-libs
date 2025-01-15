@@ -227,12 +227,13 @@ Display an array to indicate how many token gonna be created from a gift.
 Options:
   -t, --tokens DJESUM  Set the base of tokens Ɉ already created (default: 0)
   -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
-  -m, --max VALUE      Set the limit in term of token (defaut: 12)
+  -m, --max VALUE      Set a limit in term of targeted token (defaut: 12)
+  -M, --max-line NUM   Limit number of lines (defaut: 24)
   -H, --header-only    Only display header line, and return.
   -F, --with-header    Also display header line and separation line at the beginning of array.
 "
-	local max=12 udid header=0 onlyheader=0 ccode=EUR
-	local t g j=1 tg=0 gg=0
+	local max=12 maxl=24 udid header=0 onlyheader=0 ccode=EUR
+	local t g i j k tg=0 gg=0
 	local -A csymb=([DJE]="Ɉ" [EUR]="€") # cf. ISO-4217 + https://en.wikipedia.org/wiki/Currency_symbol
 	for ((;$#;)) ; do
 		case "$1" in
@@ -244,7 +245,8 @@ Options:
 				shift ; gg=${1/,/.}
 				[[ "$gg" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$gg" >&2 ; return 2 ; }
 				;;
-			-m|--max) shift ; max=$(($1)) ;;
+			-m|--max) shift ; max=$(($1)) || return 2 ;;
+			-M|--max-line) shift ; maxl=$(($1)) || return 2 ;;
 			-H|--header-only) onlyheader=1 header=1 ;;
 			-F|--with-header) onlyheader=0 header=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -255,19 +257,21 @@ Options:
 		esac
 		shift
 	done
+
 	((!header)) || printf "| %12s | %11s |\n" "EUR" "DJE"
 	((!onlyheader)) || return
 	((!header)) || echo "|--------------|-------------|"
-	j=1
-	for ((i=1;i<=$max;i++)) ; do
+
+	for ((i=1,j=1,k=1; i<=max && k<=maxl; i++,k++)) ; do
 		g=$(bl_foopgp_t2g --tokens "$tg" --gifts "$gg" $i)
 		while (( $(echo "$j < $g" | bc -l) )) ; do
 			LC_NUMERIC=POSIX printf "| %7s.00 ${csymb[EUR]} | %9s Ɉ |\n" "$j" "$(bl_foopgp_g2t --tokens "$tg" --gifts "$gg" $j)"
 			((j*=2))
 			j=$(tr '4' '5' <<<"$j")
+			((++k<maxl)) || break
 		done
 		LC_NUMERIC=POSIX printf "| %10s ${csymb[EUR]} | %2s.000000 Ɉ |\n" "$g" "$i"
-	done | uniq
+	done #| uniq
 }
 
 
