@@ -167,7 +167,7 @@ Options:
 	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
 	for i in "$@" ; do
-		bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; y/1000 ; scale=16 "
+		bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else \"0.000000"$'\n'"\" ; scale=16 "
 	done
 }
 
@@ -176,7 +176,7 @@ bl_foopgp_t2g() {
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
-Calculate how much should be given to create a number of tokens.
+Calculate how much should be given to create a targeted number of tokens.
 Options:
   -t, --tokens DJESUM  Set the base of tokens Ɉ already created (default: 0)
   -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
@@ -187,12 +187,10 @@ Options:
 			-t|--tokens)
 				shift ; t=${1/,/.}
 				[[ "$t" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$t" >&2 ; return 2 ; }
-				printf "%s: Warning: --token is not yet implemented" "$FUNCNAME" >&2
 				;;
 			-g|--gifts)
 				shift ; g=${1/,/.}
 				[[ "$g" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$g" >&2 ; return 2 ; }
-				printf "%s: Warning: --gifts is not yet implemented" "$FUNCNAME" >&2
 				;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
@@ -206,7 +204,7 @@ Options:
 
 	for i in "$@" ; do
 		#bc -l <<<"for (i=1;i<13;i++) { z=e(l(2)*1.08*i)-1 ; scale=2 ; z=z*100+1 ; z/100 ; scale=16 }"
-		bc -l <<<"z=e(l(2)*$BL_FOOPGP_STINGYNALTY*$i)-1 ; scale=2 ; z=z*100+1 ; z/100 ; scale=16"
+		bc -l <<<"z=e(l(2)*$BL_FOOPGP_STINGYNALTY*($i+$t))-1-$g ; scale=2 ; z=z*100+1 ; z/100 ; scale=16"
 	done
 }
 
