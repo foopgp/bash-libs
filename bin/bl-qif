@@ -223,7 +223,7 @@ $ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
 		case "$1" in
 			-p|--path) shift ; path="$1" ;;
 			-c|--currency) shift ; currency="$1" ;;
-			-d|--allow-dupes) printf "%s: Error: --interactive not implemented yet.\n" "$FUNCNAME" >&2 ; return 2 ;;
+			-d|--allow-dupes) printf "%s: Error: --allow-dupes not implemented yet.\n" "$FUNCNAME" >&2 ; return 2 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_QIF_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -342,9 +342,6 @@ Extract stats from Given .qif files
 	echo "nbentries=$((nbrevenues+nbexpenses)) # Number of entries"
 	echo "balance=$(_bl_qif_todecnum "$((sumrevenues-sumexpenses))") # Total balance"
 }
-
-
-
 
 bl_qif_toflow() {
 	local name
