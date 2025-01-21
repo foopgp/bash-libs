@@ -95,12 +95,17 @@ _bl_qif_todecnum() {
 	sed 's/.\{2\}$/,&/' <<<"$in"
 }
 
+# Reverse date order DD/MM/YYYY -> YYYYMMDD. if $1 is one char lenght, use it as a separator, eg : $1 == '-' -> YYYY-MM-DD
 _bl_qif_dateFRtoISO8601() {
-	local in
+	local in sep
+	if ((${#1} == 1)) ; then
+		sep=$1
+		shift
+	fi
 	(($#)) && in=$@ || read in
 	in=$(sed  's,[^0-9],,g' <<<"$in")
 	((${#in}==8)) || return 2
-	echo "${in:4:4}-${in:2:2}-${in::2}"
+	echo "${in:4:4}${sep}${in:2:2}${sep}${in::2}"
 }
 
 _bl_qif_dateISO8601toFR() {
@@ -181,7 +186,7 @@ Options:
 						break
 					fi
 				done
-				if $validentry && ! date=$(_bl_qif_dateFRtoISO8601 "${entry[D]}") ; then
+				if $validentry && ! date=$(_bl_qif_dateFRtoISO8601 "-" "${entry[D]}") ; then
 					bl_log warning "${FUNCNAME}: Invalid date '${entry[D]}', skipping $(declare -p entry)"
 					validentry="false"
 				fi
@@ -247,7 +252,7 @@ $ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
 	while read line ; do
 		bl_log debug "${FUNCNAME}: eval '${line}'"
 		eval "${line}"
-		month=$(_bl_qif_dateFRtoISO8601 "${entry[D]}" | sed ' s,-,/, ; s,-.*,, ')
+		month=$(_bl_qif_dateFRtoISO8601 "/" "${entry[D]}" | sed ' s,/..$,, ')
 		[[ "$month" =~ ^[0-9]{4}/[01][0-9]$ ]] || bl_log crit "Unexpected date ${entry[D]}"
 		# Use associative array to efficiently remove dupes
 		ftomerge="${path}/journal/by-month/${month}/${currency}/${journalname}.qif"
@@ -265,7 +270,7 @@ $ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
 	while read line ; do
 		bl_log debug "${FUNCNAME}: eval '${line}'"
 		eval "${line}"
-		month=$(_bl_qif_dateFRtoISO8601 "${entry[D]}" | sed ' s,-,/, ; s,-.*,, ')
+		month=$(_bl_qif_dateFRtoISO8601 "/" "${entry[D]}" | sed ' s,/..$,, ')
 		[[ "$month" =~ ^[0-9]{4}/[01][0-9]$ ]] || bl_log crit "Unexpected date ${entry[D]}"
 		ftomerge="${path}/journal/by-month/${month}/${currency}/${journalname}.qif"
 		if [[ -z "${filestomerge[${ftomerge}]}" ]] ; then
@@ -343,7 +348,42 @@ Extract stats from Given .qif files
 	echo "balance=$(_bl_qif_todecnum "$((sumrevenues-sumexpenses))") # Total balance"
 }
 
-bl_qif_toflow() {
+
+_bl_qif_fecp4formatline() {
+
+# Note: to fix dot/comma problems, like with ' printf " %9.2f |" ${p4entry[Debit]}'
+# check environment : LC_NUMERIC="fr_FR.UTF-8" or LC_NUMERIC="C"
+
+	local -n p4entry="$1"
+
+	printf "| %s |" "${p4entry[JournalCode]}"
+	printf " %s |" "${p4entry[JournalLib]}"
+	printf " %d |" "${p4entry[EcritureNum]}"
+	printf " %d |" "${p4entry[EcritureDate]}"
+	printf " %d |" "${p4entry[CompteNum]}"
+	printf " %-s |" "${p4entry[CompteLib]}"
+	printf " %d |" "${p4entry[CompAuxNum]}"
+	printf " %-s |" "${p4entry[CompAuxLib]}"
+	printf " %s |" "${p4entry[PieceRef]}"
+	printf " %d |" "${p4entry[PieceDate]}"
+	printf " %38s |" "${p4entry[EcritureLib]}"
+	printf " %9.2f |" "${p4entry[Debit]}"
+	printf " %9.2f |" "${p4entry[Credit]}"
+	printf " %s |" "${p4entry[EcritureLet]}"
+	printf " %s |" "${p4entry[DateLet]}"
+	printf " %s |" "${p4entry[ValidDate]}"
+	printf " %s |" "${p4entry[Montantdevise]}"
+	printf " %s |" "${p4entry[Idevise]}"
+	printf "  |" # "${p4entry["#"]}"
+	printf " %s |" "${p4entry[SubProject]}"
+	printf " %d |" "${p4entry[TypeNum]}"
+	printf " %-9s |" "${p4entry[TypeLib]}"
+	printf " %38s |" "${p4entry[TypeRef]}"
+	printf " %38s |" "${p4entry[SrcRef]}"
+	printf " %d |" "${p4entry[SrcEntryNum]}"
+}
+
+bl_qif_tofecp4() {
 	local name
 	((BL_QIF_isprogram)) && name="$BL_QIF_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] FILE.qif ..."
@@ -366,30 +406,64 @@ Options:
 	done
 	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
-	local -a subaccounts etypes rtypes flow
-	local fqif flowfd line rectify i=0 j k
-	local remain direction countdec isub1 ityp typ srcdest
-	local -A entry
+	local -a subaccounts ftypes flow
+	local fqif infd fecp4fd line i=0 j
+	local remain direction countdec isub1
+	local -A entry flowentry
 
 	mapfile -t subaccounts < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/subaccounts.list")
-	mapfile -t etypes < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/expense_types.list")
-	mapfile -t rtypes < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/revenue_types.list")
-	( [[ "${subaccounts#*:}" ]] && [[ "${etypes#*:}" ]] && [[ "${rtypes#*:}" ]] ) || return 2
+	mapfile -t ftypes < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/flow_types.list")
+	( [[ "${subaccounts#*:}" ]] && [[ "${ftypes#*:}" ]] ) || return 2
 
+# Le FEC est un fichier csv de 18 champs, où les séparateurs sont souvent des '|', et parfois des '\t'. Le champ qui mérite le plus d'attention est sans doute 'CompteNum', qui doit correspondre à la nomenclature du Plan Comptable Français.
+#
+# Champs attendus:
+# |           1 |          2 |           3 |            4 |         5 |         6 |          7 |          8 |        9 |
+# | JournalCode | JournalLib | EcritureNum | EcritureDate | CompteNum | CompteLib | CompAuxNum | CompAuxLib | PieceRef |
+#
+# |        10 |           11 |    12 |     13 |          14 |      15 |        16 |            17 |      18 |
+# | PieceDate |  EcritureLib | Debit | Credit | EcritureLet | DateLet | ValidDate | Montantdevise | Idevise |
+#
+# Champs pouvant rester vides : CompAuxNum (7), CompAuxLib(8), Montantdevise (17), Idevise (18).
+#
+# À ces champs, imposés par l'administration fiscale française, nous rajoutons 1+6 champs pour satisfaire nos besoins de visibilité comptable :
+# |  19 |         20 |   21    |      22 |      23 |     24 |          25 |
+# |     | SubProject | TypeNum | TypeLib | TypeRef | SrcRef | SrcEntryNum |
+#
+# Le champs 19 est laissé vide, pour accentuer la séparation et "Reserve for Futur Use" (par d'autres).
+# Le champs SubProject (20) permet de différencier nos enveloppes générales. Par exemple de différencier les flux liés aux activitées de Fred Renault (connexes à l'association), de celles liées au coeur de l'association.
+# Les champs TypeNum (21) et TypeLib (22) permettent de différencier le type de flux. Par exemple dons, achats ou ventes. La finalité est très proche de la nomenclature du Plan Comptable Français  ...en beaucoup plus simple et parfaitement adapté à nos systèmes et problématiques.
+# Le champs TypeRef (23) donne la Référence exacte du flux suivant le Type. Nous y trouverons par exemple un udid4 lors d'une donation (ou à défaut une adresse courriel), une référence d'inventaire lors d'achat ou vente qui y affère, etc.
+# Le champs SrcRef (24) donne une référence de la source à l'origine des données précédentes. Par exemple le nom d'un fichier (à défaut de mieux).
+# Le champs SrcEntryNum (25) donne le numéro de l'entrée dans la source indiqué dans le champs SrcRef (24). Car une entrée dans cet source pourrait se décomposer en plusieurs lignes dans notre fichier cmptable.
+#
+# Vu que la structure de notre fichier comptable étend celle des fichiers FEC usuels, nous l'appellerons FECP4. Avec un P pour "Plus" et un 4 pour allez plus loin que d'autres qui auraient pu avoir la même idée ; le chiffre 4 permettant un clin d'oeuil à une classifcation militaire désirée par de nombreux pacifistes (P4) ;-).
+#
+# De plus nous y ajoutons un séparateur de champ '|' en début et en fin de ligne afin de faire correspondre ce fichier au format de tableaux markdown que nous utilisons par ailleurs.
+#
 	for fqif in "$@" ; do
-		exec {flowfd}>"$fqif.flow"
-		while read line < <(bl_qif_tobash "$fqif") ; do
+		exec {infd}< <(bl_qif_tobash "$fqif")
+		exec {fecp4fd}>"$fqif.fecp4"
+		echo "| JournalCode | JournalLib | EcritureNum | EcritureDate | CompteNum | CompteLib | CompAuxNum | CompAuxLib | PieceRef | PieceDate |  EcritureLib | Debit | Credit | EcritureLet | DateLet | ValidDate | Montantdevise | Idevise | # | SubProject | TypeNum | TypeLib | TypeRef | SrcRef | SrcEntryNum |" >&${fecp4fd}
+		echo "|-------------|------------|-------------|--------------|-----------|-----------|------------|------------|----------|-----------|--------------|-------|--------|-------------|---------|-----------|---------------|---------|---|------------|---------|---------|---------|--------|-------------|" >&${fecp4fd}
+		while read line <&${infd} ; do
+			echo "$line"
 			eval "$line"
-			((++i))
+			flowentry[EcritureDate]=$(_bl_qif_dateFRtoISO8601 "${entry[D]}") || bl_log crit "${FUNCNAME}: Invalid date ${entry[D]}"
+			flowentry[EcritureLib]=${entry[P]}
 			if [[ ${entry[T]::1} == "-" ]] ; then
-				entry[U]=${entry[T]:1}
-				entry[Mtype]="Debit"
+				flowentry[Debit]=${entry[T]:1}
+				flowentry[Credit]=0
+				flowentry[Mtype]="Debit"
 			else
-				[[ ${entry[T]::1} == "+" ]] && entry[U]=${entry[T]:1} || entry[U]=${entry[T]}
-				entry[Mtype]="Credit"
+				[[ ${entry[T]::1} == "+" ]] && flowentry[Credit]=${entry[T]:1} || flowentry[Credit]=${entry[T]}
+				flowentry[Debit]=0
+				flowentry[Mtype]="Credit"
 			fi
-			entry[D]=$(_bl_qif_dateFRtoISO8601 "${entry[D]}") || bl_log crit "${FUNCNAME}: Invalid date ${entry[D]}"
-			entry[Mdesc]="$(echo -e "--- Entry #$i ---\n${entry[D]} - ${entry[Mtype]}: ${entry[U]}\n${entry[P]}\n----------------")"
+			flowentry[SrcRef]=$(realpath --relative-to="$path" "$fqif")
+			flowentry[SrcEntryNum]=$((++i))
+
+			entry[Mdesc]="$(echo -e "--- Entry #$i ---\n${entry[D]} - ${flowentry[Mtype]}: ${flowentry[${flowentry[Mtype]}]}\n${entry[P]}\n----------------")"
 
 			while true ; do
 				j=0
@@ -416,20 +490,26 @@ Options:
 					done
 
 					isub1=$(bl_radiolist --output-index --default 1 --text "  Entry #$i. Select the sub-account for subflow #$j" "${subaccounts[@]#*:}")
+					flowentry[SubProject]=${subaccounts[$isub1]}
 					if [[ $direction == "Expense" ]] ; then
 						: $((entry[Msum]+=$(_bl_qif_tonatnum "$countdec")))
-						ityp=$(bl_radiolist --output-index --text "  Entry #$i. Select the type of expense for subflow #$j (-$countdec)" "${etypes[@]#*:}")
-						typ=${etypes[$ityp]}
+						flowentry[TypeNum]=$(bl_radiolist --text "  Entry #$i. Select the type of expense for subflow #$j (-$countdec)" "${ftypes[@]#*:}")
+						flowentry[Debit]=$countdec
+						flowentry[Credit]=0
 					else
 						: $((entry[Msum]-=$(_bl_qif_tonatnum "$countdec")))
-						ityp=$(bl_radiolist --output-index --default 1 --text "  Entry #$i. Select the type of revenue for subflow #$j (+$countdec)" "${rtypes[@]#*:}")
-						typ=${rtypes[$ityp]}
+						flowentry[TypeNum]=$(bl_radiolist --default 2 --text "  Entry #$i. Select the type of revenue for subflow #$j (+$countdec)" "${ftypes[@]#*:}")
+						flowentry[Debit]=0
+						flowentry[Credit]=$countdec
 					fi
-					if [[ ${typ%%:*} == 1 ]] ; then # 1:Internal
+					flowentry[TypeLib]=${ftypes[$((flowentry[TypeNum]-1))]#*:}
+					if [[ ${flowentry[TypeNum]} == 1 ]] ; then # 1:Internal
 						local isub2
 						isub2=$(bl_radiolist --output-index --text "  Entry #$i. Select the sub-account for Internal subflow #$j" "${subaccounts[@]#*:}")
-						flow+=("$(printf "${entry[D]} | %-11s | %7s | %-11s | %9s | %38s | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "${subaccounts[$isub2]}")")
-						((++j))
+						flowentry[TypeRef]=${subaccounts[$isub2]}
+
+						flow+=("$(_bl_qif_fecp4formatline flowentry)")
+
 						if [[ $direction == "Expense" ]] ; then
 							direction="Revenue"
 							: $((entry[Msum]-=$(_bl_qif_tonatnum "$countdec")))
@@ -437,28 +517,29 @@ Options:
 							direction="Expense"
 							: $((entry[Msum]+=$(_bl_qif_tonatnum "$countdec")))
 						fi
-						srcdest=${subaccounts[$isub1]}
+						flowentry[TypeRef]=${subaccounts[$isub1]}
 						isub1=$isub2
-					elif [[ ${typ%%:*} == 2 ]] ; then # 2:Donation of cash
+					elif [[ ${flowentry[TypeNum]} == 2 ]] ; then # 2:Donation of cash
 						local question dtype
-						[[ $direction == "Expense" ]] && question="To whom was this donation made" || question="In whose name was this donation made"
-						srcdest=$(bl_input --default "${entry[P]}" --email --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${typ#*:}/$countdec)." "$question (email address)")
-					#elif [[ ${typ%%:*} == 3 ]] ; then # 3:Stock Inventory flow will be managed by a futur fonction "flow2stock()"
+						[[ $direction == "Expense" ]] && question="To whom was this donation made" || question="In whose name was this donation made (udid4 if possible)"
+						flowentry[TypeRef]=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${flowentry[TypeLib]}/$countdec)." "$question")
+					#elif [[ {flowentry[TypeNum]} == 3 ]] ; then # 3:Stock Inventory flow will be managed by a futur fonction "flow2stock()"
 					else
-						srcdest=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${typ#*:}/$countdec)." "Enter description, source or destination of subflow #$j")
+						flowentry[TypeRef]=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${flowentry[TypeLib]}/$countdec)." "Enter reference or description of subflow #$j")
 					fi
-					flow+=("$(printf "${entry[D]} | %-11s | %7s | %-11s | %9s | %38s | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "$srcdest")")
+					flow+=("$(_bl_qif_fecp4formatline flowentry)")
 					if ((entry[Msum]==0)) ; then
 						! bl_yesno --default=yes "Count reached. Next step" || break
 					fi
 				done
 				if bl_yesno --text "$(printf "%s\n" "${flow[@]}")" --default=yes "Validate entry #$i" ; then
-					printf "%s\n" "${flow[@]}" >&${flowfd}
+					printf "%s\n" "${flow[@]}" >&${fecp4fd}
 					break
 				fi
 			done
 		done
-		exec {flowfd}>&-
+		exec {fecp4fd}>&-
+		exec {infd}<&-
 	done
 }
 
