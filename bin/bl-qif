@@ -85,7 +85,9 @@ _bl_qif_parseoptions() {
 }
 
 _bl_qif_tonatnum() {
-	(($#)) && sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/' <<<"$1" || sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/'
+	local in etc
+	(($#)) && in=$1 || read in etc
+	sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/ ; s/^$/0/ ' <<<"$in"
 }
 
 _bl_qif_todecnum() {
@@ -366,7 +368,7 @@ _bl_qif_fecp4formatline() {
 	printf " %-s |" "${p4entry[CompAuxLib]}"
 	printf " %s |" "${p4entry[PieceRef]}"
 	printf " %d |" "${p4entry[PieceDate]}"
-	printf " %38s |" "${p4entry[EcritureLib]}"
+	printf " %60s |" "${p4entry[EcritureLib]}"
 	printf " %9.2f |" "${p4entry[Debit]}"
 	printf " %9.2f |" "${p4entry[Credit]}"
 	printf " %s |" "${p4entry[EcritureLet]}"
@@ -375,11 +377,13 @@ _bl_qif_fecp4formatline() {
 	printf " %s |" "${p4entry[Montantdevise]}"
 	printf " %s |" "${p4entry[Idevise]}"
 	printf "  |" # "${p4entry["#"]}"
-	printf " %s |" "${p4entry[SubProject]}"
+	printf " %d |" "${p4entry[PackageNum]}"
+	printf " %s |" "${p4entry[PackageLib]}"
 	printf " %d |" "${p4entry[TypeNum]}"
 	printf " %-9s |" "${p4entry[TypeLib]}"
-	printf " %38s |" "${p4entry[TypeRef]}"
-	printf " %38s |" "${p4entry[SrcRef]}"
+	printf " %40s |" "${p4entry[TypeRef]}"
+	printf " %10s |" "${p4entry[SrcType]}"
+	printf " %30s |" "${p4entry[SrcRef]}"
 	printf " %d |" "${p4entry[SrcEntryNum]}"
 }
 
@@ -406,14 +410,14 @@ Options:
 	done
 	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
-	local -a subaccounts ftypes flow
+	local -a fpackages ftypes flow
 	local fqif infd fecp4fd line i=0 j
 	local remain direction countdec isub1
 	local -A entry flowentry
 
-	mapfile -t subaccounts < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/subaccounts.list")
+	mapfile -t fpackages < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/financial_packages.list")
 	mapfile -t ftypes < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/flow_types.list")
-	( [[ "${subaccounts#*:}" ]] && [[ "${ftypes#*:}" ]] ) || return 2
+	( [[ "${fpackages#*:}" ]] && [[ "${ftypes#*:}" ]] ) || return 2
 
 # Le FEC est un fichier csv de 18 champs, où les séparateurs sont souvent des '|', et parfois des '\t'. Le champ qui mérite le plus d'attention est sans doute 'CompteNum', qui doit correspondre à la nomenclature du Plan Comptable Français.
 #
@@ -426,16 +430,17 @@ Options:
 #
 # Champs pouvant rester vides : CompAuxNum (7), CompAuxLib(8), Montantdevise (17), Idevise (18).
 #
-# À ces champs, imposés par l'administration fiscale française, nous rajoutons 1+6 champs pour satisfaire nos besoins de visibilité comptable :
-# |  19 |         20 |   21    |      22 |      23 |     24 |          25 |
-# |     | SubProject | TypeNum | TypeLib | TypeRef | SrcRef | SrcEntryNum |
+# À ces champs, imposés par l'administration fiscale française, nous rajoutons 1+8 champs pour satisfaire nos besoins internes de visibilité comptable :
+# |  19 |         20 |         21 |      22 |      23 |      24 |      25 |    26  |          27 |
+# |     | PackageNum | PackageLib | TypeNum | TypeLib | TypeRef | SrcType | SrcRef | SrcEntryNum |
 #
 # Le champs 19 est laissé vide, pour accentuer la séparation et "Reserve for Futur Use" (par d'autres).
-# Le champs SubProject (20) permet de différencier nos enveloppes générales. Par exemple de différencier les flux liés aux activitées de Fred Renault (connexes à l'association), de celles liées au coeur de l'association.
-# Les champs TypeNum (21) et TypeLib (22) permettent de différencier le type de flux. Par exemple dons, achats ou ventes. La finalité est très proche de la nomenclature du Plan Comptable Français  ...en beaucoup plus simple et parfaitement adapté à nos systèmes et problématiques.
-# Le champs TypeRef (23) donne la Référence exacte du flux suivant le Type. Nous y trouverons par exemple un udid4 lors d'une donation (ou à défaut une adresse courriel), une référence d'inventaire lors d'achat ou vente qui y affère, etc.
-# Le champs SrcRef (24) donne une référence de la source à l'origine des données précédentes. Par exemple le nom d'un fichier (à défaut de mieux).
-# Le champs SrcEntryNum (25) donne le numéro de l'entrée dans la source indiqué dans le champs SrcRef (24). Car une entrée dans cet source pourrait se décomposer en plusieurs lignes dans notre fichier cmptable.
+# Les champs PackageNum (20) et PackageLib (21) permettent de différencier nos enveloppes générales. Par exemple de différencier les flux liés aux activitées de Fred Renault (connexes à l'association), de celles liées au coeur de l'association.
+# Les champs TypeNum (22) et TypeLib (23) permettent de différencier le type de flux. Par exemple dons, achats ou ventes. La finalité est très proche de la nomenclature du Plan Comptable Français  ...en beaucoup plus simple et parfaitement adapté à nos systèmes et problématiques.
+# Le champs TypeRef (24) donne la Référence exacte du flux suivant le Type. Nous y trouverons par exemple un udid4 lors d'une donation (ou à défaut une adresse courriel), une référence d'inventaire lors d'achat ou vente qui y affère, etc.
+# Le champs SrcType (25) donne le type de la source à l'origine des données précédentes. Par exemple "Bank" ou "Cash".
+# Le champs SrcRef (26) donne une référence de la source à l'origine des données précédentes. Par exemple le nom d'un fichier (à défaut de mieux).
+# Le champs SrcEntryNum (27) donne le numéro de l'entrée dans la source indiqué dans le champs SrcRef (26). Car une entrée dans cet source pourrait se décomposer en plusieurs lignes dans notre fichier cmptable.
 #
 # Vu que la structure de notre fichier comptable étend celle des fichiers FEC usuels, nous l'appellerons FECP4. Avec un P pour "Plus" et un 4 pour allez plus loin que d'autres qui auraient pu avoir la même idée ; le chiffre 4 permettant un clin d'oeuil à une classifcation militaire désirée par de nombreux pacifistes (P4) ;-).
 #
@@ -444,10 +449,9 @@ Options:
 	for fqif in "$@" ; do
 		exec {infd}< <(bl_qif_tobash "$fqif")
 		exec {fecp4fd}>"$fqif.fecp4"
-		echo "| JournalCode | JournalLib | EcritureNum | EcritureDate | CompteNum | CompteLib | CompAuxNum | CompAuxLib | PieceRef | PieceDate |  EcritureLib | Debit | Credit | EcritureLet | DateLet | ValidDate | Montantdevise | Idevise | # | SubProject | TypeNum | TypeLib | TypeRef | SrcRef | SrcEntryNum |" >&${fecp4fd}
-		echo "|-------------|------------|-------------|--------------|-----------|-----------|------------|------------|----------|-----------|--------------|-------|--------|-------------|---------|-----------|---------------|---------|---|------------|---------|---------|---------|--------|-------------|" >&${fecp4fd}
+		echo "| JournalCode | JournalLib | EcritureNum | EcritureDate | CompteNum | CompteLib | CompAuxNum | CompAuxLib | PieceRef | PieceDate |  EcritureLib | Debit | Credit | EcritureLet | DateLet | ValidDate | Montantdevise | Idevise | # | PackageNum | PackageLib | TypeNum | TypeLib | TypeRef | SrcType | SrcRef | SrcEntryNum |" >&${fecp4fd}
+		echo "|-------------|------------|-------------|--------------|-----------|-----------|------------|------------|----------|-----------|--------------|-------|--------|-------------|---------|-----------|---------------|---------|---|------------|------------|---------|---------|---------|---------|--------|-------------|" >&${fecp4fd}
 		while read line <&${infd} ; do
-			echo "$line"
 			eval "$line"
 			flowentry[EcritureDate]=$(_bl_qif_dateFRtoISO8601 "${entry[D]}") || bl_log crit "${FUNCNAME}: Invalid date ${entry[D]}"
 			flowentry[EcritureLib]=${entry[P]}
@@ -460,6 +464,7 @@ Options:
 				flowentry[Debit]=0
 				flowentry[Mtype]="Credit"
 			fi
+			flowentry[SrcType]=${entry["!Type:"]}
 			flowentry[SrcRef]=$(realpath --relative-to="$path" "$fqif")
 			flowentry[SrcEntryNum]=$((++i))
 
@@ -489,8 +494,8 @@ Options:
 						fi
 					done
 
-					isub1=$(bl_radiolist --output-index --default 1 --text "  Entry #$i. Select the sub-account for subflow #$j" "${subaccounts[@]#*:}")
-					flowentry[SubProject]=${subaccounts[$isub1]}
+					flowentry[PackageNum]=$(bl_radiolist --default 1 --text "  Entry #$i. Select the financial package for subflow #$j" "${fpackages[@]#*:}")
+					flowentry[PackageLib]=${fpackages[$((flowentry[PackageNum]-1))]#*:}
 					if [[ $direction == "Expense" ]] ; then
 						: $((entry[Msum]+=$(_bl_qif_tonatnum "$countdec")))
 						flowentry[TypeNum]=$(bl_radiolist --text "  Entry #$i. Select the type of expense for subflow #$j (-$countdec)" "${ftypes[@]#*:}")
@@ -505,8 +510,8 @@ Options:
 					flowentry[TypeLib]=${ftypes[$((flowentry[TypeNum]-1))]#*:}
 					if [[ ${flowentry[TypeNum]} == 1 ]] ; then # 1:Internal
 						local isub2
-						isub2=$(bl_radiolist --output-index --text "  Entry #$i. Select the sub-account for Internal subflow #$j" "${subaccounts[@]#*:}")
-						flowentry[TypeRef]=${subaccounts[$isub2]}
+						isub2=$(bl_radiolist --output-index --text "  Entry #$i. Select the package for Internal subflow #$j" "${fpackages[@]#*:}")
+						flowentry[TypeRef]=${fpackages[$isub2]}
 
 						flow+=("$(_bl_qif_fecp4formatline flowentry)")
 
@@ -517,15 +522,15 @@ Options:
 							direction="Expense"
 							: $((entry[Msum]+=$(_bl_qif_tonatnum "$countdec")))
 						fi
-						flowentry[TypeRef]=${subaccounts[$isub1]}
+						flowentry[TypeRef]=${fpackages[$isub1]}
 						isub1=$isub2
 					elif [[ ${flowentry[TypeNum]} == 2 ]] ; then # 2:Donation of cash
 						local question dtype
 						[[ $direction == "Expense" ]] && question="To whom was this donation made" || question="In whose name was this donation made (udid4 if possible)"
-						flowentry[TypeRef]=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${flowentry[TypeLib]}/$countdec)." "$question")
+						flowentry[TypeRef]=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${fpackages[$isub1]#*:}/$direction/${flowentry[TypeLib]}/$countdec)." "$question")
 					#elif [[ {flowentry[TypeNum]} == 3 ]] ; then # 3:Stock Inventory flow will be managed by a futur fonction "flow2stock()"
 					else
-						flowentry[TypeRef]=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${flowentry[TypeLib]}/$countdec)." "Enter reference or description of subflow #$j")
+						flowentry[TypeRef]=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${fpackages[$isub1]#*:}/$direction/${flowentry[TypeLib]}/$countdec)." "Enter reference or description of subflow #$j")
 					fi
 					flow+=("$(_bl_qif_fecp4formatline flowentry)")
 					if ((entry[Msum]==0)) ; then
