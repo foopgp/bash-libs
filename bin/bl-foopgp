@@ -191,6 +191,7 @@ Options:
   -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
 "
 	local i udid ccode="€"
+	local t=0 g=0
 	for ((;$#;)) ; do
 		case "$1" in
 			-t|--tokens)
@@ -267,7 +268,7 @@ Options:
 		while (( $(echo "$j < $g" | bc -l) )) ; do
 			LC_NUMERIC=POSIX printf "| %7s.00 ${csymb[EUR]} | %9s Ɉ |\n" "$j" "$(bl_foopgp_g2t --tokens "$tg" --gifts "$gg" $j)"
 			((j*=2))
-			j=$(tr '4' '5' <<<"$j")
+			j=$(tr '4' '5' <<<"$j") # To follow base 10 approximation : "1 2 5 10 20 50 100 ..." instead of "1 2 4 8 16 32 64 128 ..."
 			((++k<maxl)) || break
 		done
 		LC_NUMERIC=POSIX printf "| %10s ${csymb[EUR]} | %2s.000000 Ɉ |\n" "$g" "$i"
