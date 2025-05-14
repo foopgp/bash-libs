@@ -13,3 +13,11 @@ specs/*.md
 specs/*.req
 tests/results/
 tests/*.req
+
+debian/*.debhelper
+debian/debhelper-build-stamp
+debian/bash-libs.debhelper.log
+debian/bash-libs.substvars
+debian/bash-libs/
+debian/files
+
