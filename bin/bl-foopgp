@@ -151,7 +151,7 @@ bl_foopgp_g2t() {
 	local helpmsg="
 Calculate how many foopgp tokens would be created from a gift.
 Options:
-  -t, --tokens DJESUM  Set the base of tokens Ɉ already created (default: 0)
+  -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
   -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
 "
 	local i t=0 g=0
@@ -187,7 +187,7 @@ bl_foopgp_t2g() {
 	local helpmsg="
 Calculate how much should be given to create a targeted number of tokens.
 Options:
-  -t, --tokens DJESUM  Set the base of tokens Ɉ already created (default: 0)
+  -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
   -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
 "
 	local i udid ccode="€"
@@ -226,7 +226,7 @@ bl_foopgp_giftarray() {
 	local helpmsg="
 Display an array to indicate how many token gonna be created from a gift.
 Options:
-  -t, --tokens DJESUM  Set the base of tokens Ɉ already created (default: 0)
+  -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
   -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
   -m, --max VALUE      Set a limit in term of targeted token (defaut: 12)
   -M, --max-line NUM   Limit number of lines (defaut: 24)
@@ -235,7 +235,7 @@ Options:
 "
 	local max=12 maxl=24 udid header=0 onlyheader=0 ccode=EUR
 	local t g i j k tg=0 gg=0
-	local -A csymb=([DJE]="Ɉ" [EUR]="€") # cf. ISO-4217 + https://en.wikipedia.org/wiki/Currency_symbol
+	local -A csymb=([DJI]="Ɉ" [EUR]="€") # cf. ISO-4217 + https://en.wikipedia.org/wiki/Currency_symbol
 	for ((;$#;)) ; do
 		case "$1" in
 			-t|--tokens)
@@ -259,7 +259,7 @@ Options:
 		shift
 	done
 
-	((!header)) || printf "| %12s | %11s |\n" "EUR" "DJE"
+	((!header)) || printf "| %12s | %11s |\n" "EUR" "DJI"
 	((!onlyheader)) || return
 	((!header)) || echo "|--------------|-------------|"
 
