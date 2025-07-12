@@ -146,6 +146,7 @@ _bl_foopgp_parseoptions() {
 
 bl_foopgp_g2t() {
 	local name
+	local tockens
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
@@ -176,7 +177,8 @@ Options:
 	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
 	for i in "$@" ; do
-		bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else \"0.000000"$'\n'"\" ; scale=16 "
+		tockens=$(bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else 0 ; scale=16 ")
+		LANG=C printf "%0.6f\n" $tockens
 	done
 }
 
