@@ -98,7 +98,7 @@ bl_md_arraytobash() {
 	((BL_MD_isprogram)) && name="$BL_MD_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [FIELD_NAMES]..."
 	local helpmsg="
-Expect sdtin to be a markdwon array (with or whithout header),
+Expect stdin to be a markdwon array (with or whithout header),
 and convert each line of this array to a  \"declare -A ...\" statement to be loaded with eval.
 If first line of input isn't an array header, use positional parameter to set (or overwrite) field names.
 Options:
@@ -182,7 +182,7 @@ bl_md_arrayfrombash() {
 	((BL_MD_isprogram)) && name="$BL_MD_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [FIELD_NAMES]..."
 	local helpmsg="
-Expect sdtin to be lines of \"declare -A ...\" statement with the identical indexes/fieldnames.
+Expect stdin to be lines of \"declare -A ...\" statement with the identical indexes/fieldnames.
 Then eval and output markdown array ; using [FIELD_NAMES]... to order columns.
 Options:
   -H, --header-only    Only display header line, and return.

@@ -250,21 +250,43 @@ _bl_log_parseoptions() {
 
 	for ((;$#;)) ; do
 		case "$1" in
-			--color|--color=on)                                                                        BL_LOG_COLOR=on;;
-			--color=off)                                                                               BL_LOG_COLOR=off;;
-			--color=auto)                                                                              BL_LOG_COLOR=auto;;
-			-q|--quiet)                                                                                BL_LOG_O_STDERR="";;
-			-Q|--no-act)                                                                               BL_LOGGER_OPTIONS+=("--no-act");;
-			-i|-e|--skip-empty|--octet-count|--prio-prefix|-T|--tcp|-d|--udp|--rfc3164)                BL_LOGGER_OPTIONS+=("$1");;
-			-f|--file|-S|--size|-t|--tag|-n|--server|-P|--port|--sd-id|--sd-param|--msgid|-u|--socket) BL_LOGGER_OPTIONS+=("$1"); shift; BL_LOGGER_OPTIONS+=("$1");;
-			--id*|--rfc5424*|--socket-errors*|--journald*)                                             BL_LOGGER_OPTIONS+=("$1");;
-			-l|--log-l*)                                                                               shift; _bl_log_parse_level "$1"; [[ "$_BL_LOG_RETVAL" == 0 ]] || return "$_BL_LOG_RETVAL";;
-			-L|--log-e*)                                                                               shift; _bl_log_parse_exit  "$1"; [[ "$_BL_LOG_RETVAL" == 0 ]] || return "$_BL_LOG_RETVAL";;
-			-h|--help)                                                                                 _bl_log_print_help;            return 1;;
-			-V|--version)                                                                              _bl_log_print_version "$name"; return 1;;
-			--)                                                                                        shift;                         break;;
-			-*)                                                                                        _bl_log_print_bad_option "$1"; return 2;;
-			*)                                                                                         break;;
+			--color|--color=on)
+				BL_LOG_COLOR=on;;
+			--color=off)
+				BL_LOG_COLOR=off;;
+			--color=auto)
+				BL_LOG_COLOR=auto;;
+			-q|--quiet)
+				BL_LOG_O_STDERR="";;
+			-Q|--no-act)
+				BL_LOGGER_OPTIONS+=("--no-act");;
+			-i|-e|--skip-empty|--octet-count|--prio-prefix|-T|--tcp|-d|--udp|--rfc3164)
+				BL_LOGGER_OPTIONS+=("$1");;
+			-f|--file|-S|--size|-t|--tag|-n|--server|-P|--port|--sd-id|--sd-param|--msgid|-u|--socket)
+				BL_LOGGER_OPTIONS+=("$1"); shift; BL_LOGGER_OPTIONS+=("$1");;
+			--id*|--rfc5424*|--socket-errors*|--journald*)
+				BL_LOGGER_OPTIONS+=("$1");;
+			-l|--log-l*)
+				shift
+				_bl_log_parse_level "$1"
+				[[ "$_BL_LOG_RETVAL" == 0 ]] || return "$_BL_LOG_RETVAL";;
+			-L|--log-e*)
+				shift; _bl_log_parse_exit  "$1"
+				[[ "$_BL_LOG_RETVAL" == 0 ]] || return "$_BL_LOG_RETVAL";;
+			-h|--help)
+				_bl_log_print_help
+				return 1;;
+			-V|--version)
+				_bl_log_print_version "$name"
+				return 1;;
+			--)
+				shift
+				break;;
+			-*)
+				_bl_log_print_bad_option "$1"
+				return 2;;
+			*)
+				break;;
 		esac
 		shift
 	done
