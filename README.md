@@ -1,8 +1,13 @@
 <!--
+© 2021-2025 Jean-Jacques BRUCKER <jjbrucker@foopgp.org>
 © 2024 Henri GEIST <geist.henri@laposte.net>
 
 SPDX-License-Identifier: CC-BY-SA-4.0+
 -->
+
+**bash-libs**: set of bash executables which may also be sourced as libraries.
+
+To find out what they can do for you, [please read the bash-libs 7 manpage](man/bash-libs.7.md)
 
 # Prerequisites
 
@@ -62,4 +67,4 @@ sudo make uninstall
 
 # Usage
 
-[Please read the bash-libs 3 manpage](man/bash-libs.7.md)
+[Please read the bash-libs 7 manpage](man/bash-libs.7.md)

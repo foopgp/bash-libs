@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that manipulate [markdown](https://en.wikipedia.org/wiki/Markdown)
+# Bash library and executable that manipulate [markdown](https://en.wikipedia.org/wiki/Markdown). Today, only converts: markdown arrays <> bash arrays.
 #
 # Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #

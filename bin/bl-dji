@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that manage djis Ɉ, also known as foopgp tokens.
+# Bash library and executable that manage djis (Ɉ), also known as foopgp tokens.
 #
 # Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #

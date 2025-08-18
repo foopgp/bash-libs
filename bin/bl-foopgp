@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that calculate how many foopgp token will be offered by the foopgp association
+# Bash library and executable that calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
 #
 # Copyright © 2024 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
