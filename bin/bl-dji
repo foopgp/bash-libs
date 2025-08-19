@@ -57,7 +57,6 @@ if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_dji_parseoptions)" == funct
 	return $?
 fi
 
-
 ### Constants ###
 
 BL_DJI_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
@@ -80,8 +79,8 @@ _bl_dji_parseoptions() {
 	local date
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--help) printf "%s\n%s%s" "$BL_DJI_usage" "$BL_DJI_chelpmsg" "$BL_DJI_shelpmsg" ; return 2 ;;
-			-V|--version) printf "%s %s\n" "$BL_DJI_NAME" "$BL_DJI_VERSION" ; return 2 ;;
+			-h|--help) printf "%s\n%s%s" "$BL_DJI_usage" "$BL_DJI_chelpmsg" "$BL_DJI_shelpmsg" ; return 1 ;;
+			-V|--version) printf "%s %s\n" "$BL_DJI_NAME" "$BL_DJI_VERSION" ; return 1 ;;
 			--) shift ; break ;;
 			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_DJI_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
@@ -440,11 +439,13 @@ Options:
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
-	set -e
 	declare -r BL_DJI_isprogram=1
 
 	BL_DJI_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_DJI_shelpmsg="
+  -h, --help               show this help and exit
+  -V, --version            show version and exit
+
 Actions:
 $(for f in "${BL_DJI_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
@@ -468,20 +469,22 @@ fi
 
 BL_DJI_chelpmsg="
 Options:
-  -h, --help               show this help and exit/return
-  -V, --version            show version and exit/return
 "
 
 ### Init ###
 
 # Parse Options
 _bl_dji_parseoptions "$@"
+_BL_DJI_RETVAL=$?
 
 # Do nothing else if sourced
-[[ "$BASH_SOURCE" == "$0" ]] || return 0
+[[ "$BASH_SOURCE" == "$0" ]] || return $_BL_DJI_RETVAL
 
+[[ "$_BL_DJI_RETVAL" != "1"  ]] || exit 0
+[[ "$_BL_DJI_RETVAL" < 2 ]] || exit $_BL_DJI_RETVAL
 
 ### Run ###
+set -e
 shift $BL_DJI_NOPTIONS
 if function=$(grep -o "\<bl_dji_$1\>" <<< "${BL_DJI_FUNCTIONS[@]}") ; then
 	shift
