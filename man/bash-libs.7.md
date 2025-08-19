@@ -74,7 +74,7 @@ See [**bl-json**](bl-json.1.md)(1) manual for more details.
 
 ## bl-interactive
 
-Help managing interactive choices.
+Help managing interactive choices, while supporting multiple frontends: NONE, whiptail or dialog.
 
 See [**bl-interactive**](bl-interactive.1.md)(1) manual for more details.
 

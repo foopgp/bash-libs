@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-interactive - Help managing interactive choices
+bl-interactive - Help managing interactive choices, while supporting multiple frontends: NONE, whiptail or dialog.
 
 # SYNOPSIS
 

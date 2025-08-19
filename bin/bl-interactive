@@ -1,8 +1,9 @@
 #!/bin/bash
 #
-# Bash library and executable that helps managing interactive choices
+# Bash library and executable that helps managing interactive choices, while supporting multiple frontends: NONE, whiptail or dialog.
 #
-# Copyright © 2021 Jean-Jacques Brucker <jjbrucker@free.fr>
+# Copyright © 2021-2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+# Copyright © 2024 Henri GEIST <geist.henri@laposte.net>
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 
@@ -87,6 +88,7 @@ readonly BL_INTERACTIVE_VERSION BL_INTERACTIVE_FUNCTIONS BL_INTERACTIVE_NAME
 
 _bl_interactive_parseoptions() {
 	eval "${_BL_INTERACTIVE_RESTORE_ERREXIT}"
+    local BL_INTERACTIVE_FRONTEND_VERSION
 	local npp=$#
 	for ((;$#;)) ; do
 		case "$1" in
@@ -100,6 +102,18 @@ _bl_interactive_parseoptions() {
 		shift
 	done
 	BL_INTERACTIVE_NOPTIONS=$((npp-$#))
+
+    if [[ "$BL_INTERACTIVE_FRONTEND" != NONE ]] ; then
+		if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
+			if ! BL_INTERACTIVE_FRONTEND_VERSION=$("$BL_INTERACTIVE_FRONTEND" --version) ; then
+				printf "%s: fallback to %s\n" "$BL_INTERACTIVE_NAME" "BL_INTERACTIVE_FRONTEND=NONE" >&2
+				BL_INTERACTIVE_FRONTEND=NONE
+			fi
+		else
+			printf "%s: unknow frontend '%s'\n" "$BL_INTERACTIVE_NAME" "$BL_INTERACTIVE_FRONTEND" >&2
+			return 2
+		fi
+    fi
 }
 
 # using ( subshell ) for factorization : all new variables are "local" and {fd} is automatically close >&- while carrying return value
@@ -116,6 +130,8 @@ _bl_interactive_frontend() (
 		esac
 		shift
 	done
+
+	set -x
 	# because whiptail don't scroll to the end when its text is very big. Duplicate the main text at its begining.
 	# Note: we could use LINES and COLUMNS instead of an arbitrary strlen value, but there are not enough reliable.
 	((${#rtext}<512)) || rtext="  $mtext"$'\n\n'"$rtext"
@@ -126,6 +142,7 @@ _bl_interactive_frontend() (
 		$BL_INTERACTIVE_FRONTEND "$@" "$rtext"$'\n\n'"  $mtext" 0 $((COLUMNS/2)) {fd}>&1 1>&2 2>&"${fd}"
 		exit $?
 	fi
+	set +x
 )
 
 _bl_interactive_indexof() {
@@ -152,17 +169,17 @@ _bl_interactive_indexof() {
 bl_msgstop() {
 	local name
 	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="${FUNCNAME[0]}"
-	local usage="Usage: $name [OPTIONS] MESSAGE"
+	local usage="Usage: $name [OPTIONS] MESSAGE..."
 	local helpmsg="
 Display a message and wait for user to press [Enter]
 
 Options:
-  -t, --text TEXT          Text to display related to the message
+  -t, --title TITLE        Title to display before the message
 "
 	local pr
 	for ((;$#;)) ; do
 		case "$1" in
-			-t|--text) shift ; pr="$1" ;;
+			-t|--text|--title) shift ; pr="$1" ;; # --text is for retrocompatibilty.
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "${FUNCNAME[0]} $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -273,7 +290,7 @@ Options:
 		else
 			unset def
 		fi
-		_bl_interactive_frontend --rtext "$pr" --mtext "$question ?" -- "$def" --yesno
+		_bl_interactive_frontend --rtext "$pr" --mtext "$question ?" -- $def --yesno
 		return $?
 	fi
 
@@ -432,7 +449,7 @@ fi
 
 BL_INTERACTIVE_chelpmsg="
 Options:
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (cf. env BL_INTERACTIVE_FRONTEND)
+  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (default: $BL_INTERACTIVE_FRONTEND)
   -h, --help               show this help and exit/return
   -V, --version            show version and exit/return"
 
@@ -449,7 +466,9 @@ eval "${_BL_INTERACTIVE_RESTORE_ERREXIT}"
 # Do nothing else if sourced
 [[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
 
-[[ "$_BL_INTERACTIVE_RETVAL"   != "1"  ]] || exit 0
+[[ "$_BL_INTERACTIVE_RETVAL" != "1"  ]] || exit 0
+[[ "$_BL_INTERACTIVE_RETVAL" < 2 ]] || exit $_BL_INTERACTIVE_RETVAL
+
 
 ### Run ###
 shift "$BL_INTERACTIVE_NOPTIONS"
