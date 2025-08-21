@@ -159,12 +159,12 @@ Options:
 	for ((;$#;)) ; do
 		case "$1" in
 			-t|--tokens)
-				shift ; t=${1/,/.}
-				[[ "$t" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$t" >&2 ; return 2 ; }
+				shift ; t=0${1/,/.}
+				[[ "$t" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${t: 1}" >&2 ; return 2 ; }
 				;;
 			-g|--gifts)
-				shift ; g=${1/,/.}
-				[[ "$g" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$g" >&2 ; return 2 ; }
+				shift ; g=0${1/,/.}
+				[[ "$g" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${g: 1}" >&2 ; return 2 ; }
 				;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
@@ -197,12 +197,12 @@ Options:
 	for ((;$#;)) ; do
 		case "$1" in
 			-t|--tokens)
-				shift ; t=${1/,/.}
-				[[ "$t" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$t" >&2 ; return 2 ; }
+				shift ; t=0${1/,/.}
+				[[ "$t" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${t: 1}" >&2 ; return 2 ; }
 				;;
 			-g|--gifts)
-				shift ; g=${1/,/.}
-				[[ "$g" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$g" >&2 ; return 2 ; }
+				shift ; g=0${1/,/.}
+				[[ "$g" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${g: 1}" >&2 ; return 2 ; }
 				;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
