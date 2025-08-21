@@ -62,7 +62,7 @@ fi
 
 BL_JSON_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_JSON_NAME
-declare -r BL_JSON_VERSION="0.0.1"
+declare -r BL_JSON_VERSION="0.0.3"
 declare -r BL_JSON_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 ### Default option values ###

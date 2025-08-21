@@ -61,7 +61,7 @@ fi
 
 BL_DJI_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_DJI_NAME
-declare -r BL_DJI_VERSION="0.0.1"
+declare -r BL_DJI_VERSION="0.0.3"
 declare -r BL_DJI_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 declare -r BL_DJI_U4_REGEX="[a-zA-Z0-9_-]{22}e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9]{2}\.[0-9]{2}"
@@ -115,7 +115,7 @@ Options:
 		case "$1" in
 			-t|--truncate) printf "%s: Error: Sorry, option %s not implemented yet.\n" "$FUNCNAME" "$1" >&2 ; return 2 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "0.0.0" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
@@ -176,7 +176,7 @@ Options:
 			-r|--reverse) reverse="rev" ;;
 			-d|--delim) shift; delim="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "0.0.0" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
@@ -226,7 +226,7 @@ Options:
 			-e|--exp*) expnt=1 ;;
 			-r|--reverse) reverse=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "0.0.0" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
@@ -285,7 +285,7 @@ Option:
 			-g|--grains) ocount=0 ; ograins=1 ; dec=0 ;;
 			-d|--declare) ocount=0 ; ograins=0 ; dec=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "0.0.0" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
@@ -327,7 +327,7 @@ Option:
 
 	local tot=0
 	for expnt in "${!grains[@]}" ; do
-		((tot+= grains[expnt]*(1<<expnt) ))
+		((tot+= grains[expnt]*(1<<expnt)))
 	done
 
 	if ((ocount)) ; then
@@ -360,7 +360,7 @@ Options:
 			-u|--up) up=1 ;;
 			-n|--no-act) act=0 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "0.0.0" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
