@@ -1,0 +1,606 @@
+#!/bin/bash
+#
+# Bash library and executable that manipulate [.qif files](https://en.wikipedia.org/wiki/Quicken_Interchange_Format)
+#
+# Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-only
+#
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z2_-]\+\>\).*,\1,p' )"
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_qif_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version)
+				# should exit without executing any actions, so do not complete anything
+				return 0 ;;
+		esac
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		# complete actions if none in ${COMP_WORDS[@]}
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		return 0
+	}'
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_qif_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	return 0
+fi
+
+# If sourcing while _bl_qif_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_qif_parseoptions)" == function ]] ; then
+	_bl_qif_parseoptions "$@"
+	return $?
+fi
+
+
+### Constants ###
+
+BL_QIF_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+declare -r BL_QIF_NAME
+declare -r BL_QIF_VERSION="0.0.3"
+declare -r BL_QIF_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+
+### Default option values ###
+
+### external functions ###
+
+# shellcheck source=bl-interactive
+. "$(dirname "$BASH_SOURCE")"/bl-interactive --
+. "$(dirname "$BASH_SOURCE")"/bl-log --no-act --log-level "${BL_LOGLEVEL:-5}" --log-exit "crit"
+
+### internal functions ###
+
+_bl_qif_parseoptions() {
+	local npp=$#
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s%s" "$BL_QIF_usage" "$BL_QIF_chelpmsg" "$BL_QIF_shelpmsg" ; return 2 ;;
+			-V|--version) printf "%s %s\n" "$BL_QIF_NAME" "$BL_QIF_VERSION" ; return 2 ;;
+			--) shift ; break ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_QIF_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	BL_QIF_NOPTIONS=$((npp-$#))
+}
+
+_bl_qif_tonatnum() {
+	local in etc
+	(($#)) && in=$1 || read in etc
+	sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/ ; s/^$/0/ ' <<<"$in"
+}
+
+_bl_qif_todecnum() {
+	local in etc
+	(($#)) && in=$1 || read in etc
+	in=$(printf "% 04d" "$in")
+	sed 's/.\{2\}$/,&/' <<<"$in"
+}
+
+# Reverse date order DD/MM/YYYY -> YYYYMMDD. if $1 is one char lenght, use it as a separator, eg : $1 == '-' -> YYYY-MM-DD
+_bl_qif_dateFRtoISO8601() {
+	local in sep
+	if ((${#1} == 1)) ; then
+		sep=$1
+		shift
+	fi
+	(($#)) && in=$@ || read in
+	in=$(sed  's,[^0-9],,g' <<<"$in")
+	((${#in}==8)) || return 2
+	echo "${in:4:4}${sep}${in:2:2}${sep}${in::2}"
+}
+
+_bl_qif_dateISO8601toFR() {
+	local in
+	(($#)) && in=$@ || read in
+	in=$(sed  's,[^0-9],,g' <<<"$in")
+	((${#in}==8)) || return 2
+	echo "${in:6:2}/${in:4:2}/${in::4}"
+}
+
+### public functions / program actions ###
+
+bl_qif_tobash() {
+	local name
+	((BL_QIF_isprogram)) && name="$BL_QIF_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] FILES.qif ..."
+	local helpmsg="
+Convert each qif entry to a  \"declare -A ...\" statement to be loaded with eval.
+Options:
+  -d, --declare VARNAME Set name in declare -A VARNAME=(... statement (default: \"entry\")
+  -s, --sort            Sort by date.
+  -u, --uniq            Remove duplicate entries. Imply --sort.
+"
+	local varname
+	local sortfilter="cat"
+
+	for ((;$#;)) ; do
+		case "$1" in
+			-d|--declare)
+				shift
+				[[ "${varname:=$1}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]] || { echo "$FUNCNAME: Error: given VARNAME is not a valid posix name ${varname::5}..." >&2  ; return 2 ; }
+				;;
+			-s|--sort) [[ "${sortfilter}" != ^cat$ ]] || sortfilter="sort" ;;
+			-u|--uniq) sortfilter="sort -u" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_QIF_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
+
+	local previoustype fqif qiffd line validentry
+	local -A entry
+
+	for fqif in "$@" ; do
+		exec {qiffd}<${fqif} || { bl_log warning "$FUNCNAME: unable to open file: ${fqif}" ; continue ; }
+		# Read first line
+		read line <&${qiffd}
+		line=${line%$'\r'}  # Remove eventual CR character
+		if [[ ${line} =~ ^!Type: ]] ; then
+			entry["!Type:"]=${line:6}
+			previoustype=${entry["!Type:"]} # Store entry type for following entries which doesn't precise "!Type:"
+		else
+			bl_log warning "$FUNCNAME: unexpected file: ${fqif}"
+			exec {qiffd}<&-
+			continue
+		fi
+		bl_log info "$FUNCNAME: Parsing file: ${fqif} ..."
+		# Read other lines
+		while read line <&${qiffd} ; do
+			line=${line%$'\r'}  # Remove eventual CR character
+			if [[ "${line}" =~ ^!Type: ]] ; then
+				entry["!Type:"]=${line:6}
+				previoustype=${entry["!Type:"]}
+			elif [[ ${line::1} == "!" ]] || [[ -z ${line} ]] ; then # Skip unknow header or empty lines
+				continue
+			elif [[ ${line::1} != "^" ]] ; then
+				entry[${line::1}]=${line:1}
+			else # [[ ${line::1} == "^" ]] which means end of entry
+				validentry=true
+				for k in T D P ; do
+					if [[ -z "${entry[$k]}" ]] ; then
+						bl_log warning "$FUNCNAME: no entry[$k], skipping $(declare -p entry)"
+						validentry="false"
+						break
+					fi
+				done
+				if $validentry && ! date=$(_bl_qif_dateFRtoISO8601 "-" "${entry[D]}") ; then
+					bl_log warning "${FUNCNAME}: Invalid date '${entry[D]}', skipping $(declare -p entry)"
+					validentry="false"
+				fi
+				if $validentry ; then
+					printf "%10.10s " "${date}"
+					if [[ "${varname}" ]] ; then
+						declare -p entry | sed "0,/^declare -A entry=/{s//declare -A ${varname}=/}"
+					else
+						declare -p entry
+					fi
+				fi
+				unset entry
+				local -A entry
+				entry["!Type:"]=${previoustype} # Set previous entry type as default type for new entry
+			fi
+		done
+		exec {qiffd}<&-
+	done | ${sortfilter} | sed 's/^.\{11\}//'
+}
+
+bl_qif_tojournal() {
+	local name
+	((BL_QIF_isprogram)) && name="$BL_QIF_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] JOURNAL_NAME FILES.qif ..."
+	local helpmsg="
+Reorganize qif entries to maintain coherent monthly journal
+in files 'journal/by-month/{YEAR}/{MONTH}/{CODE}/{JOURNAL_NAME}.qif'
+By default remove all duplicate entries.
+Options:
+  -p, --path PATH      Set the path to the account dir (default: assume 'journal/by-month/' is in current dir)
+  -c, --currency CODE  Set currency (defaut: EUR)
+  -d, --allow-dupes    Prompt before removing any duplicate entry
+Exemple:
+$ $name IBAN-FR7610278079980002082780107 ~/Downloads/00020827801*.qif
+"
+	local path=${PWD}
+	local currency="EUR"
+	for ((;$#;)) ; do
+		case "$1" in
+			-p|--path) shift ; path="$1" ;;
+			-c|--currency) shift ; currency="$1" ;;
+			-d|--allow-dupes) printf "%s: Error: --allow-dupes not implemented yet.\n" "$FUNCNAME" >&2 ; return 2 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_QIF_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	journalname=${1} ; shift
+	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
+
+	local toeval ftomerge line month
+	local previousqiftype="(unknown)"
+	local -A entry filestomerge
+
+
+	bl_log notice "${FUNCNAME}: Step 1: Reading and merging $# input files ..."
+	toeval=$(bl_qif_tobash --uniq "$@") || bl_log crit "${FUNCNAME}: Can't parse given files."
+
+	while read line ; do
+		bl_log debug "${FUNCNAME}: eval '${line}'"
+		eval "${line}"
+		month=$(_bl_qif_dateFRtoISO8601 "/" "${entry[D]}" | sed ' s,/..$,, ')
+		[[ "$month" =~ ^[0-9]{4}/[01][0-9]$ ]] || bl_log crit "Unexpected date ${entry[D]}"
+		# Use associative array to efficiently remove dupes
+		ftomerge="${path}/journal/by-month/${month}/${currency}/${journalname}.qif"
+		if [[ -f "${ftomerge}" ]] ; then
+			filestomerge[${ftomerge}]=""
+		else
+			mkdir -p "${path}/journal/by-month/${month}/${currency}"
+		fi
+	done <<<"${toeval}"
+
+	bl_log notice "${FUNCNAME}: Step 2: Merging $# input files with ${#filestomerge[@]} existing files ..."
+	toeval=$(bl_qif_tobash --uniq --sort "$@" "${!filestomerge[@]}") || bl_log crit "${FUNCNAME}: Can't parse files to merge."
+
+	bl_log notice "${FUNCNAME}: Step 3: (Re)writing journal files ..."
+	while read line ; do
+		bl_log debug "${FUNCNAME}: eval '${line}'"
+		eval "${line}"
+		month=$(_bl_qif_dateFRtoISO8601 "/" "${entry[D]}" | sed ' s,/..$,, ')
+		[[ "$month" =~ ^[0-9]{4}/[01][0-9]$ ]] || bl_log crit "Unexpected date ${entry[D]}"
+		ftomerge="${path}/journal/by-month/${month}/${currency}/${journalname}.qif"
+		if [[ -z "${filestomerge[${ftomerge}]}" ]] ; then
+			filestomerge[${ftomerge}]="writing"
+			bl_log notice "${FUNCNAME}: ${filestomerge[${ftomerge}]} ${ftomerge} ..."
+			echo "!Type:${entry["!Type:"]}" > "${ftomerge}"
+			previousqiftype=${entry["!Type:"]}
+		fi
+		if [[ "${entry["!Type:"]}" != $previousqiftype ]] ; then
+			bl_log notice "qif entry «!Type:${entry["!Type:"]}» unmatch previous entry «!Type:${previousqiftype}»"
+			echo "!Type:${entry["!Type:"]}" >> "${ftomerge}"
+		fi
+		previousqiftype=${entry["!Type:"]}
+		echo "D${entry[D]}" >> "${ftomerge}"
+		unset entry["!Type:"] entry[D]
+		for k in ${!entry[@]}
+		do
+			echo "${k}${entry[$k]}"
+		done >> "${ftomerge}"
+		echo "^" >> "${ftomerge}"
+	done <<<"${toeval}"
+}
+
+bl_qif_stat() {
+	local name
+	((BL_QIF_isprogram)) && name="$BL_QIF_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] FILES.qif ..."
+	local helpmsg="
+Extract stats from Given .qif files
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_QIF_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
+
+	local toeval line natnum
+	local -A entry
+	local nbrevenues=0 sumrevenues=0
+	local nbexpenses=0 sumexpenses=0
+
+
+	bl_log debug "${FUNCNAME}: Reading $# input files ..."
+	toeval=$(bl_qif_tobash --uniq "$@") || bl_log crit "${FUNCNAME}: Can't parse given files."
+
+	while read line ; do
+		bl_log debug "${FUNCNAME}: eval '${line}'"
+		eval "${line}"
+
+		[[ "${entry[T]}" =~ ^[-+]?([0-9]+[,.][0-9]+) ]] || bl_log error "Unexpected entry field T${entry[T]}"
+		natnum=$(_bl_qif_tonatnum "${BASH_REMATCH[1]}")
+		if [[ ${entry[T]::1} == "-" ]] ; then
+			((++nbexpenses))
+			((sumexpenses+=natnum))
+			bl_log debug "${FUNCNAME}: $((nbrevenues+nbexpenses)) ${entry[T]} -> -$natnum $sumexpenses"
+		else
+			((++nbrevenues))
+			((sumrevenues+=natnum))
+			bl_log debug "${FUNCNAME}: $((nbrevenues+nbexpenses)) ${entry[T]} -> +$natnum $sumrevenues"
+		fi
+	done <<<"${toeval}"
+
+	echo "nbrevenues=$nbrevenues # Number of revenue entries"
+	echo "nbexpenses=$nbexpenses # Number of expense entries"
+	echo "sumrevenues=$(_bl_qif_todecnum "$sumrevenues") # Total revenues"
+	echo "sumexpenses=$(_bl_qif_todecnum "$sumexpenses") # Total expenses"
+	echo "nbentries=$((nbrevenues+nbexpenses)) # Number of entries"
+	echo "balance=$(_bl_qif_todecnum "$((sumrevenues-sumexpenses))") # Total balance"
+}
+
+
+_bl_qif_fecp4formatline() {
+
+# Note: to fix dot/comma problems, like with ' printf " %9.2f |" ${p4entry[Debit]}'
+# check environment : LC_NUMERIC="fr_FR.UTF-8" or LC_NUMERIC="C"
+
+	local -n p4entry="$1"
+
+	printf "| %s |" "${p4entry[JournalCode]}"
+	printf " %s |" "${p4entry[JournalLib]}"
+	printf " %d |" "${p4entry[EcritureNum]}"
+	printf " %d |" "${p4entry[EcritureDate]}"
+	printf " %d |" "${p4entry[CompteNum]}"
+	printf " %-s |" "${p4entry[CompteLib]}"
+	printf " %d |" "${p4entry[CompAuxNum]}"
+	printf " %-s |" "${p4entry[CompAuxLib]}"
+	printf " %s |" "${p4entry[PieceRef]}"
+	printf " %d |" "${p4entry[PieceDate]}"
+	printf " %60s |" "${p4entry[EcritureLib]}"
+	printf " %9.2f |" "${p4entry[Debit]}"
+	printf " %9.2f |" "${p4entry[Credit]}"
+	printf " %s |" "${p4entry[EcritureLet]}"
+	printf " %s |" "${p4entry[DateLet]}"
+	printf " %s |" "${p4entry[ValidDate]}"
+	printf " %s |" "${p4entry[Montantdevise]}"
+	printf " %s |" "${p4entry[Idevise]}"
+	printf "  |" # "${p4entry["#"]}"
+	printf " %d |" "${p4entry[PackageNum]}"
+	printf " %s |" "${p4entry[PackageLib]}"
+	printf " %d |" "${p4entry[TypeNum]}"
+	printf " %-9s |" "${p4entry[TypeLib]}"
+	printf " %40s |" "${p4entry[TypeRef]}"
+	printf " %10s |" "${p4entry[SrcType]}"
+	printf " %30s |" "${p4entry[SrcRef]}"
+	printf " %d |" "${p4entry[SrcEntryNum]}"
+}
+
+bl_qif_tofecp4() {
+	local name
+	((BL_QIF_isprogram)) && name="$BL_QIF_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] FILE.qif ..."
+	local helpmsg="
+Parse qif file, and ask some questions for each entries to manage foopgp tockens, expenses, inventory....
+Options:
+  -p, --path PATH      Set the path to the account dir (default: assume input files are in current dir)
+"
+	local path=${PWD}
+	for ((;$#;)) ; do
+		case "$1" in
+			-p|--path) shift ; path="$1" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_QIF_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
+
+	local -a fpackages ftypes flow
+	local fqif infd fecp4fd line i=0 j
+	local remain direction countdec isub1
+	local -A entry flowentry
+
+	mapfile -t fpackages < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/financial_packages.list")
+	mapfile -t ftypes < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/flow_types.list")
+	( [[ "${fpackages#*:}" ]] && [[ "${ftypes#*:}" ]] ) || return 2
+
+# Le FEC est un fichier csv de 18 champs, où les séparateurs sont souvent des '|', et parfois des '\t'. Le champ qui mérite le plus d'attention est sans doute 'CompteNum', qui doit correspondre à la nomenclature du Plan Comptable Français.
+#
+# Champs attendus:
+# |           1 |          2 |           3 |            4 |         5 |         6 |          7 |          8 |        9 |
+# | JournalCode | JournalLib | EcritureNum | EcritureDate | CompteNum | CompteLib | CompAuxNum | CompAuxLib | PieceRef |
+#
+# |        10 |           11 |    12 |     13 |          14 |      15 |        16 |            17 |      18 |
+# | PieceDate |  EcritureLib | Debit | Credit | EcritureLet | DateLet | ValidDate | Montantdevise | Idevise |
+#
+# Champs pouvant rester vides : CompAuxNum (7), CompAuxLib(8), Montantdevise (17), Idevise (18).
+#
+# À ces champs, imposés par l'administration fiscale française, nous rajoutons 1+8 champs pour satisfaire nos besoins internes de visibilité comptable :
+# |  19 |         20 |         21 |      22 |      23 |      24 |      25 |    26  |          27 |
+# |     | PackageNum | PackageLib | TypeNum | TypeLib | TypeRef | SrcType | SrcRef | SrcEntryNum |
+#
+# Le champs 19 est laissé vide, pour accentuer la séparation et "Reserve for Futur Use" (par d'autres).
+# Les champs PackageNum (20) et PackageLib (21) permettent de différencier nos enveloppes générales. Par exemple de différencier les flux liés aux activitées de Fred Renault (connexes à l'association), de celles liées au coeur de l'association.
+# Les champs TypeNum (22) et TypeLib (23) permettent de différencier le type de flux. Par exemple dons, achats ou ventes. La finalité est très proche de la nomenclature du Plan Comptable Français  ...en beaucoup plus simple et parfaitement adapté à nos systèmes et problématiques.
+# Le champs TypeRef (24) donne la Référence exacte du flux suivant le Type. Nous y trouverons par exemple un udid4 lors d'une donation (ou à défaut une adresse courriel), une référence d'inventaire lors d'achat ou vente qui y affère, etc.
+# Le champs SrcType (25) donne le type de la source à l'origine des données précédentes. Par exemple "Bank" ou "Cash".
+# Le champs SrcRef (26) donne une référence de la source à l'origine des données précédentes. Par exemple le nom d'un fichier (à défaut de mieux).
+# Le champs SrcEntryNum (27) donne le numéro de l'entrée dans la source indiqué dans le champs SrcRef (26). Car une entrée dans cet source pourrait se décomposer en plusieurs lignes dans notre fichier cmptable.
+#
+# Vu que la structure de notre fichier comptable étend celle des fichiers FEC usuels, nous l'appellerons FECP4. Avec un P pour "Plus" et un 4 pour allez plus loin que d'autres qui auraient pu avoir la même idée ; le chiffre 4 permettant un clin d'oeuil à une classifcation militaire désirée par de nombreux pacifistes (P4) ;-).
+#
+# De plus nous y ajoutons un séparateur de champ '|' en début et en fin de ligne afin de faire correspondre ce fichier au format de tableaux markdown que nous utilisons par ailleurs.
+#
+	for fqif in "$@" ; do
+		exec {infd}< <(bl_qif_tobash "$fqif")
+		exec {fecp4fd}>"$fqif.fecp4"
+		echo "| JournalCode | JournalLib | EcritureNum | EcritureDate | CompteNum | CompteLib | CompAuxNum | CompAuxLib | PieceRef | PieceDate |  EcritureLib | Debit | Credit | EcritureLet | DateLet | ValidDate | Montantdevise | Idevise | # | PackageNum | PackageLib | TypeNum | TypeLib | TypeRef | SrcType | SrcRef | SrcEntryNum |" >&${fecp4fd}
+		echo "|-------------|------------|-------------|--------------|-----------|-----------|------------|------------|----------|-----------|--------------|-------|--------|-------------|---------|-----------|---------------|---------|---|------------|------------|---------|---------|---------|---------|--------|-------------|" >&${fecp4fd}
+		while read line <&${infd} ; do
+			eval "$line"
+			flowentry[EcritureDate]=$(_bl_qif_dateFRtoISO8601 "${entry[D]}") || bl_log crit "${FUNCNAME}: Invalid date ${entry[D]}"
+			flowentry[EcritureLib]=${entry[P]}
+			if [[ ${entry[T]::1} == "-" ]] ; then
+				flowentry[Debit]=${entry[T]:1}
+				flowentry[Credit]=0
+				flowentry[Mtype]="Debit"
+			else
+				[[ ${entry[T]::1} == "+" ]] && flowentry[Credit]=${entry[T]:1} || flowentry[Credit]=${entry[T]}
+				flowentry[Debit]=0
+				flowentry[Mtype]="Credit"
+			fi
+			flowentry[SrcType]=${entry["!Type:"]}
+			flowentry[SrcRef]=$(realpath --relative-to="$path" "$fqif")
+			flowentry[SrcEntryNum]=$((++i))
+
+			entry[Mdesc]="$(echo -e "--- Entry #$i ---\n${entry[D]} - ${flowentry[Mtype]}: ${flowentry[${flowentry[Mtype]}]}\n${entry[P]}\n----------------")"
+
+			while true ; do
+				j=0
+				entry[Msum]=$(($(_bl_qif_tonatnum ${entry[T]})))
+				flow=()
+				while true ; do
+					((++j))
+					if ((entry[Msum]<0)) ; then
+						entry[Mdefdir]="Expense"
+					else
+						entry[Mdefdir]="Revenue"
+					fi
+					echo
+					remain=$(_bl_qif_todecnum "${entry[Msum]}")
+					direction=$(bl_radiolist --output-value --default-value "${entry[Mdefdir]}" --text "${entry[Mdesc]}"$'\n'$'\n'"  Entry #$i ($remain). Select the nature of subflow #$j" "Revenue" "Expense")
+					while true ; do
+						countdec=$(bl_input --default "$(tr -d -- '+-' <<<"$remain" )" --text "  Entry #$i ($remain)." "Enter the amount of subflow #$j ($direction)" | tr -d ' ')
+						if [[ $countdec =~ ^[0-9]+$ ]] ; then
+							countdec+=",00"
+						fi
+						if [[ $countdec =~ ^[0-9]+[.,][0-9][0-9]$ ]] ; then
+							break
+						fi
+					done
+
+					flowentry[PackageNum]=$(bl_radiolist --default 1 --text "  Entry #$i. Select the financial package for subflow #$j" "${fpackages[@]#*:}")
+					flowentry[PackageLib]=${fpackages[$((flowentry[PackageNum]-1))]#*:}
+					if [[ $direction == "Expense" ]] ; then
+						: $((entry[Msum]+=$(_bl_qif_tonatnum "$countdec")))
+						flowentry[TypeNum]=$(bl_radiolist --text "  Entry #$i. Select the type of expense for subflow #$j (-$countdec)" "${ftypes[@]#*:}")
+						flowentry[Debit]=$countdec
+						flowentry[Credit]=0
+					else
+						: $((entry[Msum]-=$(_bl_qif_tonatnum "$countdec")))
+						flowentry[TypeNum]=$(bl_radiolist --default 2 --text "  Entry #$i. Select the type of revenue for subflow #$j (+$countdec)" "${ftypes[@]#*:}")
+						flowentry[Debit]=0
+						flowentry[Credit]=$countdec
+					fi
+					flowentry[TypeLib]=${ftypes[$((flowentry[TypeNum]-1))]#*:}
+					if [[ ${flowentry[TypeNum]} == 1 ]] ; then # 1:Internal
+						local isub2
+						isub2=$(bl_radiolist --output-index --text "  Entry #$i. Select the package for Internal subflow #$j" "${fpackages[@]#*:}")
+						flowentry[TypeRef]=${fpackages[$isub2]}
+
+						flow+=("$(_bl_qif_fecp4formatline flowentry)")
+
+						if [[ $direction == "Expense" ]] ; then
+							direction="Revenue"
+							: $((entry[Msum]-=$(_bl_qif_tonatnum "$countdec")))
+						else
+							direction="Expense"
+							: $((entry[Msum]+=$(_bl_qif_tonatnum "$countdec")))
+						fi
+						flowentry[TypeRef]=${fpackages[$isub1]}
+						isub1=$isub2
+					elif [[ ${flowentry[TypeNum]} == 2 ]] ; then # 2:Donation of cash
+						local question dtype
+						[[ $direction == "Expense" ]] && question="To whom was this donation made" || question="In whose name was this donation made (udid4 if possible)"
+						flowentry[TypeRef]=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${fpackages[$isub1]#*:}/$direction/${flowentry[TypeLib]}/$countdec)." "$question")
+					#elif [[ {flowentry[TypeNum]} == 3 ]] ; then # 3:Stock Inventory flow will be managed by a futur fonction "flow2stock()"
+					else
+						flowentry[TypeRef]=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${fpackages[$isub1]#*:}/$direction/${flowentry[TypeLib]}/$countdec)." "Enter reference or description of subflow #$j")
+					fi
+					flow+=("$(_bl_qif_fecp4formatline flowentry)")
+					if ((entry[Msum]==0)) ; then
+						! bl_yesno --default=yes "Count reached. Next step" || break
+					fi
+				done
+				if bl_yesno --text "$(printf "%s\n" "${flow[@]}")" --default=yes "Validate entry #$i" ; then
+					printf "%s\n" "${flow[@]}" >&${fecp4fd}
+					break
+				fi
+			done
+		done
+		exec {fecp4fd}>&-
+		exec {infd}<&-
+	done
+}
+
+### General Help Messages (and set -e if program) ###
+
+if [[ "$BASH_SOURCE" == "$0" ]] ; then
+	# run as a program
+	set -e
+	declare -r BL_QIF_isprogram=1
+
+	BL_QIF_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_QIF_shelpmsg="
+Actions:
+$(for f in "${BL_QIF_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+$BL_QIF_NAME is also bash library, see:
+$ source $BASH_SOURCE --help
+"
+else
+	# run as a library (source $0)
+
+	BL_QIF_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+
+	BL_QIF_shelpmsg="
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+
+Functions:
+$(for f in "${BL_QIF_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"
+fi
+
+BL_QIF_chelpmsg="
+Options:
+  -h, --help               show this help and exit/return
+  -V, --version            show version and exit/return
+"
+
+### Init ###
+
+# Parse Options
+_bl_qif_parseoptions "$@"
+
+# Do nothing else if sourced
+[[ "$BASH_SOURCE" == "$0" ]] || return 0
+
+
+### Run ###
+shift $BL_QIF_NOPTIONS
+if function=$(grep -o "\<bl_$1\>" <<< "${BL_QIF_FUNCTIONS[@]}") ; then
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_QIF_NAME" "$1" "$BASH_SOURCE" >&2
+	exit 2
+fi
+

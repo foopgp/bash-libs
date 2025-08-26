@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library to manipulate json
+# Bash library that use jq (Command-line JSON processor) to convert json data to bash variables or arrays, and vice-versa.
 #
 # Copyright © 2024 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
@@ -62,7 +62,7 @@ fi
 
 BL_JSON_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_JSON_NAME
-declare -r BL_JSON_VERSION="0.0.1"
+declare -r BL_JSON_VERSION="0.0.3"
 declare -r BL_JSON_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 ### Default option values ###
@@ -230,6 +230,7 @@ bl_json_to_var() {
 	local usage="Usage: $name [OPTIONS] [JSON_TEXT]"
 	local helpmsg="
 Output string to be put into bash variable or array.
+If JSON_TEXT is not given, read JSON from sdtdin.
 
 Options:
     -d, --declare VARNAME  output \"declare -[aA-] VARNAME=...\" statement to be use with 'eval ...'.
@@ -238,13 +239,14 @@ Options:
 Examples:
 * if JSON_TEXT refer to JSON boolean, string or number: bash_var=\$($name [JSON_TEXT])
 * if JSON_TEXT refer to JSON array or object: bash_array=( \$($name [JSON_TEXT]) )
+* if you just have a json file to be put in a bash variable: eval \$($name --declare bash_variable < file.json)
 "
 
 	local recurse=false varname
 	for ((;$#;)) ; do
 		case "$1" in
 			-d|--declare) shift
-				[[ "${varname:=$1}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]] || { echo "$FUNCNAME: Error: VARNAME is not a valid posix name ${varname::5}..." >&2  ; return 2 ; }
+				[[ "${varname:=$1}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]] || { echo "$FUNCNAME: Error: given VARNAME is not a valid posix name ${varname::5}..." >&2  ; return 2 ; }
 				;;
 			-r|--recurs*) recurse=true ; echo "$FUNCNAME: Error: option $1 is not supported yet." >&2 ; return 3 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;

@@ -1,3 +1,10 @@
+bash-libs (0.0.3-1) UNRELEASED; urgency=low
+
+  * release v0.0.3
+
+ -- Sébastien Picardeau <piseb@mailo.com>  Tue, 26 Aug 2025 10:31:18 +0200
+
+
 bash-libs (0.0.2-1) UNRELEASED; urgency=low
 
   * Initial release.

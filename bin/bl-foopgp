@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that calculate how many foopgp token will be offered by the foopgp association
+# Bash library and executable that calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
 #
 # Copyright © 2024 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
@@ -62,12 +62,53 @@ fi
 
 BL_FOOPGP_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_FOOPGP_NAME
-declare -r BL_FOOPGP_VERSION="0.0.1"
+declare -r BL_FOOPGP_VERSION="0.0.3"
 declare -r BL_FOOPGP_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+
+declare -Ar BL_FOOPGP_STINGYNALTYS=(
+[2023-05]=1.00000000000000000000
+[2023-06]=1.00000000000000000000
+[2023-07]=1.00000000000000000000
+[2023-08]=1.00000000000000000000
+[2023-09]=1.00000000000000000000
+[2023-10]=1.00000000000000000000
+[2023-11]=1.00000000000000000000
+[2023-12]=1.00000000000000000000
+[2024-01]=1.00000000000000000000
+[2024-02]=1.00000000000000000000
+[2024-03]=1.00000000000000000000
+[2024-04]=1.00000000000000000000
+[2024-05]=1.00000000000000000000
+[2024-06]=1.00000000000000000000
+[2024-07]=1.00500000000000000000 #$ bc -l <<<"a=1 ; for(i=0;i<24;i++) { a=a+a*5/1000 ; a }"
+[2024-08]=1.01002500000000000000
+[2024-09]=1.01507512500000000000
+[2024-10]=1.02015050062500000000
+[2024-11]=1.02525125312812500000
+[2024-12]=1.03037750939376562500
+[2025-01]=1.03552939694073445312
+[2025-02]=1.04070704392543812538
+[2025-03]=1.04591057914506531600
+[2025-04]=1.05114013204079064258
+[2025-05]=1.05639583270099459579
+[2025-06]=1.06167781186449956876
+[2025-07]=1.06698620092382206660
+[2025-08]=1.07232113192844117693
+[2025-09]=1.07768273758808338281
+[2025-10]=1.08307115127602379972
+[2025-11]=1.08848650703240391871
+[2025-12]=1.09392893956756593830
+[2026-01]=1.09939858426540376799
+[2026-02]=1.10489557718673078682
+[2026-03]=1.11042005507266444075
+[2026-04]=1.11597215534802776295
+[2026-05]=1.12155201612476790176
+[2026-06]=1.12715977620539174126
+)
 
 ### Default option values ###
 
-BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-1}"
+BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-${BL_FOOPGP_STINGYNALTYS[$(date --iso-8601 | head -c 7)]}}"
 
 ### external functions ###
 
@@ -78,11 +119,13 @@ BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-1}"
 
 _bl_foopgp_parseoptions() {
 	local npp=$#
+	local date
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--help) printf "%s\n%s\n%s\n" "$BL_FOOPGP_usage" "$BL_FOOPGP_chelpmsg" "$BL_FOOPGP_shelpmsg" ; return 2 ;;
+			-h|--help) printf "%s\n%s%s" "$BL_FOOPGP_usage" "$BL_FOOPGP_chelpmsg" "$BL_FOOPGP_shelpmsg" ; return 2 ;;
 			-V|--version) printf "%s %s\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_VERSION" ; return 2 ;;
 			-s|--stingy*) shift ; BL_FOOPGP_STINGYNALTY="$1" ;;
+			-d|--date) shift ; BL_FOOPGP_STINGYNALTY=${BL_FOOPGP_STINGYNALTYS[$(date --iso-8601 --date "$1"  | head -c 7)]} ;;
 			--) shift ; break ;;
 			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_FOOPGP_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
@@ -90,180 +133,39 @@ _bl_foopgp_parseoptions() {
 		shift
 	done
 	BL_FOOPGP_NOPTIONS=$((npp-$#))
-}
-
-_bl_foopgp_tonatnum() {
-	(($#)) && sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/' <<<"$1" || sed 's/[,.]// ; s/^\([+-]\?\)0*/\1/'
-}
-
-_bl_foopgp_todecnum() {
-	local in etc
-	(($#)) && in=$1 || read in etc
-	in=$(printf "% 04d" "$in")
-	sed 's/.\{2\}$/,&/' <<<"$in"
-}
-
-_bl_foopgp_dateFR2ISO8601() {
-	local in
-	(($#)) && in=$@ || read in
-	in=$(sed  's,[^0-9],,g' <<<"$in")
-	((${#in}==8)) || printf "%s: Error: Invalid date %s.\n" "$FUNCNAME" "$in" >&2
-	echo "${in:4:4}-${in:2:2}-${in::2}"
+	#TODO(maybe): use bl_log instead of next 2 'printf'
+	if [[ "$BL_FOOPGP_STINGYNALTY" =~ ^[0-9]+\.?[0-9]*$ ]] ; then
+		printf "%s: Info: stingynalty=%s\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_STINGYNALTY" >&2
+	else
+		printf "%s: Error: stingynalty: invalid number '%s'\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_STINGYNALTY" >&2
+		return 2
+	fi
 }
 
 ### public functions / program actions ###
 
-bl_foopgp_qif2flow() {
-	local name
-	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] FILE.qif ..."
-	local helpmsg="
-Parse qif file, and ask some questions for each entries to manage foopgp tockens, expenses, inventory....
-Options:
-  -p, --path PATH      Set the path to the account dir (default: assume input files are in)
-"
-	local path
-	for ((;$#;)) ; do
-		case "$1" in
-			-p|--path) shift ; path="$1" ; printf "%s: Warning: --path not implemented.\n" "$FUNCNAME" >&2 ;;
-			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
-			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
-			*) break ;;
-		esac
-		shift
-	done
-	(($#)) || { printf "%s: Error: missing argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
-
-	local -a subaccounts etypes rtypes flow
-	local fqif qiffd flowfd line rectify i=0 j k
-	local remain direction countdec isub1 ityp typ srcdest
-	local -A entry
-
-	for fqif in "$@" ; do
-		path="$(readlink -f "$(dirname "$fqif")"/../../../..)"
-		mapfile -t subaccounts < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/subaccounts.list")
-		mapfile -t etypes < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/expense_types.list")
-		mapfile -t rtypes < <( sed 's,#.*,, ; s,[[:space:]]*$,, ; /^[[:space:]]*$/d ' "$path/revenue_types.list")
-
-		exec {qiffd}<"$fqif"
-		exec {flowfd}>"$fqif.flow"
-		while read line <&${qiffd} ; do
-			if [[ ${line::1} == "^" ]] ; then
-				((++i))
-				#for k in "${!entry[@]}" ; do
-				#	echo "  $k${entry[$k]}"
-				#done
-				for k in T D P ; do
-					if [[  -z "${entry[$k]}" ]] ; then
-						printf "%s: Error: entry #%s is missing %k field.\n" "$FUNCNAME" "$i" "$k" >&2
-						return 3
-					fi
-				done
-				if [[ ${entry[T]::1} == "-" ]] ; then
-					entry[U]=${entry[T]:1}
-					entry[Mtype]="Debit"
-				else
-					[[ ${entry[T]::1} == "+" ]] && entry[U]=${entry[T]:1} || entry[U]=${entry[T]}
-					entry[Mtype]="Credit"
-				fi
-				entry[D]=$(_bl_foopgp_dateFR2ISO8601 ${entry[D]})
-				entry[Mdesc]="$(echo -e "--- Entry #$i ---\n${entry[D]} - ${entry[Mtype]}: ${entry[U]}\n${entry[P]}\n----------------")"
-
-				while true ; do
-					j=0
-					entry[Msum]=$(($(_bl_foopgp_tonatnum ${entry[T]})))
-					flow=()
-					while true ; do
-						((++j))
-						if ((entry[Msum]<0)) ; then
-							entry[Mdefdir]="Expense"
-						else
-							entry[Mdefdir]="Revenue"
-						fi
-						echo
-						remain=$(_bl_foopgp_todecnum "${entry[Msum]}")
-						direction=$(bl_radiolist --output-value --default-value "${entry[Mdefdir]}" --text "${entry[Mdesc]}"$'\n'$'\n'"  Entry #$i ($remain). Select the nature of subflow #$j" "Revenue" "Expense")
-						while true ; do
-							countdec=$(bl_input --default "$(tr -d -- '+-' <<<"$remain" )" --text "  Entry #$i ($remain)." "Enter the amount of subflow #$j ($direction)" | tr -d ' ')
-							if [[ $countdec =~ ^[0-9]+$ ]] ; then
-								countdec+=",00"
-							fi
-							if [[ $countdec =~ ^[0-9]+[.,][0-9][0-9]$ ]] ; then
-								break
-							fi
-						done
-
-						isub1=$(bl_radiolist --output-index --default 1 --text "  Entry #$i. Select the sub-account for subflow #$j" "${subaccounts[@]#*:}")
-						if [[ $direction == "Expense" ]] ; then
-							: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
-							ityp=$(bl_radiolist --output-index --text "  Entry #$i. Select the type of expense for subflow #$j (-$countdec)" "${etypes[@]#*:}")
-							typ=${etypes[$ityp]}
-						else
-							: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
-							ityp=$(bl_radiolist --output-index --default 1 --text "  Entry #$i. Select the type of revenue for subflow #$j (+$countdec)" "${rtypes[@]#*:}")
-							typ=${rtypes[$ityp]}
-						fi
-						if [[ ${typ%%:*} == 1 ]] ; then # 1:Internal
-							local isub2
-							isub2=$(bl_radiolist --output-index --text "  Entry #$i. Select the sub-account for Internal subflow #$j" "${subaccounts[@]#*:}")
-							flow+=("$(printf "${entry[D]} | %-11s | %7s | %-11s | %9s | %38s | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "${subaccounts[$isub2]}")")
-							((++j))
-							if [[ $direction == "Expense" ]] ; then
-								direction="Revenue"
-								: $((entry[Msum]-=$(_bl_foopgp_tonatnum "$countdec")))
-							else
-								direction="Expense"
-								: $((entry[Msum]+=$(_bl_foopgp_tonatnum "$countdec")))
-							fi
-							srcdest=${subaccounts[$isub1]}
-							isub1=$isub2
-						elif [[ ${typ%%:*} == 2 ]] ; then # 2:Donation of cash
-							local question dtype
-							[[ $direction == "Expense" ]] && question="To whom was this donation made" || question="In whose name was this donation made"
-							srcdest=$(bl_input --default "${entry[P]}" --email --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${typ#*:}/$countdec)." "$question (email address)")
-						#elif [[ ${typ%%:*} == 3 ]] ; then # 3:Stock Inventory flow will be managed by a futur fonction "flow2stock()"
-						else
-							srcdest=$(bl_input --default "${entry[P]}" --text "  Entry #$i (${subaccounts[$isub1]#*:}/$direction/${typ#*:}/$countdec)." "Enter description, source or destination of subflow #$j")
-						fi
-						flow+=("$(printf "${entry[D]} | %-11s | %7s | %-11s | %9s | %38s | $(realpath --relative-to="$path" "$fqif") | #$i | #$j" "${subaccounts[$isub1]}" "$direction" "$typ" "$countdec" "$srcdest")")
-						if ((entry[Msum]==0)) ; then
-							! bl_yesno --default=yes "Count reached. Next step" || break
-						fi
-					done
-					if bl_yesno --text "$(printf "%s\n" "${flow[@]}")" --default=yes "Validate entry #$i" ; then
-						printf "%s\n" "${flow[@]}" >&${flowfd}
-						break
-					fi
-				done
-
-				unset entry
-				local -A entry
-			else
-				entry[${line::1}]=${line:1}
-			fi
-		done
-		exec {qiffd}<&-
-		exec {flowfd}>&-
-	done
-}
-
 bl_foopgp_g2t() {
 	local name
+	local tockens
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
 Calculate how many foopgp tokens would be created from a gift.
 Options:
-  -c, --currency CODE  Set gift currency (defaut: EUR €)
-  -u, --udid UDID      If it is not an initial gift, retrieve total gift and number of token created for a given individual.
+  -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
+  -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
 "
-	local i udid ccode="€"
+	local i t=0 g=0
 	for ((;$#;)) ; do
 		case "$1" in
-			-c|--currency) shift ; ccode="$1" ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
-			-u|--udid) shift ; udid="$1" ; printf "%s: Warning: --udid is not yet implemented" "$FUNCNAME" >&2 ;;
+			-t|--tokens)
+				shift ; t=0${1/,/.}
+				[[ "$t" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${t: 1}" >&2 ; return 2 ; }
+				;;
+			-g|--gifts)
+				shift ; g=0${1/,/.}
+				[[ "$g" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${g: 1}" >&2 ; return 2 ; }
+				;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -275,9 +177,8 @@ Options:
 	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
 	for i in "$@" ; do
-		#echo -n "| $i | "
-		#bc -l <<<"y=l($i+1)/l(2)/$BL_FOOPGP_STINGYNALTY ; scale=6 ; y=y*1000 ; print y/1000,\" |\" ; scale=16 "
-		bc -l <<<"y=l($i+1)/l(2)/$BL_FOOPGP_STINGYNALTY ; scale=6 ; y=y*1000 ; y/1000 ; scale=16 "
+		tockens=$(bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else 0 ; scale=16 ")
+		LANG=C printf "%0.6f\n" $tockens
 	done
 }
 
@@ -286,16 +187,23 @@ bl_foopgp_t2g() {
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
-Calculate how much should be given to create a number of tokens.
+Calculate how much should be given to create a targeted number of tokens.
 Options:
-  -c, --currency CODE  Set gift currency (defaut: EUR €)
-  -u, --udid UDID      If it is not an initial gift, retrieve total gift and number of token created for a given individual.
+  -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
+  -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
 "
 	local i udid ccode="€"
+	local t=0 g=0
 	for ((;$#;)) ; do
 		case "$1" in
-			-c|--currency) shift ; ccode="$1" ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
-			-u|--udid) shift ; udid="$1" ; printf "%s: Warning: --udid is not yet implemented" "$FUNCNAME" >&2 ;;
+			-t|--tokens)
+				shift ; t=0${1/,/.}
+				[[ "$t" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${t: 1}" >&2 ; return 2 ; }
+				;;
+			-g|--gifts)
+				shift ; g=0${1/,/.}
+				[[ "$g" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${g: 1}" >&2 ; return 2 ; }
+				;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -308,9 +216,10 @@ Options:
 
 	for i in "$@" ; do
 		#bc -l <<<"for (i=1;i<13;i++) { z=e(l(2)*1.08*i)-1 ; scale=2 ; z=z*100+1 ; z/100 ; scale=16 }"
-		bc -l <<<"z=e(l(2)*$BL_FOOPGP_STINGYNALTY*$i)-1 ; scale=2 ; z=z*100+1 ; z/100 ; scale=16"
+		bc -l <<<"z=e(l(2)*$BL_FOOPGP_STINGYNALTY*($i+$t))-1-$g ; scale=2 ; z=z*100+1 ; z/100 ; scale=16"
 	done
 }
+
 
 bl_foopgp_giftarray() {
 	local name
@@ -319,17 +228,30 @@ bl_foopgp_giftarray() {
 	local helpmsg="
 Display an array to indicate how many token gonna be created from a gift.
 Options:
-  -c, --currency CODE  Set gift currency (defaut: EUR €)
-  -u, --udid UDID      If it is not an initial gift, retrieve total gift and number of token created for a given individual.
-  -m, --max VALUE      Set the limit in term of token (defaut: 12)
+  -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
+  -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
+  -m, --max VALUE      Set a limit in term of targeted token (defaut: 12)
+  -M, --max-line NUM   Limit number of lines (defaut: 24)
+  -H, --header-only    Only display header line, and return.
+  -F, --with-header    Also display header line and separation line at the beginning of array.
 "
-	local max=12 udid ccode="€"
-	local t g j=1
+	local max=12 maxl=24 udid header=0 onlyheader=0 ccode=EUR
+	local t g i j k tg=0 gg=0
+	local -A csymb=([DJI]="Ɉ" [EUR]="€") # cf. ISO-4217 + https://en.wikipedia.org/wiki/Currency_symbol
 	for ((;$#;)) ; do
 		case "$1" in
-			-c|--currency) shift ; ccode="$1" ; printf "%s: Warning: only EUR € is yet implemented" "$FUNCNAME" >&2 ;;
-			-u|--udid) shift ; udid="$1" ; printf "%s: Warning: --udid is not yet implemented" "$FUNCNAME" >&2 ;;
-			-m|--max) shift ; max=$(($1)) ;;
+			-t|--tokens)
+				shift ; tg=${1/,/.}
+				[[ "$tg" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$tg" >&2 ; return 2 ; }
+				;;
+			-g|--gifts)
+				shift ; gg=${1/,/.}
+				[[ "$gg" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$gg" >&2 ; return 2 ; }
+				;;
+			-m|--max) shift ; max=$(($1)) || return 2 ;;
+			-M|--max-line) shift ; maxl=$(($1)) || return 2 ;;
+			-H|--header-only) onlyheader=1 header=1 ;;
+			-F|--with-header) onlyheader=0 header=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -339,16 +261,20 @@ Options:
 		shift
 	done
 
-	j=1
-	for ((i=1;i<=$max;i++)) ; do
-		g=$(bl_foopgp_t2g $i)
+	((!header)) || printf "| %12s | %11s |\n" "EUR" "DJI"
+	((!onlyheader)) || return
+	((!header)) || echo "|--------------|-------------|"
+
+	for ((i=1,j=1,k=1; i<=max && k<=maxl; i++,k++)) ; do
+		g=$(bl_foopgp_t2g --tokens "$tg" --gifts "$gg" $i)
 		while (( $(echo "$j < $g" | bc -l) )) ; do
-			LC_NUMERIC=POSIX printf "| %7s.00 $ccode | %9s Ɉ |\n" "$j" "$(bl_foopgp_g2t $j)"
+			LC_NUMERIC=POSIX printf "| %7s.00 ${csymb[EUR]} | %9s Ɉ |\n" "$j" "$(bl_foopgp_g2t --tokens "$tg" --gifts "$gg" $j)"
 			((j*=2))
-			j=$(tr '4' '5' <<<"$j")
+			j=$(tr '4' '5' <<<"$j") # To follow base 10 approximation : "1 2 5 10 20 50 100 ..." instead of "1 2 4 8 16 32 64 128 ..."
+			((++k<maxl)) || break
 		done
-		LC_NUMERIC=POSIX printf "| %10s $ccode | %2s.000000 Ɉ |\n" "$g" "$i"
-	done | uniq
+		LC_NUMERIC=POSIX printf "| %10s ${csymb[EUR]} | %2s.000000 Ɉ |\n" "$g" "$i"
+	done #| uniq
 }
 
 
@@ -365,7 +291,8 @@ Actions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 $BL_FOOPGP_NAME is also bash library, see:
-$ source $BASH_SOURCE --help"
+$ source $BASH_SOURCE --help
+"
 else
 	# run as a library (source $0)
 
@@ -377,15 +304,17 @@ else
 Functions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"
 fi
 
 BL_FOOPGP_chelpmsg="
 Options:
   -h, --help               show this help and exit/return
   -V, --version            show version and exit/return
-  -s, --stingynalty VALUE  set STINGYNALTY (current: $BL_FOOPGP_STINGYNALTY)"
-
+  -s, --stingynalty VALUE  set STINGYNALTY (current: $BL_FOOPGP_STINGYNALTY)
+  -d, --date STRING        set STINGYNALTY according to given date (cf. <https://www.gnu.org/software/coreutils/date>)
+"
 
 ### Init ###
 

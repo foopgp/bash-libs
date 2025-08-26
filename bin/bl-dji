@@ -1,0 +1,497 @@
+#!/bin/bash
+#
+# Bash library and executable that manage djis (Ɉ), also known as foopgp tokens.
+#
+# Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-only
+#
+# shellcheck disable=SC2013 # To read lines rather than words
+# shellcheck disable=SC2034 # variable appears unused
+# shellcheck disable=SC2046 # Quote this to prevent word splitting
+# shellcheck disable=SC2086 # Double quote warning
+# shellcheck disable=SC2128 # expanding array without index warning
+
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z2_-]\+\>\).*,\1,p' )"
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_dji_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version)
+				# should exit without executing any actions, so do not complete anything
+				return 0 ;;
+		esac
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		# complete actions if none in ${COMP_WORDS[@]}
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		return 0
+	}'
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_dji_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	return 0
+fi
+
+# If sourcing while _bl_dji_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_dji_parseoptions)" == function ]] ; then
+	_bl_dji_parseoptions "$@"
+	return $?
+fi
+
+### Constants ###
+
+BL_DJI_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+declare -r BL_DJI_NAME
+declare -r BL_DJI_VERSION="0.0.3"
+declare -r BL_DJI_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+
+declare -r BL_DJI_U4_REGEX="[a-zA-Z0-9_-]{22}e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9]{2}\.[0-9]{2}"
+
+declare -r BL_DJI_GRAIN_REGEX="(dji)([0-9]{2})([dc])([0-9]{8})(u4${BL_DJI_U4_REGEX})([0-9A-F])"
+
+### Default option values ###
+
+### external functions ###
+
+### internal functions ###
+
+_bl_dji_parseoptions() {
+	local npp=$#
+	local date
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s%s" "$BL_DJI_usage" "$BL_DJI_chelpmsg" "$BL_DJI_shelpmsg" ; return 1 ;;
+			-V|--version) printf "%s %s\n" "$BL_DJI_NAME" "$BL_DJI_VERSION" ; return 1 ;;
+			--) shift ; break ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_DJI_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	BL_DJI_NOPTIONS=$((npp-$#))
+}
+
+### public functions / program actions ###
+
+# Ɉ (dji) may have up to 6 decimals, so µɈ is the integer value.
+
+bl_dji_2micro()
+{
+	local name
+	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] VALUE ..."
+	local helpmsg="
+Translate given VALUES to their microVALUES, aka µVALUES (10^-6).
+Values with too much decimals will be rounded half-to-even,
+confer https://www.exploringbinary.com/inconsistent-rounding-of-printed-floating-point-numbers/
+Given VALUES may be suffixed by:
+  * 'd' for deci.
+  * 'c' for centi.
+  * 'm' for milli
+  * 'µ' for micro (VALUE will just be rounded or truncated in this case).
+Options:
+  -t, --truncate       Values with too much decimals will be truncated instead of rounded.
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-t|--truncate) printf "%s: Error: Sorry, option %s not implemented yet.\n" "$FUNCNAME" "$1" >&2 ; return 2 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local num value extglob ret=0
+	# save extglob shopt
+	extglob="$(shopt -p extglob)"
+	# Make sure extglob is set
+	shopt -s extglob
+	for value in "$@" ; do
+		case "${value/#+([0-9.])/}" in
+			µ|micro)  num=$(LANG=C printf "%0.0f\n" "${value/[^0-9.]*/}") || num="" ;;
+			m|milli)  num=$(LANG=C printf "%0.3f\n" "${value/[^0-9.]*/}") || num="" ;;
+			c|centi*) num=$(LANG=C printf "%0.4f\n" "${value/[^0-9.]*/}") || num="" ;;
+			d|deci)   num=$(LANG=C printf "%0.5f\n" "${value/[^0-9.]*/}") || num="" ;;
+			"")       num=$(LANG=C printf "%0.6f\n" "${value}") || num="" ;;
+			*)
+				printf "%s: warning: unrecognized suffix '%s'\n" "$FUNCNAME" "${value/#+([0-9])/}" >&2
+				num=""
+				;;
+		esac
+		if [[ "$num" ]] ; then
+			echo "$((10#${num/./}))"
+		else #Error: output empty line.
+			ret=1
+			echo
+		fi
+	done
+	# make sure extglob as we found it before.
+	$extglob
+	return $ret
+}
+
+bl_dji_2bin()
+{
+	local name
+	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] VALUE ..."
+	local helpmsg="
+Translate given VALUES to their µVALUES: round(VALUE*10^6), then to binary.
+Values with too much decimals will be rounded half-to-even,
+confer https://www.exploringbinary.com/inconsistent-rounding-of-printed-floating-point-numbers/
+Given VALUES may be suffixed by:
+  * 'd' for deci.
+  * 'c' for centi.
+  * 'm' for milli
+  * 'µ' for micro (VALUE will just be rounded or truncated in this case).
+Options:
+  -r, --reverse        Switch to little-endian, from Least Significant Bit to Most Significant Bit.
+  -d, --delim DELIM    Use DELIM to separate 0-1 digits (default: '').
+"
+	local reverse="cat" delim=''
+	for ((;$#;)) ; do
+		case "$1" in
+			-r|--reverse) reverse="rev" ;;
+			-d|--delim) shift; delim="$1" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local num bin i ret=0
+	bl_dji_2micro "$@" | while read num ; do
+		# Convert to binary
+		bin=$(bc <<<"obase=2;${num}" | $reverse )
+		if [[ "$delim" ]] ; then
+			i=0
+			while true ; do
+				printf "${bin: $((i++)):1}"
+				[[ "${bin: $i:1}" ]] && printf "$delim" || break
+			done
+			echo
+		else
+			echo "$bin"
+		fi
+	done
+	((!PIPESTATUS[0])) || ret=1
+	return $ret
+}
+
+bl_dji_2powersoftwo()
+{
+	local name
+	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] VALUE ..."
+	local helpmsg="
+Translate given VALUES v to their microVALUES µv (10^-6), then decompose this (µv) in powers of 2.
+Options:
+  -f, --format FORMAT  Output format, eg \"%02X\" for hexadecimal.
+  -d, --delim DELIM    Use DELIM to separate powers of 2 (default: ' ').
+  -x, --hex            Output using base16 (aka hexadecimal).
+  -e, --exponent       Output the exponent n instead of 2^n.
+  -r, --reverse        Order output from the greatest to the lowest
+"
+	local hexa=0 expnt=0 reverse=0 format="" delim=' '
+	for ((;$#;)) ; do
+		case "$1" in
+			-f|--format) shift; format="$1" ;;
+			-d|--delim) shift; delim="$1" ;;
+			-x|--hex*) hexa=1 ;;
+			-e|--exp*) expnt=1 ;;
+			-r|--reverse) reverse=1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local bin imax i bit p2 ret=0
+	bl_dji_2bin "$@" | while read bin ; do
+		imax=$((${#bin}-1))
+		((reverse)) && i=0 || i=$imax
+		bit=${bin: $i:1}
+		while true ; do
+			#TODO Maybe: check that bit is only 0 or 1.
+			if ((bit)) ; then
+				# p2 get 1<<n, or the exponent n.
+				((expnt)) && p2=$((imax-i)) || p2=$(( $bit<<(imax-i) ))
+				if [[ "$format" ]] ; then
+					printf "$format" "$p2"
+				else
+					((hexa)) && printf "%02X" "$p2" || printf "%d" "$p2"
+				fi
+			fi
+			if ((reverse)) ; then
+				((++i<=imax)) || break
+				bit=${bin: $i:1}
+				((!bit)) || printf "$delim"
+			else
+				((--i>=0)) || break
+				((!bit)) || printf "$delim"
+				bit=${bin: $i:1}
+			fi
+		done
+		echo
+	done
+	((!PIPESTATUS[0])) || ret=1
+	return $ret
+}
+
+bl_dji_readwallet()
+{
+	local name
+	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTION] [FILE...]"
+	local helpmsg="
+Read dji wallet FILE(s), or from /dev/stdin if no FILE passed as argument.
+Option:
+  -c, --count           Output only the total value of the wallet(s), in µɈ.
+  -g, --grains          Output only the number of each grains of value 2^0 ... 2^n, line by line.
+  -d, --declare         Output only declare -a grains=(... statement.
+"
+	local ocount=0 ograins=0 dec=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-c|--count) ocount=1 ; ograins=0 ; dec=0 ;;
+			-g|--grains) ocount=0 ; ograins=1 ; dec=0 ;;
+			-d|--declare) ocount=0 ; ograins=0 ; dec=1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local file g expnt emax=0 ret=0 nbg=0
+	local -a grains=()
+
+	[[ "$*" ]] || set "/dev/stdin"
+
+	for file in "$@" ; do
+		while read g ; do
+			if ! [[ "$g" =~ ^${BL_DJI_GRAIN_REGEX}$ ]] ; then
+				echo "$FUNCNAME: Warning: Unexpected grain: $g" >&2
+				ret=1
+				continue
+			fi
+			expnt="${BASH_REMATCH[2]/#0/}"
+			((++grains[expnt]))
+			((expnt<=emax)) || emax=$expnt
+			((++nbg))
+		done <"$file"
+		# To Manage inconsistant "@", eg: "file does not exist".
+		((!$?)) || ret=1
+	done
+
+	if ((ograins)) ; then
+		for ((expnt=0;expnt<=emax;expnt++)) ; do
+			echo "$((grains[expnt]))"
+		done
+		return $ret
+	fi
+	if ((dec)) ; then
+	   declare -p grains
+	   return $ret
+	fi
+
+	local tot=0
+	for expnt in "${!grains[@]}" ; do
+		((tot+= grains[expnt]*(1<<expnt)))
+	done
+
+	if ((ocount)) ; then
+		echo $tot
+		return $ret
+	fi
+
+	for expnt in "${!grains[@]}" ; do
+		printf " %4d × 2^%-2d ( %4d x%8d µɈ)\n" "${grains[$expnt]}" "$expnt" "${grains[$expnt]}" "$((1<<expnt))"
+	done
+	LANG=C printf "total: %4d grains -> %0.6f Ɉ\n" "$nbg" "$(bc -l <<<"${tot}/1000000")"
+	return $ret
+}
+
+
+bl_dji_stripwallet()
+{
+	local name
+	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] VALUE FILE"
+	local helpmsg="
+Select and output grains from wallet FILE to be removed to extract VALUE.
+Options:
+  -u, --up             Don't exit with error if the exact VALUE can't be extracted, but remove grains > VALUE.
+  -n, --no-act         Don't remove any grain from wallet FILE, but output grains to be removed.
+"
+	local up=0 act=1
+	for ((;$#;)) ; do
+		case "$1" in
+			-u|--up) up=1 ;;
+			-n|--no-act) act=0 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	## Initial thoughts
+	#[[ -f "$2" ]] || { printf "%s: Error: invalid file \"%s\"\n%s\n" "$FUNCNAME" "$2" "$usage" >&2 ; return 2 ; }
+	#local -a request wallet
+	#mapfile -t request  < <(bl_dji_2bin --reverse --delim '\n' "$1")
+	#mapfile -t wallet < <(bl_dji_readwallet --grains "$2")
+
+	local value=$(bl_dji_2micro "$1") || return 1
+	if ! ((value)) ; then
+		echo "$FUNCNAME: Notice: $value => Nothing to strip !" >&2
+		return
+	fi
+
+	local file="$2" stripamount=0 stripupamount=0
+	local -a Tstrip Tstripup
+	while read g ; do
+		if ! [[ "$g" =~ ^${BL_DJI_GRAIN_REGEX}$ ]] ; then
+			echo "$FUNCNAME: Error: Unexpected grain: $g" >&2
+			return 1
+		fi
+		expnt="${BASH_REMATCH[2]/#0/}"
+		gv=$((1<<expnt))
+		if (( stripamount + gv <= value )) ; then
+			((stripamount+=gv))
+			Tstrip+=("$g")
+			if ((stripupamount < value)); then
+				((stripupamount+=gv))
+				Tstripup+=("$g")
+			fi
+			# If exact value match, Break (Bingo !)
+			(( !(stripamount==value) )) || break
+		elif ((stripupamount < value)) ; then
+			((stripupamount+=gv))
+			Tstripup+=("$g")
+		fi
+	done <"$file"
+	# To Manage inconsistant "@", eg: "file does not exist".
+	((!$?)) || return 1
+
+	if ((stripupamount<value)) ; then
+		#printf "%s\n" "${Tstripup[@]}"
+		echo "$FUNCNAME: Error: value ($value µ) is greater than wallet ($stripupamount µ)." >&2
+		return 1
+	fi
+
+	if ((stripamount==value)) ; then
+		if ((act)) ; then
+			sed -i "$(printf "/^%s$/d;" "${Tstrip[@]}" )" "$file" || return 1
+			echo "$FUNCNAME: Info: ${#Tstrip[@]} grains worth $stripamount µ stripped from $file" >&2
+		else
+			printf "%s\n" "${Tstrip[@]}"
+		fi
+		return
+	fi
+
+	if ! ((up)) ; then
+		echo "$FUNCNAME: Error: Exact value can't be stripped ($stripamount<$value<$stripupamount)." >&2
+		return 1
+	fi
+
+	if ((act)) ; then
+		sed -i "$(printf "/^%s$/d;" "${Tstripup[@]}" )" "$file" || return 1
+		echo "$FUNCNAME: Info: ${#Tstripup[@]} grains worth $stripupamount µ stripped from $file" >&2
+	else
+		printf "%s\n" "${Tstripup[@]}"
+	fi
+}
+
+### General Help Messages (and set -e if program) ###
+
+if [[ "$BASH_SOURCE" == "$0" ]] ; then
+	# run as a program
+	declare -r BL_DJI_isprogram=1
+
+	BL_DJI_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_DJI_shelpmsg="
+  -h, --help               show this help and exit
+  -V, --version            show version and exit
+
+Actions:
+$(for f in "${BL_DJI_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+$BL_DJI_NAME is also bash library, see:
+$ source $BASH_SOURCE --help
+"
+else
+	# run as a library (source $0)
+
+	BL_DJI_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+
+	BL_DJI_shelpmsg="
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+
+Functions:
+$(for f in "${BL_DJI_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"
+fi
+
+BL_DJI_chelpmsg="
+Options:
+"
+
+### Init ###
+
+# Parse Options
+_bl_dji_parseoptions "$@"
+_BL_DJI_RETVAL=$?
+
+# Do nothing else if sourced
+[[ "$BASH_SOURCE" == "$0" ]] || return $_BL_DJI_RETVAL
+
+[[ "$_BL_DJI_RETVAL" != "1"  ]] || exit 0
+[[ "$_BL_DJI_RETVAL" < 2 ]] || exit $_BL_DJI_RETVAL
+
+### Run ###
+set -e
+shift $BL_DJI_NOPTIONS
+if function=$(grep -o "\<bl_dji_$1\>" <<< "${BL_DJI_FUNCTIONS[@]}") ; then
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_DJI_NAME" "$1" "$BASH_SOURCE" >&2
+	exit 2
+fi
+

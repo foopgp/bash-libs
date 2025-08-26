@@ -1,5 +1,5 @@
 <!--
-© 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+© 2021-2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 
 SPDX-License-Identifier: LGPL-3.0-only
 -->
@@ -48,64 +48,61 @@ When sourced, all bash-libs executables should also support a
 *--bash-completion* option to be passed as first argument, to load a bash
 completion for the given executable.
 
-
 # DIAGNOSTICS
 
 All bash-libs exposed functions and executables should return zero on normal operation, non-zero on errors.
 
+# EXECUTABLES/LIBRARIES
 
-# FILES
+## bl-dji
+
+Manage djis (Ɉ), also known as foopgp tokens.
+
+See [**bl-dji**](bl-dji.1.md)(1) manual for more details.
+
+## bl-foopgp
+
+Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
+
+See [**bl-foopgp**](bl-foopgp.1.md)(1) manual for more details.
+
+## bl-json
+
+Use jq (Command-line JSON processor) to convert json data to bash variables or arrays, and vice-versa.
+
+See [**bl-json**](bl-json.1.md)(1) manual for more details.
 
 ## bl-interactive
 
-Help managing interactive choices.
+Help managing interactive choices, while supporting multiple frontends: NONE, whiptail or dialog.
 
-This executable/library exposes 2 functions: **bl_yesno()** and
-**bl_radiolist()**. See [**bl-interactive**](man/bl-interactive.md)(1) manual for more details.
+See [**bl-interactive**](bl-interactive.1.md)(1) manual for more details.
+
+## bl-markdown
+
+Manipulate [markdown](https://en.wikipedia.org/wiki/Markdown). Today, only converts: markdown arrays <> bash arrays.
+
+See [**bl-markdown**](bl-markdown.1.md)(1) manual for more details.
 
 ## bl-security
 
 Provide some "security" features.
 
-This executable/library exposes 3 functions: **bl_urandom()**,
-**bl_shred_path()** and **bl_gen_passphrase()**. See [**bl-security**](man/bl-security.md)(1) manual
+See [**bl-security**](bl-security.1.md)(1) manual
 for more details.
 
 ## bl-log
 
 Wrapper for logger command, which also print pretty logs on stderr.
 
-This executable/library exposes only one exposed function: **bl_log()**. So it
-doesn't implement a function dispatcher and using **bl-log** as an executable is
-*almost* the same thing than using **bl_log()** function.
-
-"*Almost*" nuance: when sourcing **bl-log** (using it as a bash library), we may pass
-some options as arguments, which will be store in some environment variable.
-Then such options will remain for following calls of **bl_log()** (with no options
-passed as arguments). See [**bl-log**](man/bl-log.md)(1) manual for more details.
-
-
-
-# EXAMPLES
-
-```bash
- . bl-log --no-act --log-level "6" --log-exit "crit"
- bl_log debug "$FUNCNAME: $@" # This won't be logged (debug <> 7)
- bl_log info "some informations" # This logs (info <> 6)
- bl_log crit "ouch" # This logs then exit(170).
-```
-
-```bash
- ./bl-log --help
- . ./bl-log --bash-completion
- ./bl-log --no-act syslog.notice "Nice log !"
-```
+See [**bl-log**](bl-log.1.md)(1) manual for more details.
 
 # SEE ALSO
 
-[**bl-interactive**](man/bl-interactive.md)(1), [**bl-security**](man/bl-security.md)(1), [**bl-log**](man/bl-log.md)(1).
+[**bl-interactive**](bl-interactive.1.md)(1), [**bl-security**](bl-security.1.md)(1), [**bl-log**](bl-log.1.md)(1).
 
-# AUTHOR/MAINTAINER
+# AUTHORS/MAINTAINERS
 
-Jean-Jacques Brucker
+* Jean-Jacques BRUCKER
+* Henri GEIST
 

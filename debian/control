@@ -11,6 +11,6 @@ Vcs-Browser: https://codeberg.org/foopgp/bash-libs
 
 Package: bash-libs
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
-Description: TODO
-
+Depends: ${misc:Depends}, ${shlibs:Depends}, bsdutils, bash-completion
+Description: bash-libs: set of bash executables which may also be sourced as libraries.
+  To find out what they can do for you, please read the bash-libs 7 manpage.
