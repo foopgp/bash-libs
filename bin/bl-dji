@@ -76,7 +76,6 @@ declare -r BL_DJI_GRAIN_REGEX="(dji)([0-9]{2})([dc])([0-9]{8})(u4${BL_DJI_U4_REG
 
 _bl_dji_parseoptions() {
 	local npp=$#
-	local date
 	for ((;$#;)) ; do
 		case "$1" in
 			-h|--help) printf "%s\n%s%s" "$BL_DJI_usage" "$BL_DJI_chelpmsg" "$BL_DJI_shelpmsg" ; return 1 ;;
