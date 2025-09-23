@@ -63,6 +63,10 @@ BL_PGPID_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_PGPID_NAME
 declare -r BL_PGPID_VERSION="0.0.3"
 declare -r BL_PGPID_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+
+declare -r BL_PGPID_CO_REGEX="e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9]{2}\.[0-9]{2}"
+declare -r BL_PGPID_U4_REGEX="[a-zA-Z0-9_-]{22}${BL_PGPID_CO_REGEX}"
+
 declare -Ar BL_PGPID_COORDINATES=(
 [ABW]="e_12.52-069.98 Aruba"
 [AFG]="e_33.84_066.00 Afghanistan"
@@ -329,7 +333,7 @@ else return non-zero if EXPECTED_RESULT differs from calculated check digit.
 	for ((;$#;)) ; do
 		case "$1" in
 			-h|--h*) echo "$helpmsg" ; return ;;
-			-V|--vers*) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
 			*) break ;;
@@ -361,7 +365,7 @@ Analyse a Machine Readable Zone and fill the associative array named AANAME
 	for ((;$#;)) ; do
 		case "$1" in
 			-h|--h*) echo "$helpmsg" ; return ;;
-			-V|--vers*) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
 			*) break ;;
@@ -379,7 +383,6 @@ Analyse a Machine Readable Zone and fill the associative array named AANAME
 		return 1
 	fi
 	if [[ ${#mrz} != 88 ]] ; then
-		bl_log warning "$FUNCNAME: Invalid MRZ lenght ${#mrz} ${#mrz[1]}"
 		printf "%s: Error: Invalid MRZ lenght: %d." "$FUNCNAME" "${#mrz}"
 		return 1
 	fi
@@ -388,45 +391,103 @@ Analyse a Machine Readable Zone and fill the associative array named AANAME
 		[type]=${mrz:0:2}
 		[country]=${mrz:2:3}
 		[all_names]=${mrz:5}
-		[number]=${mrz[1]:44:9}
-		[check_number]=${mrz[1]:53:1}
-		[nationality]=${mrz[1]:54:3}
-		[date_of_birth]=${mrz[1]:57:6}
-		[check_date_of_birth]=${mrz[1]:63:1}
-		[sex]=${mrz[1]:64:1}
-		[expiration_date]=${mrz[1]:65:6}
-		[check_expiration_date]=${mrz[1]:71:1}
-		[personal_number]=${mrz[1]:72:14}
-		[check_personal_number]=${mrz[1]:86:1}
-		[composite]="${mrz[1]:44:10}${mrz[1]:57:7}${mrz[1]:65:20}"
-		[check_composite]=${mrz[1]:87:1}
+		[number]=${mrz:44:9}
+		[check_number]=${mrz:53:1}
+		[nationality]=${mrz:54:3}
+		[date_of_birth]=${mrz:57:6}
+		[check_date_of_birth]=${mrz:63:1}
+		[sex]=${mrz:64:1}
+		[expiration_date]=${mrz:65:6}
+		[check_expiration_date]=${mrz:71:1}
+		[personal_number]=${mrz:72:14}
+		[check_personal_number]=${mrz:86:1}
+		[composite]="${mrz:44:10}${mrz:57:7}${mrz:65:20}"
+		[check_composite]=${mrz:87:1}
 	)
 
 	for ch in number date_of_birth expiration_date personal_number composite ; do
-		doc[checked_$ch]=$(icao9303_mrz_checkdigit "${doc[$ch]}")
+		doc[checked_$ch]=$(_bl_icao9303_mrz_checkdigit "${doc[$ch]}")
 		doc[valid_$ch]=$( [[ ${doc[checked_$ch]} == ${doc[check_$ch]} ]] && echo true || echo false )
-		${doc[valid_$ch]} || bl_log warning "$ch checksum -> ${doc[check_$ch]}. Should be ${doc[checked_$ch]}."
+		${doc[valid_$ch]} || printf "%s: Warning: %s checksum -> %s. Should be ${doc[checked_$ch]}.'\n" "$FUNCNAME" "$ch" "${doc[check_$ch]}" "${doc[checked_$ch]}" >&2
+	done
+}
+
+_bl_pgpid_mrz_to_u4() {
+	local helpmsg="Usage: $FUNCNAME [Options] MRZ...
+Convert the Machine Readable Zone of an icao9303 passport to an udid4 (aka 'u4')
+
+Option:
+  -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD (for people born 100+ years ago)
+
+WARNING: mrz data may be irrelevant to generate udid4. eg:
+         * Surname or given names may be incomplete (cut bc exceed mrz size)
+         * Surname or given names may differs from those given at birth (marriage, gender change, etc.)
+         * Surname or given names transliteration may have change over time
+         * Year of birth date is not written with 4 digit (and people may live longer than 100 years)
+         * Humans may have done error on birth date, surname or given names.
+By the way, there are ~80% chance that an icao9303 MRZ allow to generate a correct udid4.
+People have to check, and fix when NOK.
+"
+
+	local gdate
+	for ((;$#;)) ; do
+		case "$1" in
+			-d|--birth-d*) shift ; gdate=$(sed ' s,[^0-9],,g ' <<<"$1") ;; # keep only [0-9] from given input
+			-h|--h*) echo "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			*) break ;;
+		esac
 	done
 
-	doc[names]=$(echo $(echo "${doc[all_names]#*<<}" | tr '<' ' ') )
-	doc[surname]=$(echo $(echo "${doc[all_names]%%<<*}" | tr '<' ' ') )
+	local -A mrza=()
+	local allnames bdate countrycode coordinates
+
+	if ! _bl_icao9303_mrz_analyse mrza "$@" ; then
+		printf "%s: Error: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" >&2
+			return 1
+	fi
+
+	if ! allnames=$(grep -o "^[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${mrza[all_names]}" ) ; then
+		printf "%s: Error: no complete surname and given names extracted from '%s'\n" "$FUNCNAME" "${mrza[all_names]}" >&2
+		return 1
+	fi
+
+	countrycode="${mrza[country]}"
+	coordinates="${BL_PGPID_COORDINATES[$countrycode]: 0:14}"
+	if ! [[ "$coordinates" =~ ^${BL_PGPID_CO_REGEX}$ ]] ; then
+		printf "%s: Error: Invalid coordinates (%s) for country '%s'\n" "$FUNCNAME" "$coordinates" "$countrycode" >&2
+		return 1
+	fi
+
+	if [[ "$gdate" ]] ; then
+		((${#gdate}==10)) || printf "%s: Notice: Invalid lenght for birth date '%s'\n" "$FUNCNAME" "$gdate" >&2
+	else
+		gdate="${mrza[date_of_birth]}"
+	fi
+	if ! bdate=$(date --date "${gdate}" +"%Y-%m-%d" ) ; then
+		printf "%s: Error: Can't reformart birthdate '%s'\n" "$FUNCNAME" "$gdate" >&2
+		return 1
+	fi
+
+	echo "$(printf "${allnames}${bdate}" | md5sum | xxd -r -p | basenc --base64url | sed 's/==$//')$coordinates"
 }
+
 
 ### public functions / program actions ###
 
-bl_pgpid_mrz_to_u4() {
-}
-
 bl_pgpid_gen_u4() {
 	local name
-	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
 Generate udid4. Missing input is asked interactively.
+You may pass the Machine Readable Zone of an international passport as argument, but there are ~20% chances that generated udid4 is incorrect.
 Options:
   -s, --surname SURNAME            Surname/family name at birth
   -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
-  -d, --birth-date BIRTH_DATE      Birth date
+  -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
   -p, --birth-place COORDINATES    Geographic coordinate of birth place (overrided by --birth-country)
   -c, --birth-country COUNTRY_CODE Country code of birth place (override --birth-place)
   -v, --verify                     Ask for verification
@@ -434,8 +495,6 @@ Options:
 	local mrzn sname gname bdate bcountry c iso cname tohash1 tohash2
 	for ((;$#;)) ; do
 	case "$1" in
-		-h|--h*) echo "$helpmsg" ; return ;;
-		-V|--vers*) echo "$FUNCNAME $PGPI_VERSION" ; return ;;
 		-m|-*-mrz-name*)
 			shift
 			mrzn=$1 ;;
@@ -456,19 +515,9 @@ Options:
 				return 1
 			fi ;;
 		-d|--birth-d*)
-			shift
-			bdate=$1
-			if ((${#1}<8)) ; then
-				bdate="$(($(date +"%y%m%d") < bdate ? 19 : 20))$bdate"
-				bl_log notice "$FUNCNAME: birth date '$1' is too short, assuming $bdate."
-			fi
-			if ! tohash2=$(date --date "$bdate" +"%Y-%m-%d" ) ; then
-				bl_log error "$FUNCNAME: can't reformart birthdate $date"
-				return 2
-			fi ;;
+			shift ; bdate=$1 ;;
 		-c|--birth-c*)
-			shift
-			bcountry=$1 ;;
+			shift ; bcountry=$1 ;;
 		-p|--birth-p*)
 			shift
 			#TODO: check if coordinate is valid (cf. Specifications)
@@ -476,7 +525,7 @@ Options:
 
 
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
@@ -513,7 +562,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
   -V, --version            show version and exit
 
 Actions:
-$(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 $BL_PGPID_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
