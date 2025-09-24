@@ -338,6 +338,7 @@ else return non-zero if EXPECTED_RESULT differs from calculated check digit.
 			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
 			*) break ;;
 		esac
+		shift
 	done
 
 	local char sum=0 weight=(7 3 1)
@@ -358,18 +359,23 @@ else return non-zero if EXPECTED_RESULT differs from calculated check digit.
 }
 
 _bl_icao9303_mrz_analyse() {
-	local helpmsg="Usage: $FUNCNAME AANAME MRZ
+	local helpmsg="Usage: $FUNCNAME [Options] AANAME MRZ
+Options:
+  -u, --uncheck                Dont verify checksums
 Analyse a Machine Readable Zone and fill the associative array named AANAME
 "
 
+	local uncheck
 	for ((;$#;)) ; do
 		case "$1" in
+			-u|--uncheck) uncheck="--uncheck" ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
 			*) break ;;
 		esac
+		shift
 	done
 
 	local -n doc=$1
@@ -390,7 +396,7 @@ Analyse a Machine Readable Zone and fill the associative array named AANAME
 	doc=(
 		[type]=${mrz:0:2}
 		[country]=${mrz:2:3}
-		[all_names]=${mrz:5}
+		[all_names]=${mrz:5:39}
 		[number]=${mrz:44:9}
 		[check_number]=${mrz:53:1}
 		[nationality]=${mrz:54:3}
@@ -405,19 +411,27 @@ Analyse a Machine Readable Zone and fill the associative array named AANAME
 		[check_composite]=${mrz:87:1}
 	)
 
+	[[ -z "$uncheck" ]] || return 0
+
 	for ch in number date_of_birth expiration_date personal_number composite ; do
 		doc[checked_$ch]=$(_bl_icao9303_mrz_checkdigit "${doc[$ch]}")
 		doc[valid_$ch]=$( [[ ${doc[checked_$ch]} == ${doc[check_$ch]} ]] && echo true || echo false )
-		${doc[valid_$ch]} || printf "%s: Warning: %s checksum -> %s. Should be ${doc[checked_$ch]}.'\n" "$FUNCNAME" "$ch" "${doc[check_$ch]}" "${doc[checked_$ch]}" >&2
+		${doc[valid_$ch]} || printf "%s: Warning: %s checksum -> %s. Should be %s.'\n" "$FUNCNAME" "$ch" "${doc[check_$ch]}" "${doc[checked_$ch]}" >&2
 	done
 }
 
-_bl_pgpid_mrz_to_u4() {
-	local helpmsg="Usage: $FUNCNAME [Options] MRZ...
+### public functions / program actions ###
+
+bl_pgpid_mrz_to_u4() {
+	local name
+	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... MRZ..."
+	local helpmsg="
 Convert the Machine Readable Zone of an icao9303 passport to an udid4 (aka 'u4')
 
 Option:
-  -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD (for people born 100+ years ago)
+  -u, --uncheck                Dont verify checksums
+  -d, --birth-date BIRTH_DATE  Birth date, expected format : YYYY-MM-DD (for people born 100+ years ago)
 
 WARNING: mrz data may be irrelevant to generate udid4. eg:
          * Surname or given names may be incomplete (cut bc exceed mrz size)
@@ -429,27 +443,29 @@ By the way, there are ~80% chance that an icao9303 MRZ allow to generate a corre
 People have to check, and fix when NOK.
 "
 
-	local gdate
+	local gdate uncheck
 	for ((;$#;)) ; do
 		case "$1" in
 			-d|--birth-d*) shift ; gdate=$(sed ' s,[^0-9],,g ' <<<"$1") ;; # keep only [0-9] from given input
+			-u|--uncheck) uncheck="--uncheck" ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
 			*) break ;;
 		esac
+		shift
 	done
 
 	local -A mrza=()
 	local allnames bdate countrycode coordinates
 
-	if ! _bl_icao9303_mrz_analyse mrza "$@" ; then
+	if ! _bl_icao9303_mrz_analyse $uncheck mrza "$@" ; then
 		printf "%s: Error: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" >&2
 			return 1
 	fi
 
-	if ! allnames=$(grep -o "^[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${mrza[all_names]}" ) ; then
+	if ! allnames=$(grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${mrza[all_names]}" ) ; then
 		printf "%s: Error: no complete surname and given names extracted from '%s'\n" "$FUNCNAME" "${mrza[all_names]}" >&2
 		return 1
 	fi
@@ -462,7 +478,7 @@ People have to check, and fix when NOK.
 	fi
 
 	if [[ "$gdate" ]] ; then
-		((${#gdate}==10)) || printf "%s: Notice: Invalid lenght for birth date '%s'\n" "$FUNCNAME" "$gdate" >&2
+		((${#gdate}==8)) || printf "%s: Notice: Invalid lenght for birth date '%s'\n" "$FUNCNAME" "$gdate" >&2
 	else
 		gdate="${mrza[date_of_birth]}"
 	fi
@@ -473,9 +489,6 @@ People have to check, and fix when NOK.
 
 	echo "$(printf "${allnames}${bdate}" | md5sum | xxd -r -p | basenc --base64url | sed 's/==$//')$coordinates"
 }
-
-
-### public functions / program actions ###
 
 bl_pgpid_gen_u4() {
 	local name
@@ -488,42 +501,21 @@ Options:
   -s, --surname SURNAME            Surname/family name at birth
   -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
   -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
-  -p, --birth-place COORDINATES    Geographic coordinate of birth place (overrided by --birth-country)
-  -c, --birth-country COUNTRY_CODE Country code of birth place (override --birth-place)
+  -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
   -v, --verify                     Ask for verification
 "
-	local mrzn sname gname bdate bcountry c iso cname tohash1 tohash2
+	local mrzn sname gname bdate bcountry verify=""
 	for ((;$#;)) ; do
-	case "$1" in
-		-m|-*-mrz-name*)
-			shift
-			mrzn=$1 ;;
-		-s|--s*)
-			shift
-			sname=$(sed 's,[ ;,<-]\+,<,g'<<<"$1" )
-			sname="${sname^^}"
-			if ! (LC_CTYPE=C ; [[ "$sname" =~ ^[A-Z\<]+$ ]]) ; then
-				bl_log error "$FUNCNAME: only [A-Z] characters allowed in $1"
-				return 1
-			fi ;;
-		-g|--g*)
-			shift
-			gname=$(sed 's,[ ;,<-]\+,<,g'<<<"$1" )
-			gname="${gname^^}<<"
-			if ! (LC_CTYPE=C ; [[ "$gname" =~ ^[A-Z\<]+$ ]]) ; then
-				bl_log error "$FUNCNAME: only [A-Z] characters allowed in $1"
-				return 1
-			fi ;;
-		-d|--birth-d*)
-			shift ; bdate=$1 ;;
-		-c|--birth-c*)
-			shift ; bcountry=$1 ;;
-		-p|--birth-p*)
-			shift
-			#TODO: check if coordinate is valid (cf. Specifications)
-			c="$1" ;;
-
-
+		case "$1" in
+			-s|--s*)
+				shift ; sname=$1 ;;
+			-g|--g*)
+				shift ; gname=$1 ;;
+			-d|--birth-d*)
+				shift ; bdate=$1 ;; # $bdate is always be passed as an argument to bl_pgpid_mrz_to_u4()
+			-c|--birth-c*)
+				shift ; bcountry=$1 ;;
+			-v|--verify) verify=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -533,21 +525,60 @@ Options:
 		shift
 	done
 
-	[[ "$mrzn" ]] || mrzn="${sname}<<$gname"
-	if ! tohash1=$(grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"$mrzn" ) ; then
-		bl_log error "$FUNCNAME: no complete surname and given names extracted from $mrzn"
-		return 1
+	# If a Machine Readable Zone is passed as arguments
+	if [[ "$1" ]] ; then
+		local -A mrza=()
+		if ! _bl_icao9303_mrz_analyse mrza "$@" ; then
+			printf "%s: Warning: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" >&2
+		else
+			[[ "$sname" ]] || sname=$(tr '<' ' ' <<<"${mrza[all_names]%%<<*}")
+			[[ "$gname" ]] || gname=$(sed ' s,<*$,,g ; s,<, , ' <<<"${mrza[all_names]#*<<}")
+			[[ "$bdate" ]] || {	bdate="${mrza[date_of_birth]}" ; bdarg="--birth-date" ; }
+			[[ "$bcountry" ]] || bcountry="${mrza[country]}"
+		fi
 	fi
 
-	if [[ "$bcountry" ]] && read c iso cname < <(grep "	${bcountry^^}	" "$GEOLIST_CENTROID") ; then
-		bl_log debug "$FUNCNAME: $c $iso $cname"
-	else
-		bl_log error "$FUNCNAME: no \"${bcountry}\" in $GEOLIST_CENTROID"
-		return 3
+	[[ "$sname" ]] || sname=$(bl_input "Birth surname (family name)")
+
+	[[ "$gname" ]] || gname=$(bl_input --default "${gname}" "Birth names (given names)")
+
+	[[ "$bdate" ]] || bdate=$(bl_input --default "${bdate}" "Birth date (YYYY-MM-DD)")
+
+	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "Birth country (3 letter code)")
+
+#				if ! (LC_CTYPE=C ; [[ "$sname" =~ ^[A-Z\<]+$ ]]) ; then
+#					bl_log error "$FUNCNAME: only [A-Z] characters allowed in $1"
+#					return 1
+#				fi ;;
+
+	while [[ "$verify" ]] ; do
+		! bl_yesno --default=no --text \
+	"
+	Surname at birth:     ${sname}
+	Given names at birth: ${gname}
+	Date of birth:        ${bdate}
+	Country of birth:     ${bcountry}
+	" \
+			"Is that correct" || break
+
+		sname=$(bl_input --default "${sname^^}" "Birth surname (family name)")
+		gname=$(bl_input --default "${gname}" "Birth names (given names)")
+		bdate=$(bl_input --default "${bdate}" "Birth date (YYYY-MM-DD)")
+		bcountry=$(bl_input --default "${bcountry}" "Birth country (3 letter code)")
+	done
+
+	sname=$(sed 's,[ ;,<-]\+,<,g'<<<"$sname" ) # replace and squeeze some word separators
+	sname="${sname^^}" # uppercase
+	gname=$(sed 's,[ ;,<-]\+,<,g'<<<"$gname" )
+	gname="${gname^^}"
+
+	if ! fakemrz="P<${bcountry}$(grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${sname}<<$gname<<" )" ; then
+		printf "%s: Error: only [A-Z] characters allowed in names.\n" "$FUNCNAME" >&2
+		return 1
 	fi
-	bl_log debug "$FUNCNAME: names: $tohash1"
-	bl_log debug "$FUNCNAME: birthdate: $tohash2"
-	echo "$(printf "$tohash1$tohash2" | md5sum | xxd -r -p | basenc --base64url | sed 's/==$//')$c"
+	fakemrz+="<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+
+	bl_pgpid_mrz_to_u4 --uncheck --birth-date "$bdate" "${fakemrz: 0:88}"
 }
 
 ### General Help Messages (and set -e if program) ###
