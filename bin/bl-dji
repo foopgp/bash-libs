@@ -124,7 +124,8 @@ Options:
 
 	local num value extglob ret=0
 	# save extglob shopt
-	extglob="$(shopt -p extglob)"
+	# '-p' is a shopt listing option, then here '|| true' is not dirty. cf. https://lists.gnu.org/archive/html/bug-bash/2025-09/msg00360.html
+	extglob="$(shopt -p extglob)" || true
 	# Make sure extglob is set
 	shopt -s extglob
 	for value in "$@" ; do
