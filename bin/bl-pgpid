@@ -424,7 +424,7 @@ Analyse a Machine Readable Zone and fill the associative array named AANAME
 
 bl_pgpid_mrz_to_u4() {
 	local name
-	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... MRZ..."
 	local helpmsg="
 Convert the Machine Readable Zone of an icao9303 passport to an udid4 (aka 'u4')
@@ -492,7 +492,7 @@ People have to check, and fix when NOK.
 
 bl_pgpid_gen_u4() {
 	local name
-	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
 Generate udid4. Missing input is asked interactively.
@@ -546,11 +546,6 @@ Options:
 
 	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "Birth country (3 letter code)")
 
-#				if ! (LC_CTYPE=C ; [[ "$sname" =~ ^[A-Z\<]+$ ]]) ; then
-#					bl_log error "$FUNCNAME: only [A-Z] characters allowed in $1"
-#					return 1
-#				fi ;;
-
 	while [[ "$verify" ]] ; do
 		! bl_yesno --default=no --text \
 	"
@@ -579,6 +574,111 @@ Options:
 	fakemrz+="<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
 
 	bl_pgpid_mrz_to_u4 --uncheck --birth-date "$bdate" "${fakemrz: 0:88}"
+}
+
+
+bl_pgpid_shrink_data() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... SIZE [FILE]"
+	local helpmsg="
+Shrink input data to a data space of a limited SIZE.
+Usefull to make hash distributed into a lesser space whith (uncommon) SIZE not matching 2^n.
+This function XOR sucessive 64bits words of raw input, and apply 'modulo SIZE' at the end.
+Then Maximum SIZE is 2^64-1. (And avoid to get close to this limit if you need a good number dispatching).
+About encodings: check basenc manual from GNU coreutils.
+
+Options:
+  -i, --input-encoding ENCODING  Eg: raw(default), base64, base64url, base32, base32hex, base16, base2msbf or base2lsbf.
+  -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
+  -w, --wrap COLS                Wrap encoded lines after COLS character (default 76).  Use 0 to disable line wrapping.
+  -g, --ignore-garbage           When decoding (a 'baseXXX' input), ignore non-alphabet characters.
+"
+	local ienc="raw" oenc="base10" iextropts="" oextraopts=""
+	for ((;$#;)) ; do
+		case "$1" in
+			-i|--input-encoding)
+				shift ; ienc=$1 ;;
+			-o|--ouput-encoding)
+				shift ; oenc=$1 ;;
+			-w|--wrap)
+				shift ; oextraopts+="--wrap $(($1)) " ;; #Put $1 in (( )) to make sure --wrap get a number
+			-g|--ignore-garbage)
+				iextraopts+="--ignore-garbage " ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	size="$1"
+	shift
+	# Test input
+	((1%$size)) || return $?
+
+	local decoder offset hex dec=0 char encoder
+	case "$ienc" in
+		raw)
+			decoder="cat" ;;
+		base64|base64url|base32|base32hex|base16|base2msbf|base2lsbf)
+			decoder="basenc --decode --$ienc $iextraopts" ;;
+		*)
+			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$FUNCNAME" >&2 ; return 2 ;;
+	esac
+
+	while read offset hex char; do
+		#printf "%016X\n" $((0x$hex))
+		dec=$((0x$hex ^ dec))
+		#printf "%016X\n" $((dec))
+	done < <( $decoder "$@" | xxd -c 8 -g 0 )
+
+	# Simple dec=$((dec%size)) doesn't work as (( builtin use only signed integer, then number > 0x0fff ffff ffff ffff are negative
+	# And with negative number '%', which is the reminder operator, differs from the mathematical modulo operation.
+	# see https://torstencurdt.com/tech/posts/modulo-of-negative-numbers/
+	dec=$(( ((dec % size) + size) % size ))
+
+	hex=$(printf "%02X\n" $dec)
+
+	case "$oenc" in
+		raw)
+			echo "$hex" | xxd -r -p ;;
+		base10)
+			printf "%u\n" "$dec" ;;
+		base16)
+			echo "$hex" ;;
+		base64|base64url|base32|base32hex|base2msbf|base2lsbf)
+			echo "$hex" | xxd -r -p | basenc --$oenc $oextraopts ;;
+		*)
+			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$FUNCNAME" >&2 ; return 2 ;;
+	esac
+}
+
+bl_pgpid_gen_uid() {
+#  Since linux kernel 2.6, user ID (uid) are coded on 32 bit, so it should range from 0 (root) to 2^32-1 = 4294967295
+#  On older unix systems it was coded on 16 bit (0 to 65535) :
+#  - 0: root
+#  - under 1000: "system" users
+#  - 1000: Main "human" user (also often: first administrator)
+#  - above 1000: other "human" users
+#  - up to 65534, which is use by convention by the user 'nobody'.
+#
+#  tests:
+#  - $ LANG=C sudo useradd -u 4294967295 test
+#    useradd: invalid user ID '4294967295'
+#    Return value $?: 3 (error)
+#  - $ LANG=C sudo useradd -u 4294967294 test
+#    useradd warning: test's uid -2 outside of the UID_MIN 1000 and UID_MAX 60000 range.
+#    Return value $?: 0 (OK)
+#
+#   If we let 4294967294, 4294967293 and 65535, for some futur usage/convention,
+#   So we can use range 65536 to 4294967292, to get an almost unique Unix User ID from unique foopgp User ID (udid4,...)
+#
+#   Which make 4294901756 slots, ~= about half of the actual human population (~8 billions).
+
+echo
 }
 
 ### General Help Messages (and set -e if program) ###
