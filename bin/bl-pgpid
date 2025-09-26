@@ -760,6 +760,7 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_PGPID_chelpmsg="
+Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fixed Unix User ID for each of them.
 Options:
 "
 

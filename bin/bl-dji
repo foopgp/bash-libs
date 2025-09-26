@@ -468,6 +468,7 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_DJI_chelpmsg="
+Manage djis (Ɉ), also known as foopgp tokens.
 Options:
 "
 

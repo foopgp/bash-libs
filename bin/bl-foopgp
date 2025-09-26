@@ -309,6 +309,7 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_FOOPGP_chelpmsg="
+Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
 Options:
   -h, --help               show this help and exit/return
   -V, --version            show version and exit/return
