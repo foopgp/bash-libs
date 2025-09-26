@@ -577,12 +577,12 @@ Options:
 }
 
 
-bl_pgpid_shrink_data() {
+bl_pgpid_2num() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... SIZE [FILE]"
 	local helpmsg="
-Shrink input data to a data space of a limited SIZE.
+Shrink input data to a number limited by SIZE.
 Usefull to make hash distributed into a lesser space whith (uncommon) SIZE not matching 2^n.
 This function XOR sucessive 64bits words of raw input, and apply 'modulo SIZE' at the end.
 Then Maximum SIZE is 2^64-1. (And avoid to get close to this limit if you need a good number dispatching).
@@ -591,18 +591,15 @@ About encodings: check basenc manual from GNU coreutils.
 Options:
   -i, --input-encoding ENCODING  Eg: raw(default), base64, base64url, base32, base32hex, base16, base2msbf or base2lsbf.
   -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
-  -w, --wrap COLS                Wrap encoded lines after COLS character (default 76).  Use 0 to disable line wrapping.
   -g, --ignore-garbage           When decoding (a 'baseXXX' input), ignore non-alphabet characters.
 "
-	local ienc="raw" oenc="base10" iextropts="" oextraopts=""
+	local ienc="raw" oenc="base10" iextropts=""
 	for ((;$#;)) ; do
 		case "$1" in
 			-i|--input-encoding)
 				shift ; ienc=$1 ;;
 			-o|--ouput-encoding)
 				shift ; oenc=$1 ;;
-			-w|--wrap)
-				shift ; oextraopts+="--wrap $(($1)) " ;; #Put $1 in (( )) to make sure --wrap get a number
 			-g|--ignore-garbage)
 				iextraopts+="--ignore-garbage " ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -614,10 +611,12 @@ Options:
 		shift
 	done
 
+	if ! [[ "$1" =~ ^[1-9][0-9]* ]] ; then
+			printf "$usage\n" >&2
+			return 2
+	fi
 	size="$1"
 	shift
-	# Test input
-	((1%$size)) || return $?
 
 	local decoder offset hex dec=0 char encoder
 	case "$ienc" in
@@ -650,7 +649,7 @@ Options:
 		base16)
 			echo "$hex" ;;
 		base64|base64url|base32|base32hex|base2msbf|base2lsbf)
-			echo "$hex" | xxd -r -p | basenc --$oenc $oextraopts ;;
+			echo "$hex" | xxd -r -p | basenc --$oenc ;;
 		*)
 			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$FUNCNAME" >&2 ; return 2 ;;
 	esac
