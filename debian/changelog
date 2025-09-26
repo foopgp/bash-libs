@@ -1,3 +1,9 @@
+bash-libs (0.0.4-1) unstable; urgency=low
+
+  * release v0.0.4
+
+ -- piseb <piseb@mailo.com>  Tue, 26 Sep 2025 15:01:21 +0200
+
 bash-libs (0.0.3-1) UNRELEASED; urgency=low
 
   * release v0.0.3

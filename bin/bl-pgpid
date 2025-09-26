@@ -1,0 +1,789 @@
+#!/bin/bash
+#
+# Bash library and executable that generate id compliant with foopgp.
+#
+# Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-only
+#
+# shellcheck disable=SC2013 # To read lines rather than words
+# shellcheck disable=SC2034 # variable appears unused
+# shellcheck disable=SC2046 # Quote this to prevent word splitting
+# shellcheck disable=SC2086 # Double quote warning
+# shellcheck disable=SC2128 # expanding array without index warning
+
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z2_-]\+\>\).*,\1,p' )"
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_pgpid_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version)
+				# should exit without executing any actions, so do not complete anything
+				return 0 ;;
+		esac
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		# complete actions if none in ${COMP_WORDS[@]}
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		return 0
+	}'
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_pgpid_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	return 0
+fi
+
+# If sourcing while _bl_pgpid_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_pgpid_parseoptions)" == function ]] ; then
+	_bl_pgpid_parseoptions "$@"
+	return $?
+fi
+
+### Constants ###
+
+BL_PGPID_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+declare -r BL_PGPID_NAME
+declare -r BL_PGPID_VERSION="0.0.4"
+declare -r BL_PGPID_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+
+declare -r BL_PGPID_CO_REGEX="e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9]{2}\.[0-9]{2}"
+declare -r BL_PGPID_U4H_REGEX="[a-zA-Z0-9_-]{22}"
+declare -r BL_PGPID_U4_REGEX="${BL_PGPID_U4H_REGEX}${BL_PGPID_CO_REGEX}"
+
+declare -r BL_PGPID_XUID_MIN=$((1<<18))
+declare -r BL_PGPID_XUID_MAX=$(((1<<32)-4))
+
+declare -Ar BL_PGPID_COORDINATES=(
+[ABW]="e_12.52-069.98 Aruba"
+[AFG]="e_33.84_066.00 Afghanistan"
+[AGO]="e-12.29_017.54 Angola"
+[AIA]="e_18.22-063.06 Anguilla"
+[ALB]="e_41.14_020.05 Albania"
+[ALA]="e_60.21_019.95 Aland Islands"
+[AND]="e_42.54_001.56 Andorra"
+[ARE]="e_23.91_054.30 United Arab Emirates"
+[ARG]="e-35.38-065.18 Argentina"
+[ARM]="e_40.29_044.93 Armenia"
+[ASM]="e-14.30-170.72 American Samoa"
+[ATA]="e-80.51_019.92 Antarctica"
+[ATF]="e-49.25_069.23 French Southern and Antarctic Lands"
+[ATG]="e_17.28-061.79 Antigua and Barbuda"
+[AUS]="e-25.73_134.49 Australia"
+[AUT]="e_47.59_014.13 Austria"
+[AZE]="e_40.29_047.55 Azerbaijan"
+[BDI]="e-03.36_029.88 Burundi"
+[BEL]="e_50.64_004.64 Belgium"
+[BEN]="e_09.64_002.33 Benin"
+[BFA]="e_12.27-001.75 Burkina Faso"
+[BGD]="e_23.87_090.24 Bangladesh"
+[BGR]="e_42.77_025.22 Bulgaria"
+[BHR]="e_26.04_050.54 Bahrain"
+[CAN]="e_61.36-098.31 Canada"
+[BHS]="e_24.29-076.63 Bahamas"
+[BIH]="e_44.17_017.77 Bosnia and Herzegovina"
+[BLM]="e_17.90-062.84 Saint-Barthélemy"
+[BLR]="e_53.53_028.03 Belarus"
+[BLZ]="e_17.20-088.71 Belize"
+[BMU]="e_32.31-064.75 Bermuda"
+[BOL]="e-16.71-064.69 Bolivia"
+[BRA]="e-10.79-053.10 Brazil"
+[BRB]="e_13.18-059.56 Barbados"
+[BRN]="e_04.52_114.72 Brunei Darussalam"
+[BTN]="e_27.41_090.40 Bhutan"
+[BWA]="e-22.18_023.80 Botswana"
+[CAF]="e_06.57_020.47 Central African Republic"
+[CHE]="e_46.80_008.21 Switzerland"
+[CHL]="e-37.73-071.38 Chile"
+[CHN]="e_36.56_103.82 China"
+[CIV]="e_07.63-005.57 Côte d'Ivoire"
+[CMR]="e_05.69_012.74 Cameroon"
+[COD]="e-02.88_023.64 Democratic Republic of the Congo"
+[COG]="e-00.84_015.22 Republic of Congo"
+[COK]="e-21.22-159.79 Cook Islands"
+[COL]="e_03.91-073.08 Colombia"
+[COM]="e-11.88_043.68 Comoros"
+[CPV]="e_15.96-023.96 Cape Verde"
+[CRI]="e_09.98-084.19 Costa Rica"
+[CUB]="e_21.62-079.02 Cuba"
+[CUW]="e_12.20-068.97 Curaçao"
+[CYM]="e_19.43-080.91 Cayman Islands"
+[CYP]="e_34.92_033.01 Cyprus"
+[CZE]="e_49.73_015.31 Czech Republic"
+[DEU]="e_51.11_010.39 Germany"
+[DJI]="e_11.75_042.56 Djibouti"
+[DMA]="e_15.44-061.36 Dominica"
+[DNK]="e_55.98_010.03 Denmark"
+[DOM]="e_18.89-070.51 Dominican Republic"
+[DZA]="e_28.16_002.62 Algeria"
+[ECU]="e-01.42-078.75 Ecuador"
+[EGY]="e_26.50_029.86 Egypt"
+[ERI]="e_15.36_038.85 Eritrea"
+[ESP]="e_40.24-003.65 Spain"
+[EST]="e_58.67_025.54 Estonia"
+[ETH]="e_08.62_039.60 Ethiopia"
+[FIN]="e_64.50_026.27 Finland"
+[FJI]="e-17.43_165.45 Fiji"
+[FRA]="e_42.17-002.76 France"
+[FRO]="e_62.05-006.88 Faeroe Islands"
+[FSM]="e_07.45_153.24 Federated States of Micronesia"
+[GAB]="e-00.59_011.79 Gabon"
+[GBR]="e_54.12-002.87 United Kingdom"
+[GEO]="e_42.17_043.51 Georgia"
+[GGY]="e_49.47-002.57 Guernsey"
+[GHA]="e_07.95-001.22 Ghana"
+[GIN]="e_10.44-010.94 Guinea"
+[GMB]="e_13.45-015.40 The Gambia"
+[GNB]="e_12.05-014.95 Guinea-Bissau"
+[GNQ]="e_01.71_010.34 Equatorial Guinea"
+[GRC]="e_39.07_022.96 Greece"
+[GRD]="e_12.12-061.68 Grenada"
+[GRL]="e_74.71-041.34 Greenland"
+[GTM]="e_15.69-090.36 Guatemala"
+[GUM]="e_13.44_144.77 Guam"
+[GUY]="e_04.79-058.98 Guyana"
+[HKG]="e_22.40_114.11 Hong Kong"
+[HMD]="e-53.09_073.52 Heard I. and McDonald Islands"
+[HND]="e_14.83-086.62 Honduras"
+[HRV]="e_45.08_016.40 Croatia"
+[HTI]="e_18.94-072.69 Haiti"
+[HUN]="e_47.16_019.40 Hungary"
+[IDN]="e-02.22_117.24 Indonesia"
+[IMN]="e_54.22-004.54 Isle of Man"
+[IND]="e_22.89_079.61 India"
+[IRL]="e_53.18-008.14 Ireland"
+[IRN]="e_32.58_054.27 Iran"
+[IRQ]="e_33.04_043.74 Iraq"
+[ISL]="e_65.00-018.57 Iceland"
+[ISR]="e_31.46_035.00 Israel"
+[ITA]="e_42.80_012.07 Italy"
+[JAM]="e_18.16-077.31 Jamaica"
+[JEY]="e_49.22-002.13 Jersey"
+[JOR]="e_31.25_036.77 Jordan"
+[JPN]="e_37.59_138.03 Japan"
+[KAZ]="e_48.16_067.29 Kazakhstan"
+[KEN]="e_00.60_037.80 Kenya"
+[KGZ]="e_41.46_074.54 Kyrgyzstan"
+[KHM]="e_12.72_104.91 Cambodia"
+[KIR]="e_00.86-045.61 Kiribati"
+[KNA]="e_17.26-062.69 Saint Kitts and Nevis"
+[KOR]="e_36.39_127.84 Republic of Korea"
+[KWT]="e_29.33_047.59 Kuwait"
+[LAO]="e_18.50_103.74 Lao PDR"
+[LBN]="e_33.92_035.88 Lebanon"
+[LBR]="e_06.45-009.32 Liberia"
+[LBY]="e_27.03_018.01 Libya"
+[LCA]="e_13.89-060.97 Saint Lucia"
+[LIE]="e_47.14_009.54 Liechtenstein"
+[LKA]="e_07.61_080.70 Sri Lanka"
+[LSO]="e-29.58_028.23 Lesotho"
+[LTU]="e_55.33_023.89 Lithuania"
+[LUX]="e_49.77_006.07 Luxembourg"
+[LVA]="e_56.85_024.91 Latvia"
+[MAC]="e_22.22_113.51 Macao"
+[MAF]="e_18.09-063.06 Saint-Martin"
+[MAR]="e_29.84-008.46 Morocco"
+[MCO]="e_43.75_007.41 Monaco"
+[MDA]="e_47.19_028.46 Moldova"
+[MDG]="e-19.37_046.70 Madagascar"
+[MDV]="e_03.73_073.46 Maldives"
+[MEX]="e_23.95-102.52 Mexico"
+[MHL]="e_07.00_170.34 Marshall Islands"
+[MKD]="e_41.60_021.68 Macedonia"
+[MLI]="e_17.35-003.54 Mali"
+[MLT]="e_35.92_014.41 Malta"
+[MMR]="e_21.19_096.49 Myanmar"
+[MNE]="e_42.79_019.24 Montenegro"
+[MNG]="e_46.83_103.05 Mongolia"
+[MNP]="e_15.83_145.62 Northern Mariana Islands"
+[MOZ]="e-17.27_035.53 Mozambique"
+[MRT]="e_20.26-010.35 Mauritania"
+[MSR]="e_16.74-062.19 Montserrat"
+[MUS]="e-20.28_057.57 Mauritius"
+[MWI]="e-13.22_034.29 Malawi"
+[MYS]="e_03.79_109.70 Malaysia"
+[NAM]="e-22.13_017.21 Namibia"
+[NCL]="e-21.30_165.68 New Caledonia"
+[NER]="e_17.42_009.39 Niger"
+[NFK]="e-29.05_167.95 Norfolk Island"
+[NGA]="e_09.59_008.09 Nigeria"
+[NIC]="e_12.85-085.03 Nicaragua"
+[NIU]="e-19.05-169.87 Niue"
+[NLD]="e_52.10_005.28 Netherlands"
+[NOR]="e_68.75_015.35 Norway"
+[NPL]="e_28.25_083.92 Nepal"
+[NRU]="e-00.52_166.93 Nauru"
+[NZL]="e-41.81_171.48 New Zealand"
+[OMN]="e_20.61_056.09 Oman"
+[PAK]="e_29.95_069.34 Pakistan"
+[PAN]="e_08.52-080.12 Panama"
+[PCN]="e-24.37-128.32 Pitcairn Islands"
+[PER]="e-09.15-074.38 Peru"
+[PHL]="e_11.78_122.88 Philippines"
+[PLW]="e_07.29_134.41 Palau"
+[PNG]="e-06.46_145.21 Papua New Guinea"
+[POL]="e_52.13_019.39 Poland"
+[PRI]="e_18.23-066.47 Puerto Rico"
+[PRK]="e_40.15_127.19 Dem. Rep. Korea"
+[PRT]="e_39.60-008.50 Portugal"
+[PRY]="e-23.23-058.40 Paraguay"
+[PSE]="e_31.92_035.20 Palestine"
+[PYF]="e-14.72-144.90 French Polynesia"
+[QAT]="e_25.31_051.18 Qatar"
+[ROU]="e_45.85_024.97 Romania"
+[RUS]="e_61.98_096.69 Russian Federation"
+[RWA]="e-01.99_029.92 Rwanda"
+[SAU]="e_24.12_044.54 Saudi Arabia"
+[SDN]="e_15.99_029.94 Sudan"
+[SSD]="e_07.31_030.25 South Sudan"
+[SEN]="e_14.37-014.47 Senegal"
+[SGP]="e_01.36_103.82 Singapore"
+[SGS]="e-54.46-036.43 South Georgia and South Sandwich Islands"
+[SHN]="e-12.40-009.55 Saint Helena"
+[SLB]="e-08.92_159.63 Solomon Islands"
+[SLE]="e_08.56-011.79 Sierra Leone"
+[SLV]="e_13.74-088.87 El Salvador"
+[SMR]="e_43.94_012.46 San Marino"
+[SOM]="e_04.75_045.71 Somalia"
+[SPM]="e_46.92-056.30 Saint Pierre and Miquelon"
+[SRB]="e_44.22_020.79 Serbia"
+[STP]="e_00.44_006.72 Sao Tome and Principe"
+[SUR]="e_04.13-055.91 Suriname"
+[SVK]="e_48.71_019.48 Slovakia"
+[SVN]="e_46.12_014.80 Slovenia"
+[SWE]="e_62.78_016.75 Sweden"
+[SWZ]="e-26.56_031.48 Swaziland"
+[SXM]="e_18.05-063.06 Sint Maarten"
+[SYC]="e-04.66_055.48 Seychelles"
+[SYR]="e_35.03_038.51 Syria"
+[TCA]="e_21.83-071.97 Turks and Caicos Islands"
+[TCD]="e_15.33_018.64 Chad"
+[TGO]="e_08.53_000.96 Togo"
+[THA]="e_15.12_101.00 Thailand"
+[TJK]="e_38.53_071.01 Tajikistan"
+[TKM]="e_39.12_059.37 Turkmenistan"
+[TLS]="e-08.83_125.84 Timor-Leste"
+[TON]="e-20.43-174.81 Tonga"
+[TTO]="e_10.46-061.27 Trinidad and Tobago"
+[TUN]="e_34.12_009.55 Tunisia"
+[TUR]="e_39.06_035.17 Turkey"
+[TZA]="e-06.28_034.81 Tanzania"
+[UGA]="e_01.27_032.37 Uganda"
+[UKR]="e_49.00_031.38 Ukraine"
+[URY]="e-32.80-056.02 Uruguay"
+[USA]="e_45.68-112.46 United States"
+[UZB]="e_41.76_063.14 Uzbekistan"
+[VAT]="e_41.90_012.43 Vatican"
+[VCT]="e_13.22-061.20 Saint Vincent and the Grenadines"
+[VEN]="e_07.12-066.18 Venezuela"
+[VGB]="e_18.53-064.47 British Virgin Islands"
+[VIR]="e_17.96-064.80 United States Virgin Islands"
+[VNM]="e_16.65_106.30 Vietnam"
+[VUT]="e-16.23_167.69 Vanuatu"
+[WLF]="e-13.89-177.35 Wallis and Futuna Islands"
+[WSM]="e-13.75-172.16 Samoa"
+[YEM]="e_15.91_047.59 Yemen"
+[ZAF]="e-29.00_025.08 South Africa"
+[ZMB]="e-13.46_027.77 Zambia"
+[ZWE]="e-19.00_029.85 Zimbabwe"
+)
+
+### Default option values ###
+
+### external functions ###
+
+# shellcheck source=bl-interactive
+. "$(dirname "$BASH_SOURCE")"/bl-interactive --
+
+### internal functions ###
+
+_bl_pgpid_parseoptions() {
+	local npp=$#
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s%s" "$BL_PGPID_usage" "$BL_PGPID_chelpmsg" "$BL_PGPID_shelpmsg" ; return 1 ;;
+			-V|--version) printf "%s %s\n" "$BL_PGPID_NAME" "$BL_PGPID_VERSION" ; return 1 ;;
+			--) shift ; break ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	BL_PGPID_NOPTIONS=$((npp-$#))
+}
+
+_bl_icao9303_mrz_checkdigit() {
+	local helpmsg="Usage: $FUNCNAME STRING [EXPECTED_RESULT]
+If there is no second arg: output calculated check digit from [0-9A-Z<]* string
+else return non-zero if EXPECTED_RESULT differs from calculated check digit.
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--h*) echo "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local char sum=0 weight=(7 3 1)
+	for ((i=0;i<${#1};i++)) ; do
+		char=${1:$i:1}
+		case $char in
+			[0-9]) ((sum+=char*${weight[$((i%3))]})) ;;
+			[A-Z]) ((sum+=($(printf "%d" "'$char'")-55)*${weight[$((i%3))]})) ;;
+		esac
+	done
+
+	if ! [[ "$2" ]] ; then
+		echo $((sum%10))
+	else
+		[[ "$2" == $((sum%10)) ]]
+		return $?
+	fi
+}
+
+_bl_icao9303_mrz_analyse() {
+	local helpmsg="Usage: $FUNCNAME [Options] AANAME MRZ
+Options:
+  -u, --uncheck                Dont verify checksums
+Analyse a Machine Readable Zone and fill the associative array named AANAME
+"
+
+	local uncheck
+	for ((;$#;)) ; do
+		case "$1" in
+			-u|--uncheck) uncheck="--uncheck" ;;
+			-h|--h*) echo "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local -n doc=$1
+	shift
+	local ch mrz=$*
+	mrz=${mrz//[$'\t\r\n ']}
+
+	if [[ ${mrz:0:1} != P ]] ; then
+		# Only ICAO-9303 (ISO/IEC-7501-1) passport are yet supported.
+		printf "%s: Error: Unsupported MRZ '%s...'." "$FUNCNAME" "${mrz:0:1}"
+		return 1
+	fi
+	if [[ ${#mrz} != 88 ]] ; then
+		printf "%s: Error: Invalid MRZ lenght: %d." "$FUNCNAME" "${#mrz}"
+		return 1
+	fi
+
+	doc=(
+		[type]=${mrz:0:2}
+		[country]=${mrz:2:3}
+		[all_names]=${mrz:5:39}
+		[number]=${mrz:44:9}
+		[check_number]=${mrz:53:1}
+		[nationality]=${mrz:54:3}
+		[date_of_birth]=${mrz:57:6}
+		[check_date_of_birth]=${mrz:63:1}
+		[sex]=${mrz:64:1}
+		[expiration_date]=${mrz:65:6}
+		[check_expiration_date]=${mrz:71:1}
+		[personal_number]=${mrz:72:14}
+		[check_personal_number]=${mrz:86:1}
+		[composite]="${mrz:44:10}${mrz:57:7}${mrz:65:20}"
+		[check_composite]=${mrz:87:1}
+	)
+
+	[[ -z "$uncheck" ]] || return 0
+
+	for ch in number date_of_birth expiration_date personal_number composite ; do
+		doc[checked_$ch]=$(_bl_icao9303_mrz_checkdigit "${doc[$ch]}")
+		doc[valid_$ch]=$( [[ ${doc[checked_$ch]} == ${doc[check_$ch]} ]] && echo true || echo false )
+		${doc[valid_$ch]} || printf "%s: Warning: %s checksum -> %s. Should be %s.'\n" "$FUNCNAME" "$ch" "${doc[check_$ch]}" "${doc[checked_$ch]}" >&2
+	done
+}
+
+### public functions / program actions ###
+
+bl_pgpid_mrz_to_u4() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... MRZ..."
+	local helpmsg="
+Convert the Machine Readable Zone of an icao9303 passport to an udid4 (aka 'u4')
+
+Option:
+  -u, --uncheck                Dont verify checksums
+  -d, --birth-date BIRTH_DATE  Birth date, expected format : YYYY-MM-DD (for people born 100+ years ago)
+
+WARNING: mrz data may be irrelevant to generate udid4. eg:
+         * Surname or given names may be incomplete (cut bc exceed mrz size)
+         * Surname or given names may differs from those given at birth (marriage, gender change, etc.)
+         * Surname or given names transliteration may have change over time
+         * Year of birth date is not written with 4 digit (and people may live longer than 100 years)
+         * Humans may have done error on birth date, surname or given names.
+By the way, there are ~80% chance that an icao9303 MRZ allow to generate a correct udid4.
+People have to check, and fix when NOK.
+"
+
+	local gdate uncheck
+	for ((;$#;)) ; do
+		case "$1" in
+			-d|--birth-d*) shift ; gdate=$(sed ' s,[^0-9],,g ' <<<"$1") ;; # keep only [0-9] from given input
+			-u|--uncheck) uncheck="--uncheck" ;;
+			-h|--h*) echo "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) echo -e "$name: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local -A mrza=()
+	local allnames bdate countrycode coordinates
+
+	if ! _bl_icao9303_mrz_analyse $uncheck mrza "$@" ; then
+		printf "%s: Error: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$name" >&2
+			return 1
+	fi
+
+	if ! allnames=$(grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${mrza[all_names]}" ) ; then
+		printf "%s: Error: no complete surname and given names extracted from '%s'\n" "$name" "${mrza[all_names]}" >&2
+		return 1
+	fi
+
+	countrycode="${mrza[country]}"
+	coordinates="${BL_PGPID_COORDINATES[$countrycode]: 0:14}"
+	if ! [[ "$coordinates" =~ ^${BL_PGPID_CO_REGEX}$ ]] ; then
+		printf "%s: Error: Invalid coordinates (%s) for country '%s'\n" "$name" "$coordinates" "$countrycode" >&2
+		return 1
+	fi
+
+	if [[ "$gdate" ]] ; then
+		((${#gdate}==8)) || printf "%s: Notice: Invalid lenght for birth date '%s'\n" "$name" "$gdate" >&2
+	else
+		gdate="${mrza[date_of_birth]}"
+	fi
+	if ! bdate=$(date --date "${gdate}" +"%Y-%m-%d" ) ; then
+		printf "%s: Error: Can't reformart birthdate '%s'\n" "$name" "$gdate" >&2
+		return 1
+	fi
+
+	echo "$(printf "${allnames}${bdate}" | md5sum | xxd -r -p | basenc --base64url | sed 's/==$//')$coordinates"
+}
+
+bl_pgpid_gen_u4() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [MRZ]..."
+	local helpmsg="
+Generate udid4. Missing input is asked interactively.
+You may pass the Machine Readable Zone of an international passport as argument, but there are ~20% chances that generated udid4 is incorrect.
+Options:
+  -s, --surname SURNAME            Surname/family name at birth
+  -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
+  -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
+  -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
+  -v, --verify                     Ask for verification
+"
+	local sname gname bdate bcountry verify=""
+	for ((;$#;)) ; do
+		case "$1" in
+			-s|--s*)
+				shift ; sname=$1 ;;
+			-g|--g*)
+				shift ; gname=$1 ;;
+			-d|--birth-d*)
+				shift ; bdate=$1 ;; # $bdate is always be passed as an argument to bl_pgpid_mrz_to_u4()
+			-c|--birth-c*)
+				shift ; bcountry=$1 ;;
+			-v|--verify) verify=1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$name" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	# If a Machine Readable Zone is passed as arguments
+	if [[ "$1" ]] ; then
+		local -A mrza=()
+		if ! _bl_icao9303_mrz_analyse mrza "$@" ; then
+			printf "%s: Warning: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$name" >&2
+		else
+			[[ "$sname" ]] || sname=$(tr '<' ' ' <<<"${mrza[all_names]%%<<*}")
+			[[ "$gname" ]] || gname=$(sed ' s,<*$,,g ; s,<, , ' <<<"${mrza[all_names]#*<<}")
+			[[ "$bdate" ]] || {	bdate="${mrza[date_of_birth]}" ; bdarg="--birth-date" ; }
+			[[ "$bcountry" ]] || bcountry="${mrza[country]}"
+		fi
+	fi
+
+	[[ "$sname" ]] || sname=$(bl_input "Birth surname (family name)")
+
+	[[ "$gname" ]] || gname=$(bl_input --default "${gname}" "Birth names (given names)")
+
+	[[ "$bdate" ]] || bdate=$(bl_input --default "${bdate}" "Birth date (YYYY-MM-DD)")
+
+	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "Birth country (3 letter code)")
+
+	while [[ "$verify" ]] ; do
+		! bl_yesno --default=no --text \
+	"
+	Surname at birth:     ${sname}
+	Given names at birth: ${gname}
+	Date of birth:        ${bdate}
+	Country of birth:     ${bcountry}
+	" \
+			"Is that correct" || break
+
+		sname=$(bl_input --default "${sname^^}" "Birth surname (family name)")
+		gname=$(bl_input --default "${gname}" "Birth names (given names)")
+		bdate=$(bl_input --default "${bdate}" "Birth date (YYYY-MM-DD)")
+		bcountry=$(bl_input --default "${bcountry}" "Birth country (3 letter code)")
+	done
+
+	sname=$(sed 's,[ ;,<-]\+,<,g'<<<"$sname" ) # replace and squeeze some word separators
+	sname="${sname^^}" # uppercase
+	gname=$(sed 's,[ ;,<-]\+,<,g'<<<"$gname" )
+	gname="${gname^^}"
+
+	if ! fakemrz="P<${bcountry}$(grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${sname}<<$gname<<" )" ; then
+		printf "%s: Error: only [A-Z] characters allowed in names.\n" "$name" >&2
+		return 1
+	fi
+	fakemrz+="<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+
+	bl_pgpid_mrz_to_u4 --uncheck --birth-date "$bdate" "${fakemrz: 0:88}"
+}
+
+
+bl_pgpid_2num() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... SIZE [FILE]"
+	local helpmsg="
+Shrink input data to a number limited by SIZE.
+Usefull to make hash distributed into a lesser space whith (uncommon) SIZE not matching 2^n.
+This function XOR sucessive 64bits words of raw input, and apply 'modulo SIZE' at the end.
+Then Maximum SIZE is 2^64-1. (And avoid to get close to this limit if you need a good number dispatching).
+About encodings: check basenc manual from GNU coreutils.
+
+Options:
+  -i, --input-encoding ENCODING  Eg: raw(default), base64, base64url, base32, base32hex, base16, base2msbf or base2lsbf.
+  -g, --ignore-garbage           When decoding (a 'baseXXX' input), ignore non-alphabet characters.
+  -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
+"
+	local ienc="raw" oenc="base10" iextropts=""
+	for ((;$#;)) ; do
+		case "$1" in
+			-i|--input-encoding)
+				shift ; ienc=$1 ;;
+			-o|--ouput-encoding)
+				shift ; oenc=$1 ;;
+			-g|--ignore-garbage)
+				iextraopts+="--ignore-garbage " ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$name" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	if ! [[ "$1" =~ ^[1-9][0-9]* ]] ; then
+		printf "$usage\n" >&2
+		return 2
+	fi
+	size="$1"
+	shift
+
+	local decoder offset hex dec=0 char encoder
+	case "$ienc" in
+		raw)
+			decoder="cat" ;;
+		base64|base64url|base32|base32hex|base16|base2msbf|base2lsbf)
+			decoder="basenc --decode --$ienc $iextraopts" ;;
+		*)
+			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$name" "$ienc" "$name" >&2 ; return 2 ;;
+	esac
+
+	while read offset hex char; do
+		#printf "%016X\n" $((0x$hex))
+		dec=$((0x$hex ^ dec))
+		#printf "%016X\n" $((dec))
+	done < <( $decoder "$@" | xxd -c 8 -g 0 )
+
+	# Simple dec=$((dec%size)) doesn't work as (( builtin use only signed integer, then number > 0x0fff ffff ffff ffff are negative
+	# And with negative number '%', which is the reminder operator, differs from the mathematical modulo operation.
+	# see https://torstencurdt.com/tech/posts/modulo-of-negative-numbers/
+	dec=$(( ((dec % size) + size) % size ))
+
+	hex=$(printf "%02X\n" $dec)
+
+	case "$oenc" in
+		raw)
+			echo "$hex" | xxd -r -p ;;
+		base10)
+			printf "%u\n" "$dec" ;;
+		base16)
+			echo "$hex" ;;
+		base64|base64url|base32|base32hex|base2msbf|base2lsbf)
+			echo "$hex" | xxd -r -p | basenc --$oenc ;;
+		*)
+			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$name" "$ienc" "$name" >&2 ; return 2 ;;
+	esac
+}
+
+bl_pgpid_gen_uid() {
+#  Since linux kernel 2.6, user ID (uid) are coded on 32 bit, so it should range from 0 (root) to 2^32-1 = 4294967295
+#  On older unix systems it was coded on 16 bit (0 to 65535) :
+#  - 0: root
+#  - under 1000: "system" users
+#  - 1000: Main "human" user (also often: first administrator)
+#  - above 1000: other "human" users
+#  - up to 65534, which is use by convention by the user 'nobody'.
+#
+#  tests:
+#  - $ LANG=C sudo useradd -u 4294967295 test
+#    useradd: invalid user ID '4294967295'
+#    Return value $?: 3 (error)
+#  - $ LANG=C sudo useradd -u 4294967294 test
+#    useradd warning: test's uid -2 outside of the UID_MIN 1000 and UID_MAX 60000 range.
+#    Return value $?: 0 (OK)
+#
+#   If we let 4294967294, 4294967293 and id under 2^18 (< 262144), for some futur usage/convention,
+#   then we can use range 262144 to 4294967292, to get an almost unique Unix User ID from unique foopgp User ID (udid4,...)
+#
+#   Which make 4294705148 slots, ~= about half of the actual human population (~8 billions).
+#   Constants: BL_PGPID_XUID_MIN and BL_PGPID_XUID_MAX
+
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] [UDID4]"
+	local helpmsg="
+Generate a 32bit Unix User ID, from 2^18 to (2^32)-4 ([$BL_PGPID_XUID_MIN,$BL_PGPID_XUID_MAX]).
+If UDID4 is not given, it will ask for surname, names and date of birth.
+You may pass a foopgp UDID4 as an argument, as ouput is calculated from it.
+
+Options:
+	-f, --free-input            Accept any input, not only string containing a foopgp UDID4.
+"
+	local freeinput=0 str_in u4h num
+	for ((;$#;)) ; do
+		case "$1" in
+			-f|--free-input) freeinput=1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$name" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	if [[ "$1" ]] ; then
+		# If an input is passed as arguments
+		str_in="$*"
+	else
+		str_in="$(bl_pgpid_gen_u4 --birth-country FRA)=="
+		freeinput=0 # --free-input is non-sense if no imput has been given in $*.
+	fi
+
+	if ((freeinput)) ; then
+		u4h="$(echo "$str_in" | md5sum | xxd -r -p | basenc --base64url)"
+		echo "$u4h"
+	elif [[ "$str_in" =~ ${BL_PGPID_U4H_REGEX} ]] ; then
+		u4h="${BASH_REMATCH[0]}=="
+	else
+		printf "%s: Error: No udid4 (hash) found in '%s'...\n" "$name" "${str_in: 0:44}" >&2
+		return 2
+	fi
+
+	num=$(bl_pgpid_2num --input-encoding base64url $((BL_PGPID_XUID_MAX - BL_PGPID_XUID_MIN)) <<<"$u4h") && echo $((num + BL_PGPID_XUID_MIN))
+}
+
+### General Help Messages (and set -e if program) ###
+
+if [[ "$BASH_SOURCE" == "$0" ]] ; then
+	# run as a program
+	declare -r BL_PGPID_isprogram=1
+
+	BL_PGPID_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_PGPID_shelpmsg="
+  -h, --help               show this help and exit
+  -V, --version            show version and exit
+
+Actions:
+$(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+$BL_PGPID_NAME is also bash library, see:
+$ source $BASH_SOURCE --help
+"
+else
+	# run as a library (source $0)
+
+	BL_PGPID_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+
+	BL_PGPID_shelpmsg="
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+
+Functions:
+$(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"
+fi
+
+BL_PGPID_chelpmsg="
+Options:
+"
+
+### Init ###
+
+# Parse Options
+_bl_pgpid_parseoptions "$@"
+_BL_PGPID_RETVAL=$?
+
+# Do nothing else if sourced
+[[ "$BASH_SOURCE" == "$0" ]] || return $_BL_PGPID_RETVAL
+
+[[ "$_BL_PGPID_RETVAL" != "1"  ]] || exit 0
+[[ "$_BL_PGPID_RETVAL" < 2 ]] || exit $_BL_PGPID_RETVAL
+
+### Run ###
+set -e
+shift $BL_PGPID_NOPTIONS
+if function=$(grep -o "\<bl_pgpid_$1\>" <<< "${BL_PGPID_FUNCTIONS[@]}") ; then
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2
+	exit 2
+fi
+

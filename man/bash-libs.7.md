@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bash-libs - set of bash executables which may also be sourced as libraries
+bash-libs - set of tools which may also be sourced as bash libraries
 
 
 # DESCRIPTION

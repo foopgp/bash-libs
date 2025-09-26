@@ -1,7 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: bash-libs
 Upstream-Contact: Jean-Jacques Brucker <jjbrucker@foopgp.org>
-Source: <url://example.com>
 
 Files:     Makefile
            bin/bl-dji
