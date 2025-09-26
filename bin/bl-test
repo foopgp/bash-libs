@@ -63,7 +63,7 @@ fi
 
 BL_TEST_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_TEST_NAME
-declare -r BL_TEST_VERSION="0.0.3"
+declare -r BL_TEST_VERSION="0.0.4"
 declare -r BL_TEST_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 
