@@ -65,7 +65,8 @@ declare -r BL_PGPID_VERSION="0.0.3"
 declare -r BL_PGPID_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 declare -r BL_PGPID_CO_REGEX="e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9]{2}\.[0-9]{2}"
-declare -r BL_PGPID_U4_REGEX="[a-zA-Z0-9_-]{22}${BL_PGPID_CO_REGEX}"
+declare -r BL_PGPID_U4H_REGEX="[a-zA-Z0-9_-]{22}"
+declare -r BL_PGPID_U4_REGEX="${BL_PGPID_U4H_REGEX}${BL_PGPID_CO_REGEX}"
 
 declare -Ar BL_PGPID_COORDINATES=(
 [ABW]="e_12.52-069.98 Aruba"
@@ -449,9 +450,9 @@ People have to check, and fix when NOK.
 			-d|--birth-d*) shift ; gdate=$(sed ' s,[^0-9],,g ' <<<"$1") ;; # keep only [0-9] from given input
 			-u|--uncheck) uncheck="--uncheck" ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			-*) echo -e "$name: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -461,29 +462,29 @@ People have to check, and fix when NOK.
 	local allnames bdate countrycode coordinates
 
 	if ! _bl_icao9303_mrz_analyse $uncheck mrza "$@" ; then
-		printf "%s: Error: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" >&2
+		printf "%s: Error: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$name" >&2
 			return 1
 	fi
 
 	if ! allnames=$(grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${mrza[all_names]}" ) ; then
-		printf "%s: Error: no complete surname and given names extracted from '%s'\n" "$FUNCNAME" "${mrza[all_names]}" >&2
+		printf "%s: Error: no complete surname and given names extracted from '%s'\n" "$name" "${mrza[all_names]}" >&2
 		return 1
 	fi
 
 	countrycode="${mrza[country]}"
 	coordinates="${BL_PGPID_COORDINATES[$countrycode]: 0:14}"
 	if ! [[ "$coordinates" =~ ^${BL_PGPID_CO_REGEX}$ ]] ; then
-		printf "%s: Error: Invalid coordinates (%s) for country '%s'\n" "$FUNCNAME" "$coordinates" "$countrycode" >&2
+		printf "%s: Error: Invalid coordinates (%s) for country '%s'\n" "$name" "$coordinates" "$countrycode" >&2
 		return 1
 	fi
 
 	if [[ "$gdate" ]] ; then
-		((${#gdate}==8)) || printf "%s: Notice: Invalid lenght for birth date '%s'\n" "$FUNCNAME" "$gdate" >&2
+		((${#gdate}==8)) || printf "%s: Notice: Invalid lenght for birth date '%s'\n" "$name" "$gdate" >&2
 	else
 		gdate="${mrza[date_of_birth]}"
 	fi
 	if ! bdate=$(date --date "${gdate}" +"%Y-%m-%d" ) ; then
-		printf "%s: Error: Can't reformart birthdate '%s'\n" "$FUNCNAME" "$gdate" >&2
+		printf "%s: Error: Can't reformart birthdate '%s'\n" "$name" "$gdate" >&2
 		return 1
 	fi
 
@@ -504,7 +505,7 @@ Options:
   -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
   -v, --verify                     Ask for verification
 "
-	local mrzn sname gname bdate bcountry verify=""
+	local sname gname bdate bcountry verify=""
 	for ((;$#;)) ; do
 		case "$1" in
 			-s|--s*)
@@ -517,9 +518,9 @@ Options:
 				shift ; bcountry=$1 ;;
 			-v|--verify) verify=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$name" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -529,7 +530,7 @@ Options:
 	if [[ "$1" ]] ; then
 		local -A mrza=()
 		if ! _bl_icao9303_mrz_analyse mrza "$@" ; then
-			printf "%s: Warning: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" >&2
+			printf "%s: Warning: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$name" >&2
 		else
 			[[ "$sname" ]] || sname=$(tr '<' ' ' <<<"${mrza[all_names]%%<<*}")
 			[[ "$gname" ]] || gname=$(sed ' s,<*$,,g ; s,<, , ' <<<"${mrza[all_names]#*<<}")
@@ -568,7 +569,7 @@ Options:
 	gname="${gname^^}"
 
 	if ! fakemrz="P<${bcountry}$(grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${sname}<<$gname<<" )" ; then
-		printf "%s: Error: only [A-Z] characters allowed in names.\n" "$FUNCNAME" >&2
+		printf "%s: Error: only [A-Z] characters allowed in names.\n" "$name" >&2
 		return 1
 	fi
 	fakemrz+="<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -590,8 +591,8 @@ About encodings: check basenc manual from GNU coreutils.
 
 Options:
   -i, --input-encoding ENCODING  Eg: raw(default), base64, base64url, base32, base32hex, base16, base2msbf or base2lsbf.
-  -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
   -g, --ignore-garbage           When decoding (a 'baseXXX' input), ignore non-alphabet characters.
+  -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
 "
 	local ienc="raw" oenc="base10" iextropts=""
 	for ((;$#;)) ; do
@@ -603,17 +604,17 @@ Options:
 			-g|--ignore-garbage)
 				iextraopts+="--ignore-garbage " ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$name" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
 
 	if ! [[ "$1" =~ ^[1-9][0-9]* ]] ; then
-			printf "$usage\n" >&2
-			return 2
+		printf "$usage\n" >&2
+		return 2
 	fi
 	size="$1"
 	shift
@@ -625,7 +626,7 @@ Options:
 		base64|base64url|base32|base32hex|base16|base2msbf|base2lsbf)
 			decoder="basenc --decode --$ienc $iextraopts" ;;
 		*)
-			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$FUNCNAME" >&2 ; return 2 ;;
+			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$name" "$ienc" "$name" >&2 ; return 2 ;;
 	esac
 
 	while read offset hex char; do
@@ -651,7 +652,7 @@ Options:
 		base64|base64url|base32|base32hex|base2msbf|base2lsbf)
 			echo "$hex" | xxd -r -p | basenc --$oenc ;;
 		*)
-			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$FUNCNAME" >&2 ; return 2 ;;
+			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$name" "$ienc" "$name" >&2 ; return 2 ;;
 	esac
 }
 
@@ -677,7 +678,41 @@ bl_pgpid_gen_uid() {
 #
 #   Which make 4294901756 slots, ~= about half of the actual human population (~8 billions).
 
-echo
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [UDID4]"
+	local helpmsg="
+Generate a 64bit Unix User ID.
+If UDID4 is not given, it will ask for surname, names and date of birth.
+You may pass a foopgp UDID4 as an argument, as Unix uid is calculated from it.
+"
+	local u4 u4h num
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$name" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	if [[ "$1" ]] ; then
+		# If an UDID4 is passed as arguments
+		u4="$1"
+	else
+		u4="$(bl_pgpid_gen_u4 --birth-country FRA)=="
+	fi
+
+	if [[ "$u4" =~ ${BL_PGPID_U4H_REGEX} ]] ; then
+		u4h="${BASH_REMATCH[0]}"
+	else
+		printf "%s: Error: No udid4 (hash) found in '%s'...\n" "$name" "${u4: 0:44}" >&2
+		return 2
+	fi
+
+	num=$(bl_pgpid_2num --input-encoding base64 4294901756 <<<"$u4h==") && echo $((num+65536))
 }
 
 ### General Help Messages (and set -e if program) ###
