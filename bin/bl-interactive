@@ -80,6 +80,8 @@ BL_INTERACTIVE_VERSION=$(git describe --dirty --broken --always --match "v[0-9]*
 BL_INTERACTIVE_VERSION=$(sed 's/-\([1-9][0-9]*\)-\(g[0-9a-f]\+\)\(-dirty\|-broken\|\)$/+\1.\2\3/; s/-\(dirty\|broken\)$/+\1/' <<< "$BL_INTERACTIVE_VERSION")
 readonly BL_INTERACTIVE_VERSION BL_INTERACTIVE_FUNCTIONS BL_INTERACTIVE_NAME
 
+declare -r BL_INTERACTIVE_EMAIL_REGEX="[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+"
+
 ### Default option values ###
 
 : "${BL_INTERACTIVE_FRONTEND:=NONE}"
@@ -243,7 +245,7 @@ Options:
 			read -rp "  $question"$' \e[1m?\e[0m ' rep
 		fi
 		rep=${rep:-$def}
-		if $emailaddr && ! [[ "$rep" =~ ^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$ ]] ; then
+		if $emailaddr && ! [[ "$rep" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then
 			pr="> Please enter a valid email address. <"
 			continue
 		fi
