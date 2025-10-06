@@ -67,6 +67,7 @@ declare -r BL_PGPID_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SO
 declare -r BL_PGPID_CO_REGEX="e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9]{2}\.[0-9]{2}"
 declare -r BL_PGPID_U4H_REGEX="[a-zA-Z0-9_-]{22}"
 declare -r BL_PGPID_U4_REGEX="${BL_PGPID_U4H_REGEX}${BL_PGPID_CO_REGEX}"
+declare -r BL_PGPID_N2_REGEX="(18|19|20)[0-9]{2}(0[1-9]|1[0,1,2])(0[1-9]|[12][0-9]|3[01])${BL_PGPID_CO_REGEX}"
 
 declare -r BL_PGPID_XUID_MIN=$((1<<18))
 declare -r BL_PGPID_XUID_MAX=$(((1<<32)-4))
@@ -746,7 +747,7 @@ Options:
   -n, --name PSEUDONYM             Common name or pseudonym (default: first part of email)
   -c, --comment UDID4              Comment field, expect an udid4, regex: ${BL_PGPID_U4_REGEX}
   -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key (default: ${passphrase})
-  -e, --expiration YEARS           Number of years befor of certificate expiration (default: 11 -> $(date -I -d "+11 years"))
+  -e, --expiration YEARS           Number of years before certificate expiration (default: 11 -> $(date -I -d "+11 years"))
   -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: hkp://keys.foopgp.org)
   -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
 "
@@ -788,7 +789,16 @@ Options:
 #TODO (also): check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.2.27 libgcrypt 1.8.8)
 
 	[[ "$pseudo" ]] || pseudo=${email%%@*}
-	[[ "$comment" ]] || comment="generated with $name"
+
+	if [[ "$comment" =~ ${BL_PGPID_U4_REGEX} ]] ; then
+		comment="u4=${BASH_REMATCH[0]}"
+	elif [[ "$comment" =~ ${BL_PGPID_N2_REGEX} ]] ; then
+		comment="n2=${BASH_REMATCH[0]}"
+	elif [[ -z "$comment" ]] ; then
+		comment="generated with $name"
+	else
+		printf "%s: Notice: unexpected comment: %s\n" "$name" "$comment" >&2
+	fi
 
 	local genkey_batch="
 %echo Generating OpenPGP key for ${email}
