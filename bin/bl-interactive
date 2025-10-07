@@ -133,7 +133,7 @@ _bl_interactive_frontend() (
 		shift
 	done
 
-	set -x
+	#set -x
 	# because whiptail don't scroll to the end when its text is very big. Duplicate the main text at its begining.
 	# Note: we could use LINES and COLUMNS instead of an arbitrary strlen value, but there are not enough reliable.
 	((${#rtext}<512)) || rtext="  $mtext"$'\n\n'"$rtext"
@@ -144,7 +144,7 @@ _bl_interactive_frontend() (
 		$BL_INTERACTIVE_FRONTEND "$@" "$rtext"$'\n\n'"  $mtext" 0 $((COLUMNS/2)) {fd}>&1 1>&2 2>&"${fd}"
 		exit $?
 	fi
-	set +x
+	#set +x
 )
 
 _bl_interactive_indexof() {
@@ -212,16 +212,18 @@ bl_input() {
 Helper to ask for a string
 
 Options:
-  -e, --email              Expect an email address
   -d, --default STRING     Default initialized string
   -t, --text TEXT          Text to display related to the question
+  -e, --email              Expect an email address
+  -P, --password           Hide input chars with '*'
 "
-	local def pr emailaddr=false
+	local def pr emailaddr=false boxt="inputbox"
 	for ((;$#;)) ; do
 		case "$1" in
 			-e|--email) emailaddr=true ;;
 			-d|--default) shift ; def="$1" ;;
-			-p|--preamble|-t|--text) shift ; pr="$1" ;;
+			-P|--pass*) boxt="passwordbox" ;;
+			--preamble|-t|--text) shift ; pr="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "${FUNCNAME[0]} $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -239,10 +241,21 @@ Options:
 	fi
 	while true ; do
 		if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
-			rep=$(set -e; _bl_interactive_frontend --rtext "$pr" --mtext "$question ?" --last "$def" -- --nocancel --inputbox)
+			rep=$(set -e; _bl_interactive_frontend --rtext "$pr" --mtext "$question ?" --last "$def" -- --nocancel --${boxt})
 		else
 			echo "$pr" >&2
-			read -rp "  $question"$' \e[1m?\e[0m ' rep
+			if [[ "${boxt}" == passwordbox ]] ; then
+				local prompt char
+				prompt="  $question"$' \e[1m?\e[0m '
+				while IFS= read -p "$prompt" -r -s -n 1 char ; do
+					[[ $char != $'\0' ]] || break
+					prompt='*'
+					rep+="$char"
+				done
+				echo >&2
+			else
+				read -rp "  $question"$' \e[1m?\e[0m ' rep
+			fi
 		fi
 		rep=${rep:-$def}
 		if $emailaddr && ! [[ "$rep" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then
