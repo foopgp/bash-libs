@@ -1,0 +1,217 @@
+#!/bin/bash
+#
+# Bash library and executable to configure djibian.
+#
+# Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-only
+#
+# shellcheck disable=SC2013 # To read lines rather than words
+# shellcheck disable=SC2034 # variable appears unused
+# shellcheck disable=SC2046 # Quote this to prevent word splitting
+# shellcheck disable=SC2086 # Double quote warning
+# shellcheck disable=SC2128 # expanding array without index warning
+
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_tmp_a="$("$BASH_SOURCE" --help | sed -n 's,^   \([a-z2_-]\+\>\).*,\1,p' )"
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_djibian_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version)
+				# should exit without executing any actions, so do not complete anything
+				return 0 ;;
+		esac
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		# complete actions if none in ${COMP_WORDS[@]}
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		return 0
+	}'
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_djibian_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	return 0
+fi
+
+# If sourcing while _bl_djibian_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_djibian_parseoptions)" == function ]] ; then
+	_bl_djibian_parseoptions "$@"
+	return $?
+fi
+
+### Constants ###
+
+BL_DJIBIAN_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+declare -r BL_DJIBIAN_NAME
+declare -r BL_DJIBIAN_VERSION="0.0.4"
+declare -r BL_DJIBIAN_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+
+declare -r BL_DJIBIAN_EXTRA_GROUPS="cdrom floppy audio dip video plugdev netdev scanner bluetooth lpadmin"
+declare -r BL_DJIBIAN_SUDO_GROUP="sudo"
+
+### Default option values ###
+
+BL_DJIBIAN_KEYSERVERLIST=(
+	"hkps://keys.foopgp.org/"
+)
+
+### external functions ###
+
+# shellcheck source=bl-pgpid
+. "$(dirname "$BASH_SOURCE")"/bl-pgpid --
+
+### internal functions ###
+
+_bl_djibian_parseoptions() {
+	local npp=$#
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s%s" "$BL_DJIBIAN_usage" "$BL_DJIBIAN_chelpmsg" "$BL_DJIBIAN_shelpmsg" ; return 1 ;;
+			-V|--version) printf "%s %s\n" "$BL_DJIBIAN_NAME" "$BL_DJIBIAN_VERSION" ; return 1 ;;
+			--) shift ; break ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_DJIBIAN_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	BL_DJIBIAN_NOPTIONS=$((npp-$#))
+}
+
+### public functions / program actions ###
+
+bl_djibian_adduser()
+{
+	local name
+	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] [user]"
+	local helpmsg="
+Add user to this djibian system. Need root permissions (sudo). Missing input will be asked interactively.
+
+Options:
+  -s, --surname SURNAME            Surname/family name at birth
+  -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
+  -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
+  -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
+			--) shift ; break ;;
+			--*) 
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	return $ret
+}
+
+bl_djibian_addpgpuser()
+{
+	local name
+	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] [UDID4] ..."
+	local helpmsg="
+You may pass a foopgp UDID4 as an argument, as ouput is calculated from it.
+
+Options:
+  -s, --surname SURNAME            Surname/family name at birth
+  -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
+  -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
+  -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	return $ret
+}
+
+
+
+### General Help Messages (and set -e if program) ###
+
+if [[ "$BASH_SOURCE" == "$0" ]] ; then
+	# run as a program
+	declare -r BL_DJIBIAN_isprogram=1
+
+	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_DJIBIAN_shelpmsg="
+  -h, --help               show this help and exit
+  -V, --version            show version and exit
+
+Actions:
+$(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+$BL_DJIBIAN_NAME is also bash library, see:
+$ source $BASH_SOURCE --help
+"
+else
+	# run as a library (source $0)
+
+	BL_DJIBIAN_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+
+	BL_DJIBIAN_shelpmsg="
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+
+Functions:
+$(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"
+fi
+
+BL_DJIBIAN_chelpmsg="
+Manage djis (Ɉ), also known as foopgp tokens.
+Options:
+"
+
+### Init ###
+
+# Parse Options
+_bl_djibian_parseoptions "$@"
+_BL_DJIBIAN_RETVAL=$?
+
+# Do nothing else if sourced
+[[ "$BASH_SOURCE" == "$0" ]] || return $_BL_DJIBIAN_RETVAL
+
+[[ "$_BL_DJIBIAN_RETVAL" != "1"  ]] || exit 0
+[[ "$_BL_DJIBIAN_RETVAL" < 2 ]] || exit $_BL_DJIBIAN_RETVAL
+
+### Run ###
+set -e
+shift $BL_DJIBIAN_NOPTIONS
+if function=$(grep -o "\<bl_djibian_$1\>" <<< "${BL_DJIBIAN_FUNCTIONS[@]}") ; then
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_DJIBIAN_NAME" "$1" "$BASH_SOURCE" >&2
+	exit 2
+fi
+
