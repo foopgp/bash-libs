@@ -465,7 +465,7 @@ fi
 BL_INTERACTIVE_chelpmsg="
 Help managing interactive choices, while supporting multiple frontends: NONE, whiptail or dialog.
 Options:
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (default: $BL_INTERACTIVE_FRONTEND)
+  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND, default: $BL_INTERACTIVE_FRONTEND)
   -h, --help               show this help and exit/return
   -V, --version            show version and exit/return"
 

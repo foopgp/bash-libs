@@ -64,8 +64,7 @@ declare -r BL_DJIBIAN_NAME
 declare -r BL_DJIBIAN_VERSION="0.0.4"
 declare -r BL_DJIBIAN_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
-declare -r BL_DJIBIAN_EXTRA_GROUPS="cdrom floppy audio dip video plugdev netdev scanner bluetooth lpadmin"
-declare -r BL_DJIBIAN_SUDO_GROUP="sudo"
+declare -r BL_DJIBIAN_EXTRA_GROUPS="cdrom,floppy,audio,dip,video,plugdev,netdev,scanner,bluetooth,lpadmin"
 
 ### Default option values ###
 
@@ -100,7 +99,7 @@ _bl_djibian_parseoptions() {
 bl_djibian_adduser()
 {
 	local name
-	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [user]"
 	local helpmsg="
 Add user to this djibian system. Need root permissions (sudo). Missing input will be asked interactively.
@@ -110,25 +109,117 @@ Options:
   -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
   -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
   -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
+  -e, --email EMAIL                User email (optionnal)
+  -t, --phone NUMBER               User phone number (optionnal)
+  -p, --password PASSWORD          User password (for current djibian Operating System)
+  -v, --verify                     Ask for verification
+  -a, --admin                      Enable admin rights (root power through sudo group)
 "
+	local username sname gname bdate bcountry email phone passwd verify="" extragroups
+	extragroups=$BL_DJIBIAN_EXTRA_GROUPS
 	for ((;$#;)) ; do
 		case "$1" in
+			-s|--s*)
+				shift ; sname=$1 ;;
+			-g|--g*)
+				shift ; gname=$1 ;;
+			-d|--birth-d*)
+				shift ; bdate=$1 ;;
+			-c|--birth-c*)
+				shift ; bcountry=$1 ;;
+			-e|--email)
+				shift ; email=$1 ;;
+			-t|--phone)
+				shift ; phone=${1//[^0-9() .+-]/} ;;
+			-p|--passw*)
+				shift ; passwd=$1 ;;
+			-v|--verify) verify=1 ;;
+			-a|--admin) extragroups+=",sudo" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
 			--) shift ; break ;;
-			--*) 
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
-	return $ret
+
+	if [[ "$(id --user)" != 0 ]] ; then
+		printf "%s: Error: Need root power (sudo).\n" "$FUNCNAME" >&2
+		return 2
+	fi
+
+
+	if [[ "$1" ]] ; then
+		username="$1"
+		if ! ( LANG=C ; [[ "$username" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]] ) ; then
+			username="$(LANG= ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
+			printf "%s: Notice:
+As defined by IEEE Std 1003.1-2001, the username should consist only of
+letters, digits, underscores, periods, at signs and dashes, then it has
+been changed to %s\n" "$FUNCNAME" "$username" >&2
+		fi
+	fi
+
+	[[ "$sname" ]] || sname=$(bl_input "User surname (family name) at birth")
+	[[ "$gname" ]] || gname=$(bl_input "User forenames (given names) at birth")
+	[[ "$bdate" ]] || bdate=$(bl_input "User birth date (YYYY-MM-DD)")
+	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "User birth country (3 letter code)")
+	[[ "$username" ]] || username="$(LANG= sed ' s,\b\([a-z]\)[^ ,;-]*,\1,g  ;  s,[^a-z],,g ' <<<"${gname,,}" )$(LANG= sed ' s,[^a-z],, ' <<<"${sname,,}" )"
+	if [[ -z "$passwd" ]] ; then
+		local passwd2 preamble
+		preamble=$(printf "Enter %s's password (for this system)" "$username")
+		passwd2=$(bl_input --password --text "$preamble" "Password")
+		preamble=$(printf "Retype %s's password" "$username")
+		while true ; do
+			passwd=$(bl_input --password --text "$preamble" "Password")
+			[[ "$passwd2" != $passwd ]] || break
+			preamble="Passwords do not match. Please retype"
+			passwd2=$passwd
+		done
+	fi
+
+	while [[ "$verify" ]] ; do
+		! bl_yesno --default=no --text \
+	"
+	Surname at birth:     ${sname}
+	Given names at birth: ${gname}
+	Date of birth:        ${bdate}
+	Country of birth:     ${bcountry}
+	Email:                ${email}
+	Phone number:         ${phone}
+	User name:            ${username}
+	User Password:        ${passwd//?/*}
+	" \
+			"Is that correct" || break
+
+		sname=$(bl_input --default "${sname^^}" "Birth surname (family name)")
+		gname=$(bl_input --default "${gname}" "Birth names (given names)")
+		bdate=$(bl_input --default "${bdate}" "Birth date (YYYY-MM-DD)")
+		bcountry=$(bl_input --default "${bcountry}" "Birth country (3 letter code)")
+		email=$(bl_input --email --default "${email}" "Email")
+		phone=$(bl_input --default "${phone}" "Phone number")
+		phone=${phone//[^0-9() .+-]/}
+		username=$(bl_input --default "${username}" "User name (only letters [a-zA-Z], digits [0-9], and [_-])")
+		username="$(LANG=C ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
+		passwd=$(bl_input --password --default "${passwd}" --text "User password (for this system)" "Password")
+	done
+	local udid4=$(bl_pgpid_gen_u4 --surname "$sname" --given-names "$gname" --birth-date "$bdate" --birth-country "$bcountry") || return $?
+	local uid=$(bl_pgpid_gen_uid "$udid4") || return $?
+	
+	adduser --disabled-password --comment "${gname//,/} ${sname//,/},${bdate//[^0-9]/},,$phone,$email" --home "/home/u4$udid4" "$username" || return $?
+	# groupmod, usermod and passwd are used after "adduser" because these commands are overcomplicated and/or buggy.
+	groupmod --gid "$uid" "$username" || return $?
+	usermod --append --groups "$extragroups" --uid "$uid" --gid "$uid" "$username" || return $?
+	chgrp --no-dereference --recursive "$username" "/home/u4$udid4" || return $? # should be done by usermod, but it doesn't ...
+	echo "$passwd" | passwd --stdin "$username" || return $?
+	printf "%s: Notice: user %s (u4=%s) successfully added to current system.\n" "$FUNCNAME" "$username" "$udid4" >&2 
 }
 
-bl_djibian_addpgpuser()
+_wip_bl_djibian_addpgpuser()
 {
 	local name
-	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [UDID4] ..."
 	local helpmsg="
 You may pass a foopgp UDID4 as an argument, as ouput is calculated from it.
@@ -144,7 +235,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -166,7 +257,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
   -V, --version            show version and exit
 
 Actions:
-$(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:11}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 $BL_DJIBIAN_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
