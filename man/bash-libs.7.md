@@ -31,7 +31,7 @@ See [**bl-dji**](bl-dji.1.md)(1) manual for more details.
 
 ## bl-foopgp
 
-Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
+Calculate how many foopgp token (Ɉ) may be created for each contributions to the foopgp association.
 
 See [**bl-foopgp**](bl-foopgp.1.md)(1) manual for more details.
 
@@ -66,6 +66,9 @@ Wrapper for logger command, which also print pretty logs on stderr.
 
 See [**bl-log**](bl-log.1.md)(1) manual for more details.
 
+## bl-*
+
+Any other file prefixed by "bl-" and not listed in current page, should be considered as experimental or deprecated.
 
 # DEVELOPER NOTES
 

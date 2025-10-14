@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-security - Provide some "security" features. Functions:
+bl-security - Provide some "security" features.
 
 # SYNOPSIS
 
@@ -35,17 +35,13 @@ This executable/library exposes 3 functions: **bl_urandom()**,
 # ACTIONS / FUNCTIONS
 
 **urandom** / **bl_urandom()**
-:  Output a good random number between 0 and 1<<32,
+:  Output a good random number between 0 and 1<<32 (4294967296).
 
 **shred-path** / **bl_shred_path()**
 :  Recursively shred all files in given path(|s)
 
 **gen-passphrase** / **bl_gen_passphrase()**
 :  Generate a good random passphrase
-
-# SPECIFIC OPTIONS
-
-# ENVIRONMENT VARIABLES
 
 # DIAGNOSTICS
 
