@@ -165,6 +165,7 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 	[[ "$gname" ]] || gname=$(bl_input "User forenames (given names) at birth")
 	[[ "$bdate" ]] || bdate=$(bl_input "User birth date (YYYY-MM-DD)")
 	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "User birth country (3 letter code)")
+	# If username is not given, generate one from given names and surname.
 	[[ "$username" ]] || username="$(LANG= sed ' s,\b\([a-z]\)[^ ,;-]*,\1,g  ;  s,[^a-z],,g ' <<<"${gname,,}" )$(LANG= sed ' s,[^a-z],, ' <<<"${sname,,}" )"
 	if [[ -z "$passwd" ]] ; then
 		local passwd2 preamble
@@ -207,8 +208,8 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 	local udid4=$(bl_pgpid_gen_u4 --surname "$sname" --given-names "$gname" --birth-date "$bdate" --birth-country "$bcountry") || return $?
 	local uid=$(bl_pgpid_gen_uid "$udid4") || return $?
 	
-	adduser --disabled-password --comment "${gname//,/} ${sname//,/},${bdate//[^0-9]/},,$phone,$email" --home "/home/u4$udid4" "$username" || return $?
-	# groupmod, usermod and passwd are used after "adduser" because these commands are overcomplicated and/or buggy.
+	adduser --disabled-password --comment "${username},${bdate//[^0-9]/},,$phone,$email" --home "/home/u4$udid4" "$username" || return $?
+	# groupmod, usermod and passwd are used after "adduser" because these 4 commands are overcomplicated and/or buggy.
 	groupmod --gid "$uid" "$username" || return $?
 	usermod --append --groups "$extragroups" --uid "$uid" --gid "$uid" "$username" || return $?
 	chgrp --no-dereference --recursive "$username" "/home/u4$udid4" || return $? # should be done by usermod, but it doesn't ...
