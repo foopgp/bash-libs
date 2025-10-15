@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-foopgp - manual page for bl-foopgp 0.0.4
+bl-foopgp - manual page for bl-foopgp 0.0.5
 
 # SYNOPSIS
 

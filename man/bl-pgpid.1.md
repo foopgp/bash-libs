@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-pgpid - manual page for bl-pgpid 0.0.4
+bl-pgpid - manual page for bl-pgpid 0.0.5
 
 # SYNOPSIS
 

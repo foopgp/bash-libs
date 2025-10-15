@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-security - manual page for bl-security 0.0.4
+bl-security - manual page for bl-security 0.0.5
 
 # SYNOPSIS
 

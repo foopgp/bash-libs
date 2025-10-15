@@ -61,7 +61,7 @@ fi
 
 BL_DJIBIAN_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_DJIBIAN_NAME
-declare -r BL_DJIBIAN_VERSION="0.0.4"
+declare -r BL_DJIBIAN_VERSION="0.0.5"
 declare -r BL_DJIBIAN_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 declare -r BL_DJIBIAN_EXTRA_GROUPS="cdrom,floppy,audio,dip,video,plugdev,netdev,scanner,bluetooth,lpadmin"

@@ -56,7 +56,7 @@ fi
 
 BL_MD_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_MD_NAME
-declare -r BL_MD_VERSION="0.0.4"
+declare -r BL_MD_VERSION="0.0.5"
 declare -r BL_MD_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 ### Default option values ###
