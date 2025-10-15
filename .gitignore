@@ -4,6 +4,7 @@
 
 man/*.gz
 man/*.[17]
+man/*.draft
 specs/.asciidoctor/
 specs/images/
 specs/*.html

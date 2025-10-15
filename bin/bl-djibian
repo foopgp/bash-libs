@@ -260,6 +260,9 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 Actions:
 $(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:11}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
+
 $BL_DJIBIAN_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
@@ -279,7 +282,8 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_DJIBIAN_chelpmsg="
-Manage djis (Ɉ), also known as foopgp tokens.
+System tools for Djibian GNU/Linux.
+
 Options:
 "
 

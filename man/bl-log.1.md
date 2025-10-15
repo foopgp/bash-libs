@@ -179,7 +179,6 @@ https://tldp.org/LDP/abs/html/exitcodes.html:
 
 **175**  When priority's level == 'debug', and --log-exit seriousness = 'debug'.
 
-
 # EXAMPLES
 
 ```bash
@@ -195,13 +194,11 @@ https://tldp.org/LDP/abs/html/exitcodes.html:
  ./bl-log --no-act syslog.notice "Nice log !"
 ```
 
-
 # SEE ALSO
 
 **logger**(1), [**bash-libs**](../README.md)(7), sys/syslog.h.
 
+# AUTHORS
 
-# AUTHOR
-
-Jean-Jacques Brucker
+foopgp <info@foopgp.org>, Jean-Jacques Brucker <jjbrucker@foopgp.org>.
 

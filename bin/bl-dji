@@ -449,6 +449,9 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 Actions:
 $(for f in "${BL_DJI_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
+
 $BL_DJI_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
@@ -469,6 +472,7 @@ fi
 
 BL_DJI_chelpmsg="
 Manage djis (Ɉ), also known as foopgp tokens.
+
 Options:
 "
 

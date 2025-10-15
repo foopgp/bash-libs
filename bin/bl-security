@@ -100,7 +100,7 @@ bl_urandom() {
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [MODULO]"
 	local helpmsg="
-Output a good random number between 0 and 1<<32,
+Output a good random number between 0 and 1<<32 (4294967296)
 or between 0 and (MODULO - 1) if MODULO is given.
 "
 	local r=$SRANDOM s=$SRANDOM
@@ -246,6 +246,9 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 Actions:
 $(for f in "${BL_SECURITY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
+
 $BL_SECURITY_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"
 else
@@ -264,6 +267,7 @@ fi
 
 BL_SECURITY_chelpmsg="
 Provide some "security" features.
+
 Options:
   -h, --help               show this help and exit/return
   -V, --version            show version and exit/return"

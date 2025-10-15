@@ -855,6 +855,9 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 Actions:
 $(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
+
 $BL_PGPID_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
@@ -875,6 +878,7 @@ fi
 
 BL_PGPID_chelpmsg="
 Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fixed Unix User ID for each of them.
+
 Options:
 "
 

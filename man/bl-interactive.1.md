@@ -13,50 +13,66 @@ footer: bash-libs
 
 # NAME
 
-bl-interactive - Help managing interactive choices, while supporting multiple frontends: NONE, whiptail or dialog.
+bl-interactive - manual page for bl-interactive v0.0.4+9.gb762be1+dirty
 
 # SYNOPSIS
 
-**bl-interactive** [*OPTIONS*]... *ACTION* [*ACTION_ARGUMENTS*]...
+**bl-interactive** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
 
 # DESCRIPTION
 
-This executable/library exposes 2 functions: **bl_yesno()** and
-**bl_radiolist()**.
+Help managing interactive choices, while supporting multiple frontends:
+NONE, whiptail or dialog.
 
-# GENERAL OPTIONS
+# OPTIONS
 
-**-h**, **--help**
-:  print help and exit/return
+**-f**, **\--frontend** PROGRAM
 
-**-V**, **--version**
-:  show version and exit/return
+:   select a frontend program {NONE,whiptail,dialog} (environment var:
+    BL_INTERACTIVE_FRONTEND, default: NONE)
 
-# ACTIONS / FUNCTIONS
+**-h**, **\--help**
 
-**yesno** / **bl_yesno()**
-:  Helper for a yes/no question (binary choice)
+:   show this help and exit/return
 
-**radiolist** / **bl_radiolist()**
-:  Helper for a single choice in a list (like radiobutton)
+**-V**, **\--version**
 
-# SPECIFIC OPTIONS
+:   show version and exit/return
 
-# ENVIRONMENT VARIABLES
+## Actions:
+
+msgstop
+
+:   Display a message and wait for user to press \[Enter\]
+
+input
+
+:   Helper to ask for a string
+
+yesno
+
+:   Helper for a yes/no question (binary choice)
+
+radiolist
+
+:   Helper for a single choice in a list (like radiobutton)
+
+ 
+All actions support a **\--help** options, eg: \$ bl-interactive
+ACTION **\--help**
+
+bl-interactive is also bash library, see: \$ source
+../bin/bl-interactive **\--help**
 
 # DIAGNOSTICS
 
 Returns zero on normal operation, non-zero on errors.
 
-# EXAMPLES
-
-
 # SEE ALSO
 
 [**bash-libs**](../README.md)(7).
 
+# AUTHORS
 
-# AUTHOR
-
-Jean-Jacques Brucker
+foopgp <info@foopgp.org>, Jean-Jacques Brucker <jjbrucker@foopgp.org>.
 

@@ -560,6 +560,9 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 Actions:
 $(for f in "${BL_QIF_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
+
 $BL_QIF_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "

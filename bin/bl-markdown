@@ -98,8 +98,7 @@ bl_md_arraytobash() {
 	((BL_MD_isprogram)) && name="$BL_MD_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [FIELD_NAMES]..."
 	local helpmsg="
-Expect stdin to be a markdwon array (with or whithout header),
-and convert each line of this array to a  \"declare -A ...\" statement to be loaded with eval.
+Expect stdin to be a markdwon array (with or whithout header), and convert each line of this array to a  \"declare -A ...\" statement to be loaded with eval.
 If first line of input isn't an array header, use positional parameter to set (or overwrite) field names.
 Options:
   -d, --declare VARNAME Set name in declare -A VARNAME=(... statement (default: \"entry\")
@@ -266,6 +265,9 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 Actions:
 $(for f in "${BL_MD_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
+
 $BL_MD_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
@@ -286,6 +288,7 @@ fi
 
 BL_MD_chelpmsg="
 Manipulate [markdown](https://en.wikipedia.org/wiki/Markdown). Today, only converts: markdown arrays <> bash arrays.
+
 Options:
   -h, --help               show this help and exit/return
   -V, --version            show version and exit/return
