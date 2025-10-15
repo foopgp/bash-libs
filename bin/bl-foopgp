@@ -62,7 +62,7 @@ fi
 
 BL_FOOPGP_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_FOOPGP_NAME
-declare -r BL_FOOPGP_VERSION="0.0.4"
+declare -r BL_FOOPGP_VERSION="0.0.5"
 declare -r BL_FOOPGP_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 declare -Ar BL_FOOPGP_STINGYNALTYS=(
@@ -290,6 +290,9 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 Actions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
+
 $BL_FOOPGP_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
@@ -309,6 +312,8 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_FOOPGP_chelpmsg="
+Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
+
 Options:
   -h, --help               show this help and exit/return
   -V, --version            show version and exit/return

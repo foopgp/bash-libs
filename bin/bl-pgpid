@@ -61,12 +61,14 @@ fi
 
 BL_PGPID_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_PGPID_NAME
-declare -r BL_PGPID_VERSION="0.0.4"
+declare -r BL_PGPID_VERSION="0.0.5"
 declare -r BL_PGPID_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 declare -r BL_PGPID_CO_REGEX="e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9]{2}\.[0-9]{2}"
-declare -r BL_PGPID_U4H_REGEX="[a-zA-Z0-9_-]{22}"
+# Best way to NOT manage LC_COLLATE(="C.UTF-8") - cf. https://unix.stackexchange.com/questions/645054/how-do-bash-and-zsh-handle-collation-in-patterns-and-regexes
+declare -r BL_PGPID_U4H_REGEX="[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0-9_-]{22}"
 declare -r BL_PGPID_U4_REGEX="${BL_PGPID_U4H_REGEX}${BL_PGPID_CO_REGEX}"
+declare -r BL_PGPID_N2_REGEX="(18|19|20)[0-9]{2}(0[1-9]|1[0,1,2])(0[1-9]|[12][0-9]|3[01])${BL_PGPID_CO_REGEX}"
 
 declare -r BL_PGPID_XUID_MIN=$((1<<18))
 declare -r BL_PGPID_XUID_MAX=$(((1<<32)-4))
@@ -435,7 +437,7 @@ Convert the Machine Readable Zone of an icao9303 passport to an udid4 (aka 'u4')
 
 Option:
   -u, --uncheck                Dont verify checksums
-  -d, --birth-date BIRTH_DATE  Birth date, expected format : YYYY-MM-DD (for people born 100+ years ago)
+  -d, --birth-date YYYY-MM-DD  Birth date, expected format : Year-Month-Day (for people born 100+ years ago)
 
 WARNING: mrz data may be irrelevant to generate udid4. eg:
          * Surname or given names may be incomplete (cut bc exceed mrz size)
@@ -453,7 +455,7 @@ People have to check, and fix when NOK.
 			-d|--birth-d*) shift ; gdate=$(sed ' s,[^0-9],,g ' <<<"$1") ;; # keep only [0-9] from given input
 			-u|--uncheck) uncheck="--uncheck" ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) echo -e "$name: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
 			*) break ;;
@@ -465,29 +467,29 @@ People have to check, and fix when NOK.
 	local allnames bdate countrycode coordinates
 
 	if ! _bl_icao9303_mrz_analyse $uncheck mrza "$@" ; then
-		printf "%s: Error: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$name" >&2
+		printf "%s: Error: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" >&2
 			return 1
 	fi
 
-	if ! allnames=$(grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${mrza[all_names]}" ) ; then
-		printf "%s: Error: no complete surname and given names extracted from '%s'\n" "$name" "${mrza[all_names]}" >&2
+	if ! allnames=$(LC_COLLATE="C.UTF-8" grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${mrza[all_names]}" ) ; then
+		printf "%s: Error: no valid and complete surname and given names extracted from '%s'\n" "$FUNCNAME" "${mrza[all_names]}" >&2
 		return 1
 	fi
 
 	countrycode="${mrza[country]}"
 	coordinates="${BL_PGPID_COORDINATES[$countrycode]: 0:14}"
 	if ! [[ "$coordinates" =~ ^${BL_PGPID_CO_REGEX}$ ]] ; then
-		printf "%s: Error: Invalid coordinates (%s) for country '%s'\n" "$name" "$coordinates" "$countrycode" >&2
+		printf "%s: Error: Invalid coordinates (%s) for country '%s'\n" "$FUNCNAME" "$coordinates" "$countrycode" >&2
 		return 1
 	fi
 
 	if [[ "$gdate" ]] ; then
-		((${#gdate}==8)) || printf "%s: Notice: Invalid lenght for birth date '%s'\n" "$name" "$gdate" >&2
+		((${#gdate}==8)) || printf "%s: Notice: Invalid lenght for birth date '%s'\n" "$FUNCNAME" "$gdate" >&2
 	else
 		gdate="${mrza[date_of_birth]}"
 	fi
 	if ! bdate=$(date --date "${gdate}" +"%Y-%m-%d" ) ; then
-		printf "%s: Error: Can't reformart birthdate '%s'\n" "$name" "$gdate" >&2
+		printf "%s: Error: Can't reformart birthdate '%s'\n" "$FUNCNAME" "$gdate" >&2
 		return 1
 	fi
 
@@ -501,14 +503,15 @@ bl_pgpid_gen_u4() {
 	local helpmsg="
 Generate udid4. Missing input is asked interactively.
 You may pass the Machine Readable Zone of an international passport as argument, but there are ~20% chances that generated udid4 is incorrect.
+
 Options:
   -s, --surname SURNAME            Surname/family name at birth
   -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
-  -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
+  -d, --birth-date YYYY-MM-DD      Birth date, expected format : Year-Month-Day.
   -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
   -v, --verify                     Ask for verification
 "
-	local sname gname bdate bcountry verify=""
+	local sname gname translit bdate bcountry verify=""
 	for ((;$#;)) ; do
 		case "$1" in
 			-s|--s*)
@@ -521,9 +524,9 @@ Options:
 				shift ; bcountry=$1 ;;
 			-v|--verify) verify=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$name" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -533,7 +536,7 @@ Options:
 	if [[ "$1" ]] ; then
 		local -A mrza=()
 		if ! _bl_icao9303_mrz_analyse mrza "$@" ; then
-			printf "%s: Warning: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$name" >&2
+			printf "%s: Warning: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" >&2
 		else
 			[[ "$sname" ]] || sname=$(tr '<' ' ' <<<"${mrza[all_names]%%<<*}")
 			[[ "$gname" ]] || gname=$(sed ' s,<*$,,g ; s,<, , ' <<<"${mrza[all_names]#*<<}")
@@ -543,11 +546,8 @@ Options:
 	fi
 
 	[[ "$sname" ]] || sname=$(bl_input "Birth surname (family name)")
-
-	[[ "$gname" ]] || gname=$(bl_input --default "${gname}" "Birth names (given names)")
-
-	[[ "$bdate" ]] || bdate=$(bl_input --default "${bdate}" "Birth date (YYYY-MM-DD)")
-
+	[[ "$gname" ]] || gname=$(bl_input "Birth names (given names)")
+	[[ "$bdate" ]] || bdate=$(bl_input "Birth date (YYYY-MM-DD)")
 	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "Birth country (3 letter code)")
 
 	while [[ "$verify" ]] ; do
@@ -567,12 +567,23 @@ Options:
 	done
 
 	sname=$(sed 's,[ ;,<-]\+,<,g'<<<"$sname" ) # replace and squeeze some word separators
+	translit=$(iconv -f utf-8 -t ascii//TRANSLIT <<<"$sname") # transliterate (according to iconv), may differ from Passport transliterations.
+	if [[ "$translit" != "$sname" ]] ; then
+		printf "%s: Warning: '%s' has been transliterated to '%s'. It may be WRONG !\n" "$FUNCNAME" "$sname" "$translit" >&2
+		sname="$translit"
+	fi
 	sname="${sname^^}" # uppercase
+
 	gname=$(sed 's,[ ;,<-]\+,<,g'<<<"$gname" )
+	translit=$(iconv -f utf-8 -t ascii//TRANSLIT <<<"$gname")
+	if [[ "$translit" != "$gname" ]] ; then
+		printf "%s: Warning: '%s' has been transliterated to '%s'. It may be WRONG !\n" "$FUNCNAME" "$gname" "$translit" >&2
+		gname="$translit"
+	fi
 	gname="${gname^^}"
 
-	if ! fakemrz="P<${bcountry}$(grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${sname}<<$gname<<" )" ; then
-		printf "%s: Error: only [A-Z] characters allowed in names.\n" "$name" >&2
+	if ! fakemrz="P<${bcountry}$(LC_COLLATE="C.UTF-8" grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${sname}<<$gname<<" )" ; then
+		printf "%s: Error: only [A-Z] characters allowed in names.\n" "$FUNCNAME" >&2
 		return 1
 	fi
 	fakemrz+="<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -607,9 +618,9 @@ Options:
 			-g|--ignore-garbage)
 				iextraopts+="--ignore-garbage " ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$name" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -629,7 +640,7 @@ Options:
 		base64|base64url|base32|base32hex|base16|base2msbf|base2lsbf)
 			decoder="basenc --decode --$ienc $iextraopts" ;;
 		*)
-			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$name" "$ienc" "$name" >&2 ; return 2 ;;
+			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
 	esac
 
 	while read offset hex char; do
@@ -655,7 +666,7 @@ Options:
 		base64|base64url|base32|base32hex|base2msbf|base2lsbf)
 			echo "$hex" | xxd -r -p | basenc --$oenc ;;
 		*)
-			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$name" "$ienc" "$name" >&2 ; return 2 ;;
+			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
 	esac
 }
 
@@ -679,6 +690,8 @@ bl_pgpid_gen_uid() {
 #   If we let 4294967294, 4294967293 and id under 2^18 (< 262144), for some futur usage/convention,
 #   then we can use range 262144 to 4294967292, to get an almost unique Unix User ID from unique foopgp User ID (udid4,...)
 #
+#   Confer https://www.debian.org/doc/debian-policy/ch-opersys.html#users-and-groups
+#
 #   Which make 4294705148 slots, ~= about half of the actual human population (~8 billions).
 #   Constants: BL_PGPID_XUID_MIN and BL_PGPID_XUID_MAX
 
@@ -698,9 +711,9 @@ Options:
 		case "$1" in
 			-f|--free-input) freeinput=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$name" "$BL_PGPID_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$name" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -720,12 +733,113 @@ Options:
 	elif [[ "$str_in" =~ ${BL_PGPID_U4H_REGEX} ]] ; then
 		u4h="${BASH_REMATCH[0]}=="
 	else
-		printf "%s: Error: No udid4 (hash) found in '%s'...\n" "$name" "${str_in: 0:44}" >&2
+		printf "%s: Error: No udid4 (hash) found in '%s'...\n" "$FUNCNAME" "${str_in: 0:44}" >&2
 		return 2
 	fi
 
 	num=$(bl_pgpid_2num --input-encoding base64url $((BL_PGPID_XUID_MAX - BL_PGPID_XUID_MIN)) <<<"$u4h") && echo $((num + BL_PGPID_XUID_MIN))
 }
+
+bl_pgpid_gen_key() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... EMAIL"
+	local passphrase=$(date -I)
+	local helpmsg="
+Generate an OpenPGP key pair (public and secret) according to foopgp standards.
+Output 3 lines for each fingerprints :
+* main key (Sign Certify)
+* decryption key (Encrypt)
+* authentication key (Auth)
+
+Options:
+  -n, --name PSEUDONYM             Common name or pseudonym (default: first part of email)
+  -c, --comment UDID4              Comment field, expect an udid4, regex: ${BL_PGPID_U4_REGEX}
+  -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key (default: ${passphrase})
+  -e, --expiration YEARS           Number of years before certificate expiration (default: 11 -> $(date -I -d "+11 years"))
+  -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: hkp://keys.foopgp.org)
+  -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+"
+	local email pseudo comment keyserv="hkp://keys.foopgp.org" gpghome
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local expire=11 verify=""
+	for ((;$#;)) ; do
+		case "$1" in
+			-n|--name*)
+				shift ; pseudo=$1 ;;
+			-c|--comment)
+				shift ; comment=$1 ;;
+			-p|--passphrase)
+				shift ; passphrase=$1 ;;
+			-e|--expir*)
+				shift ; expire=$1 ;;
+			-k|--keyserver)
+				shift ; keyserv=$1 ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-v|--verify) verify=1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	if ! [[ "$1" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then
+		printf "$usage\n" >&2
+		return 2
+	fi
+	email="$1"
+	shift
+
+#TODO: implement --verify to check input and ask when incoherent or missing.
+#TODO (also): check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.2.27 libgcrypt 1.8.8)
+
+	[[ "$pseudo" ]] || pseudo=${email%%@*}
+
+	if [[ "$comment" =~ ${BL_PGPID_U4_REGEX} ]] ; then
+		comment="u4=${BASH_REMATCH[0]}"
+	elif [[ "$comment" =~ ${BL_PGPID_N2_REGEX} ]] ; then
+		comment="n2=${BASH_REMATCH[0]}"
+	elif [[ -z "$comment" ]] ; then
+		comment="generated with $name"
+	else
+		printf "%s: Notice: unexpected comment: %s\n" "$FUNCNAME" "$comment" >&2
+	fi
+
+	local genkey_batch="
+%echo Generating OpenPGP key for ${email}
+Key-Type: eddsa
+Key-Curve: Ed25519
+Key-Usage: cert sign
+Subkey-Type: ecdh
+Subkey-Curve: Curve25519
+Subkey-Usage: encrypt
+Name-Real: ${pseudo}
+Name-Comment: ${comment}
+Name-Email: ${email}
+Expire-Date: $(date -I -d "+$expire years")
+Passphrase: ${passphrase}
+Keyserver: ${keyserv}
+# Do a commit here, so that we can later print 'done' :-)
+%commit
+"
+
+	gpg --homedir "$gpghome" --batch --generate-key --allow-freeform-uid <<<"$genkey_batch" || return $?
+
+	# get first 2 fprs
+	local fprs
+	fprs=($(gpg --homedir "$gpghome" --list-secret-keys --with-colons "$email" | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p')) || return $?
+
+	# Generate and add auth key...
+	gpg --homedir "$gpghome" --batch --passphrase "${passphrase}" --pinentry-mode loopback --quick-add-key ${fprs[0]} ed25519 auth ${expire}y || return $?
+
+	# output all (3) fingerprints, first fingerprint should be the one of the main key
+	gpg --homedir "$gpghome" --list-secret-keys --with-colons "$email" | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'
+}
+
 
 ### General Help Messages (and set -e if program) ###
 
@@ -740,6 +854,9 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 
 Actions:
 $(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
 
 $BL_PGPID_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
@@ -760,6 +877,8 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_PGPID_chelpmsg="
+Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fixed Unix User ID for each of them.
+
 Options:
 "
 

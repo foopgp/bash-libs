@@ -13,53 +13,56 @@ footer: bash-libs
 
 # NAME
 
-bl-security - Provide some "security" features. Functions:
+bl-security - manual page for bl-security 0.0.5
 
 # SYNOPSIS
 
-**bl-security** [*OPTIONS*]... *ACTION* [*ACTION_ARGUMENTS*]...
+**bl-security** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
 
 # DESCRIPTION
 
-This executable/library exposes 3 functions: **bl_urandom()**,
-**bl_shred_path()**, and **bl_gen_passphrase()**.
+Provide some security features.
 
-# GENERAL OPTIONS
+# OPTIONS
 
-**-h**, **--help**
-:  print help and exit/return
+**-h**, **\--help**
 
-**-V**, **--version**
-:  show version and exit/return
+:   show this help and exit/return
 
-# ACTIONS / FUNCTIONS
+**-V**, **\--version**
 
-**urandom** / **bl_urandom()**
-:  Output a good random number between 0 and 1<<32,
+:   show version and exit/return
 
-**shred-path** / **bl_shred_path()**
-:  Recursively shred all files in given path(|s)
+## Actions:
 
-**gen-passphrase** / **bl_gen_passphrase()**
-:  Generate a good random passphrase
+urandom
 
-# SPECIFIC OPTIONS
+:   Output a good random number between 0 and 1\<\<32 (4294967296)
 
-# ENVIRONMENT VARIABLES
+shred_path
+
+:   Recursively shred all files in given path(\|s).
+
+gen_passphrase
+
+:   Generate a good random passphrase
+
+ 
+All actions support a **\--help** options, eg: \$ bl-security
+ACTION **\--help**
+
+bl-security is also bash library, see: \$ source bl-security
+**\--help**
 
 # DIAGNOSTICS
 
 Returns zero on normal operation, non-zero on errors.
 
-# EXAMPLES
-
-
 # SEE ALSO
 
-**shred**(1), **aspell**(1), [**bl-interactive**](bl-interactive.md)(1), [**bash-libs**](../README.md)(7).
+[**bash-libs**](../README.md)(7).
 
+# AUTHORS
 
-# AUTHOR
-
-Jean-Jacques Brucker
+foopgp <info@foopgp.org>, Jean-Jacques Brucker <jjbrucker@foopgp.org>.
 

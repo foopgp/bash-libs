@@ -32,7 +32,125 @@ passed as arguments).
 
 # OPTIONS
 
+**-l**, **\--log-level** LEVEL
+
+:   log level:
+    emerg\<1=alert\<crit\<3=err\<warning\<5=notice\<info\<7=debug
+    (env var: BL_LOGLEVEL)
+
+**-L**, **\--log-exit** LEVELNAME exit level:
+emerg\|alert\|crit\|err\|warning\|\... (env var: BL_LOGEXITLNAME)
+
+**-q**, **\--quiet**
+
+:   do not output message to standard error
+
+**-Q**, **\--no-act**
+
+:   do not send message to the logs system (syslog)
+
+**\--color\[=**\<on\|off\|auto\>\]
+
+:   colorize messages sent to standard error (default: auto)
+
+**-h**, **\--help**
+
+:   show this help and exit/return
+
+**-V**, **\--version**
+
+:   show version and exit/return
+
+## Options forwarded to \'logger\':
+
+**-i**
+
+:   log the logger command\'s PID
+
+**\--id\[=**\<id\>\]
+
+:   log the given \<id\>, or otherwise the PID (default \$\$ = logger\'s
+    PPID)
+
+**-f**, **\--file** \<file\>
+
+:   log the contents of this file
+
+**-e**, **\--skip-empty**
+
+:   do not log empty lines when processing files
+
+**\--octet-count**
+
+:   use rfc6587 octet counting
+
+**\--prio-prefix**
+
+:   look for a prefix on every line read from stdin
+
+**-S**, **\--size** \<size\>
+
+:   maximum size for a single message
+
+**-t**, **\--tag** \<tag\>
+
+:   mark every line with this tag (default \${0##\*/})
+
+**-n**, **\--server** \<name\>
+
+:   write to this remote syslog server
+
+**-P**, **\--port** \<port\>
+
+:   use this port for UDP or TCP connection
+
+**-T**, **\--tcp**
+
+:   use TCP only
+
+**-d**, **\--udp**
+
+:   use UDP only
+
+**\--rfc3164**
+
+:   use the obsolete BSD syslog protocol
+
+**\--rfc5424\[=**\<snip\>\]
+
+:   use the syslog protocol (the default for remote); \<snip\> can be
+    notime, or notq, and/or nohost
+
+**\--sd-id** \<id\>
+
+:   rfc5424 structured data ID
+
+**\--sd-param** \<data\>
+
+:   rfc5424 structured data name=value
+
+**\--msgid** \<msgid\>
+
+:   set rfc5424 message id field
+
+**-u**, **\--socket** \<socket\>
+
+:   write to this Unix socket
+
+**\--socket-errors\[=**\<on\|off\|auto\>\]
+
+:   print connection errors when using Unix sockets
+
+**\--journald\[=**\<file\>\]
+
+:   write journald entry
+
+
 # ENVIRONMENT VARIABLES
+
+**BL_LOGLEVEL**     Set the level of message to be logged, see --log-level.
+
+**BL_LOGEXITLNAME** Set, by name, the level of message that will rise an exit (like err.h C standard). See --log-exit.
 
 # RETURN STATUS
 
@@ -61,7 +179,6 @@ https://tldp.org/LDP/abs/html/exitcodes.html:
 
 **175**  When priority's level == 'debug', and --log-exit seriousness = 'debug'.
 
-
 # EXAMPLES
 
 ```bash
@@ -77,13 +194,11 @@ https://tldp.org/LDP/abs/html/exitcodes.html:
  ./bl-log --no-act syslog.notice "Nice log !"
 ```
 
-
 # SEE ALSO
 
 **logger**(1), [**bash-libs**](../README.md)(7), sys/syslog.h.
 
+# AUTHORS
 
-# AUTHOR
-
-Jean-Jacques Brucker
+foopgp <info@foopgp.org>, Jean-Jacques Brucker <jjbrucker@foopgp.org>.
 

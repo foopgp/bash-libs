@@ -63,7 +63,7 @@ fi
 
 BL_TEST_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_TEST_NAME
-declare -r BL_TEST_VERSION="0.0.4"
+declare -r BL_TEST_VERSION="0.0.5"
 declare -r BL_TEST_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 
@@ -162,6 +162,9 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	BL_TEST_shelpmsg="
 Actions:
 $(for f in "${BL_TEST_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
 
 $BL_TEST_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"

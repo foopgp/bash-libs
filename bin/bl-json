@@ -62,7 +62,7 @@ fi
 
 BL_JSON_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_JSON_NAME
-declare -r BL_JSON_VERSION="0.0.4"
+declare -r BL_JSON_VERSION="0.0.5"
 declare -r BL_JSON_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 ### Default option values ###
@@ -91,7 +91,7 @@ _bl_json_parseoptions() {
 
 bl_json_from_str() {
 	local name
-	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:8}" || name="$FUNCNAME"
 	local usage="Usage: $name [--] [STRING]..."
 	local helpmsg='
 Escape "\" and [/"\b\f\n\r\t] characters as required by JSON format.
@@ -116,7 +116,7 @@ If there is no STRING in command line, read it from stdin.
 
 bl_json_from_var() {
 	local name
-	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:8}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VARNAME"
 	local helpmsg="
 Output content of VARNAME in a JSON object.
@@ -176,7 +176,7 @@ Reminder: bash arrays are not exportable to sub shells (cf. https://www.mail-arc
 
 bl_json_type() {
 	local name
-	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:8}" || name="$FUNCNAME"
 	local usage="Usage: $name [JSON_TEXT]"
 	local helpmsg="
 Expect JSON type regarding the begining of JSONTEXT.
@@ -226,7 +226,7 @@ If no type can be determined, output nothing and return non-zero value.
 
 bl_json_to_var() {
 	local name
-	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:8}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [JSON_TEXT]"
 	local helpmsg="
 Output string to be put into bash variable or array.
@@ -307,7 +307,10 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	BL_JSON_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_JSON_shelpmsg="
 Actions:
-$(for f in "${BL_JSON_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in "${BL_JSON_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:8}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
 
 $BL_JSON_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"
@@ -326,6 +329,8 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_JSON_chelpmsg="
+Use jq (Command-line JSON processor) to convert json data to bash variables or arrays, and vice-versa.
+
 Options:
   -h, --help               show this help and exit/return
   -V, --version            show version and exit/return"
@@ -341,7 +346,7 @@ _bl_json_parseoptions "$@"
 
 ### Run ###
 shift $BL_JSON_NOPTIONS
-if function=$(grep -o "\<bl_$1\>" <<< "${BL_JSON_FUNCTIONS[@]}") ; then
+if function=$(grep -o "\<bl_json_$1\>" <<< "${BL_JSON_FUNCTIONS[@]}") ; then
 	shift
 	$function "$@"
 	exit $?

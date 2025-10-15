@@ -56,7 +56,7 @@ fi
 
 BL_QIF_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 declare -r BL_QIF_NAME
-declare -r BL_QIF_VERSION="0.0.4"
+declare -r BL_QIF_VERSION="0.0.5"
 declare -r BL_QIF_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 
 ### Default option values ###
@@ -559,6 +559,9 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	BL_QIF_shelpmsg="
 Actions:
 $(for f in "${BL_QIF_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
 
 $BL_QIF_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
