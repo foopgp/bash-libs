@@ -2,6 +2,7 @@ Source: bash-libs
 Section: utils
 Priority: optional
 Maintainer: piseb <piseb@mailo.com>
+Uploaders: Jean-Jacques Brucker <jjbrucker@foopgp.org>
 Build-Depends: debhelper-compat (= 13), pandoc, reuse
 Standards-Version: 4.5.1
 Homepage: https://foopgp.org
@@ -10,7 +11,70 @@ Vcs-Git: https://codeberg.org/foopgp/bash-libs.git
 Vcs-Browser: https://codeberg.org/foopgp/bash-libs
 
 Package: bash-libs
-Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, bsdutils, bash-completion
+Depends: bashlibs-all, ${misc:Depends}
+Architecture: all
+Priority: optional
+Section: oldlibs
+Description: transitional package
+ This is a transitional package. It can safely be removed.
+
+Package: bashlibs-all
+Replaces: bash-libs (<< 0.0.6~)
+Breaks: bash-libs (<< 0.0.6~)
+Architecture: all
+Depends: bashlibs-common, bashlibs-convert, bashlibs-pgpid, bashlibs-dji,
+         ${misc:Depends}, ${shlibs:Depends}
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
-  To find out what they can do for you, please read the bash-libs 7 manpage.
+ This metapackage install all the bash libraries used by foopgp on the Debian blend
+ « Djibian ».
+
+Package: bashlibs-common
+Architecture: all
+Depends: bsdutils, aspell,
+         ${misc:Depends}, ${shlibs:Depends}
+Recommends: bash-completion, whiptail
+Description: bash-libs: set of bash executables which may also be sourced as libraries.
+ This package contains:
+ .
+ bl-log: Wrapper for logger command, which also print pretty logs on stderr.
+ .
+ bl-interactive: Help managing interactive choices, while supporting multiple frontends: NONE, whiptail or dialog.
+ .
+ bl-security: Provide some security features.
+
+Package: bashlibs-convert
+Architecture: all
+Depends: jq,
+         ${misc:Depends}, ${shlibs:Depends}
+Recommends: bash-completion
+Description: bash-libs: set of bash executables which may also be sourced as libraries.
+ This package contains:
+ .
+ bl-markdown: Manipulate [markdown](https://en.wikipedia.org/wiki/Markdown). Today, only converts: markdown arrays <> bash arrays.
+ .
+ bl-json: Use jq (Command-line JSON processor) to convert json data to bash variables or arrays, and vice-versa.
+
+Package: bashlibs-pgpid
+Architecture: all
+Depends: bashlibs-common, gpg, xxd, useradd, passwd,
+         ${misc:Depends}, ${shlibs:Depends}
+Recommends: bash-completion
+Description: bash-libs: set of bash executables which may also be sourced as libraries.
+ This package contains:
+ .
+ bl-pgpid: Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fixed Unix User ID for each of them.
+ .
+ bl-djibian: System tools for the Debian blend « Djibian ».
+
+Package: bashlibs-dji
+Architecture: all
+Depends: bashlibs-common, bc, git,
+         ${misc:Depends}, ${shlibs:Depends}
+Recommends: bash-completion
+Description: bash-libs: set of bash executables which may also be sourced as libraries.
+ This package contains:
+ .
+ bl-foopgp: Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
+ .
+ bl-dji: Manage djis (Ɉ), also known as foopgp tokens.
+
