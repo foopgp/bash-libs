@@ -61,14 +61,13 @@ fi
 ### Constants ###
 
 BL_JSON_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
-declare -r BL_JSON_NAME
-declare -r BL_JSON_VERSION="0.0.5"
-declare -r BL_JSON_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+BL_JSON_VERSION=$(git describe --dirty --broken --always)
+BL_JSON_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_JSON_NAME BL_JSON_VERSION BL_JSON_FUNCTIONS
 
 ### Default option values ###
 
 ### external functions ###
-
 
 ### internal functions ###
 

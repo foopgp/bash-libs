@@ -55,9 +55,9 @@ fi
 ### Constants ###
 
 BL_MD_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
-declare -r BL_MD_NAME
-declare -r BL_MD_VERSION="0.0.5"
-declare -r BL_MD_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+BL_MD_VERSION=$(git describe --dirty --broken --always)
+BL_MD_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_MD_NAME BL_MD_VERSION BL_MD_FUNCTIONS
 
 ### Default option values ###
 

@@ -55,9 +55,9 @@ fi
 ### Constants ###
 
 BL_QIF_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
-declare -r BL_QIF_NAME
-declare -r BL_QIF_VERSION="0.0.5"
-declare -r BL_QIF_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+BL_QIF_VERSION="qif-sucks"
+BL_QIF_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_QIF_NAME BL_QIF_VERSION BL_QIF_FUNCTIONS
 
 ### Default option values ###
 

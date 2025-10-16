@@ -73,11 +73,9 @@ fi
 
 ### Constants ###
 
-BL_INTERACTIVE_FUNCTIONS=$(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "${BASH_SOURCE[0]}")
-mapfile -t BL_INTERACTIVE_FUNCTIONS <<< "$BL_INTERACTIVE_FUNCTIONS"
 BL_INTERACTIVE_NAME="$(basename "$(readlink -f "${BASH_SOURCE[0]}" || true)" )"
-BL_INTERACTIVE_VERSION=$(git describe --dirty --broken --always --match "v[0-9]*.[0-9]*.[0-9]*")
-BL_INTERACTIVE_VERSION=$(sed 's/-\([1-9][0-9]*\)-\(g[0-9a-f]\+\)\(-dirty\|-broken\|\)$/+\1.\2\3/; s/-\(dirty\|broken\)$/+\1/' <<< "$BL_INTERACTIVE_VERSION")
+BL_INTERACTIVE_VERSION=$(git describe --dirty --broken --always)
+BL_INTERACTIVE_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "${BASH_SOURCE[0]}") )
 readonly BL_INTERACTIVE_VERSION BL_INTERACTIVE_FUNCTIONS BL_INTERACTIVE_NAME
 
 declare -r BL_INTERACTIVE_EMAIL_REGEX="[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+"

@@ -62,10 +62,9 @@ fi
 ### Constants ###
 
 BL_TEST_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
-declare -r BL_TEST_NAME
-declare -r BL_TEST_VERSION="0.0.5"
-declare -r BL_TEST_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
-
+BL_TEST_VERSION="very-experimental"
+BL_TEST_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_TEST_NAME BL_TEST_VERSION BL_TEST_FUNCTIONS
 
 ### functions ###
 

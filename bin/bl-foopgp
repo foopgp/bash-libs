@@ -61,9 +61,9 @@ fi
 ### Constants ###
 
 BL_FOOPGP_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
-declare -r BL_FOOPGP_NAME
-declare -r BL_FOOPGP_VERSION="0.0.5"
-declare -r BL_FOOPGP_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+BL_FOOPGP_VERSION=$(git describe --dirty --broken --always)
+BL_FOOPGP_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_FOOPGP_NAME BL_FOOPGP_VERSION BL_FOOPGP_FUNCTIONS
 
 declare -Ar BL_FOOPGP_STINGYNALTYS=(
 [2023-05]=1.00000000000000000000

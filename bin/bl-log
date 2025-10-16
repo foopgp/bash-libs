@@ -76,10 +76,8 @@ fi
 ### Constants ###
 
 BL_LOG_NAME="$(basename "$(readlink -f "${BASH_SOURCE[0]}" || true)" )"
-declare -r BL_LOG_NAME
-BL_LOG_VERSION=$(git describe --dirty --broken --always --match "v[0-9]*.[0-9]*.[0-9]*")
-BL_LOG_VERSION=$(sed 's/-\([1-9][0-9]*\)-\(g[0-9a-f]\+\)\(-dirty\|-broken\|\)$/+\1.\2\3/; s/-\(dirty\|broken\)$/+\1/' <<< "$BL_LOG_VERSION")
-readonly BL_LOG_VERSION
+BL_LOG_VERSION=$(git describe --dirty --broken --always)
+readonly BL_LOG_NAME BL_LOG_VERSION
 
 declare -Ar BL_LOGLEVELS=(
 [emerg]=0
