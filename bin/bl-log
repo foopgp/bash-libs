@@ -101,7 +101,6 @@ BL_LOGEXITLNAME="${BL_LOGEXITLNAME:-emerg}"
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
 	# run as a program
-	set -e
 
 	BL_LOG_usage="Usage: $(basename "${BASH_SOURCE[0]}") [OPTIONS]... PRIORITY [MESSAGE]..."
 	BL_LOG_shelpmsg="
@@ -369,5 +368,6 @@ _BL_LOG_RETVAL="$?"
 [[ "$_BL_LOG_RETVAL"   != "1"  ]] || exit 0
 
 ### Run ###
+set -e
 
 bl_log "${BL_LOG_ARGV[@]}"

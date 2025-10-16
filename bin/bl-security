@@ -233,11 +233,10 @@ Options:
 }
 
 
-### General Help Messages (and set -e if program) ###
+### General Help Messages ###
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
-	set -e
 	declare -r BL_SECURITY_isprogram=1
 
 	BL_SECURITY_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
@@ -282,6 +281,7 @@ _bl_security_parseoptions "$@"
 
 
 ### Run ###
+set -e
 shift $BL_SECURITY_NOPTIONS
 if function=$(grep -o "\<bl_$1\>" <<< "${BL_SECURITY_FUNCTIONS[@]}") ; then
 	shift

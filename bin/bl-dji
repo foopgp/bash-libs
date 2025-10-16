@@ -435,7 +435,7 @@ Options:
 	fi
 }
 
-### General Help Messages (and set -e if program) ###
+### General Help Messages ###
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program

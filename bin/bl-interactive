@@ -418,7 +418,7 @@ Options:
 }
 
 
-### Help Messages (and set -e if program) ###
+### Help Messages ###
 
 print_functions ()
 {
@@ -436,7 +436,6 @@ print_functions ()
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
 	# run as a program
-	set -e
 	declare -r BL_INTERACTIVE_isprogram=1
 
 	BL_INTERACTIVE_usage="Usage: $(basename "${BASH_SOURCE[0]}") [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
@@ -489,6 +488,7 @@ eval "${_BL_INTERACTIVE_RESTORE_ERREXIT}"
 
 
 ### Run ###
+set -e
 shift "$BL_INTERACTIVE_NOPTIONS"
 if function=$(grep -o "\<bl_$1\>" <<< "${BL_INTERACTIVE_FUNCTIONS[@]}") ; then
 	shift

@@ -548,11 +548,10 @@ Options:
 	done
 }
 
-### General Help Messages (and set -e if program) ###
+### General Help Messages ###
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
-	set -e
 	declare -r BL_QIF_isprogram=1
 
 	BL_QIF_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
@@ -597,6 +596,7 @@ _bl_qif_parseoptions "$@"
 
 
 ### Run ###
+set -e
 shift $BL_QIF_NOPTIONS
 if function=$(grep -o "\<bl_$1\>" <<< "${BL_QIF_FUNCTIONS[@]}") ; then
 	shift
