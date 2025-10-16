@@ -62,10 +62,9 @@ fi
 ### Constants ###
 
 BL_TEST_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
-declare -r BL_TEST_NAME
-declare -r BL_TEST_VERSION="0.0.5"
-declare -r BL_TEST_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
-
+BL_TEST_VERSION="very-experimental"
+BL_TEST_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_TEST_NAME BL_TEST_VERSION BL_TEST_FUNCTIONS
 
 ### functions ###
 
@@ -138,7 +137,7 @@ Cf: https://www.gnu.org/prep/standards/standards.html#g_t_002d_002dversion
 	return 0
 }
 
-### General Help Messages (and set -e if program) ###
+### General Help Messages ###
 
 BL_TEST_chelpmsg="
 Options:
@@ -149,7 +148,6 @@ Options:
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
-	set -e
 	declare -r BL_TEST_isprogram=true
 
 	#! if bl_$0 is an exposed function written above (eg: symlink --> readlink -f $BASH_SOURCE), execute it NOW (with default global parameters)
@@ -185,9 +183,17 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 ### Run ###
+set -e
 
 # Parse Options
-_bl_test_parseoptions "$@"
+_BL_TEST_RETVAL=0
+_bl_test_parseoptions "$@" || _BL_TEST_RETVAL=$?
+
+# Do nothing else if sourced
+[[ "$BASH_SOURCE" == "$0" ]] || return $_BL_TEST_RETVAL
+
+[[ "$_BL_TEST_RETVAL" != "1"  ]] || exit 0
+[[ "$_BL_TEST_RETVAL" < 2 ]] || exit $_BL_TEST_RETVAL
 
 # Do nothing else if sourced
 $BL_TEST_isprogram return $?

@@ -1,0 +1,6 @@
+# © 2025 foopgp <info@foopgp.org>
+# SPDX-License-Identifier: LGPL-3.0-only
+
+if bl-pgpid --help > /dev/null ; then
+  source bl-pgpid --bash-completion
+fi

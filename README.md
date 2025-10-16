@@ -50,6 +50,8 @@ To not forget it install the git 'pre-commit' hook by running:
 make install-pre-commit-hook
 ```
 
+To release new version, make signed tag ($ git tag --sign).
+
 # Installation
 
 Just type:

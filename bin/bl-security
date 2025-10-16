@@ -70,10 +70,9 @@ fi
 ### Constants ###
 
 BL_SECURITY_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
-declare -r BL_SECURITY_NAME
-declare -r BL_SECURITY_VERSION="0.0.5"
-declare -r BL_SECURITY_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
-
+BL_SECURITY_VERSION=$(git describe --dirty --broken --always)
+BL_SECURITY_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_SECURITY_NAME BL_SECURITY_VERSION BL_SECURITY_FUNCTIONS
 
 ### functions ###
 
@@ -84,8 +83,8 @@ _bl_security_parseoptions() {
 	local npp=$#
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--help) printf "%s\n%s\n%s\n" "$BL_SECURITY_usage" "$BL_SECURITY_chelpmsg" "$BL_SECURITY_shelpmsg" ; return 2 ;;
-			-V|--version) printf "%s %s\n" "$BL_SECURITY_NAME" "$BL_SECURITY_VERSION" ; return 2 ;;
+			-h|--help) printf "%s\n%s\n%s\n" "$BL_SECURITY_usage" "$BL_SECURITY_chelpmsg" "$BL_SECURITY_shelpmsg" ; return 1 ;;
+			-V|--version) printf "%s %s\n" "$BL_SECURITY_NAME" "$BL_SECURITY_VERSION" ; return 1 ;;
 			--) shift ; break ;;
 			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_SECURITY_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
@@ -234,11 +233,10 @@ Options:
 }
 
 
-### General Help Messages (and set -e if program) ###
+### General Help Messages ###
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
-	set -e
 	declare -r BL_SECURITY_isprogram=1
 
 	BL_SECURITY_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
@@ -276,13 +274,17 @@ Options:
 ### Init ###
 
 # Parse Options
-_bl_security_parseoptions "$@"
+_BL_SECURITY_RETVAL=0
+_bl_security_parseoptions "$@" || _BL_SECURITY_RETVAL=$?
 
 # Do nothing else if sourced
-[[ "$BASH_SOURCE" == "$0" ]] || return 0
+[[ "$BASH_SOURCE" == "$0" ]] || return $_BL_SECURITY_RETVAL
 
+[[ "$_BL_SECURITY_RETVAL" != "1"  ]] || exit 0
+[[ "$_BL_SECURITY_RETVAL" < 2 ]] || exit $_BL_SECURITY_RETVAL
 
 ### Run ###
+set -e
 shift $BL_SECURITY_NOPTIONS
 if function=$(grep -o "\<bl_$1\>" <<< "${BL_SECURITY_FUNCTIONS[@]}") ; then
 	shift

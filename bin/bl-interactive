@@ -73,11 +73,9 @@ fi
 
 ### Constants ###
 
-BL_INTERACTIVE_FUNCTIONS=$(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "${BASH_SOURCE[0]}")
-mapfile -t BL_INTERACTIVE_FUNCTIONS <<< "$BL_INTERACTIVE_FUNCTIONS"
 BL_INTERACTIVE_NAME="$(basename "$(readlink -f "${BASH_SOURCE[0]}" || true)" )"
-BL_INTERACTIVE_VERSION=$(git describe --dirty --broken --always --match "v[0-9]*.[0-9]*.[0-9]*")
-BL_INTERACTIVE_VERSION=$(sed 's/-\([1-9][0-9]*\)-\(g[0-9a-f]\+\)\(-dirty\|-broken\|\)$/+\1.\2\3/; s/-\(dirty\|broken\)$/+\1/' <<< "$BL_INTERACTIVE_VERSION")
+BL_INTERACTIVE_VERSION=$(git describe --dirty --broken --always)
+BL_INTERACTIVE_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "${BASH_SOURCE[0]}") )
 readonly BL_INTERACTIVE_VERSION BL_INTERACTIVE_FUNCTIONS BL_INTERACTIVE_NAME
 
 declare -r BL_INTERACTIVE_EMAIL_REGEX="[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+"
@@ -89,7 +87,6 @@ declare -r BL_INTERACTIVE_EMAIL_REGEX="[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-
 ### functions ###
 
 _bl_interactive_parseoptions() {
-	eval "${_BL_INTERACTIVE_RESTORE_ERREXIT}"
     local BL_INTERACTIVE_FRONTEND_VERSION
 	local npp=$#
 	for ((;$#;)) ; do
@@ -420,7 +417,7 @@ Options:
 }
 
 
-### Help Messages (and set -e if program) ###
+### Help Messages ###
 
 print_functions ()
 {
@@ -438,7 +435,6 @@ print_functions ()
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
 	# run as a program
-	set -e
 	declare -r BL_INTERACTIVE_isprogram=1
 
 	BL_INTERACTIVE_usage="Usage: $(basename "${BASH_SOURCE[0]}") [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
@@ -477,11 +473,8 @@ Options:
 ### Init ###
 
 # Parse Options
-_BL_INTERACTIVE_RESTORE_ERREXIT=$(shopt -po errexit) || true
-set +e
-_bl_interactive_parseoptions "$@"
-_BL_INTERACTIVE_RETVAL="$?"
-eval "${_BL_INTERACTIVE_RESTORE_ERREXIT}"
+_BL_INTERACTIVE_RETVAL=0
+_bl_interactive_parseoptions "$@" || _BL_INTERACTIVE_RETVAL="$?"
 
 # Do nothing else if sourced
 [[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
@@ -489,8 +482,8 @@ eval "${_BL_INTERACTIVE_RESTORE_ERREXIT}"
 [[ "$_BL_INTERACTIVE_RETVAL" != "1"  ]] || exit 0
 [[ "$_BL_INTERACTIVE_RETVAL" < 2 ]] || exit $_BL_INTERACTIVE_RETVAL
 
-
 ### Run ###
+set -e
 shift "$BL_INTERACTIVE_NOPTIONS"
 if function=$(grep -o "\<bl_$1\>" <<< "${BL_INTERACTIVE_FUNCTIONS[@]}") ; then
 	shift

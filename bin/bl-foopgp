@@ -61,9 +61,9 @@ fi
 ### Constants ###
 
 BL_FOOPGP_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
-declare -r BL_FOOPGP_NAME
-declare -r BL_FOOPGP_VERSION="0.0.5"
-declare -r BL_FOOPGP_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+BL_FOOPGP_VERSION=$(git describe --dirty --broken --always)
+BL_FOOPGP_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_FOOPGP_NAME BL_FOOPGP_VERSION BL_FOOPGP_FUNCTIONS
 
 declare -Ar BL_FOOPGP_STINGYNALTYS=(
 [2023-05]=1.00000000000000000000
@@ -122,8 +122,8 @@ _bl_foopgp_parseoptions() {
 	local date
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--help) printf "%s\n%s%s" "$BL_FOOPGP_usage" "$BL_FOOPGP_chelpmsg" "$BL_FOOPGP_shelpmsg" ; return 2 ;;
-			-V|--version) printf "%s %s\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_VERSION" ; return 2 ;;
+			-h|--help) printf "%s\n%s%s" "$BL_FOOPGP_usage" "$BL_FOOPGP_chelpmsg" "$BL_FOOPGP_shelpmsg" ; return 1 ;;
+			-V|--version) printf "%s %s\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_VERSION" ; return 1 ;;
 			-s|--stingy*) shift ; BL_FOOPGP_STINGYNALTY="$1" ;;
 			-d|--date) shift ; BL_FOOPGP_STINGYNALTY=${BL_FOOPGP_STINGYNALTYS[$(date --iso-8601 --date "$1"  | head -c 7)]} ;;
 			--) shift ; break ;;
@@ -278,11 +278,10 @@ Options:
 }
 
 
-### General Help Messages (and set -e if program) ###
+### General Help Messages ###
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
-	set -e
 	declare -r BL_FOOPGP_isprogram=1
 
 	BL_FOOPGP_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
@@ -324,13 +323,17 @@ Options:
 ### Init ###
 
 # Parse Options
-_bl_foopgp_parseoptions "$@"
+_BL_FOOPGP_RETVAL=0
+_bl_foopgp_parseoptions "$@" || _BL_FOOPGP_RETVAL=$?
 
 # Do nothing else if sourced
-[[ "$BASH_SOURCE" == "$0" ]] || return 0
+[[ "$BASH_SOURCE" == "$0" ]] || return $_BL_FOOPGP_RETVAL
 
+[[ "$_BL_FOOPGP_RETVAL" != "1"  ]] || exit 0
+[[ "$_BL_FOOPGP_RETVAL" < 2 ]] || exit $_BL_FOOPGP_RETVAL
 
 ### Run ###
+set -e
 shift $BL_FOOPGP_NOPTIONS
 if function=$(grep -o "\<bl_$1\>" <<< "${BL_FOOPGP_FUNCTIONS[@]}") ; then
 	shift

@@ -60,9 +60,9 @@ fi
 ### Constants ###
 
 BL_DJIBIAN_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
-declare -r BL_DJIBIAN_NAME
-declare -r BL_DJIBIAN_VERSION="0.0.5"
-declare -r BL_DJIBIAN_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+BL_DJIBIAN_VERSION=$(git describe --dirty --broken --always)
+BL_DJIBIAN_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_DJIBIAN_NAME BL_DJIBIAN_VERSION BL_DJIBIAN_FUNCTIONS
 
 declare -r BL_DJIBIAN_EXTRA_GROUPS="cdrom,floppy,audio,dip,video,plugdev,netdev,scanner,bluetooth,lpadmin"
 
@@ -214,7 +214,7 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 	usermod --append --groups "$extragroups" --uid "$uid" --gid "$uid" "$username" || return $?
 	chgrp --no-dereference --recursive "$username" "/home/u4$udid4" || return $? # should be done by usermod, but it doesn't ...
 	echo "$passwd" | passwd --stdin "$username" || return $?
-	printf "%s: Notice: user %s (u4=%s) successfully added to current system.\n" "$FUNCNAME" "$username" "$udid4" >&2 
+	printf "%s: Notice: user %s (u4=%s) successfully added to current system.\n" "$FUNCNAME" "$username" "$udid4" >&2
 }
 
 _wip_bl_djibian_addpgpuser()
@@ -246,7 +246,7 @@ Options:
 
 
 
-### General Help Messages (and set -e if program) ###
+### General Help Messages ###
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
@@ -290,8 +290,8 @@ Options:
 ### Init ###
 
 # Parse Options
-_bl_djibian_parseoptions "$@"
-_BL_DJIBIAN_RETVAL=$?
+_BL_DJIBIAN_RETVAL=0
+_bl_djibian_parseoptions "$@" || _BL_DJIBIAN_RETVAL=$?
 
 # Do nothing else if sourced
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_DJIBIAN_RETVAL
