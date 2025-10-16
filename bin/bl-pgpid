@@ -886,8 +886,8 @@ Options:
 ### Init ###
 
 # Parse Options
-_bl_pgpid_parseoptions "$@"
-_BL_PGPID_RETVAL=$?
+_BL_PGPID_RETVAL=0
+_bl_pgpid_parseoptions "$@" || _BL_PGPID_RETVAL=$?
 
 # Do nothing else if sourced
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_PGPID_RETVAL

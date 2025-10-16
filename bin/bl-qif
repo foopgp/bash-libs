@@ -73,8 +73,8 @@ _bl_qif_parseoptions() {
 	local npp=$#
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--help) printf "%s\n%s%s" "$BL_QIF_usage" "$BL_QIF_chelpmsg" "$BL_QIF_shelpmsg" ; return 2 ;;
-			-V|--version) printf "%s %s\n" "$BL_QIF_NAME" "$BL_QIF_VERSION" ; return 2 ;;
+			-h|--help) printf "%s\n%s%s" "$BL_QIF_usage" "$BL_QIF_chelpmsg" "$BL_QIF_shelpmsg" ; return 1 ;;
+			-V|--version) printf "%s %s\n" "$BL_QIF_NAME" "$BL_QIF_VERSION" ; return 1 ;;
 			--) shift ; break ;;
 			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_QIF_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
@@ -589,11 +589,14 @@ Options:
 ### Init ###
 
 # Parse Options
-_bl_qif_parseoptions "$@"
+_BL_QIF_RETVAL=0
+_bl_qif_parseoptions "$@" || _BL_QIF_RETVAL=$?
 
 # Do nothing else if sourced
-[[ "$BASH_SOURCE" == "$0" ]] || return 0
+[[ "$BASH_SOURCE" == "$0" ]] || return $_BL_QIF_RETVAL
 
+[[ "$_BL_QIF_RETVAL" != "1"  ]] || exit 0
+[[ "$_BL_QIF_RETVAL" < 2 ]] || exit $_BL_QIF_RETVAL
 
 ### Run ###
 set -e

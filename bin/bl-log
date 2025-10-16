@@ -65,11 +65,8 @@ fi
 # If sourcing while _bl_log_parseoptions is already set, execute the function and return without reloading rest of file.
 if [[ "${BASH_SOURCE[0]}" != "$0" ]] && [[ "$(type -t _bl_log_parseoptions || true)" == function ]]
 then
-	_BL_LOG_RESTORE_ERREXIT=$(shopt -po errexit) || true
-	set +e
-	_bl_log_parseoptions "$BL_LOG_NAME" "$@"
-	_BL_LOG_RETVAL=$?
-	eval "${_BL_LOG_RESTORE_ERREXIT}"
+	_BL_LOG_RETVAL=0
+	_bl_log_parseoptions "$BL_LOG_NAME" "$@" || _BL_LOG_RETVAL=$?
 	return "${_BL_LOG_RETVAL}"
 fi
 
@@ -225,8 +222,6 @@ _bl_log_parse_level ()
 
 #TODO: explain in comment why we dont use getopts...
 _bl_log_parseoptions() {
-	eval "${_BL_LOG_RESTORE_ERREXIT}"
-
 	local name=$1
 
 	if [[ "$name" =~ ^- ]]
@@ -293,13 +288,9 @@ _bl_log_parseoptions() {
 
 bl_log() {
 	local BL_LOG_usage="Usage: ${FUNCNAME[0]} [OPTIONS]... PRIORITY [MESSAGE]..."
-	local return_value
+	local return_value=0
 
-	_BL_LOG_RESTORE_ERREXIT=$(shopt -po errexit) || true
-	set +e
-	_bl_log_parseoptions "${FUNCNAME[0]}" "$@"
-	return_value=$?
-	eval "${_BL_LOG_RESTORE_ERREXIT}"
+	_bl_log_parseoptions "${FUNCNAME[0]}" "$@" || return_value=$?
 
 	[[ "$return_value" == 0 ]] || return "$return_value"
 
@@ -358,14 +349,14 @@ bl_log() {
 ### Init ###
 
 # Parse Options
-_BL_LOG_RESTORE_ERREXIT=$(shopt -po errexit) || true
-_bl_log_parseoptions "$BL_LOG_NAME" "$@"
-_BL_LOG_RETVAL="$?"
+_BL_LOG_RETVAL=0
+_bl_log_parseoptions "$BL_LOG_NAME" "$@" || _BL_LOG_RETVAL="$?"
 
 # Do nothing else if sourced
 [[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
 
 [[ "$_BL_LOG_RETVAL"   != "1"  ]] || exit 0
+[[ "$_BL_LOG_RETVAL" < 2 ]] || exit $_BL_LOG_RETVAL
 
 ### Run ###
 set -e

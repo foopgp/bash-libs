@@ -479,8 +479,8 @@ Options:
 ### Init ###
 
 # Parse Options
-_bl_dji_parseoptions "$@"
-_BL_DJI_RETVAL=$?
+_BL_DJI_RETVAL=0
+_bl_dji_parseoptions "$@" || _BL_DJI_RETVAL=$?
 
 # Do nothing else if sourced
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_DJI_RETVAL
