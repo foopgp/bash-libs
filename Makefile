@@ -47,9 +47,11 @@ html pdf docbook markdown:
 
 install: $(addprefix $(BINDIR)/, $(notdir $(TARGETS)))
 	$(MAKE) -C man   $@
+	$(MAKE) -C bash-completion   $@
 
 uninstall:
 	$(MAKE) -C man   $@
+	$(MAKE) -C bash-completion   $@
 	$(RM) $(addprefix $(BINDIR)/, $(notdir $(TARGETS)))
 
 install-pre-commit-hook: .git/hooks/pre-commit
