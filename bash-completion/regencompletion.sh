@@ -17,7 +17,7 @@ for bl in ../bin/$bashlibs ; do
 # © 2025 foopgp <info@foopgp.org>
 # SPDX-License-Identifier: LGPL-3.0-only
 
-if ${blname} --help > /dev/null ; then
+if ${blname} --version > /dev/null 2>&1 ; then
   source ${blname} --bash-completion
 fi
 EOF

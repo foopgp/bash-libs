@@ -1,6 +1,6 @@
 # © 2025 foopgp <info@foopgp.org>
 # SPDX-License-Identifier: LGPL-3.0-only
 
-if bl-security --help > /dev/null ; then
+if bl-security --version > /dev/null 2>&1 ; then
   source bl-security --bash-completion
 fi
