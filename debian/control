@@ -23,7 +23,7 @@ Replaces: bash-libs (<< 0.0.6~)
 Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
 Depends: bashlibs-common, bashlibs-convert, bashlibs-pgpid, bashlibs-dji,
-         ${misc:Depends}, ${shlibs:Depends}
+         ${misc:Depends}
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
  This metapackage install all the bash libraries used by foopgp on the Debian blend
  « Djibian ».
@@ -31,7 +31,7 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
 Package: bashlibs-common
 Architecture: all
 Depends: bsdutils, aspell,
-         ${misc:Depends}, ${shlibs:Depends}
+         ${misc:Depends}
 Recommends: bash-completion, whiptail
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
  This package contains:
@@ -45,7 +45,7 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
 Package: bashlibs-convert
 Architecture: all
 Depends: jq,
-         ${misc:Depends}, ${shlibs:Depends}
+         ${misc:Depends}
 Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
  This package contains:
@@ -57,7 +57,7 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
 Package: bashlibs-pgpid
 Architecture: all
 Depends: bashlibs-common, gpg, xxd, useradd, passwd,
-         ${misc:Depends}, ${shlibs:Depends}
+         ${misc:Depends}
 Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
  This package contains:
@@ -69,7 +69,7 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
 Package: bashlibs-dji
 Architecture: all
 Depends: bashlibs-common, bc, git,
-         ${misc:Depends}, ${shlibs:Depends}
+         ${misc:Depends}
 Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
  This package contains:

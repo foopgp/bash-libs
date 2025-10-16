@@ -1,0 +1,4 @@
+/usr/bin/bl-qif
+/usr/bin/bl-test
+/usr/share/bash-completion/completions/bl-qif-completion
+/usr/share/bash-completion/completions/bl-test-completion
