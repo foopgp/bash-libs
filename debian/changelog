@@ -1,3 +1,16 @@
+bash-libs (0.0.7-1) unstable; urgency=medium
+
+  [ JJ ]
+  * improve bash-completion install
+
+  [ Jbar ]
+  * fix dh_install...
+
+  [ piseb ]
+  * add licence file reuse
+
+ -- piseb <piseb@mailo.com>  Wed, 22 Oct 2025 11:57:24 +0200
+
 bash-libs (0.0.6-1) unstable; urgency=medium
 
   [ JJ ]
