@@ -1,9 +1,8 @@
-bash-libs (0.0.7-2) unstable; urgency=medium
+bash-libs (0.0.7-3) unstable; urgency=medium
 
-  * fix : typo in depends
-  * fix: fix control file for apt full-upgrade
+  * fix : signed tag for main
 
- -- piseb <piseb@mailo.com>  Thu, 23 Oct 2025 14:50:24 +0200
+ -- piseb <piseb@mailo.com>  Thu, 23 Oct 2025 15:18:45 +0200
 
 bash-libs (0.0.7-2) unstable; urgency=medium
 
