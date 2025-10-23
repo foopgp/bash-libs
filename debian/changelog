@@ -1,3 +1,9 @@
+bash-libs (0.0.7-4) unstable; urgency=medium
+
+  * fix : build package in git dir
+
+ -- piseb <piseb@mailo.com>  Thu, 23 Oct 2025 15:32:18 +0200
+
 bash-libs (0.0.7-3) unstable; urgency=medium
 
   * fix : signed tag for main
