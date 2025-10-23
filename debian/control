@@ -29,6 +29,8 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  « Djibian ».
 
 Package: bashlibs-common
+Replaces: bash-libs (<< 0.0.6~)
+Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
 Depends: bsdutils, aspell,
          ${misc:Depends}
@@ -43,6 +45,8 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  bl-security: Provide some security features.
 
 Package: bashlibs-convert
+Replaces: bash-libs (<< 0.0.6~)
+Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
 Depends: jq,
          ${misc:Depends}
@@ -55,6 +59,8 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  bl-json: Use jq (Command-line JSON processor) to convert json data to bash variables or arrays, and vice-versa.
 
 Package: bashlibs-pgpid
+Replaces: bash-libs (<< 0.0.6~)
+Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
 Depends: bashlibs-common, gpg, xxd, adduser, passwd,
          ${misc:Depends}
@@ -67,6 +73,8 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  bl-djibian: System tools for the Debian blend « Djibian ».
 
 Package: bashlibs-dji
+Replaces: bash-libs (<< 0.0.6~)
+Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
 Depends: bashlibs-common, bc, git,
          ${misc:Depends}
