@@ -56,7 +56,7 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
 
 Package: bashlibs-pgpid
 Architecture: all
-Depends: bashlibs-common, gpg, xxd, useradd, passwd,
+Depends: bashlibs-common, gpg, xxd, adduser, passwd,
          ${misc:Depends}
 Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
