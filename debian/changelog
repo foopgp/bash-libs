@@ -4,7 +4,7 @@ bash-libs (0.1.0-1) unstable; urgency=medium
   * fix completion installation
   * manage tag containing a '/', like debian/...
 
- -- jbar <jjbrucker@foopgp.org>  Fri, 24 Oct 2025 12:20:32 +0200
+ -- piseb <piseb@mailo.com>  Fri, 24 Oct 2025 13:05:27 +0200
 
 bash-libs (0.0.7-4) unstable; urgency=medium
 
