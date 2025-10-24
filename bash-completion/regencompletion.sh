@@ -12,8 +12,8 @@ PATH="../bin:$PATH"
 
 for bl in ../bin/$bashlibs ; do
 	blname="$(basename "$bl")"
-	echo "$0: generate ${blname}-completion ..." >&2
-	cat <<EOF > "${blname}-completion"
+	echo "$0: generate ${blname} completion ..." >&2
+	cat <<EOF > "${blname}"
 # © 2025 foopgp <info@foopgp.org>
 # SPDX-License-Identifier: LGPL-3.0-only
 

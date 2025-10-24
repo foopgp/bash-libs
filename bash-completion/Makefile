@@ -1,7 +1,7 @@
 # © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 # SPDX-License-Identifier: LGPL-3.0-only
 
-TARGETS           := $(basename $(wildcard *-completion))
+TARGETS           := $(basename $(wildcard bl-*))
 
 prefix            ?= /usr/local
 datarootdir       ?= $(prefix)/share

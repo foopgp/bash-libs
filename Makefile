@@ -19,8 +19,8 @@ DIRTY_BROKEN          := \(dirty\|broken\)
 COMMIT_COUNT          := \([1-9][0-9]*\)
 COMMIT_HASH           := \(g[0-9a-f]\+\)
 OPTIONAL_DIRTY_BROKEN := \(-$(DIRTY_BROKEN)\|\)
-PLUS_POST_TAG_ID      := -e 's/-$(COMMIT_COUNT)-$(COMMIT_HASH)$(OPTIONAL_DIRTY_BROKEN)$$/+\1.\2\3/1'
-PLUS_DIRTY_BROKEN     := -e 's/-$(DIRTY_BROKEN)$$/+\1/1'
+PLUS_POST_TAG_ID      := -e 's,-$(COMMIT_COUNT)-$(COMMIT_HASH)$(OPTIONAL_DIRTY_BROKEN)$$,+\1.\2\3,1'
+PLUS_DIRTY_BROKEN     := -e 's,-$(DIRTY_BROKEN)$$,+\1,1'
 COMMIT_DESCRIPTION    := $(shell $(GIT_DESCRIBE) | sed $(PLUS_POST_TAG_ID) $(PLUS_DIRTY_BROKEN))
 
 .POSIX:
@@ -61,7 +61,7 @@ $(addsuffix /%, $(SUB_MAKE_DIRS)): phony
 	$(MAKE) -C $(patsubst %/$*, %, $@) $*
 
 $(BINDIR)/%: bin/% phony | $(BINDIR)
-	sed 's/^\(BL_[A-Z]\+_VERSION=\).*$$/\1"$(COMMIT_DESCRIPTION)"/1' $< > $@
+	sed 's,^\(BL_[A-Z]\+_VERSION=\).*$$,\1"$(COMMIT_DESCRIPTION)",1' $< > $@
 	chmod 755 $@
 
 $(SUB_MAKE_DIRS): %:
