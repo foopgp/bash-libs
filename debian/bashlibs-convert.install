@@ -1,4 +1,4 @@
-/usr/share/bash-completion/completions/bl-json-completion
+/usr/share/bash-completion/completions/bl-json
 /usr/bin/bl-json
-/usr/share/bash-completion/completions/bl-markdown-completion
+/usr/share/bash-completion/completions/bl-markdown
 /usr/bin/bl-markdown
