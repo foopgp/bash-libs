@@ -1,4 +1,4 @@
-/usr/share/bash-completion/completions/bl-pgpid-completion
+/usr/share/bash/completions/bl-pgpid-completion
 /usr/bin/bl-pgpid
-/usr/share/bash-completion/completions/bl-djibian-completion
+/usr/share/bash/completions/bl-djibian-completion
 /usr/bin/bl-djibian

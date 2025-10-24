@@ -1,4 +1,4 @@
-/usr/share/bash-completion/completions/bl-dji-completion
+/usr/share/bash/completions/bl-dji-completion
 /usr/bin/bl-dji
-/usr/share/bash-completion/completions/bl-foopgp-completion
+/usr/share/bash/completions/bl-foopgp-completion
 /usr/bin/bl-foopgp
