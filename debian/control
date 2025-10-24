@@ -32,7 +32,7 @@ Package: bashlibs-common
 Replaces: bash-libs (<< 0.0.6~)
 Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
-Depends: bsdutils, aspell,
+Depends: bsdutils (>= 3.0-0), aspell,
          ${misc:Depends}
 Recommends: bash-completion, whiptail
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
@@ -40,7 +40,8 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  .
  bl-log: Wrapper for logger command, which also print pretty logs on stderr.
  .
- bl-interactive: Help managing interactive choices, while supporting multiple frontends: NONE, whiptail or dialog.
+ bl-interactive: Help managing interactive choices, while supporting multiple frontends:
+ NONE, whiptail or dialog.
  .
  bl-security: Provide some security features.
 
