@@ -14,7 +14,7 @@ bindir                ?= $(exec_prefix)/bin
 
 BINDIR                := $(DESTDIR)$(bindir)
 
-GIT_DESCRIBE          := git describe --dirty --broken --always
+GIT_DESCRIBE          := git describe --always --long -- main
 DIRTY_BROKEN          := \(dirty\|broken\)
 COMMIT_COUNT          := \([1-9][0-9]*\)
 COMMIT_HASH           := \(g[0-9a-f]\+\)
