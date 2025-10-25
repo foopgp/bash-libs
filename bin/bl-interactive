@@ -21,8 +21,7 @@ _bl_interactive_list_actions_options ()
 }
 
 if [[ "$1" == --bash-completion ]] ; then
-	BL_tmp_a=$("${BASH_SOURCE[0]}" --help)
-	BL_tmp_a=$(sed -n 's,^   \([a-z_-]\+\>\).*,\1,p'    <<< "$BL_tmp_a")
+	BL_tmp_a=$("${BASH_SOURCE[0]}" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
 	BL_tmp_o=$(set -e; _bl_interactive_list_actions_options "$BL_tmp_a")
 
 	eval '_bl_interactive_completion()
