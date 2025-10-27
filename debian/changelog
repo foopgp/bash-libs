@@ -5,7 +5,7 @@ bash-libs (0.1.1-1) unstable; urgency=medium
   * fix bug while sourcing with set -e
   * use only branch main to get version from git describe
 
- -- jbar <jjbrucker@foopgp.org>  Sun, 26 Oct 2025 01:47:18 +0200
+ -- piseb <piseb@mailo.com>  Mon, 27 Oct 2025 09:38:58 +0100
 
 bash-libs (0.1.0-1) unstable; urgency=medium
 
