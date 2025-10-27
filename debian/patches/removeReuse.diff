@@ -1,0 +1,11 @@
+--- a/Makefile
++++ b/Makefile
+@@ -35,7 +35,7 @@
+ check_licenses:
+ 	RESULT=$$($(LICENCES_CHECKER) 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)
+ 
+-check: check_licenses build
++check: build
+ 
+ check clean:
+ 	$(MAKE) -C man   $@
