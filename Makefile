@@ -38,7 +38,9 @@ check_licenses:
 check: check_licenses build
 
 check clean:
+	$(MAKE) -C specs $@
 	$(MAKE) -C man   $@
+	$(MAKE) -C tests $@
 
 html pdf docbook markdown:
 	$(MAKE) -C specs $@

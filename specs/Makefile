@@ -59,7 +59,7 @@ RATIONALS_OPT         += -nocov
 
 all: build
 
-build:
+build: pdf html docbook markdown
 
 pdf:      $(DOCUMENTS:.adoc=.pdf)
 
@@ -69,7 +69,7 @@ docbook:  $(DOCUMENTS:.adoc=.xml)
 
 markdown: $(DOCUMENTS:.adoc=.md)
 
-check:
+check: build $(patsubst %.adoc, check_%, $(DOCUMENTS))
 
 clean:
 	$(RM)  $(DOCUMENTS:.adoc=.pdf)
