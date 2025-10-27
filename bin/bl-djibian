@@ -76,6 +76,7 @@ BL_DJIBIAN_KEYSERVERLIST=(
 
 # shellcheck source=bl-pgpid
 . "$(dirname "$BASH_SOURCE")"/bl-pgpid --
+. "$(dirname "$BASH_SOURCE")"/bl-security --
 
 ### internal functions ###
 
@@ -168,8 +169,9 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 	# If username is not given, generate one from given names and surname.
 	[[ "$username" ]] || username="$(LANG= sed ' s,\b\([a-z]\)[^ ,;-]*,\1,g  ;  s,[^a-z],,g ' <<<"${gname,,}" )$(LANG= sed ' s,[^a-z],, ' <<<"${sname,,}" )"
 	if [[ -z "$passwd" ]] ; then
-		local passwd2 preamble
-		preamble=$(printf "Enter %s's password (for this system)" "$username")
+		local passwd2 preamble suggpwd
+		suggpwd=$(bl_gen_passphrase)
+		preamble=$(printf "Password suggestion: $suggpwd")
 		passwd2=$(bl_input --password --text "$preamble" "Password")
 		preamble=$(printf "Retype %s's password" "$username")
 		while true ; do
