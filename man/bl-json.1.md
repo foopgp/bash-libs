@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-json - manual page for bl-json 0.0.5
+bl-json - manual page for bl-json 0.1.1
 
 # SYNOPSIS
 

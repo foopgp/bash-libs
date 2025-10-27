@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-djibian - manual page for bl-djibian 0.0.5
+bl-djibian - manual page for bl-djibian 0.1.1
 
 # SYNOPSIS
 

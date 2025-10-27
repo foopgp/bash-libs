@@ -10,6 +10,8 @@ cd "$(dirname "$0")"
 
 PATH="../bin:$PATH"
 
+versionstring=$(git describe | sed -E ' s:^([0-9]+\.[0-9]+\.[0-9]+).*:\1: ')
+
 for bl in ../bin/$bashlibs ; do
 	blname="$(basename "$bl")"
 	cat <<EOF > "${blname}.1.md.draft"
@@ -28,8 +30,8 @@ footer: bash-libs
 
 EOF
 	echo "help2man --no-info $blname --locale C.UTF-8 | pandoc -f man -t markdown >> ${blname}.1.md.draft" >&2
-	help2man --no-info "$blname" --locale "C.UTF-8" | pandoc -f man -t markdown >> "${blname}.1.md.draft"
-	
+	help2man --no-info "$blname" --locale "C.UTF-8" --version-string "$versionstring" | pandoc -f man -t markdown >> "${blname}.1.md.draft"
+
 	cat <<EOF >> "${blname}.1.md.draft"
 
 # DIAGNOSTICS
@@ -46,7 +48,13 @@ foopgp <info@foopgp.org>, Jean-Jacques Brucker <jjbrucker@foopgp.org>.
 
 EOF
 
-# Fix 2 artefacts.
-sed -i ' s, \.\./bin/bl-, bl-, ; /All actions .*/i \\ ' "${blname}.1.md.draft"
+	# Fix 2 artefacts.
+	sed -i ' s, \.\./bin/bl-, bl-, ; /All actions .*/i \\ ' "${blname}.1.md.draft"
 
+	# Ask for erasing previous man
+	if ! colordiff --report-identical-files --unified "${blname}.1.md" "${blname}.1.md.draft" ; then
+		mv -i "${blname}.1.md.draft" "${blname}.1.md" || true
+	else
+		rm -v "${blname}.1.md.draft"
+	fi
 done
