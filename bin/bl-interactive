@@ -245,8 +245,12 @@ Options:
 					[[ $char != $'\0' ]] || break
 					if [[ $char == $'\x7f' ]] || [[ $char == $'\x08' ]] ; then
 						# Backspace
-						prompt=$'\x08 \x08'
-						rep="${rep:: -1}"
+						if ((${#rep} > 0)) ; then
+							prompt=$'\x08 \x08'
+							rep="${rep:: -1}"
+						else
+							prompt=''
+						fi
 					else
 						prompt='*'
 						rep+="$char"

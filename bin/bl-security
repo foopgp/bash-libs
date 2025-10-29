@@ -33,7 +33,7 @@ if [[ "$1" == --bash-completion ]] ; then
 				# should exit without executing any actions, so do not complete anything
 				return 0 ;;
 			--dict)
-				COMPREPLY=( $(compgen -W "$("'$BASH_SOURCE'" gen-passphrase --list-dicts)" -- $cur ) )
+				COMPREPLY=( $(compgen -W "$("'$BASH_SOURCE'" gen_passphrase --list-dicts)" -- $cur ) )
 				return 0 ;;
 		esac
 		case $cur in
