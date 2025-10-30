@@ -5,7 +5,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 -->
 
 ---
-title: BL-SECURITY
+title: BL-TEST
 section: 1
 header: User Commands
 footer: bash-libs
@@ -13,15 +13,11 @@ footer: bash-libs
 
 # NAME
 
-bl-security - manual page for bl-security 0.1.2
+bl-test - manual page for bl-test 0.1.2
 
 # SYNOPSIS
 
-**bl-security** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
-
-# DESCRIPTION
-
-Provide some security features.
+**bl-test** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
 
 # OPTIONS
 
@@ -35,24 +31,16 @@ Provide some security features.
 
 ## Actions:
 
-urandom
+test\_\_version
 
-:   Output a good random number between 0 and 1\<\<32 (4294967296)
-
-shred_path
-
-:   Recursively shred all files in given path(\|s).
-
-gen_passphrase
-
-:   Generate a good random passphrase
+:   Test if \"COMMANDE \[ARG\]\... **\--version**\" matches GNU
+    standard.
 
  
-All actions support a **\--help** options, eg: \$ bl-security
-ACTION **\--help**
-
-bl-security is also bash library, see: \$ source bl-security
+All actions support a **\--help** options, eg: \$ bl-test ACTION
 **\--help**
+
+bl-test is also bash library, see: \$ source bl-test **\--help**
 
 # DIAGNOSTICS
 

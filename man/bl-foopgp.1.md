@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-foopgp - manual page for bl-foopgp 0.0.5
+bl-foopgp - manual page for bl-foopgp 0.1.2
 
 # SYNOPSIS
 
@@ -45,16 +45,16 @@ to the the foopgp association.
 
 ## Actions:
 
-foopgp_g2t
+g2t
 
 :   Calculate how many foopgp tokens would be created from a gift.
 
-foopgp_t2g
+t2g
 
 :   Calculate how much should be given to create a targeted number of
     tokens.
 
-foopgp_giftarray
+giftarray
 
 :   Display an array to indicate how many token gonna be created from a
     gift.

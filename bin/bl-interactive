@@ -243,8 +243,18 @@ Options:
 				prompt="  $question"$' \e[1m?\e[0m '
 				while IFS= read -p "$prompt" -r -s -n 1 char ; do
 					[[ $char != $'\0' ]] || break
-					prompt='*'
-					rep+="$char"
+					if [[ $char == $'\x7f' ]] || [[ $char == $'\x08' ]] ; then
+						# Backspace
+						if ((${#rep} > 0)) ; then
+							prompt=$'\x08 \x08'
+							rep="${rep:: -1}"
+						else
+							prompt=''
+						fi
+					else
+						prompt='*'
+						rep+="$char"
+					fi
 				done
 				echo >&2
 			else

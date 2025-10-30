@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-dji - manual page for bl-dji 0.0.5
+bl-dji - manual page for bl-dji 0.1.2
 
 # SYNOPSIS
 
@@ -38,6 +38,14 @@ Manage djis (Ɉ), also known as foopgp tokens.
 2micro
 
 :   Translate given VALUES to their microVALUES, aka µVALUES (10\^-6).
+
+2deci
+
+:   Translate given VALUES to their deciVALUES, aka dVALUES (10\^-1).
+
+2milli
+
+:   Translate given VALUES to their milliVALUES, aka mVALUES (10\^-3).
 
 2bin
 
