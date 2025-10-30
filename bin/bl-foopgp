@@ -39,7 +39,7 @@ if [[ "$1" == --bash-completion ]] ; then
 					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
 					return 0
 				fi
-				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				COMPREPLY=( $(compgen -W "$coptions --stingynalty --date" -- $cur ) )
 				return 0 ;;
 		esac
 		# complete actions if none in ${COMP_WORDS[@]}
@@ -147,15 +147,17 @@ _bl_foopgp_parseoptions() {
 bl_foopgp_g2t() {
 	local name
 	local tockens
-	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
 Calculate how many foopgp tokens would be created from a gift.
 Options:
-  -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
-  -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
+  -t, --tokens DJISUM   Set the base of tokens Ɉ already created (default: 0)
+  -g, --gifts EURSUM    Set the base of values in EUR € already given (default: 0)
+  -s, --siprefix SYMBOL Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. International System of Units).
+  -p, --printsym        Also print symbol, eg: ' µɈ'.
 "
-	local i t=0 g=0
+	local i t=0 g=0 symbol printsym outsym
 	for ((;$#;)) ; do
 		case "$1" in
 			-t|--tokens)
@@ -166,6 +168,8 @@ Options:
 				shift ; g=0${1/,/.}
 				[[ "$g" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${g: 1}" >&2 ; return 2 ; }
 				;;
+			-s|--siprefix) shift ; symbol=$1 ;;
+			-p|--printsym) printsym="yes" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -178,13 +182,35 @@ Options:
 
 	for i in "$@" ; do
 		tockens=$(bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else 0 ; scale=16 ")
-		LANG=C printf "%0.6f\n" $tockens
+		case "$symbol" in
+			d|deci)
+				[[ "$printsym" ]] && outsym=" dɈ" || outsym=""
+				LANG=C printf "%0.5f%s\n" "$(bc -l <<<"$tockens*10")" "$outsym"
+				;;
+			c|centi)
+				[[ "$printsym" ]] && outsym=" cɈ" || outsym=""
+				LANG=C printf "%0.4f%s\n" "$(bc -l <<<"$tockens*100")" "$outsym"
+				;;
+			m|milli)
+				[[ "$printsym" ]] && outsym=" mɈ" || outsym=""
+				LANG=C printf "%0.3f%s\n" "$(bc -l <<<"$tockens*1000")" "$outsym"
+				;;
+			µ|micro)
+				[[ "$printsym" ]] && outsym=" µɈ" || outsym=""
+				LANG=C printf "%d%s\n" "$(bc -l <<<"$tockens*1000000")" "$outsym"
+				;;
+			*)
+				[[ -z "$symbol" ]] || printf "%s: Warning: Ignoring unrecognized symbol %s.\n" "$FUNCNAME" "$symbol" >&2
+				[[ "$printsym" ]] && outsym=" Ɉ" || outsym=""
+				LANG=C printf "%0.6f%s\n" "$tockens" "$outsym"
+				;;
+		esac
 	done
 }
 
 bl_foopgp_t2g() {
 	local name
-	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
 Calculate how much should be given to create a targeted number of tokens.
@@ -223,7 +249,7 @@ Options:
 
 bl_foopgp_giftarray() {
 	local name
-	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
 Display an array to indicate how many token gonna be created from a gift.
@@ -268,12 +294,12 @@ Options:
 	for ((i=1,j=1,k=1; i<=max && k<=maxl; i++,k++)) ; do
 		g=$(bl_foopgp_t2g --tokens "$tg" --gifts "$gg" $i)
 		while (( $(echo "$j < $g" | bc -l) )) ; do
-			LC_NUMERIC=POSIX printf "| %7s.00 ${csymb[EUR]} | %9s Ɉ |\n" "$j" "$(bl_foopgp_g2t --tokens "$tg" --gifts "$gg" $j)"
+			LC_NUMERIC=POSIX printf "| %7s.00 ${csymb[EUR]} | %13s |\n" "$j" "$(bl_foopgp_g2t --printsym --siprefix deci --tokens "$tg" --gifts "$gg" $j)"
 			((j*=2))
 			j=$(tr '4' '5' <<<"$j") # To follow base 10 approximation : "1 2 5 10 20 50 100 ..." instead of "1 2 4 8 16 32 64 128 ..."
 			((++k<maxl)) || break
 		done
-		LC_NUMERIC=POSIX printf "| %10s ${csymb[EUR]} | %2s.000000 Ɉ |\n" "$g" "$i"
+		LC_NUMERIC=POSIX printf "| %10s ${csymb[EUR]} | %2s0.00000 dɈ |\n" "$g" "$i"
 	done #| uniq
 }
 
@@ -287,7 +313,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	BL_FOOPGP_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_FOOPGP_shelpmsg="
 Actions:
-$(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:10}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help options, eg:
 $ $BASH_SOURCE ACTION --help
@@ -335,7 +361,7 @@ _bl_foopgp_parseoptions "$@" || _BL_FOOPGP_RETVAL=$?
 ### Run ###
 set -e
 shift $BL_FOOPGP_NOPTIONS
-if function=$(grep -o "\<bl_$1\>" <<< "${BL_FOOPGP_FUNCTIONS[@]}") ; then
+if function=$(grep -o "\<bl_foopgp_$1\>" <<< "${BL_FOOPGP_FUNCTIONS[@]}") ; then
 	shift
 	$function "$@"
 	exit $?
