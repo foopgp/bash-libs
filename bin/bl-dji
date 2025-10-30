@@ -102,7 +102,7 @@ bl_dji_2micro()
 Translate given VALUES to their microVALUES, aka µVALUES (10^-6).
 Values with too much decimals will be rounded half-to-even,
 confer https://www.exploringbinary.com/inconsistent-rounding-of-printed-floating-point-numbers/
-Given VALUES may be suffixed by:
+Given VALUES may be suffixed by symbol or name of the International System of Units (ISO/IEC 80000):
   * 'd' for deci.
   * 'c' for centi.
   * 'm' for milli
@@ -121,22 +121,20 @@ Options:
 		esac
 		shift
 	done
+	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
-	local num value extglob ret=0
-	# save extglob shopt
-	# '-p' is a shopt listing option, then here '|| true' is not dirty. cf. https://lists.gnu.org/archive/html/bug-bash/2025-09/msg00360.html
-	extglob="$(shopt -p extglob)" || true
-	# Make sure extglob is set
-	shopt -s extglob
+	local num value extglob ret=0 siprefix
 	for value in "$@" ; do
-		case "${value/#+([0-9.])/}" in
-			µ|micro)  num=$(LANG=C printf "%0.0f\n" "${value/[^0-9.]*/}") || num="" ;;
-			m|milli)  num=$(LANG=C printf "%0.3f\n" "${value/[^0-9.]*/}") || num="" ;;
-			c|centi*) num=$(LANG=C printf "%0.4f\n" "${value/[^0-9.]*/}") || num="" ;;
-			d|deci)   num=$(LANG=C printf "%0.5f\n" "${value/[^0-9.]*/}") || num="" ;;
-			"")       num=$(LANG=C printf "%0.6f\n" "${value}") || num="" ;;
+		siprefix=$(sed -nE 's/,/./ ; s/^[[:space:]]*([0-9]*\.?[0-9]+)[[:space:]]*(.*)$/\2/p ' <<<"$value")
+		value=$(sed -nE 's/,/./ ; s/^[[:space:]]*([0-9]*\.?[0-9]+)[[:space:]]*(.*)$/\1/p ' <<<"$value")
+		case "${siprefix}" in
+			µ|micro) num=$(LANG=C printf "%0.0f\n" "${value:?}") || num="" ;;
+			m|milli) num=$(LANG=C printf "%0.3f\n" "${value:?}") || num="" ;;
+			c|centi) num=$(LANG=C printf "%0.4f\n" "${value:?}") || num="" ;;
+			d|deci)  num=$(LANG=C printf "%0.5f\n" "${value:?}") || num="" ;;
+			"")      num=$(LANG=C printf "%0.6f\n" "${value:?}") || num="" ;;
 			*)
-				printf "%s: warning: unrecognized suffix '%s'\n" "$FUNCNAME" "${value/#+([0-9])/}" >&2
+				printf "%s: warning: unrecognized SI prefix '%s'\n" "$FUNCNAME" "${siprefix}" >&2
 				num=""
 				;;
 		esac
@@ -147,10 +145,73 @@ Options:
 			echo
 		fi
 	done
-	# make sure extglob as we found it before.
-	$extglob
+
 	return $ret
 }
+
+bl_dji_2deci()
+{
+	local name
+	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] VALUE ..."
+
+	for ((;$#;)) ; do
+		case "$1" in
+			-t|--truncate) printf "%s: Error: Sorry, option %s not implemented yet.\n" "$FUNCNAME" "$1" >&2 ; return 2 ;;
+			-h|--help)
+				bl_dji_2micro --help | sed '1,3s/micro/deci/g ; 3s/µVALUES (10^-6)/dVALUES (10^-1)/'
+				return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local num
+	bl_dji_2micro "$@" | while read num etc ; do
+		if [[ "$num" ]] ; then
+			LANG=C printf "%0.5f\n" $(bc -l <<<"scale=5 ; $num/100000")
+		else #Error: propagate empty line.
+			echo
+		fi
+	done
+	return ${PIPESTATUS[0]}
+}
+
+bl_dji_2milli()
+{
+	local name
+	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS] VALUE ..."
+
+	for ((;$#;)) ; do
+		case "$1" in
+			-t|--truncate) printf "%s: Error: Sorry, option %s not implemented yet.\n" "$FUNCNAME" "$1" >&2 ; return 2 ;;
+			-h|--help)
+				bl_dji_2micro --help | sed '1,3s/micro/milli/g ; 3s/µVALUES (10^-6)/mVALUES (10^-3)/'
+				return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local num
+	bl_dji_2micro "$@" | while read num etc ; do
+		if [[ "$num" ]] ; then
+			LANG=C printf "%0.3f\n" $(bc -l <<<"scale=3 ; $num/1000")
+		else #Error: propagate empty line.
+			echo
+		fi
+	done
+	return ${PIPESTATUS[0]}
+}
+
+
 
 bl_dji_2bin()
 {
@@ -183,6 +244,7 @@ Options:
 		esac
 		shift
 	done
+	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
 	local num bin i ret=0
 	bl_dji_2micro "$@" | while read num ; do
@@ -233,6 +295,7 @@ Options:
 		esac
 		shift
 	done
+	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
 	local bin imax i bit p2 ret=0
 	bl_dji_2bin "$@" | while read bin ; do
