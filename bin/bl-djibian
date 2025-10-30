@@ -207,8 +207,9 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 		username="$(LANG=C ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
 		passwd=$(bl_input --password --default "${passwd}" --text "User password (for this system)" "Password")
 	done
-	local udid4=$(bl_pgpid_gen_u4 --surname "$sname" --given-names "$gname" --birth-date "$bdate" --birth-country "$bcountry") || return $?
-	local uid=$(bl_pgpid_gen_uid "$udid4") || return $?
+	local udid4 uid
+	udid4=$(bl_pgpid_gen_u4 --surname "$sname" --given-names "$gname" --birth-date "$bdate" --birth-country "$bcountry") || return $?
+	uid=$(bl_pgpid_gen_uid "$udid4") || return $?
 	
 	adduser --disabled-password --comment "${username},${bdate//[^0-9]/},,$phone,$email" --home "/home/u4$udid4" "$username" || return $?
 	# groupmod, usermod and passwd are used after "adduser" because these 4 commands are overcomplicated and/or buggy.
