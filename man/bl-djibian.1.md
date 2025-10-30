@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-djibian - manual page for bl-djibian 0.1.1
+bl-djibian - manual page for bl-djibian 0.1.2
 
 # SYNOPSIS
 
@@ -46,6 +46,13 @@ ACTION **\--help**
 
 bl-djibian is also bash library, see: \$ source bl-djibian
 **\--help**
+
+# ENVIRONMENT VARIABLES
+
+The following environment variables may affect bl-djibian:
+
+**BL_INTERACTIVE_FRONTEND**
+:   select a frontend program {NONE,whiptail,dialog}
 
 # DIAGNOSTICS
 

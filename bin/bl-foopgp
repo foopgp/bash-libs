@@ -29,6 +29,9 @@ if [[ "$1" == --bash-completion ]] ; then
 		cur=${COMP_WORDS[COMP_CWORD]}
 
 		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--date)
+				COMPREPLY=( $(date -I --date="-1 month" ; date -I ; date -I --date="+1 month") )
+				return 0 ;;
 			--help|--version)
 				# should exit without executing any actions, so do not complete anything
 				return 0 ;;

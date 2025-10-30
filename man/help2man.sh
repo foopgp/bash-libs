@@ -10,7 +10,7 @@ cd "$(dirname "$0")"
 
 PATH="../bin:$PATH"
 
-versionstring=$(git describe | sed -E ' s:^([0-9]+\.[0-9]+\.[0-9]+).*:\1: ')
+versionstring=$(git describe --tag | sed -E ' s:^([0-9]+\.[0-9]+\.[0-9]+).*:\1: ')
 
 for bl in ../bin/$bashlibs ; do
 	blname="$(basename "$bl")"
