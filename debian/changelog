@@ -1,3 +1,16 @@
+bash-libs (0.1.2-1) UNRELEASED; urgency=medium
+
+  [ JJ ]
+  * bl-interactive: manage Backspace when input password
+  * bl-djibian: suggest password when adduser
+  * fix small bugs
+  * bl-dji: improve bl_dji_2micro + add 2 functions: bl_dji_2milli and bl_dji_2deci
+  * bl-djibian adduser(): fix failing fail
+  * bl-foopgp: rename actions + add options + change giftarray default output
+  * update manpages + bash completion
+
+ -- jbar <jjbrucker@foopgp.org>  Thu, 30 Oct 2025 14:23:09 +0100
+
 bash-libs (0.1.1-3) unstable; urgency=medium
 
   * fix: add patch remove reuse checker
