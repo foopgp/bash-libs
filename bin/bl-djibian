@@ -110,9 +110,10 @@ Options:
   -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
   -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
   -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
-  -e, --email EMAIL                User email (optionnal)
-  -t, --phone NUMBER               User phone number (optionnal)
+  -e, --email EMAIL                User email (optional)
+  -t, --phone NUMBER               User phone number (optional)
   -p, --password PASSWORD          User password (for current djibian Operating System)
+  -P, --passfrom FILE              Get user password from first line of FILE
   -v, --verify                     Ask for verification
   -a, --admin                      Enable admin rights (root power through sudo group)
 "
@@ -134,6 +135,8 @@ Options:
 				shift ; phone=${1//[^0-9() .+-]/} ;;
 			-p|--passw*)
 				shift ; passwd=$1 ;;
+			-P|--passfrom)
+				shift ; read passwd < "$1" ;;
 			-v|--verify) verify=1 ;;
 			-a|--admin) extragroups+=",sudo" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
