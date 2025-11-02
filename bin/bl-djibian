@@ -113,30 +113,32 @@ Options:
   -e, --email EMAIL                User email (optional)
   -t, --phone NUMBER               User phone number (optional)
   -p, --password PASSWORD          User password (for current djibian Operating System)
-  -P, --passfrom FILE              Get user password from first line of FILE
-  -v, --verify                     Ask for verification
+  -P, --passfrom FILE              Get user password from first line of FILE (eg: fifo, tmpfs, ...)
+  -F, --from-pgp-card              Get user data from OpenPGP smartcard (eg: yubikey, nitrokey, ...)
+  -v, --verify                     Resume input data for verification
   -a, --admin                      Enable admin rights (root power through sudo group)
 "
-	local username sname gname bdate bcountry email phone passwd verify="" extragroups
+	local username sname gname bdate bcountry email phone passwd verify="" extragroups fromcard=""
 	extragroups=$BL_DJIBIAN_EXTRA_GROUPS
 	for ((;$#;)) ; do
 		case "$1" in
-			-s|--s*)
+			-s|--surname)
 				shift ; sname=$1 ;;
-			-g|--g*)
+			-g|--given-names|--givennames)
 				shift ; gname=$1 ;;
-			-d|--birth-d*)
+			-d|--birth-date|birthdate)
 				shift ; bdate=$1 ;;
-			-c|--birth-c*)
+			-c|--birth-country|birthcountry)
 				shift ; bcountry=$1 ;;
 			-e|--email)
 				shift ; email=$1 ;;
 			-t|--phone)
 				shift ; phone=${1//[^0-9() .+-]/} ;;
-			-p|--passw*)
+			-p|--password)
 				shift ; passwd=$1 ;;
-			-P|--passfrom)
+			-P|--passfrom|--pass-from)
 				shift ; read passwd < "$1" ;;
+			-F|--from-pgp-card|--frompgpcard|--from-gpg-card|--fromgpgcard) fromcard=1 ;;
 			-v|--verify) verify=1 ;;
 			-a|--admin) extragroups+=",sudo" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -153,24 +155,48 @@ Options:
 		return 2
 	fi
 
+	local udid4 uid
 
-	if [[ "$1" ]] ; then
-		username="$1"
-		if ! ( LANG=C ; [[ "$username" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]] ) ; then
-			username="$(LANG= ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
-			printf "%s: Notice:
-As defined by IEEE Std 1003.1-2001, the username should consist only of
-letters, digits, underscores, periods, at signs and dashes, then it has
-been changed to %s\n" "$FUNCNAME" "$username" >&2
-		fi
+	if [[ "$fromcard" ]] ; then
+		local cardstatus
+		cardstatus=$(su --command "gpg --card-status" "${SUDO_USER:-$USER}") || return $?
+
+		email=($(grep --only-matching --extended-regexp "${BL_INTERACTIVE_EMAIL_REGEX}" <<<"${cardstatus}"))
+		(( ${#email[@]} != 0 )) || { printf "%s: Error: OpenPGP smartcard doesn't contain any %s ..." "$FUNCNAME" "email" >&2 ; return 1 ; }
+		(( ${#email[@]} < 2 )) || printf "%s: Warning: supernumerary %s, skipping %s ..." "$FUNCNAME" "email" "${email[1]}" >&2
+
+		udid4=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,\1,p" <<<"${cardstatus}"))
+		(( ${#udid4[@]} != 0 )) || { printf "%s: Error: OpenPGP smartcard doesn't contain any %s ..." "$FUNCNAME" "udid4" >&2 ; return 1 ; }
+		(( ${#udid4[@]} < 2 )) || printf "%s: Warning: supernumerary %s, skipping %s ..." "$FUNCNAME" "udid4" "${email[1]}" >&2
+
+		username=$(sed --silent ' /Name of cardholder:/ { s,.*: ,,p } ' <<<"${cardstatus}")
+		# If "Name of cardholder" hasn't been set, generate username from email
+		[[ "$username" ]] || username="${email%%@*}"
+
+		sname=$(printf "// Already hashed in u4=%s" "$udid4")
+		gname=$(printf "// Already hashed in u4=%s" "$udid4")
+		bdate="// Also already hashed"
+		bcountry=$(printf "// Already present in u4=%s" "$udid4")
 	fi
+
+	# If username is given as first argument, override username extracted from smartcard
+	[[ -z "$1" ]] || username="$1"
 
 	[[ "$sname" ]] || sname=$(bl_input "User surname (family name) at birth")
 	[[ "$gname" ]] || gname=$(bl_input "User forenames (given names) at birth")
 	[[ "$bdate" ]] || bdate=$(bl_input "User birth date (YYYY-MM-DD)")
 	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "User birth country (3 letter code)")
-	# If username is not given, generate one from given names and surname.
+	# If there is still no username, generate one from given names and surname.
 	[[ "$username" ]] || username="$(LANG= sed ' s,\b\([a-z]\)[^ ,;-]*,\1,g  ;  s,[^a-z],,g ' <<<"${gname,,}" )$(LANG= sed ' s,[^a-z],, ' <<<"${sname,,}" )"
+
+	if ! ( LANG=C ; [[ "$username" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]] ) ; then
+		username="$(LANG= ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
+		printf "%s: Notice:
+As defined by IEEE Std 1003.1-2001, the username should consist only of
+letters, digits, underscores, periods, at signs and dashes, then it has
+been changed to %s\n" "$FUNCNAME" "$username" >&2
+	fi
+
 	if [[ -z "$passwd" ]] ; then
 		local passwd2 preamble suggpwd
 		suggpwd=$(bl_gen_passphrase)
@@ -210,8 +236,7 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 		username="$(LANG=C ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
 		passwd=$(bl_input --password --default "${passwd}" --text "User password (for this system)" "Password")
 	done
-	local udid4 uid
-	udid4=$(bl_pgpid_gen_u4 --surname "$sname" --given-names "$gname" --birth-date "$bdate" --birth-country "$bcountry") || return $?
+	[[ "$udid4" ]] || udid4=$(bl_pgpid_gen_u4 --surname "$sname" --given-names "$gname" --birth-date "$bdate" --birth-country "$bcountry") || return $?
 	uid=$(bl_pgpid_gen_uid -- "$udid4") || return $?
 	
 	adduser --disabled-password --comment "${username},${bdate//[^0-9]/},,$phone,$email" --home "/home/u4$udid4" "$username" || return $?
