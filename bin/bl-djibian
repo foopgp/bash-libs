@@ -32,6 +32,9 @@ if [[ "$1" == --bash-completion ]] ; then
 			--help|--version)
 				# should exit without executing any actions, so do not complete anything
 				return 0 ;;
+			--frontend)
+				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
+				return 0 ;;
 		esac
 		case $cur in
 			-*)
@@ -81,9 +84,10 @@ BL_DJIBIAN_KEYSERVERLIST=(
 ### internal functions ###
 
 _bl_djibian_parseoptions() {
-	local npp=$#
+	local npp=$# frontend
 	for ((;$#;)) ; do
 		case "$1" in
+			-f|--frontend) shift; frontend="$1";; # Will be passed to bl-interactive
 			-h|--help) printf "%s\n%s%s" "$BL_DJIBIAN_usage" "$BL_DJIBIAN_chelpmsg" "$BL_DJIBIAN_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_DJIBIAN_NAME" "$BL_DJIBIAN_VERSION" ; return 1 ;;
 			--) shift ; break ;;
@@ -93,6 +97,12 @@ _bl_djibian_parseoptions() {
 		shift
 	done
 	BL_DJIBIAN_NOPTIONS=$((npp-$#))
+# shellcheck source=bl-interactive
+	if [[ "$frontend" ]] ; then
+		source "$(dirname "$BASH_SOURCE")"/bl-interactive --frontend "$frontend" --
+	else
+		source "$(dirname "$BASH_SOURCE")"/bl-interactive --
+	fi
 }
 
 ### public functions / program actions ###
@@ -283,6 +293,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 
 	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
+  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)
   -h, --help               show this help and exit
   -V, --version            show version and exit
 

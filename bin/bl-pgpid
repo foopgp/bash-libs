@@ -32,6 +32,9 @@ if [[ "$1" == --bash-completion ]] ; then
 			--help|--version)
 				# should exit without executing any actions, so do not complete anything
 				return 0 ;;
+			--frontend)
+				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
+				return 0 ;;
 		esac
 		case $cur in
 			-*)
@@ -312,15 +315,13 @@ declare -Ar BL_PGPID_COORDINATES=(
 
 ### external functions ###
 
-# shellcheck source=bl-interactive
-. "$(dirname "$BASH_SOURCE")"/bl-interactive --
-
 ### internal functions ###
 
 _bl_pgpid_parseoptions() {
-	local npp=$#
+	local npp=$# frontend
 	for ((;$#;)) ; do
 		case "$1" in
+			-f|--frontend) shift; frontend="$1";; # Will be passed to bl-interactive
 			-h|--help) printf "%s\n%s%s" "$BL_PGPID_usage" "$BL_PGPID_chelpmsg" "$BL_PGPID_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_PGPID_NAME" "$BL_PGPID_VERSION" ; return 1 ;;
 			--) shift ; break ;;
@@ -330,6 +331,12 @@ _bl_pgpid_parseoptions() {
 		shift
 	done
 	BL_PGPID_NOPTIONS=$((npp-$#))
+# shellcheck source=bl-interactive
+	if [[ "$frontend" ]] ; then
+		source "$(dirname "$BASH_SOURCE")"/bl-interactive --frontend "$frontend" --
+	else
+		source "$(dirname "$BASH_SOURCE")"/bl-interactive --
+	fi
 }
 
 _bl_icao9303_mrz_checkdigit() {
@@ -490,7 +497,7 @@ People have to check, and fix when NOK.
 		gdate="${mrza[date_of_birth]}"
 	fi
 	if ! bdate=$(date --date "${gdate}" +"%Y-%m-%d" ) ; then
-		printf "%s: Error: Can't reformart birthdate '%s'\n" "$FUNCNAME" "$gdate" >&2
+		printf "%s: Error: Can't reformat birthdate '%s'\n" "$FUNCNAME" "$gdate" >&2
 		return 1
 	fi
 
@@ -881,7 +888,7 @@ BL_PGPID_chelpmsg="
 Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fixed Unix User ID for each of them.
 
 Options:
-"
+  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"
 
 ### Init ###
 
