@@ -1,3 +1,14 @@
+bash-libs (0.1.3-1) UNRELEASED; urgency=medium
+
+  [ JJ ]
+  * bl-djibian adduser: fix issue when u4 begin with '-'.
+  * bl-interactive input --password: manage ctrl-U (-> Erase all)
+  * bl-djibian adduser: new option --passfrom
+  * bl-djibian adduser: manage new option --from-pgp-card + minor Postel improvments
+  * update man pages
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Mon, 03 Nov 2025 08:12:00 +0100
+
 bash-libs (0.1.2-1) unstable; urgency=medium
 
   [ JJ ]
