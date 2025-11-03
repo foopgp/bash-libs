@@ -115,18 +115,16 @@ BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-${BL_FOOPGP_STINGYNALTYS[$(date 
 
 ### external functions ###
 
-# shellcheck source=bl-interactive
-. "$(dirname "$BASH_SOURCE")"/bl-interactive --
-
 ### internal functions ###
 
 _bl_foopgp_parseoptions() {
 	local npp=$#
-	local date
+	local date verbose
 	for ((;$#;)) ; do
 		case "$1" in
 			-h|--help) printf "%s\n%s%s" "$BL_FOOPGP_usage" "$BL_FOOPGP_chelpmsg" "$BL_FOOPGP_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_VERSION" ; return 1 ;;
+			-v|--verbose) verbose="1" ;;
 			-s|--stingy*) shift ; BL_FOOPGP_STINGYNALTY="$1" ;;
 			-d|--date) shift ; BL_FOOPGP_STINGYNALTY=${BL_FOOPGP_STINGYNALTYS[$(date --iso-8601 --date "$1"  | head -c 7)]} ;;
 			--) shift ; break ;;
@@ -136,9 +134,8 @@ _bl_foopgp_parseoptions() {
 		shift
 	done
 	BL_FOOPGP_NOPTIONS=$((npp-$#))
-	#TODO(maybe): use bl_log instead of next 2 'printf'
 	if [[ "$BL_FOOPGP_STINGYNALTY" =~ ^[0-9]+\.?[0-9]*$ ]] ; then
-		printf "%s: Info: stingynalty=%s\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_STINGYNALTY" >&2
+		[[ -z "$verbose" ]] || printf "%s: Info: stingynalty=%s\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_STINGYNALTY" >&2
 	else
 		printf "%s: Error: stingynalty: invalid number '%s'\n" "$BL_FOOPGP_NAME" "$BL_FOOPGP_STINGYNALTY" >&2
 		return 2
@@ -315,6 +312,9 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 
 	BL_FOOPGP_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_FOOPGP_shelpmsg="
+  -h, --help               show this help and exit/return
+  -V, --version            show version and exit/return
+
 Actions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:10}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
@@ -343,9 +343,8 @@ BL_FOOPGP_chelpmsg="
 Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
 
 Options:
-  -h, --help               show this help and exit/return
-  -V, --version            show version and exit/return
-  -s, --stingynalty VALUE  set STINGYNALTY (current: $BL_FOOPGP_STINGYNALTY)
+  -v, --verbose            output important infos on stderr, like stingynalty value
+  -s, --stingynalty VALUE  set STINGYNALTY ($(date --iso-8601 | head -c 7): $BL_FOOPGP_STINGYNALTY)
   -d, --date STRING        set STINGYNALTY according to given date (cf. <https://www.gnu.org/software/coreutils/date>)
 "
 
