@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-test - manual page for bl-test 0.1.2
+bl-test - manual page for bl-test 0.1.3
 
 # SYNOPSIS
 

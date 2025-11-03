@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-qif - manual page for bl-qif 0.1.2
+bl-qif - manual page for bl-qif 0.1.3
 
 # SYNOPSIS
 

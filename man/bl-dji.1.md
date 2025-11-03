@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-dji - manual page for bl-dji 0.1.2
+bl-dji - manual page for bl-dji 0.1.3
 
 # SYNOPSIS
 

@@ -251,6 +251,12 @@ Options:
 						else
 							prompt=''
 						fi
+					elif [[ $char == $'\x15' ]] ; then
+						# Ctrl-U -> Erase all
+						if ((${#rep} > 0)) ; then
+							prompt=$(printf "%0${#rep}d%${#rep}s%0${#rep}d" "0" " " | sed "s,0,"$'\x08'",g" )
+							rep=''
+						fi
 					else
 						prompt='*'
 						rep+="$char"
