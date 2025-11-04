@@ -147,7 +147,7 @@ Options:
 			-p|--password)
 				shift ; passwd=$1 ;;
 			-P|--passfrom|--pass-from)
-				shift ; read passwd < "$1" ;;
+				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
 			-F|--from-pgp-card|--frompgpcard|--from-gpg-card|--fromgpgcard) fromcard=1 ;;
 			-v|--verify) verify=1 ;;
 			-a|--admin) extragroups+=",sudo" ;;
