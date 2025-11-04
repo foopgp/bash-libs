@@ -35,6 +35,12 @@ if [[ "$1" == --bash-completion ]] ; then
 			--frontend)
 				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
 				return 0 ;;
+			--add)
+				COMPREPLY=( $(compgen -W "$(getent passwd | awk -F ":" "{ if ( \$3 >= 1000 ) print \$1}")" -- $cur ) )
+				return 0 ;;
+			--remove)
+				COMPREPLY=( $(compgen -W "$(getent group sudo | cut -d ":" -f 4 | tr "," " ")" -- $cur ) )
+				return 0 ;;
 		esac
 		case $cur in
 			-*)
@@ -257,6 +263,65 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 	echo "$passwd" | passwd --stdin "$username" || return $?
 	printf "%s: Notice: user %s (u4=%s) successfully added to current system.\n" "$FUNCNAME" "$username" "$udid4" >&2
 }
+
+bl_djibian_admins()
+{
+	local name
+	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]"
+	local helpmsg="
+List, add or remove local admins (root power through sudo group). Add or remove need admin rights.
+SUDO_USER is not allowed to remove himself (from sudo group).
+
+Options:
+  -a, --add USER        Add user to admin group (sudo). May be passed multiple time.
+  -r, --remove USER     Remove user to admin group (sudo). May be passed multiple time.
+  -l, --list            Do nothing, as $name always output users with admin rights (after eventual add or remove).
+"
+	local toadd toremove ret=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-a|--add)
+				shift ; toadd+="$1 " ;;
+			-r|--remove)
+				shift ; toremove+="$1 " ;;
+			-l|--list)
+				true ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	if [[ "$toadd" ]] || [[ "$toremove" ]] ; then
+		if [[ "$(id --user)" != 0 ]] ; then
+			printf "%s: Error: Need root power (sudo).\n" "$FUNCNAME" >&2
+			return 2
+		fi
+		local user
+		for user in $toremove ; do
+			if [[ "$user" != ${SUDO_USER:-$USER} ]] ; then
+				gpasswd --delete "$user" sudo >&2 || ((ret+=$?))
+			else
+				printf "%s: Warning: %s: no one can remove himself from admin group (sudo).\n" "$FUNCNAME" "$user" >&2
+				((++ret))
+			fi
+		done
+		for user in $toadd ; do
+			gpasswd --add "$user" sudo >&2 || ((ret+=$?))
+		done
+
+	fi
+	getent group sudo | sed -E ' s,^[^:]*:[^:]*:[^:]*:([^:]*),\1, ; s:,: :g '
+	ret=$((ret+${PIPESTATUS[0]}))
+
+	return "$ret"
+}
+
+
 
 _wip_bl_djibian_addpgpuser()
 {
