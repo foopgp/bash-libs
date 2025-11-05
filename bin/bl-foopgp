@@ -312,8 +312,8 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 
 	BL_FOOPGP_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_FOOPGP_shelpmsg="
-  -h, --help               show this help and exit/return
-  -V, --version            show version and exit/return
+  -h, --help               show this help and exit
+  -V, --version            show version and exit
 
 Actions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:10}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)

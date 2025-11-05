@@ -451,7 +451,7 @@ WARNING: mrz data may be irrelevant to generate udid4. eg:
          * Surname or given names may be incomplete (cut bc exceed mrz size)
          * Surname or given names may differs from those given at birth (marriage, gender change, etc.)
          * Surname or given names transliteration may have change over time
-         * Year of birth date is not written with 4 digit (and people may live longer than 100 years)
+         * Year of birth date is only written with 2 digits (and people may live longer than 100 years)
          * Humans may have done error on birth date, surname or given names.
 By the way, there are ~80% chance that an icao9303 MRZ allow to generate a correct udid4.
 People have to check, and fix when NOK.
