@@ -76,7 +76,12 @@ BL_SECURITY_VERSION=$(git describe --dirty --broken --always)
 BL_SECURITY_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 readonly BL_SECURITY_NAME BL_SECURITY_VERSION BL_SECURITY_FUNCTIONS
 
-### functions ###
+### external functions ###
+
+# shellcheck source=bl-interactive
+. "$(dirname "$BASH_SOURCE")"/bl-interactive --
+
+### internal functions ###
 
 _bl_security_parseoptions() {
 	local npp=$# frontend
@@ -92,13 +97,13 @@ _bl_security_parseoptions() {
 		shift
 	done
 	BL_SECURITY_NOPTIONS=$((npp-$#))
-# shellcheck source=bl-interactive
+
 	if [[ "$frontend" ]] ; then
 		source "$(dirname "$BASH_SOURCE")"/bl-interactive --frontend "$frontend" --
-	else
-		source "$(dirname "$BASH_SOURCE")"/bl-interactive --
 	fi
 }
+
+### public functions / program actions ###
 
 bl_urandom() {
 	local name

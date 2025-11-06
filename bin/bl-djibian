@@ -83,6 +83,8 @@ BL_DJIBIAN_KEYSERVERLIST=(
 
 ### external functions ###
 
+# shellcheck source=bl-interactive
+. "$(dirname "$BASH_SOURCE")"/bl-interactive --
 # shellcheck source=bl-pgpid
 . "$(dirname "$BASH_SOURCE")"/bl-pgpid --
 . "$(dirname "$BASH_SOURCE")"/bl-security --
@@ -103,11 +105,9 @@ _bl_djibian_parseoptions() {
 		shift
 	done
 	BL_DJIBIAN_NOPTIONS=$((npp-$#))
-# shellcheck source=bl-interactive
+
 	if [[ "$frontend" ]] ; then
 		source "$(dirname "$BASH_SOURCE")"/bl-interactive --frontend "$frontend" --
-	else
-		source "$(dirname "$BASH_SOURCE")"/bl-interactive --
 	fi
 }
 

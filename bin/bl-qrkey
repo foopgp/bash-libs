@@ -197,8 +197,8 @@ Options:
 		return 1
 	fi
 
-	if ((splitn<2)) ; then
-		printf "%s: Error: splits number (%d) can't be lower than 2.\n" "$FUNCNAME" "$splitn" >&2
+	if ((splitn<3)) ; then
+		printf "%s: Error: splits number (%d) can't be lower than 3.\n" "$FUNCNAME" "$splitn" >&2
 		return 2
 	fi
 

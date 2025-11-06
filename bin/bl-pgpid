@@ -315,6 +315,8 @@ declare -Ar BL_PGPID_COORDINATES=(
 
 ### external functions ###
 
+source "$(dirname "$BASH_SOURCE")"/bl-interactive --
+
 ### internal functions ###
 
 _bl_pgpid_parseoptions() {
@@ -331,11 +333,8 @@ _bl_pgpid_parseoptions() {
 		shift
 	done
 	BL_PGPID_NOPTIONS=$((npp-$#))
-# shellcheck source=bl-interactive
 	if [[ "$frontend" ]] ; then
 		source "$(dirname "$BASH_SOURCE")"/bl-interactive --frontend "$frontend" --
-	else
-		source "$(dirname "$BASH_SOURCE")"/bl-interactive --
 	fi
 }
 
@@ -374,9 +373,10 @@ else return non-zero if EXPECTED_RESULT differs from calculated check digit.
 
 _bl_icao9303_mrz_analyse() {
 	local helpmsg="Usage: $FUNCNAME [Options] AANAME MRZ
+Analyse a Machine Readable Zone and fill the associative array named AANAME
+
 Options:
   -u, --uncheck                Dont verify checksums
-Analyse a Machine Readable Zone and fill the associative array named AANAME
 "
 
 	local uncheck
@@ -509,7 +509,7 @@ bl_pgpid_gen_u4() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
-Generate udid4. Missing input is asked interactively.
+Generate udid4. Missing inputs are asked interactively.
 You may pass the Machine Readable Zone of an international passport as argument, but there are ~20% chances that generated udid4 is incorrect.
 
 Options:
@@ -768,7 +768,7 @@ Options:
   -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: hkp://keys.foopgp.org)
   -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
 "
-	local email pseudo comment keyserv="hkp://keys.foopgp.org" gpghome
+	local email pseudo comment keyserv="hkp://keys.foopgp.org"
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local expire=11 verify=""
 	for ((;$#;)) ; do
