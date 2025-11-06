@@ -1,0 +1,350 @@
+#!/bin/bash
+#
+# Bash library and executable that generate id compliant with foopgp.
+#
+# Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-only
+#
+# shellcheck disable=SC2013 # To read lines rather than words
+# shellcheck disable=SC2034 # variable appears unused
+# shellcheck disable=SC2046 # Quote this to prevent word splitting
+# shellcheck disable=SC2086 # Double quote warning
+# shellcheck disable=SC2128 # expanding array without index warning
+
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_tmp_a=$("${BASH_SOURCE[0]}" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_qrkey_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version)
+				# should exit without executing any actions, so do not complete anything
+				return 0 ;;
+			--frontend)
+				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
+				return 0 ;;
+		esac
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		# complete actions if none in ${COMP_WORDS[@]}
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		return 0
+	}'
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_qrkey_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	return 0
+fi
+
+# If sourcing while _bl_qrkey_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_qrkey_parseoptions)" == function ]] ; then
+	_bl_qrkey_parseoptions "$@"
+	return $?
+fi
+
+### Constants ###
+
+BL_QRKEY_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+BL_QRKEY_VERSION=$(git describe --dirty --broken --always)
+BL_QRKEY_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_QRKEY_NAME BL_QRKEY_VERSION BL_QRKEY_FUNCTIONS
+
+### Default option values ###
+
+### external functions ###
+
+source "$(dirname "$BASH_SOURCE")"/bl-interactive --
+source "$(dirname "$BASH_SOURCE")"/bl-security --
+
+### internal functions ###
+
+_bl_qrkey_parseoptions() {
+	local npp=$# frontend
+	for ((;$#;)) ; do
+		case "$1" in
+			-f|--frontend) shift; frontend="$1";; # Will be passed to bl-interactive
+			-h|--help) printf "%s\n%s%s" "$BL_QRKEY_usage" "$BL_QRKEY_chelpmsg" "$BL_QRKEY_shelpmsg" ; return 1 ;;
+			-V|--version) printf "%s %s\n" "$BL_QRKEY_NAME" "$BL_QRKEY_VERSION" ; return 1 ;;
+			--) shift ; break ;;
+			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_QRKEY_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	BL_QRKEY_NOPTIONS=$((npp-$#))
+	if [[ "$frontend" ]] ; then
+		source "$(dirname "$BASH_SOURCE")"/bl-interactive --frontend "$frontend" --
+	fi
+}
+
+_bl_gpg_get_exportable_seckeyid() {
+	local helpmsg="Usage: $FUNCNAME
+Call 'gpg --with-colon' and ouput exportable secret keys, one by line:
+KeyID     Creation_Date    Public_Key_Algorithm
+
+Options:
+  -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+"
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	for ((;$#;)) ; do
+		case "$1" in
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-h|--h*) echo "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	# confer https://www.rfc-editor.org/rfc/rfc9580#name-public-key-algorithms
+	local -a pka=([1]="RSA" "RSA_Encrypt-Only" "RSA_Sign-Only" [16]="Elgamal_Encrypt-Only" "DSA" "ECDH" "ECDSA" "Elgamal" "Diffie-Hellman" "EdDSALegacy" "AEDH" "AEDSA" "X25519" "X448" "Ed25519" "Ed448")
+	local pkaindex
+	local -A record
+
+	# Confer https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=blob_plain;f=doc/DETAILS
+	gpg --homedir "$gpghome" --list-secret-keys --with-colons | grep "^sec:" | while	IFS=':' read record[Type] record[Validity] record[KeyLenght] record[PubKeyAlgo] record[KeyID] record[CreationDate] record[ExpirationDate] record[Field8] record[Ownertrust] record[UserID] record[SignatureClass] record[KeyCapabilities] record[Field13] record[Flags] record[TockenSN] record[HashAlgo] record[CurveName] record[ComplianceFlags] record[LastUpdate] record[Origin] record[Comment] record[rfu] ; do
+	if [[ "${record[TockenSN]}" == \+ ]] ; then
+				if ! pkaindex=$((${record[PubKeyAlgo]})) ; then
+						printf "%s: Error: Unexpected field 4 (Public Key Algorithm)\n" "$FUNCNAME"  >&2
+						return 1
+				fi
+				echo "${record[KeyID]}  $(date --iso-8601=hours --date "@${record[CreationDate]}")  ${pka[${pkaindex}]:-unkown}"
+		fi
+	done
+	return ${PIPESTATUS[0]}
+}
+
+### public functions / program actions ###
+
+# bl_qrkey_printqrkey is inspired from https://gist.github.com/joostrijneveld/59ab61faa21910c8434c
+#
+# Comparison between 1) "--export-secret-key" and 2) "--export-secret-key | paperkey --output-type raw":
+# First export also certificate, with pubkeys and uid. Then exported data are bigger, need bigger QRcodes, but import is easier.
+# Second export only secrets (of asymmetric keys). Then data are smaller, use smaller QRcodes, but import is more complex as it need to get certificate somewhere
+# If we are using curve 25519, we spare so much information, then we are not forced to use paperkey
+#
+bl_qrkey_printqrkey() {
+	local name
+	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [KEYID]"
+
+# QRKEY QR VERSIONS:
+# * 1: simple split (splits num == threshold num) with extra symmetric encryption (deprecated)
+# * 2: simple split with extra symmetric encryption and complex passphrase (deprecated)
+# * 3: Shamir's secret sharing with extra symmetric encryption (splits num > threshold num) (deprecated)
+# * 4: simple split (splits num == threshold num)
+# * 5: Shamir's secret sharing (splits num > threshold num)
+#
+	local splitn=5 thresn=3 qrversion=5
+	local helpmsg="
+Export and print secret keys on multiple QRcode using Shamir's secret sharing.
+Missing inputs are asked interactively.
+
+Options:
+  -p, --passphrase PASSPHRASE   Passphrase to (symmetric) decrypt secret part of OpenPGP key
+  -t, --printer PRINTER         Name of printer to use
+  -S, --split NUM               Number of shares to be generated (default: $splitn)
+  -T, --threshold NUM           Number of shares necessary to reconstruct the secret (default: $thresn)
+  -H, --homedir GNUPGHOME       GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+"
+	local passphrase printer
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	for ((;$#;)) ; do
+		case "$1" in
+			-p|--passphrase)
+				shift ; passphrase=$1 ;;
+			-t|--printer)
+				shift ; printer=$1 ;;
+			-S|--split)
+				shift ; splitn=$(($1)) ;;
+			-T|--thres*)
+				shift ; thresn=$(($1)) ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local tmpdir f
+	if ! tmpdir=$(mktemp -d -t "$FUNCNAME".XXXXXX) ; then
+		printf "%s: Error: Can't create tmp dir.\n" "$FUNCNAME" >&2
+		return 1
+	fi
+
+	if ((splitn<2)) ; then
+		printf "%s: Error: splits number (%d) can't be lower than 2.\n" "$FUNCNAME" "$splitn" >&2
+		return 2
+	fi
+
+	if ((splitn<thresn)) ; then
+		printf "%s: Warning: threshold can't be greater than number of split, reducing threshold to splits number (%d).\n" "$FUNCNAME" "$splitn" >&2
+		thresn=$split
+	fi
+
+	# If number of shares equal number of threshold, don't use shamir's secret sharing
+	((splitn!=thresn)) || qrversion=4
+
+	[[ -z "$1" ]] || keyid="$1"
+
+	if [[ -z "$printer" ]] ; then
+		local -a printers
+		printers=($(LANG= lpstat -p | sed -n 's,^printer \([^ ]*\).*,\1,p')) || { printf "%s: Error: No printer detected.\n" "$FUNCNAME" ; return 1 ; }
+		printer="$(bl_radiolist --output-value --default-value "$(lpstat -d | sed 's,.* ,,')" --num-per-line 1 --text "Where to print the ${splitn} secret fragments ?" "${printers[@]}")"
+	fi
+	if [[ -z "$keyid" ]] ; then
+		local -a seckeyids
+		mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
+		((${#seckeyids[@]}>0)) || { printf "%s: Error: No secret to print.\n" "$FUNCNAME" ; return 1 ; }
+		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of secret to print (on ${splitn} fragments)" "${seckeyids[@]}")"
+		keyid="${keyid%% *}"
+	fi
+
+	[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(to protect your secret key)" "Passphrase")
+
+	# TODO: Remove Photos and extras uid from exported data (containing not only secrets, but also public data)
+	gpg --homedir "$gpghome" --batch --passphrase "${passphrase}" --pinentry-mode loopback --export-options export-minimal,export-clean --export-secret-key "${keyid}" > "$tmpdir/priv.gpg" || return $?
+	if ((qrversion<4)) ; then
+		gpg --batch --symmetric --passphrase "${passphrase//[^0-9]/}" --pinentry-mode loopback < "$tmpdir/priv.gpg" > "$tmpdir/s.gpg" || return $?
+	else
+		mv "$tmpdir/priv.gpg" "$tmpdir/s.gpg"
+	fi
+	
+	if ((qrversion<3)) || ((qrversion==4)) ; then
+		basenc --base64url --wrap 0 < "$tmpdir/s.gpg" > "$tmpdir/s.gpg.b64url"
+		split "$tmpdir/s.gpg.b64url" -d -n "$splitn" "$tmpdir/SECRET-"
+	elif ((qrversion==3)) || ((qrversion==5)) ; then
+		gfsplit -n ${thresn} -m ${splitn} "$tmpdir/s.gpg" "$tmpdir/SECRET"
+		cd "$tmpdir/"
+		for f in "SECRET."* ; do
+			basenc --base64url --wrap 0 < "$f" > "${f/./-}"
+		done
+		cd -
+	else
+		printf "%s: Error: Unexpected QR Version (%s)\n" "$FUNCNAME" "$qrversion" >&2
+		return 1
+	fi
+
+	printf "%s: Notice: Printing secret splitted into %s fragments on %s ...\n" "$FUNCNAME" "$splitn" "$printer" >&2
+	i=0
+	for f in "$tmpdir/SECRET-"* ; do
+
+		#TODO: manage stdouts and stderrs on next lines
+		if ((qrversion==3)) ; then
+			# 7 chars QR Code Header : one magic char '~', one version char, one char for threshold number, one char for index of split part, 3 chars for the share number (cf man gfcombine)
+			( printf "~$((qrversion))$((thresn-1))$i"${f##*-} ; cat "$f" ) | qrencode --level=L --dpi=50 --output "$f.png"
+		else
+			# 4 chars QR Code Header : one magic char '~', one version char, one char for split number, one char for index of split part.
+			( printf "~$((qrversion))$((thresn-1))$i" ; cat "$f" ) | qrencode --level=M --dpi=50 --output "$f.png"
+		fi
+		((++i)) # Not i++ because i start from 0 and set -e ;-)
+		cat <<EOF | pandoc --from markdown --to pdf -fmarkdown-implicit_figures | pdfcrop --quiet --margins "4" - "$f.pdf" >&2
+\pagenumbering{gobble}
+
+*$(hostname) - $(date --iso-8601)*
+
+*${FUNCNAME} ${BL_QRKEY_VERSION} - QR version: ${qrversion}*
+
+## PGPID SECRET (/${thresn}) - FRAGMENT ${i}/${splitn}
+
+$(gpg --homedir "$gpghome" --with-colons --list-keys "$keyid" | awk -F: '$1=="uid" { print $10"\n" }')
+
+![qrcode $i]($f.png)
+
+EOF
+		lpr -# 1 -P "${printer}" "${f}.pdf" >&2
+	done
+
+	bl_shred_path -v -f -r "$tmpdir" >&2
+}
+
+### General Help Messages ###
+
+if [[ "$BASH_SOURCE" == "$0" ]] ; then
+	# run as a program
+	declare -r BL_QRKEY_isprogram=1
+
+	BL_QRKEY_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_QRKEY_shelpmsg="
+  -h, --help               show this help and exit
+  -V, --version            show version and exit
+
+Actions:
+$(for f in "${BL_QRKEY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+All actions support a --help options, eg:
+$ $BASH_SOURCE ACTION --help
+
+$BL_QRKEY_NAME is also bash library, see:
+$ source $BASH_SOURCE --help
+"
+else
+	# run as a library (source $0)
+
+	BL_QRKEY_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+
+	BL_QRKEY_shelpmsg="
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
+
+Functions:
+$(for f in "${BL_QRKEY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"
+fi
+
+BL_QRKEY_chelpmsg="
+Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fixed Unix User ID for each of them.
+
+Options:
+  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"
+
+### Init ###
+
+# Parse Options
+_BL_QRKEY_RETVAL=0
+_bl_qrkey_parseoptions "$@" || _BL_QRKEY_RETVAL=$?
+
+# Do nothing else if sourced
+[[ "$BASH_SOURCE" == "$0" ]] || return $_BL_QRKEY_RETVAL
+
+[[ "$_BL_QRKEY_RETVAL" != "1"  ]] || exit 0
+[[ "$_BL_QRKEY_RETVAL" < 2 ]] || exit $_BL_QRKEY_RETVAL
+
+### Run ###
+set -e
+shift $BL_QRKEY_NOPTIONS
+if function=$(grep -o "\<bl_qrkey_$1\>" <<< "${BL_QRKEY_FUNCTIONS[@]}") ; then
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_QRKEY_NAME" "$1" "$BASH_SOURCE" >&2
+	exit 2
+fi
+
