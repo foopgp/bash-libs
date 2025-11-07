@@ -72,7 +72,6 @@ readonly BL_QRKEY_NAME BL_QRKEY_VERSION BL_QRKEY_FUNCTIONS
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-interactive --
-source "$(dirname "$BASH_SOURCE")"/bl-security --
 
 ### internal functions ###
 
@@ -137,14 +136,14 @@ Options:
 
 ### public functions / program actions ###
 
-# bl_qrkey_printqrkey is inspired from https://gist.github.com/joostrijneveld/59ab61faa21910c8434c
+# bl_qrkey_printqr is inspired from https://gist.github.com/joostrijneveld/59ab61faa21910c8434c
 #
 # Comparison between 1) "--export-secret-key" and 2) "--export-secret-key | paperkey --output-type raw":
 # First export also certificate, with pubkeys and uid. Then exported data are bigger, need bigger QRcodes, but import is easier.
 # Second export only secrets (of asymmetric keys). Then data are smaller, use smaller QRcodes, but import is more complex as it need to get certificate somewhere
 # If we are using curve 25519, we spare so much information, then we are not forced to use paperkey
 #
-bl_qrkey_printqrkey() {
+bl_qrkey_print() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [KEYID]"
@@ -160,15 +159,17 @@ bl_qrkey_printqrkey() {
 	local helpmsg="
 Export and print secret keys on multiple QRcode using Shamir's secret sharing.
 Missing inputs are asked interactively.
+Ouput the temporary directory, to be properly erased (shredded) by yourself.
 
 Options:
   -p, --passphrase PASSPHRASE   Passphrase to (symmetric) decrypt secret part of OpenPGP key
   -t, --printer PRINTER         Name of printer to use
+  -D, --tmpdir DIRECTORY        Temporary (working) directory to use (instead of generating one).
   -S, --split NUM               Number of shares to be generated (default: $splitn)
   -T, --threshold NUM           Number of shares necessary to reconstruct the secret (default: $thresn)
   -H, --homedir GNUPGHOME       GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
 "
-	local passphrase printer
+	local passphrase printer tmpdir
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -176,6 +177,10 @@ Options:
 				shift ; passphrase=$1 ;;
 			-t|--printer)
 				shift ; printer=$1 ;;
+			-D|--tmpdir|--tempdir)
+				shift
+				[[ -d "$1" ]] || { printf "%s: Error: nonexistent or unattainable directory (%s)\n" "$FUNCNAME" "$1" >&2 ; return 2 ; }
+				tmpdir=$1 ;;
 			-S|--split)
 				shift ; splitn=$(($1)) ;;
 			-T|--thres*)
@@ -191,10 +196,16 @@ Options:
 		shift
 	done
 
-	local tmpdir f
-	if ! tmpdir=$(mktemp -d -t "$FUNCNAME".XXXXXX) ; then
-		printf "%s: Error: Can't create tmp dir.\n" "$FUNCNAME" >&2
-		return 1
+	if [[ -z "$tmpdir" ]] ; then
+			tmpdir=$(mktemp -d -t "$FUNCNAME".XXXXXX) || { printf "%s: Error: Can't create tmp dir.\n" "$FUNCNAME" >&2 ; return 1 ; } ;
+			echo "$tmpdir"
+	else
+		if rm -- $(mktemp --tmpdir="$tmpdir" testw.XXX) ; then
+			echo "$(readlink -f "$tmpdir")"
+		else
+			printf "%s: Error: Can't write in tmp dir (%s).\n" "$FUNCNAME" "$tmpdir" >&2
+			return 2
+		fi
 	fi
 
 	if ((splitn<3)) ; then
@@ -235,7 +246,10 @@ Options:
 		mv "$tmpdir/priv.gpg" "$tmpdir/s.gpg"
 	fi
 	
-	if ((qrversion<3)) || ((qrversion==4)) ; then
+	local f
+
+	if ((qrversion==1)) || ((qrversion==2)) || ((qrversion==4)) ; then
+		# simple split
 		basenc --base64url --wrap 0 < "$tmpdir/s.gpg" > "$tmpdir/s.gpg.b64url"
 		split "$tmpdir/s.gpg.b64url" -d -n "$splitn" "$tmpdir/SECRET-"
 	elif ((qrversion==3)) || ((qrversion==5)) ; then
@@ -279,8 +293,6 @@ $(gpg --homedir "$gpghome" --with-colons --list-keys "$keyid" | awk -F: '$1=="ui
 EOF
 		lpr -# 1 -P "${printer}" "${f}.pdf" >&2
 	done
-
-	bl_shred_path -v -f -r "$tmpdir" >&2
 }
 
 ### General Help Messages ###
