@@ -149,10 +149,10 @@ bl_qrkey_print() {
 	local usage="Usage: $name [OPTIONS]... [KEYID]"
 
 # QRKEY QR VERSIONS:
-# * 1: simple split (splits num == threshold num) with extra symmetric encryption (deprecated)
+# * 1: simple split (splits num == threshold num) with only numbers as extra symmetric encryption (deprecated)
 # * 2: simple split with extra symmetric encryption and complex passphrase (deprecated)
-# * 3: Shamir's secret sharing with extra symmetric encryption (splits num > threshold num) (deprecated)
-# * 4: simple split (splits num == threshold num)
+# * 3: Shamir's secret sharing with only number as extra symmetric encryption (deprecated)
+# * 4: simple split whith extra symmetric encryption (splits num == threshold num)
 # * 5: Shamir's secret sharing (splits num > threshold num)
 #
 	local splitn=5 thresn=3 qrversion=5
@@ -236,14 +236,19 @@ Options:
 		keyid="${keyid%% *}"
 	fi
 
-	[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(to protect your secret key)" "Passphrase")
+	[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(protecting your secret key)" "Passphrase")
 
 	# TODO: Remove Photos and extras uid from exported data (containing not only secrets, but also public data)
 	gpg --homedir "$gpghome" --batch --passphrase "${passphrase}" --pinentry-mode loopback --export-options export-minimal,export-clean --export-secret-key "${keyid}" > "$tmpdir/priv.gpg" || return $?
-	if ((qrversion<4)) ; then
+	if (( qrversion==1 || qrversion==3 )) ; then
 		gpg --batch --symmetric --passphrase "${passphrase//[^0-9]/}" --pinentry-mode loopback < "$tmpdir/priv.gpg" > "$tmpdir/s.gpg" || return $?
-	else
+	elif (( qrversion==4 )) ; then
+		gpg --batch --symmetric --passphrase "${passphrase}" --pinentry-mode loopback < "$tmpdir/priv.gpg" > "$tmpdir/s.gpg" || return $?
+	elif (( qrversion==5 )) ; then
 		mv "$tmpdir/priv.gpg" "$tmpdir/s.gpg"
+	else
+		printf "%s: Error: Unexpected QR Version (%s)\n" "$FUNCNAME" "$qrversion" >&2
+		return 1
 	fi
 	
 	local f
@@ -269,7 +274,7 @@ Options:
 	for f in "$tmpdir/SECRET-"* ; do
 
 		#TODO: manage stdouts and stderrs on next lines
-		if ((qrversion==3)) ; then
+		if ((qrversion==3)) || ((qrversion==5)); then
 			# 7 chars QR Code Header : one magic char '~', one version char, one char for threshold number, one char for index of split part, 3 chars for the share number (cf man gfcombine)
 			( printf "~$((qrversion))$((thresn-1))$i"${f##*-} ; cat "$f" ) | qrencode --level=L --dpi=50 --output "$f.png"
 		else
@@ -289,6 +294,8 @@ Options:
 $(gpg --homedir "$gpghome" --with-colons --list-keys "$keyid" | awk -F: '$1=="uid" { print $10"\n" }')
 
 ![qrcode $i]($f.png)
+
+$( ((qrversion!=4)) || echo "passphrase: ${passphrase}" )
 
 EOF
 		lpr -# 1 -P "${printer}" "${f}.pdf" >&2
