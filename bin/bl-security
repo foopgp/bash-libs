@@ -243,6 +243,46 @@ Options:
 	return 0
 }
 
+bl_new_password() {
+	local dict=${LANG::2} nw=3
+	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]"
+	local helpmsg="
+Ask to enter a new password and force retyping it. Starting with a passphrase suggestion.
+Output the new password.
+
+Options:
+  -D, --dict DICTIONARY     Dictionary for passphrase suggestion (default: ${dict:=en})
+  -n, --num NUMBER          Number of words for passphrase suggestion (default: $nw)
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-D|--dict*) shift ; dict="$1" ;;
+			-n|--num*) shift ; nw="$1" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	((! $#)) || printf "%s: Warning: ignoring arguments %s\n" "$FUNCNAME" "$*" >&2
+
+	local passwd passwd2 preamble suggpwd
+
+	suggpwd=$(bl_gen_passphrase --dict "$dict" --num "$nw")
+	preamble=$(printf "Password suggestion: $suggpwd")
+	passwd2=$(bl_input --password --text "$preamble" "Password")
+	preamble=$(printf "Retype %s's password" "$username")
+	while true ; do
+		passwd=$(bl_input --password --text "$preamble" "Password")
+		[[ "$passwd2" != $passwd ]] || break
+		preamble="Passwords do not match. Please retype"
+		passwd2=$passwd
+	done
+	echo "$passwd"
+}
 
 ### General Help Messages ###
 
@@ -278,7 +318,7 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_SECURITY_chelpmsg="
-Provide some \"security\" features.
+Provide some cybersecurity features.
 
 Options:
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"
