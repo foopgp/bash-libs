@@ -316,6 +316,7 @@ declare -Ar BL_PGPID_COORDINATES=(
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-interactive --
+source "$(dirname "$BASH_SOURCE")"/bl-security --
 
 ### internal functions ###
 
@@ -752,7 +753,7 @@ bl_pgpid_gen_key() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... EMAIL"
-	local passphrase=$(date -I)
+	local keyserv="hkps://keys.foopgp.org"
 	local helpmsg="
 Generate an OpenPGP key pair (public and secret) according to foopgp standards.
 Output 3 lines for each fingerprints :
@@ -763,12 +764,13 @@ Output 3 lines for each fingerprints :
 Options:
   -n, --name PSEUDONYM             Common name or pseudonym (default: first part of email)
   -c, --comment UDID4              Comment field, expect an udid4, regex: ${BL_PGPID_U4_REGEX}
-  -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key (default: ${passphrase})
+  -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key
+  -P, --passfrom FILE              Get passphrase from first line of FILE (eg: fifo, tmpfs, ...)
   -e, --expiration YEARS           Number of years before certificate expiration (default: 11 -> $(date -I -d "+11 years"))
-  -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: hkp://keys.foopgp.org)
+  -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: $keyserv)
   -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
 "
-	local email pseudo comment keyserv="hkp://keys.foopgp.org"
+	local email passphrase pseudo comment
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local expire=11 verify=""
 	for ((;$#;)) ; do
@@ -779,6 +781,8 @@ Options:
 				shift ; comment=$1 ;;
 			-p|--passphrase)
 				shift ; passphrase=$1 ;;
+			-P|--passfrom|--pass-from)
+				shift ; passphrase=$( sed 1q < "$1" ) || return 1 ;;
 			-e|--expir*)
 				shift ; expire=$1 ;;
 			-k|--keyserver)
@@ -804,6 +808,8 @@ Options:
 
 #TODO: implement --verify to check input and ask when incoherent or missing.
 #TODO (also): check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.2.27 libgcrypt 1.8.8)
+
+	[[ "$passphrase" ]] || passphrase=$(bl_new_password)
 
 	[[ "$pseudo" ]] || pseudo=${email%%@*}
 
@@ -847,7 +853,6 @@ Keyserver: ${keyserv}
 	# output all (3) fingerprints, first fingerprint should be the one of the main key
 	gpg --homedir "$gpghome" --list-secret-keys --with-colons "$email" | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'
 }
-
 
 ### General Help Messages ###
 

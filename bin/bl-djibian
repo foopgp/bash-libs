@@ -213,19 +213,7 @@ letters, digits, underscores, periods, at signs and dashes, then it has
 been changed to %s\n" "$FUNCNAME" "$username" >&2
 	fi
 
-	if [[ -z "$passwd" ]] ; then
-		local passwd2 preamble suggpwd
-		suggpwd=$(bl_gen_passphrase)
-		preamble=$(printf "Password suggestion: $suggpwd")
-		passwd2=$(bl_input --password --text "$preamble" "Password")
-		preamble=$(printf "Retype %s's password" "$username")
-		while true ; do
-			passwd=$(bl_input --password --text "$preamble" "Password")
-			[[ "$passwd2" != $passwd ]] || break
-			preamble="Passwords do not match. Please retype"
-			passwd2=$passwd
-		done
-	fi
+	[[ "$passwd" ]] || passwd=$(bl_new_password)
 
 	while [[ "$verify" ]] ; do
 		! bl_yesno --default=no --text \
