@@ -21,17 +21,22 @@ bl-security - manual page for bl-security 0.1.3
 
 # DESCRIPTION
 
-Provide some security features.
+Provide some cybersecurity features.
 
 # OPTIONS
 
+**-f**, **\--frontend** PROGRAM
+
+:   select a frontend program {NONE,whiptail,dialog} (environment var:
+    BL_INTERACTIVE_FRONTEND)
+
 **-h**, **\--help**
 
-:   show this help and exit/return
+:   show this help and exit
 
 **-V**, **\--version**
 
-:   show version and exit/return
+:   show version and exit
 
 ## Actions:
 
@@ -46,6 +51,11 @@ shred_path
 gen_passphrase
 
 :   Generate a good random passphrase
+
+new_password
+
+:   Ask to enter a new password and force retyping it. Starting with a
+    passphrase suggestion.
 
  
 All actions support a **\--help** options, eg: \$ bl-security

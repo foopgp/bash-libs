@@ -32,6 +32,15 @@ if [[ "$1" == --bash-completion ]] ; then
 			--help|--version)
 				# should exit without executing any actions, so do not complete anything
 				return 0 ;;
+			--frontend)
+				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
+				return 0 ;;
+			--add)
+				COMPREPLY=( $(compgen -W "$(getent passwd | awk -F ":" "{ if ( \$3 >= 1000 ) print \$1}")" -- $cur ) )
+				return 0 ;;
+			--remove)
+				COMPREPLY=( $(compgen -W "$(getent group sudo | cut -d ":" -f 4 | tr "," " ")" -- $cur ) )
+				return 0 ;;
 		esac
 		case $cur in
 			-*)
@@ -74,6 +83,8 @@ BL_DJIBIAN_KEYSERVERLIST=(
 
 ### external functions ###
 
+# shellcheck source=bl-interactive
+. "$(dirname "$BASH_SOURCE")"/bl-interactive --
 # shellcheck source=bl-pgpid
 . "$(dirname "$BASH_SOURCE")"/bl-pgpid --
 . "$(dirname "$BASH_SOURCE")"/bl-security --
@@ -81,9 +92,10 @@ BL_DJIBIAN_KEYSERVERLIST=(
 ### internal functions ###
 
 _bl_djibian_parseoptions() {
-	local npp=$#
+	local npp=$# frontend
 	for ((;$#;)) ; do
 		case "$1" in
+			-f|--frontend) shift; frontend="$1";; # Will be passed to bl-interactive
 			-h|--help) printf "%s\n%s%s" "$BL_DJIBIAN_usage" "$BL_DJIBIAN_chelpmsg" "$BL_DJIBIAN_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_DJIBIAN_NAME" "$BL_DJIBIAN_VERSION" ; return 1 ;;
 			--) shift ; break ;;
@@ -93,6 +105,10 @@ _bl_djibian_parseoptions() {
 		shift
 	done
 	BL_DJIBIAN_NOPTIONS=$((npp-$#))
+
+	if [[ "$frontend" ]] ; then
+		source "$(dirname "$BASH_SOURCE")"/bl-interactive --frontend "$frontend" --
+	fi
 }
 
 ### public functions / program actions ###
@@ -137,7 +153,7 @@ Options:
 			-p|--password)
 				shift ; passwd=$1 ;;
 			-P|--passfrom|--pass-from)
-				shift ; read passwd < "$1" ;;
+				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
 			-F|--from-pgp-card|--frompgpcard|--from-gpg-card|--fromgpgcard) fromcard=1 ;;
 			-v|--verify) verify=1 ;;
 			-a|--admin) extragroups+=",sudo" ;;
@@ -197,19 +213,7 @@ letters, digits, underscores, periods, at signs and dashes, then it has
 been changed to %s\n" "$FUNCNAME" "$username" >&2
 	fi
 
-	if [[ -z "$passwd" ]] ; then
-		local passwd2 preamble suggpwd
-		suggpwd=$(bl_gen_passphrase)
-		preamble=$(printf "Password suggestion: $suggpwd")
-		passwd2=$(bl_input --password --text "$preamble" "Password")
-		preamble=$(printf "Retype %s's password" "$username")
-		while true ; do
-			passwd=$(bl_input --password --text "$preamble" "Password")
-			[[ "$passwd2" != $passwd ]] || break
-			preamble="Passwords do not match. Please retype"
-			passwd2=$passwd
-		done
-	fi
+	[[ "$passwd" ]] || passwd=$(bl_new_password)
 
 	while [[ "$verify" ]] ; do
 		! bl_yesno --default=no --text \
@@ -248,6 +252,65 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 	printf "%s: Notice: user %s (u4=%s) successfully added to current system.\n" "$FUNCNAME" "$username" "$udid4" >&2
 }
 
+bl_djibian_admins()
+{
+	local name
+	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]"
+	local helpmsg="
+List, add or remove local admins (root power through sudo group). Add or remove need admin rights.
+SUDO_USER is not allowed to remove himself (from sudo group).
+
+Options:
+  -a, --add USER        Add user to admin group (sudo). May be passed multiple time.
+  -r, --remove USER     Remove user to admin group (sudo). May be passed multiple time.
+  -l, --list            Do nothing, as $name always output users with admin rights (after eventual add or remove).
+"
+	local toadd toremove ret=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-a|--add)
+				shift ; toadd+="$1 " ;;
+			-r|--remove)
+				shift ; toremove+="$1 " ;;
+			-l|--list)
+				true ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	if [[ "$toadd" ]] || [[ "$toremove" ]] ; then
+		if [[ "$(id --user)" != 0 ]] ; then
+			printf "%s: Error: Need root power (sudo).\n" "$FUNCNAME" >&2
+			return 2
+		fi
+		local user
+		for user in $toremove ; do
+			if [[ "$user" != ${SUDO_USER:-$USER} ]] ; then
+				gpasswd --delete "$user" sudo >&2 || ((ret+=$?))
+			else
+				printf "%s: Warning: %s: no one can remove himself from admin group (sudo).\n" "$FUNCNAME" "$user" >&2
+				((++ret))
+			fi
+		done
+		for user in $toadd ; do
+			gpasswd --add "$user" sudo >&2 || ((ret+=$?))
+		done
+
+	fi
+	getent group sudo | sed -E ' s,^[^:]*:[^:]*:[^:]*:([^:]*),\1, ; s:,: :g '
+	ret=$((ret+${PIPESTATUS[0]}))
+
+	return "$ret"
+}
+
+
+
 _wip_bl_djibian_addpgpuser()
 {
 	local name
@@ -283,6 +346,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 
 	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
+  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)
   -h, --help               show this help and exit
   -V, --version            show version and exit
 

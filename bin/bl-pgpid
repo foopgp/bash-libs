@@ -32,6 +32,9 @@ if [[ "$1" == --bash-completion ]] ; then
 			--help|--version)
 				# should exit without executing any actions, so do not complete anything
 				return 0 ;;
+			--frontend)
+				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
+				return 0 ;;
 		esac
 		case $cur in
 			-*)
@@ -312,15 +315,16 @@ declare -Ar BL_PGPID_COORDINATES=(
 
 ### external functions ###
 
-# shellcheck source=bl-interactive
-. "$(dirname "$BASH_SOURCE")"/bl-interactive --
+source "$(dirname "$BASH_SOURCE")"/bl-interactive --
+source "$(dirname "$BASH_SOURCE")"/bl-security --
 
 ### internal functions ###
 
 _bl_pgpid_parseoptions() {
-	local npp=$#
+	local npp=$# frontend
 	for ((;$#;)) ; do
 		case "$1" in
+			-f|--frontend) shift; frontend="$1";; # Will be passed to bl-interactive
 			-h|--help) printf "%s\n%s%s" "$BL_PGPID_usage" "$BL_PGPID_chelpmsg" "$BL_PGPID_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_PGPID_NAME" "$BL_PGPID_VERSION" ; return 1 ;;
 			--) shift ; break ;;
@@ -330,6 +334,9 @@ _bl_pgpid_parseoptions() {
 		shift
 	done
 	BL_PGPID_NOPTIONS=$((npp-$#))
+	if [[ "$frontend" ]] ; then
+		source "$(dirname "$BASH_SOURCE")"/bl-interactive --frontend "$frontend" --
+	fi
 }
 
 _bl_icao9303_mrz_checkdigit() {
@@ -367,9 +374,10 @@ else return non-zero if EXPECTED_RESULT differs from calculated check digit.
 
 _bl_icao9303_mrz_analyse() {
 	local helpmsg="Usage: $FUNCNAME [Options] AANAME MRZ
+Analyse a Machine Readable Zone and fill the associative array named AANAME
+
 Options:
   -u, --uncheck                Dont verify checksums
-Analyse a Machine Readable Zone and fill the associative array named AANAME
 "
 
 	local uncheck
@@ -444,7 +452,7 @@ WARNING: mrz data may be irrelevant to generate udid4. eg:
          * Surname or given names may be incomplete (cut bc exceed mrz size)
          * Surname or given names may differs from those given at birth (marriage, gender change, etc.)
          * Surname or given names transliteration may have change over time
-         * Year of birth date is not written with 4 digit (and people may live longer than 100 years)
+         * Year of birth date is only written with 2 digits (and people may live longer than 100 years)
          * Humans may have done error on birth date, surname or given names.
 By the way, there are ~80% chance that an icao9303 MRZ allow to generate a correct udid4.
 People have to check, and fix when NOK.
@@ -490,7 +498,7 @@ People have to check, and fix when NOK.
 		gdate="${mrza[date_of_birth]}"
 	fi
 	if ! bdate=$(date --date "${gdate}" +"%Y-%m-%d" ) ; then
-		printf "%s: Error: Can't reformart birthdate '%s'\n" "$FUNCNAME" "$gdate" >&2
+		printf "%s: Error: Can't reformat birthdate '%s'\n" "$FUNCNAME" "$gdate" >&2
 		return 1
 	fi
 
@@ -502,7 +510,7 @@ bl_pgpid_gen_u4() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
-Generate udid4. Missing input is asked interactively.
+Generate udid4. Missing inputs are asked interactively.
 You may pass the Machine Readable Zone of an international passport as argument, but there are ~20% chances that generated udid4 is incorrect.
 
 Options:
@@ -745,7 +753,7 @@ bl_pgpid_gen_key() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... EMAIL"
-	local passphrase=$(date -I)
+	local keyserv="hkps://keys.foopgp.org"
 	local helpmsg="
 Generate an OpenPGP key pair (public and secret) according to foopgp standards.
 Output 3 lines for each fingerprints :
@@ -756,12 +764,13 @@ Output 3 lines for each fingerprints :
 Options:
   -n, --name PSEUDONYM             Common name or pseudonym (default: first part of email)
   -c, --comment UDID4              Comment field, expect an udid4, regex: ${BL_PGPID_U4_REGEX}
-  -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key (default: ${passphrase})
+  -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key
+  -P, --passfrom FILE              Get passphrase from first line of FILE (eg: fifo, tmpfs, ...)
   -e, --expiration YEARS           Number of years before certificate expiration (default: 11 -> $(date -I -d "+11 years"))
-  -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: hkp://keys.foopgp.org)
+  -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: $keyserv)
   -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
 "
-	local email pseudo comment keyserv="hkp://keys.foopgp.org" gpghome
+	local email passphrase pseudo comment
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local expire=11 verify=""
 	for ((;$#;)) ; do
@@ -772,6 +781,8 @@ Options:
 				shift ; comment=$1 ;;
 			-p|--passphrase)
 				shift ; passphrase=$1 ;;
+			-P|--passfrom|--pass-from)
+				shift ; passphrase=$( sed 1q < "$1" ) || return 1 ;;
 			-e|--expir*)
 				shift ; expire=$1 ;;
 			-k|--keyserver)
@@ -797,6 +808,8 @@ Options:
 
 #TODO: implement --verify to check input and ask when incoherent or missing.
 #TODO (also): check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.2.27 libgcrypt 1.8.8)
+
+	[[ "$passphrase" ]] || passphrase=$(bl_new_password)
 
 	[[ "$pseudo" ]] || pseudo=${email%%@*}
 
@@ -841,7 +854,6 @@ Keyserver: ${keyserv}
 	gpg --homedir "$gpghome" --list-secret-keys --with-colons "$email" | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'
 }
 
-
 ### General Help Messages ###
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
@@ -881,7 +893,7 @@ BL_PGPID_chelpmsg="
 Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fixed Unix User ID for each of them.
 
 Options:
-"
+  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"
 
 ### Init ###
 
