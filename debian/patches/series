@@ -1,3 +1,1 @@
-removeSpecsTests.diff
-insertVersionCmd
-removeReuse.diff
+010-Makefile.diff

@@ -22,3 +22,4 @@ debian/bash-libs.substvars
 debian/bash-libs/
 debian/files
 
+.pc

@@ -1,0 +1,36 @@
+Index: bash-libs/Makefile
+===================================================================
+--- bash-libs.orig/Makefile
++++ bash-libs/Makefile
+@@ -6,7 +6,7 @@ TARGETS               := $(wildcard bin/
+ 
+ SHELL                 := /bin/sh
+ LICENCES_CHECKER      := reuse lint
+-SUB_MAKE_DIRS         := specs man tests
++SUB_MAKE_DIRS         := tests
+ 
+ prefix                ?= /usr/local
+ exec_prefix           ?= $(prefix)
+@@ -14,7 +14,7 @@ bindir                ?= $(exec_prefix)/
+ 
+ BINDIR                := $(DESTDIR)$(bindir)
+ 
+-GIT_DESCRIBE          := git describe --always -- main
++GIT_DESCRIBE          := dpkg-parsechangelog --show-field Version
+ DIRTY_BROKEN          := \(dirty\|broken\)
+ COMMIT_COUNT          := \([1-9][0-9]*\)
+ COMMIT_HASH           := \(g[0-9a-f]\+\)
+@@ -35,12 +35,10 @@ build:
+ check_licenses:
+ 	RESULT=$$($(LICENCES_CHECKER) 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)
+ 
+-check: check_licenses build
++check: build
+ 
+ check clean:
+-	$(MAKE) -C specs $@
+ 	$(MAKE) -C man   $@
+-	$(MAKE) -C tests $@
+ 
+ html pdf docbook markdown:
+ 	$(MAKE) -C specs $@
