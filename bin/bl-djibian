@@ -245,10 +245,12 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 	
 	adduser --disabled-password --comment "${username},${bdate//[^0-9]/},,$phone,$email" --home "/home/u4$udid4" "$username" || return $?
 	# groupmod, usermod and passwd are used after "adduser" because these 4 commands are overcomplicated and/or buggy.
-	groupmod --gid "$uid" "$username" || return $?
-	usermod --append --groups "$extragroups" --uid "$uid" --gid "$uid" "$username" || return $?
-	chgrp --no-dereference --recursive "$username" "/home/u4$udid4" || return $? # should be done by usermod, but it doesn't ...
-	echo "$passwd" | passwd --stdin "$username" || return $?
+	groupmod --gid "$uid" "$username" || { ret=$? ; deluser --remove-home "$username" ; return $? ; }
+	usermod --append --groups "$extragroups" --uid "$uid" --gid "$uid" "$username" || { ret=$? ; deluser --remove-home "$username" ; return $? ; }
+	# following chgrp should be done by usermod, but it doesn't ...
+	chgrp --no-dereference --recursive "$username" "/home/u4$udid4" || { ret=$? ; deluser --remove-home "$username" ; return $? ; }
+
+	echo "$passwd" | passwd --stdin "$username" || { ret=$? ; deluser --remove-home "$username" ; return $? ; }
 	printf "%s: Notice: user %s (u4=%s) successfully added to current system.\n" "$FUNCNAME" "$username" "$udid4" >&2
 }
 
