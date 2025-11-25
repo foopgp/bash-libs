@@ -1,3 +1,15 @@
+bash-libs (0.1.5-1) UNRELEASED; urgency=medium
+
+  [ JJ ]
+  * bl-djibian adduser: clean homedir in case of late critical failure
+  * wip bin/bl-qrkey scan
+  * debug bin/bl-qrkey scan
+  * little security improvment
+  * bl-djibian adduser: 4 bugfixes
+  * update man pages + completion (for bl-qrkey)
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Wed, 26 Nov 2025 00:18:20 +0100
+
 bash-libs (0.1.4-2) unstable; urgency=medium
 
   * fix: clean quilt patches

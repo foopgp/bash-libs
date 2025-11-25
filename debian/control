@@ -43,7 +43,7 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  bl-interactive: Help managing interactive choices, while supporting multiple frontends:
  NONE, whiptail or dialog.
  .
- bl-security: Provide some security features.
+ bl-security: Provide some security features, notably a passphrase generator.
 
 Package: bashlibs-convert
 Replaces: bash-libs (<< 0.0.6~)
@@ -63,7 +63,8 @@ Package: bashlibs-pgpid
 Replaces: bash-libs (<< 0.0.6~)
 Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
-Depends: bashlibs-common, gpg, xxd, adduser, passwd,
+Depends: bashlibs-common, gpg, xxd, adduser, passwd, curl,
+         libgfshare-bin, pandoc, pdfcrop, zbar-tools,
          ${misc:Depends}
 Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
@@ -72,6 +73,8 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  bl-pgpid: Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fixed Unix User ID for each of them.
  .
  bl-djibian: System tools for the Debian blend « Djibian ».
+ .
+ bl-qrkey: Backup or restore OpenPGP keys using printed QR codes.
 
 Package: bashlibs-dji
 Replaces: bash-libs (<< 0.0.6~)

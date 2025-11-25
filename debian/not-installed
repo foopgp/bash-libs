@@ -1,6 +1,5 @@
 /usr/bin/bl-qif
 /usr/bin/bl-test
-/usr/bin/bl-qrkey
 /usr/share/bash-completion/completions/bl-qif
 /usr/share/bash-completion/completions/bl-test
 /usr/share/man/man1/bl-qif.1.gz
