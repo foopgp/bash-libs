@@ -582,7 +582,7 @@ fi
 
 BL_QIF_chelpmsg="
 Options:
-  -h, --help               show this help and exit/return
+  -h, --help               show help and exit/return
   -V, --version            show version and exit/return
 "
 

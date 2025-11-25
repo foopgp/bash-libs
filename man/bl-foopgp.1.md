@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-foopgp - manual page for bl-foopgp 0.1.3
+bl-foopgp - manual page for bl-foopgp 0.1.5
 
 # SYNOPSIS
 
@@ -26,22 +26,26 @@ to the the foopgp association.
 
 # OPTIONS
 
-**-h**, **\--help**
+**-v**, **\--verbose**
 
-:   show this help and exit/return
-
-**-V**, **\--version**
-
-:   show version and exit/return
+:   output important infos on stderr, like stingynalty value
 
 **-s**, **\--stingynalty** VALUE
 
-:   set STINGYNALTY (2025-10: 1.08848650703240391871)
+:   set STINGYNALTY (2025-11: 1.08848650703240391871)
 
 **-d**, **\--date** STRING
 
 :   set STINGYNALTY according to given date (cf.
     \<https://www.gnu.org/software/coreutils/date\>)
+
+**-h**, **\--help**
+
+:   show help and exit
+
+**-V**, **\--version**
+
+:   show version and exit
 
 ## Actions:
 

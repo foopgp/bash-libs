@@ -506,7 +506,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 
 	BL_DJI_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_DJI_shelpmsg="
-  -h, --help               show this help and exit
+  -h, --help               show help and exit
   -V, --version            show version and exit
 
 Actions:

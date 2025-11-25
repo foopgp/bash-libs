@@ -141,7 +141,7 @@ Cf: https://www.gnu.org/prep/standards/standards.html#g_t_002d_002dversion
 
 BL_TEST_chelpmsg="
 Options:
-  -h, --help               show this help and exit/return
+  -h, --help               show help and exit/return
   -V, --version            show version and exit/return"
 
 ### Init ###

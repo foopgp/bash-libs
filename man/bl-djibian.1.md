@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-djibian - manual page for bl-djibian 0.1.2
+bl-djibian - manual page for bl-djibian 0.1.5
 
 # SYNOPSIS
 
@@ -25,9 +25,14 @@ System tools for Djibian GNU/Linux.
 
 # OPTIONS
 
+**-f**, **\--frontend** PROGRAM
+
+:   select a frontend program {NONE,whiptail,dialog} (environment var:
+    BL_INTERACTIVE_FRONTEND)
+
 **-h**, **\--help**
 
-:   show this help and exit
+:   show help and exit
 
 **-V**, **\--version**
 
@@ -40,19 +45,17 @@ adduser
 :   Add user to this djibian system. Need root permissions (sudo).
     Missing input will be asked interactively.
 
+admins
+
+:   List, add or remove local admins (root power through sudo group).
+    Add or remove need admin rights.
+
  
 All actions support a **\--help** options, eg: \$ bl-djibian
 ACTION **\--help**
 
 bl-djibian is also bash library, see: \$ source bl-djibian
 **\--help**
-
-# ENVIRONMENT VARIABLES
-
-The following environment variables may affect bl-djibian:
-
-**BL_INTERACTIVE_FRONTEND**
-:   select a frontend program {NONE,whiptail,dialog}
 
 # DIAGNOSTICS
 

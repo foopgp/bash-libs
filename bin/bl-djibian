@@ -357,7 +357,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)
-  -h, --help               show this help and exit
+  -h, --help               show help and exit
   -V, --version            show version and exit
 
 Actions:

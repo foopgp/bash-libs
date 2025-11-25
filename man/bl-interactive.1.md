@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-interactive - manual page for bl-interactive 0.1.3
+bl-interactive - manual page for bl-interactive 0.1.5
 
 # SYNOPSIS
 
@@ -33,11 +33,11 @@ NONE, whiptail or dialog.
 
 **-h**, **\--help**
 
-:   show this help and exit/return
+:   show help and exit
 
 **-V**, **\--version**
 
-:   show version and exit/return
+:   show version and exit
 
 ## Actions:
 
