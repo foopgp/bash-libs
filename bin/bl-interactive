@@ -451,7 +451,7 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
 
 	BL_INTERACTIVE_usage="Usage: $(basename "${BASH_SOURCE[0]}") [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_INTERACTIVE_shelpmsg="
-  -h, --help               show this help and exit
+  -h, --help               show help and exit
   -V, --version            show version and exit
 
 Actions:

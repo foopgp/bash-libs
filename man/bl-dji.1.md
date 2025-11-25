@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-dji - manual page for bl-dji 0.1.3
+bl-dji - manual page for bl-dji 0.1.5
 
 # SYNOPSIS
 
@@ -27,7 +27,7 @@ Manage djis (Ɉ), also known as foopgp tokens.
 
 **-h**, **\--help**
 
-:   show this help and exit
+:   show help and exit
 
 **-V**, **\--version**
 

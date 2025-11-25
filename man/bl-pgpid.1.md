@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-pgpid - manual page for bl-pgpid 0.1.3
+bl-pgpid - manual page for bl-pgpid 0.1.5
 
 # SYNOPSIS
 
@@ -26,9 +26,14 @@ humans, or a fixed Unix User ID for each of them.
 
 # OPTIONS
 
+**-f**, **\--frontend** PROGRAM
+
+:   select a frontend program {NONE,whiptail,dialog} (environment var:
+    BL_INTERACTIVE_FRONTEND)
+
 **-h**, **\--help**
 
-:   show this help and exit
+:   show help and exit
 
 **-V**, **\--version**
 
@@ -43,7 +48,7 @@ mrz_to_u4
 
 gen_u4
 
-:   Generate udid4. Missing input is asked interactively.
+:   Generate udid4. Missing inputs are asked interactively.
 
 2num
 

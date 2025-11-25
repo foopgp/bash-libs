@@ -304,7 +304,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 
 	BL_JSON_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_JSON_shelpmsg="
-  -h, --help               show this help and exit
+  -h, --help               show help and exit
   -V, --version            show version and exit
 
 Actions:

@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-json - manual page for bl-json 0.1.2
+bl-json - manual page for bl-json 0.1.5
 
 # SYNOPSIS
 
@@ -28,11 +28,11 @@ variables or arrays, and vice-versa.
 
 **-h**, **\--help**
 
-:   show this help and exit/return
+:   show help and exit
 
 **-V**, **\--version**
 
-:   show version and exit/return
+:   show version and exit
 
 ## Actions:
 

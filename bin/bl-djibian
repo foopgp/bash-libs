@@ -129,7 +129,7 @@ Options:
   -e, --email EMAIL                User email (optional)
   -t, --phone NUMBER               User phone number (optional)
   -p, --password PASSWORD          User password (for current djibian Operating System)
-  -P, --passfrom FILE              Get user password from first line of FILE (eg: fifo, tmpfs, ...)
+  -P, --passfrom FILE              Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -F, --from-pgp-card              Get user data from OpenPGP smartcard (eg: yubikey, nitrokey, ...)
   -v, --verify                     Resume input data for verification
   -a, --admin                      Enable admin rights (root power through sudo group)
@@ -171,19 +171,27 @@ Options:
 		return 2
 	fi
 
-	local udid4 uid
+	local udid4 uid ret
 
 	if [[ "$fromcard" ]] ; then
-		local cardstatus
+		local cardstatus pubkeyurl
 		cardstatus=$(su --command "gpg --card-status" "${SUDO_USER:-$USER}") || return $?
 
+		# Try Import/Refresh Key from URL metadata (as email use to be in public certificate only)
+		pubkeyurl=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
+		if [[ "$pubkeyurl" ]] ; then
+			printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${pubkeyurl}" >&2
+			curl --progress-bar "$pubkeyurl" | gpg --import-options keep-ownertrust,import-clean --import || true
+			cardstatus=$(su --command "gpg --card-status" "${SUDO_USER:-$USER}") || return $?
+		fi
+
 		email=($(grep --only-matching --extended-regexp "${BL_INTERACTIVE_EMAIL_REGEX}" <<<"${cardstatus}"))
-		(( ${#email[@]} != 0 )) || { printf "%s: Error: OpenPGP smartcard doesn't contain any %s ..." "$FUNCNAME" "email" >&2 ; return 1 ; }
-		(( ${#email[@]} < 2 )) || printf "%s: Warning: supernumerary %s, skipping %s ..." "$FUNCNAME" "email" "${email[1]}" >&2
+		(( ${#email[@]} != 0 )) || { printf "%s: Error: OpenPGP smartcard doesn't indicate any %s ...\n" "$FUNCNAME" "email" >&2 ; return 1 ; }
+		(( ${#email[@]} < 2 )) || printf "%s: Warning: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "email" "${email[1]}" >&2
 
 		udid4=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,\1,p" <<<"${cardstatus}"))
-		(( ${#udid4[@]} != 0 )) || { printf "%s: Error: OpenPGP smartcard doesn't contain any %s ..." "$FUNCNAME" "udid4" >&2 ; return 1 ; }
-		(( ${#udid4[@]} < 2 )) || printf "%s: Warning: supernumerary %s, skipping %s ..." "$FUNCNAME" "udid4" "${email[1]}" >&2
+		(( ${#udid4[@]} != 0 )) || { printf "%s: Error: OpenPGP smartcard doesn't indicate any %s ...\n" "$FUNCNAME" "udid4" >&2 ; return 1 ; }
+		(( ${#udid4[@]} < 2 )) || printf "%s: Warning: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "udid4" "${udid4[1]}" >&2
 
 		username=$(sed --silent ' /Name of cardholder:/ { s,.*: ,,p } ' <<<"${cardstatus}")
 		# If "Name of cardholder" hasn't been set, generate username from email
@@ -245,10 +253,12 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 	
 	adduser --disabled-password --comment "${username},${bdate//[^0-9]/},,$phone,$email" --home "/home/u4$udid4" "$username" || return $?
 	# groupmod, usermod and passwd are used after "adduser" because these 4 commands are overcomplicated and/or buggy.
-	groupmod --gid "$uid" "$username" || return $?
-	usermod --append --groups "$extragroups" --uid "$uid" --gid "$uid" "$username" || return $?
-	chgrp --no-dereference --recursive "$username" "/home/u4$udid4" || return $? # should be done by usermod, but it doesn't ...
-	echo "$passwd" | passwd --stdin "$username" || return $?
+	groupmod --gid "$uid" "$username" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
+	usermod --append --groups "$extragroups" --uid "$uid" --gid "$uid" "$username" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
+	# following chgrp should be done by usermod, but it doesn't ...
+	chgrp --no-dereference --recursive "$username" "/home/u4$udid4" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
+
+	echo "$passwd" | passwd --stdin "$username" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
 	printf "%s: Notice: user %s (u4=%s) successfully added to current system.\n" "$FUNCNAME" "$username" "$udid4" >&2
 }
 
@@ -347,7 +357,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)
-  -h, --help               show this help and exit
+  -h, --help               show help and exit
   -V, --version            show version and exit
 
 Actions:

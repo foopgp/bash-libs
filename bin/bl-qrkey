@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that generate id compliant with foopgp.
+# Bash library and executable that backup or restore OpenPGP keys using printed QR codes.
 #
 # Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
@@ -34,6 +34,9 @@ if [[ "$1" == --bash-completion ]] ; then
 				return 0 ;;
 			--frontend)
 				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
+				return 0 ;;
+			--camera)
+				COMPREPLY=( $(compgen -W "$(ls /dev/v4l/by-id/*)" -- $cur ) )
 				return 0 ;;
 		esac
 		case $cur in
@@ -163,6 +166,7 @@ Ouput the temporary directory, to be properly erased (shredded) by yourself.
 
 Options:
   -p, --passphrase PASSPHRASE   Passphrase to (symmetric) decrypt secret part of OpenPGP key
+  -P, --passfrom FILE           Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -t, --printer PRINTER         Name of printer to use
   -D, --tmpdir DIRECTORY        Temporary (working) directory to use (instead of generating one).
   -S, --split NUM               Number of shares to be generated (default: $splitn)
@@ -175,6 +179,8 @@ Options:
 		case "$1" in
 			-p|--passphrase)
 				shift ; passphrase=$1 ;;
+			-P|--passfrom|--pass-from)
+				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
 			-t|--printer)
 				shift ; printer=$1 ;;
 			-D|--tmpdir|--tempdir)
@@ -239,7 +245,7 @@ Options:
 	[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(protecting your secret key)" "Passphrase")
 
 	# TODO: Remove Photos and extras uid from exported data (containing not only secrets, but also public data)
-	gpg --homedir "$gpghome" --batch --passphrase "${passphrase}" --pinentry-mode loopback --export-options export-minimal,export-clean --export-secret-key "${keyid}" > "$tmpdir/priv.gpg" || return $?
+	echo "${passphrase}" | gpg --homedir "$gpghome" --batch --passphrase-fd 0 --pinentry-mode loopback --export-options export-minimal,export-clean --export-secret-key "${keyid}" > "$tmpdir/priv.gpg" || return $?
 	if (( qrversion==1 || qrversion==3 )) ; then
 		gpg --batch --symmetric --passphrase "${passphrase//[^0-9]/}" --pinentry-mode loopback < "$tmpdir/priv.gpg" > "$tmpdir/s.gpg" || return $?
 	elif (( qrversion==4 )) ; then
@@ -302,6 +308,187 @@ EOF
 	done
 }
 
+bl_qrkey_scan() {
+	local name
+	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [IMAGES]..."
+
+	local helpmsg="
+Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or webcam.
+Missing inputs are asked interactively.
+Ouput the temporary directory, to be properly erased (shredded) by yourself.
+
+Options:
+  -D, --tmpdir DIRECTORY        Temporary (working) directory to use (instead of generating one).
+  -H, --homedir GNUPGHOME       GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+  -c, --camera V4LDEVICE        Video device to scan for QR code (/dev/v4l/by-id/...)
+  -p, --passphrase PASSPHRASE   This input is related to QR VERSIONS:
+                                  * 1 to 3: Only numbers, use to be a date: YYYYMMDD.
+                                  * 4: May be anything, confer bl_qrkey_print().
+                                  * 5: No passphrase -> option ignored.
+  -P, --passfrom FILE           Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+"
+
+	local passphrase tmpdir
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	for ((;$#;)) ; do
+		case "$1" in
+			-p|--passphrase)
+				shift ; passphrase=$1 ;;
+			-P|--passfrom|--pass-from)
+				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
+			-D|--tmpdir|--tempdir)
+				shift
+				[[ -d "$1" ]] || { printf "%s: Error: nonexistent or unattainable directory (%s)\n" "$FUNCNAME" "$1" >&2 ; return 2 ; }
+				tmpdir=$1 ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	if [[ -z "$tmpdir" ]] ; then
+			tmpdir=$(mktemp -d -t "$FUNCNAME".XXXXXX) || { printf "%s: Error: Can't create tmp dir.\n" "$FUNCNAME" >&2 ; return 1 ; } ;
+			touch "$tmpdir/qrcontent"
+			echo "$tmpdir"
+	else
+		if echo -n > "$tmpdir/qrcontent" ; then
+			echo "$(readlink -f "$tmpdir")"
+		else
+			printf "%s: Error: Can't write in tmp dir (%s).\n" "$FUNCNAME" "$tmpdir" >&2
+			return 2
+		fi
+	fi
+
+	local file imgfile
+	for file in "$@" ; do
+		if file "$file" | grep --quiet "PDF document" ; then
+			imgfile="$tmpdir/imgfile.png"
+			if ! convert pdf:"$file" "${imgfile}" ; then
+				printf "%s: Error: Can't convert pdf %s -> %s.\n" "$FUNCNAME" "$file" "$imgfile" >&2
+				return 1
+			fi
+		else
+			imgfile="$file"
+		fi
+
+# Expected QRdata begin with a version number "~[1-9]" followed by the maximum number of part-1 (default: 4-1=3) then by the index of the part (O to 9).
+		if zbarimg --quiet -Sdisable -Sqrcode.enable "$imgfile" | tr -d '\n' | sed 's,QR-Code:,\n,g' | grep "^~[1-9]" >> "$tmpdir/qrcontent" ; then
+			printf "%s: Info: QR code(s) with expected data succefully extracted from '%s'.\n" "$FUNCNAME" "$file" >&2
+		else
+			printf "%s: Error: No QR code with expected data in '%s'.\n" "$FUNCNAME" "$file" >&2
+			return 1
+		fi
+	done
+
+	local part qrversion max
+	local -a parts
+	while read -r part ; do
+		if [[ "${part:1:1}" != "${qrversion:=${part:1:1}}" ]] ; then
+			printf "%s: Crit: QR codes doesn't share the same version (%s)" "$FUNCNAME" "$qrversion != ${part:1:1}" >&2
+			return 3
+		fi
+		if [[ "${part:2:1}" != "${max:=${part:2:1}}" ]] ; then
+			printf "%s: Crit: QR codes doesn't share the same division (%s)" "$FUNCNAME" "$max != ${part:2:1}" >&2
+			return 3
+		fi
+		parts[${part:3:1}]="${part:4}"
+	done <"$tmpdir/qrcontent"
+
+	local -a v4ldevices i j
+	for ((i=0;i<=${max:-3};i++)) ; do
+		((${#parts[@]} <= ${max:-3})) || break
+		[[ -z "${parts[$i]}" ]] || continue
+
+		if [[ -z "$v4ldevice" ]] ; then
+			if ! v4ldevices=($(ls /dev/v4l/by-id/*index0)) ; then
+				printf "%s: Crit: No video input (eg. webcam) detected" "$FUNCNAME" >&2
+				return 3
+			elif [[ ${#v4ldevices[@]} == 1 ]] ; then
+				v4ldevice=${v4ldevices[0]}
+			else
+				v4ldevice=$(bl_radiolist --output-value --num-per-line 1 --default -1 --text "Missing part $((i+1)), device to scan qrcode ?" "${v4ldevices[@]}")
+			fi
+		fi
+		v4ldevice="$(readlink -f "${v4ldevice}")"
+
+		j=0
+		while ! part="$(zbarcam -Sdisable -Sqrcode.enable --oneshot --prescale=640x480 "$v4ldevice" | tr -d '\n' | sed 's,QR-Code:,\n,g' | grep "^~[1-9]")" ; do
+			printf "%s: Notice: No QR code with expected data detected..." "$FUNCNAME" >&2
+			((++j < 4)) || break
+		done
+
+		if [[ "${part:1:1}" != "${qrversion:=${part:1:1}}" ]] ; then
+			printf "%s: Crit: QR codes doesn't share the same version (%s)" "$FUNCNAME" "$qrversion != ${part:1:1}" >&2
+			return 3
+		fi
+		if [[ "${part:2:1}" != "${max:=${part:2:1}}" ]] ; then
+			printf "%s: Crit: QR codes doesn't share the same division (%s)" "$FUNCNAME" "$max != ${part:2:1}" >&2
+			return 3
+		fi
+		i=${part:3:1}
+		parts[$i]="${part:4}"
+		printf "%s: Notice: Scanning part %s -> OK" "$FUNCNAME" "$((i+1)) / $((max+1))" >&2
+		i=-1
+	done
+
+# If we are using paperkey, we have to retrieve the PGPcert (use to need network) and use something like:
+# ... base64 -d | paperkey --pubring "$tmpdir/PGPcert.gpg" 2> >(bl_log crit) | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "${passphrase[*]}" --import 2> >(bl_log notice)
+
+while true ; do
+
+	if [[ "$qrversion" == "0" ]] ; then
+		printf "%s: Crit: Invalid qrcode version (%s)" "$FUNCNAME" "$qrversion" >&2
+		return 3
+	elif [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "3" ]] ; then
+		birth_date=$(bl_input --default "${birth_date}" "Birth date (YYYY-mm-dd)")
+		passphrase[0]="$(sed 's/[^0-9]//g' <<<"${birth_date}" )"
+	elif [[ "$qrversion" == "4" ]] ; then
+		passphrase[0]=$(bl_input --default "${passphrase[0]}" "Passphrase")
+	elif [[ "$qrversion" != "5" ]] ; then
+		printf "%s: Crit: Unsupported qrcode version (%s)" "$FUNCNAME" "$qrversion" >&2
+		return 3
+	fi
+
+	if [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "4" ]] ; then
+		# Simple split
+		if [[ "$qrversion" == "2" ]] ; then
+			for ((i=1;i<=max+1;i++)) ; do
+				passphrase[$i]="$(bl_input --default "${passphrase[$i]}" "Secret word $i/$((max+1))")"
+			done
+		fi
+		printf "%s" ${parts[@]} | basenc --decode --base64url > "$tmpdir/SECRET"
+	elif [[ "$qrversion" == "3" ]] || [[ "$qrversion" == "5" ]] ; then
+		# Shamir Secret Sharing
+		for i in ${!parts[@]} ; do
+			printf "%s" ${parts[$i]:3} | basenc --decode --base64url > "$tmpdir/SECRET.${parts[$i]:0:3}"
+		done
+		gfcombine "$tmpdir/SECRET."*
+	fi
+
+	if [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "3" ]] || [[ "$qrversion" == "4" ]] ; then
+		if cat "$tmpdir/SECRET" | gpg --decrypt --batch --pinentry-mode loopback --passphrase "${passphrase[*]}" | gpg --homedir "$gpghome" --batch --pinentry-mode loopback --import ; then
+			break
+		fi
+	elif [[ "$qrversion" == "5" ]] ; then
+		if cat "$tmpdir/SECRET" | gpg --homedir "$gpghome" --batch --pinentry-mode loopback --import ; then
+			break
+		fi
+	fi
+done
+
+#FPRS=($(gpg --homedir "$gpghome" --list-secret-keys --with-colons | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'))
+
+##TODO: check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.2.27 libgcrypt 1.8.8)
+
+}
+
+
 ### General Help Messages ###
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
@@ -310,7 +497,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 
 	BL_QRKEY_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
 	BL_QRKEY_shelpmsg="
-  -h, --help               show this help and exit
+  -h, --help               show help and exit
   -V, --version            show version and exit
 
 Actions:
@@ -338,7 +525,7 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_QRKEY_chelpmsg="
-Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fixed Unix User ID for each of them.
+Backup or restore OpenPGP keys using printed QR codes.
 
 Options:
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"

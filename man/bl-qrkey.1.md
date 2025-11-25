@@ -5,7 +5,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 -->
 
 ---
-title: BL-SECURITY
+title: BL-QRKEY
 section: 1
 header: User Commands
 footer: bash-libs
@@ -13,15 +13,15 @@ footer: bash-libs
 
 # NAME
 
-bl-security - manual page for bl-security 0.1.5
+bl-qrkey - manual page for bl-qrkey 0.1.5
 
 # SYNOPSIS
 
-**bl-security** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
+**bl-qrkey** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
 
 # DESCRIPTION
 
-Provide some cybersecurity features.
+Backup or restore OpenPGP keys using printed QR codes.
 
 # OPTIONS
 
@@ -40,28 +40,21 @@ Provide some cybersecurity features.
 
 ## Actions:
 
-urandom
+print
 
-:   Output a good random number between 0 and 1\<\<32 (4294967296)
+:   Export and print secret keys on multiple QRcode using Shamir\'s
+    secret sharing.
 
-shred_path
+scan
 
-:   Recursively shred all files in given path(\|s).
-
-gen_passphrase
-
-:   Generate a good random passphrase
-
-new_password
-
-:   Ask to enter a new password and force retyping it. Starting with a
-    passphrase suggestion.
+:   Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or
+    webcam.
 
  
-All actions support a **\--help** options, eg: \$ bl-security
-ACTION **\--help**
+All actions support a **\--help** options, eg: \$ bl-qrkey ACTION
+**\--help**
 
-bl-security is also bash library, see: \$ source bl-security
+bl-qrkey is also bash library, see: \$ source bl-qrkey
 **\--help**
 
 # DIAGNOSTICS

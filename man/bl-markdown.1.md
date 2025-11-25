@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-markdown - manual page for bl-markdown 0.1.3
+bl-markdown - manual page for bl-markdown 0.1.5
 
 # SYNOPSIS
 
@@ -28,11 +28,11 @@ only converts: markdown arrays \<\> bash arrays.
 
 **-h**, **\--help**
 
-:   show this help and exit/return
+:   show help and exit
 
 **-V**, **\--version**
 
-:   show version and exit/return
+:   show version and exit
 
 ## Actions:
 
