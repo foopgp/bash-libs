@@ -129,7 +129,7 @@ Options:
   -e, --email EMAIL                User email (optional)
   -t, --phone NUMBER               User phone number (optional)
   -p, --password PASSWORD          User password (for current djibian Operating System)
-  -P, --passfrom FILE              Get user password from first line of FILE (eg: fifo, tmpfs, ...)
+  -P, --passfrom FILE              Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -F, --from-pgp-card              Get user data from OpenPGP smartcard (eg: yubikey, nitrokey, ...)
   -v, --verify                     Resume input data for verification
   -a, --admin                      Enable admin rights (root power through sudo group)

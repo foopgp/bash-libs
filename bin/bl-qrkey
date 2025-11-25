@@ -166,6 +166,7 @@ Ouput the temporary directory, to be properly erased (shredded) by yourself.
 
 Options:
   -p, --passphrase PASSPHRASE   Passphrase to (symmetric) decrypt secret part of OpenPGP key
+  -P, --passfrom FILE           Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -t, --printer PRINTER         Name of printer to use
   -D, --tmpdir DIRECTORY        Temporary (working) directory to use (instead of generating one).
   -S, --split NUM               Number of shares to be generated (default: $splitn)
@@ -178,6 +179,8 @@ Options:
 		case "$1" in
 			-p|--passphrase)
 				shift ; passphrase=$1 ;;
+			-P|--passfrom|--pass-from)
+				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
 			-t|--printer)
 				shift ; printer=$1 ;;
 			-D|--tmpdir|--tempdir)
@@ -242,7 +245,7 @@ Options:
 	[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(protecting your secret key)" "Passphrase")
 
 	# TODO: Remove Photos and extras uid from exported data (containing not only secrets, but also public data)
-	gpg --homedir "$gpghome" --batch --passphrase "${passphrase}" --pinentry-mode loopback --export-options export-minimal,export-clean --export-secret-key "${keyid}" > "$tmpdir/priv.gpg" || return $?
+	echo "${passphrase}" | gpg --homedir "$gpghome" --batch --passphrase-fd 0 --pinentry-mode loopback --export-options export-minimal,export-clean --export-secret-key "${keyid}" > "$tmpdir/priv.gpg" || return $?
 	if (( qrversion==1 || qrversion==3 )) ; then
 		gpg --batch --symmetric --passphrase "${passphrase//[^0-9]/}" --pinentry-mode loopback < "$tmpdir/priv.gpg" > "$tmpdir/s.gpg" || return $?
 	elif (( qrversion==4 )) ; then
@@ -319,10 +322,11 @@ Options:
   -D, --tmpdir DIRECTORY        Temporary (working) directory to use (instead of generating one).
   -H, --homedir GNUPGHOME       GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
   -c, --camera V4LDEVICE        Video device to scan for QR code (/dev/v4l/by-id/...)
-  -p, --passphrase PASSPHRASE   Related to QR VERSIONS:
+  -p, --passphrase PASSPHRASE   This input is related to QR VERSIONS:
                                   * 1 to 3: Only numbers, use to be a date: YYYYMMDD.
-                                  * 4: The passphrase given to bl_qrkey_scan().
-                                  * 5: No passphrase.
+                                  * 4: May be anything, confer bl_qrkey_print().
+                                  * 5: No passphrase -> option ignored.
+  -P, --passfrom FILE           Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
 "
 
 	local passphrase tmpdir
@@ -331,6 +335,8 @@ Options:
 		case "$1" in
 			-p|--passphrase)
 				shift ; passphrase=$1 ;;
+			-P|--passfrom|--pass-from)
+				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
 			-D|--tmpdir|--tempdir)
 				shift
 				[[ -d "$1" ]] || { printf "%s: Error: nonexistent or unattainable directory (%s)\n" "$FUNCNAME" "$1" >&2 ; return 2 ; }
