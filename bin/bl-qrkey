@@ -348,9 +348,10 @@ Options:
 
 	if [[ -z "$tmpdir" ]] ; then
 			tmpdir=$(mktemp -d -t "$FUNCNAME".XXXXXX) || { printf "%s: Error: Can't create tmp dir.\n" "$FUNCNAME" >&2 ; return 1 ; } ;
+			touch "$tmpdir/qrcontent"
 			echo "$tmpdir"
 	else
-		if touch -- "$tmpdir/qrcontent" && rm -- "$tmpdir/qrcontent" ; then
+		if echo -n > "$tmpdir/qrcontent" ; then
 			echo "$(readlink -f "$tmpdir")"
 		else
 			printf "%s: Error: Can't write in tmp dir (%s).\n" "$FUNCNAME" "$tmpdir" >&2
@@ -431,7 +432,7 @@ Options:
 	done
 
 # If we are using paperkey, we have to retrieve the PGPcert (use to need network) and use something like:
-# ... base64 -d | paperkey --pubring "$tmpdir/PGPcert.gpg" 2> >(bl_log crit) | gpg --homedir "$tmpdir/gnupg" --command-fd 0 --batch --pinentry-mode loopback --passphrase "${passphrase[*]}" --import 2> >(bl_log notice)
+# ... base64 -d | paperkey --pubring "$tmpdir/PGPcert.gpg" 2> >(bl_log crit) | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "${passphrase[*]}" --import 2> >(bl_log notice)
 
 while true ; do
 
@@ -465,22 +466,19 @@ while true ; do
 	fi
 
 	if [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "3" ]] || [[ "$qrversion" == "4" ]] ; then
-		if cat "$tmpdir/SECRET" | gpg --decrypt --batch --pinentry-mode loopback --passphrase "${passphrase[*]}" 2> >(bl_log notice) | gpg --homedir "$tmpdir/gnupg" --batch --pinentry-mode loopback --passphrase "${passphrase[*]}" --import 2> >(bl_log notice) ; then
+		if cat "$tmpdir/SECRET" | gpg --decrypt --batch --pinentry-mode loopback --passphrase "${passphrase[*]}" | gpg --homedir "$gpghome" --batch --pinentry-mode loopback --import ; then
 			break
 		fi
 	elif [[ "$qrversion" == "5" ]] ; then
-		if cat "$tmpdir/SECRET" | gpg --homedir "$tmpdir/gnupg" --batch --pinentry-mode loopback --import 2> >(bl_log notice) ; then
+		if cat "$tmpdir/SECRET" | gpg --homedir "$gpghome" --batch --pinentry-mode loopback --import ; then
 			break
 		fi
 	fi
 done
 
-FPRS=($(gpg --homedir "$tmpdir/gnupg" --list-secret-keys --with-colons 2> >(bl_log notice) | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'))
+#FPRS=($(gpg --homedir "$gpghome" --list-secret-keys --with-colons | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'))
 
 ##TODO: check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.2.27 libgcrypt 1.8.8)
-
-# log some info
-gpg --quiet --homedir "$tmpdir/gnupg" --list-keys > >(bl_log info) 2> >(bl_log warning)
 
 }
 
