@@ -64,7 +64,7 @@ Replaces: bash-libs (<< 0.0.6~)
 Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
 Depends: bashlibs-common, gpg, xxd, adduser, passwd, curl,
-         libgfshare-bin, pandoc, pdfcrop, zbar-tools,
+         libgfshare-bin, pandoc, pdfcrop, cups-client, cups-bsd, zbar-tools,
          ${misc:Depends}
 Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
@@ -74,7 +74,7 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  .
  bl-djibian: System tools for the Debian blend « Djibian ».
  .
- bl-qrkey: Backup or restore OpenPGP keys using printed QR codes.
+ bl-qrkey: Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
 
 Package: bashlibs-dji
 Replaces: bash-libs (<< 0.0.6~)
