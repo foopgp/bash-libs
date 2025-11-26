@@ -64,7 +64,7 @@ Replaces: bash-libs (<< 0.0.6~)
 Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
 Depends: bashlibs-common, gpg, xxd, adduser, passwd, curl,
-         libgfshare-bin, pandoc, pdfcrop, cups-client, cups-bsd, zbar-tools,
+         libgfshare-bin, pandoc, texlive-extra-utils, cups-client, cups-bsd, zbar-tools,
          ${misc:Depends}
 Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
