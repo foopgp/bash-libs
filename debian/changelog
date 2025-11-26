@@ -1,3 +1,10 @@
+bash-libs (0.1.5-2) unstable; urgency=medium
+
+  [ JJ ]
+  * debian/control fix 1 dependency
+
+ -- piseb <piseb@mailo.com>  Wed, 26 Nov 2025 20:53:44 +0100
+
 bash-libs (0.1.5-1) unstable; urgency=medium
 
   [ JJ ]
