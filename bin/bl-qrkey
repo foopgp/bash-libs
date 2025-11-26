@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that backup or restore OpenPGP keys using printed QR codes.
+# Bash library and executable that backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
 #
 # Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
@@ -525,7 +525,7 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_QRKEY_chelpmsg="
-Backup or restore OpenPGP keys using printed QR codes.
+Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
 
 Options:
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"
