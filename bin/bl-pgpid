@@ -710,15 +710,17 @@ bl_pgpid_gen_uid() {
 	local helpmsg="
 Generate a 32bit Unix User ID, from 2^18 to (2^32)-4 ([$BL_PGPID_XUID_MIN,$BL_PGPID_XUID_MAX]).
 If UDID4 is not given, it will ask for surname, names and date of birth.
-You may pass a foopgp UDID4 as an argument, as ouput is calculated from it.
 
 Options:
-	-f, --free-input            Accept any input, not only string containing a foopgp UDID4.
+  -f, --free-input            Accept any input, not only string containing a foopgp UDID4.
+  -F, --from FILE             Get input from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
 "
 	local freeinput=0 str_in u4h num
 	for ((;$#;)) ; do
 		case "$1" in
 			-f|--free-input) freeinput=1 ;;
+			-F|--from)
+				shift ; str_in=$( sed 1q < "$1" ) || return 1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -728,21 +730,26 @@ Options:
 		shift
 	done
 
-	if [[ "$1" ]] ; then
-		# If an input is passed as arguments
-		str_in="$*"
-	else
-		str_in="$(bl_pgpid_gen_u4 --birth-country FRA)=="
-		freeinput=0 # --free-input is non-sense if no imput has been given in $*.
+	if [[ -z "$str_in" ]] ; then
+		if [[ "$1" ]] ; then
+			# input is passed as arguments
+			str_in="$*"
+		else
+			# No input at all (then --free-input is non-sense)
+			str_in="$(bl_pgpid_gen_u4 --birth-country FRA)==" || return $?
+			freeinput=0
+		fi
+	elif [[ "$1" ]] ; then
+			printf "%s: Warning: option --from overide given argument '%s'...\n" "$FUNCNAME" "${1: 0:44}" >&2
 	fi
 
 	if ((freeinput)) ; then
 		u4h="$(echo "$str_in" | md5sum | xxd -r -p | basenc --base64url)"
 		echo "$u4h"
-	elif [[ "$str_in" =~ ${BL_PGPID_U4H_REGEX} ]] ; then
-		u4h="${BASH_REMATCH[0]}=="
+	elif [[ "$str_in" =~ (${BL_PGPID_U4H_REGEX})${BL_PGPID_CO_REGEX} ]] ; then
+		u4h="${BASH_REMATCH[1]}=="
 	else
-		printf "%s: Error: No udid4 (hash) found in '%s'...\n" "$FUNCNAME" "${str_in: 0:44}" >&2
+		printf "%s: Error: No udid4 (hash) found in '%s'...\n" "$FUNCNAME" "${str_in: 0:50}" >&2
 		return 2
 	fi
 
@@ -765,7 +772,7 @@ Options:
   -n, --name PSEUDONYM             Common name or pseudonym (default: first part of email)
   -c, --comment UDID4              Comment field, expect an udid4, regex: ${BL_PGPID_U4_REGEX}
   -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key
-  -P, --passfrom FILE              Get passphrase from first line of FILE (eg: fifo, tmpfs, ...)
+  -P, --passfrom FILE              Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -e, --expiration YEARS           Number of years before certificate expiration (default: 11 -> $(date -I -d "+11 years"))
   -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: $keyserv)
   -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
