@@ -543,21 +543,22 @@ Options:
 		fi
 
 		if [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "3" ]] ; then
-			if cat "$tmpdir/SECRET" | gpg --decrypt --batch --pinentry-mode loopback --passphrase "${passphrase[*]}" | gpg --homedir "$gpghome" --batch --pinentry-mode loopback --import ; then
+			if gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt "$tmpdir/SECRET" <<<"${passphrase[*]}" > "$tmpdir/s.gpg" ; then
 				break
 			fi
 		elif [[ "$qrversion" == "4" ]] || [[ "$qrversion" == "5" ]] ; then
-			if cat "$tmpdir/SECRET" | gpg --homedir "$gpghome" --batch --pinentry-mode loopback --import ; then
-				break
-			fi
+			mv "$tmpdir/SECRET" "$tmpdir/s.gpg"
+			break
 		fi
 	done
 
+	gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase-fd 0 --import "$tmpdir/s.gpg" <<<"${passphrase[*]}" || return $?
+	echo "${passphrase[*]}" > "$tmpdir/passphrase"
+
 	# Output certification key fpr
-	gpg --list-packets < "$tmpdir/SECRET" | sed -n --regexp-extended  '/issuer.*[0-9ABCDEF]{40}/ { s,.*([0-9ABCDEF]{40}).*,\1,p ; q }'
+	gpg --list-packets "$tmpdir/s.gpg" | sed -n --regexp-extended  '/issuer.*[0-9ABCDEF]{40}/ { s,.*([0-9ABCDEF]{40}).*,\1,p ; q }'
 	return ${PIPESTATUS[0]}
 }
-
 
 ### General Help Messages ###
 
