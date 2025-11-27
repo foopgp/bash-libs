@@ -275,9 +275,9 @@ Options:
 	local passwd passwd2 preamble suggpwd
 
 	suggpwd=$(bl_gen_passphrase --dict "$dict" --num "$nw")
-	preamble=$(printf "Suggestion: $suggpwd")
+	preamble=$(printf "Suggestion: %s" "$suggpwd")
 	passwd2=$(bl_input --password --text "$preamble" "$question")
-	preamble=$(printf "Retype %s's password" "$username")
+	preamble=$(printf "Retype %s" "$question")
 	while true ; do
 		passwd=$(bl_input --password --text "$preamble" "$question")
 		[[ "$passwd2" != $passwd ]] || break

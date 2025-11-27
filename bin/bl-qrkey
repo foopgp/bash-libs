@@ -221,6 +221,7 @@ Options:
 bl_qrkey_print() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local tmpdir="/tmp/$FUNCNAME.$USER"
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 
 # QRKEY QR VERSIONS:
@@ -234,14 +235,14 @@ bl_qrkey_print() {
 	local helpmsg="
 Export and print secret keys on multiple QRcode using Shamir's secret sharing.
 Missing inputs are asked interactively.
-Ouput the temporary directory, to be properly erased (shredded) by yourself.
+Working directory should be properly erased ($ bl-security shred_path) by yourself.
 
 Options:
   -p, --passphrase PASSPHRASE    Passphrase to access secret parts of OpenPGP key
   -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -t, --printer PRINTER          Name of printer to use
   -w, --with-passphrase          Also print passphrase beside QR codes (INCREASE UX, DECREASE SECURITY).
-  -D, --tmpdir DIRECTORY         Temporary (working) directory to use (instead of generating one).
+  -W, --workdir DIRECTORY        Working directory. Don't forget to shred its content once your done (default: $tmpdir).
   -S, --split NUM                Number of shares to be generated (default: $splitn)
   -T, --threshold NUM            Number of shares necessary to reconstruct the secret (default: $thresn)
   -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
@@ -263,7 +264,7 @@ Note: Split number should be greater than threshold number.
 				shift ; printer=$1 ;;
 			-w|--with-passphrase)
 				withpass=true ;;
-			-D|--tmpdir|--tempdir)
+			-D|--tmpdir|--tempdir|-W|--workdir)
 				shift
 				[[ -d "$1" ]] || { printf "%s: Error: nonexistent or unattainable directory (%s)\n" "$FUNCNAME" "$1" >&2 ; return 2 ; }
 				tmpdir=$1 ;;
@@ -282,16 +283,15 @@ Note: Split number should be greater than threshold number.
 		shift
 	done
 
-	if [[ -z "$tmpdir" ]] ; then
-			tmpdir=$(mktemp -d -t "$FUNCNAME".XXXXXX) || { printf "%s: Error: Can't create tmp dir.\n" "$FUNCNAME" >&2 ; return 1 ; } ;
-			echo "$tmpdir"
-	else
-		if rm -- $(mktemp --tmpdir="$tmpdir" testw.XXX) ; then
-			echo "$(readlink -f "$tmpdir")"
-		else
-			printf "%s: Error: Can't write in tmp dir (%s).\n" "$FUNCNAME" "$tmpdir" >&2
-			return 2
-		fi
+	mkdir -p "$tmpdir"
+	if [[ "$(find "$tmpdir" -name "SECRET*" -print -quit)" ]] ; then
+		printf "%s: Error: Working directory is unclean (containing SECRET*).\n" "$FUNCNAME" >&2
+		printf "%s: Suggestion: $ bl-security shred_path --remove '%s'/*\n" "$FUNCNAME" "$tmpdir" >&2
+		return 2
+	fi
+	if ! rm -- $(mktemp --tmpdir="$tmpdir" testw.XXX) ; then
+		printf "%s: Error: Can't write in working directory (%s).\n" "$FUNCNAME" "$tmpdir" >&2
+		return 2
 	fi
 
 	if ((splitn<3)) ; then
@@ -405,8 +405,7 @@ Options:
   -c, --camera V4LDEVICE        Video device to scan for QR code (/dev/v4l/by-id/...)
   -p, --passphrase PASSPHRASE   This input is related to QR VERSIONS:
                                   * 1 to 3: Only numbers, use to be a date: YYYYMMDD.
-                                  * 4: May be anything, confer bl_qrkey_print().
-                                  * 5: No passphrase -> option ignored.
+                                  * 4 to 5: No passphrase -> option ignored.
   -P, --passfrom FILE           Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
 "
 
@@ -464,11 +463,11 @@ Options:
 	local -a parts
 	while read -r part ; do
 		if [[ "${part:1:1}" != "${qrversion:=${part:1:1}}" ]] ; then
-			printf "%s: Crit: QR codes doesn't share the same version (%s)" "$FUNCNAME" "$qrversion != ${part:1:1}" >&2
+			printf "%s: Crit: QR codes doesn't share the same version (%s)\n" "$FUNCNAME" "$qrversion != ${part:1:1}" >&2
 			return 3
 		fi
 		if [[ "${part:2:1}" != "${max:=${part:2:1}}" ]] ; then
-			printf "%s: Crit: QR codes doesn't share the same division (%s)" "$FUNCNAME" "$max != ${part:2:1}" >&2
+			printf "%s: Crit: QR codes doesn't share the same division (%s)\n" "$FUNCNAME" "$max != ${part:2:1}" >&2
 			return 3
 		fi
 		parts[${part:3:1}]="${part:4}"
@@ -481,7 +480,7 @@ Options:
 
 		if [[ -z "$v4ldevice" ]] ; then
 			if ! v4ldevices=($(ls /dev/v4l/by-id/*index0)) ; then
-				printf "%s: Crit: No video input (eg. webcam) detected" "$FUNCNAME" >&2
+				printf "%s: Crit: No video input (eg. webcam) detected\n" "$FUNCNAME" >&2
 				return 3
 			elif [[ ${#v4ldevices[@]} == 1 ]] ; then
 				v4ldevice=${v4ldevices[0]}
@@ -493,21 +492,21 @@ Options:
 
 		j=0
 		while ! part="$(zbarcam -Sdisable -Sqrcode.enable --oneshot --prescale=640x480 "$v4ldevice" | tr -d '\n' | sed 's,QR-Code:,\n,g' | grep "^~[1-9]")" ; do
-			printf "%s: Notice: No QR code with expected data detected..." "$FUNCNAME" >&2
+			printf "%s: Notice: No QR code with expected data detected...\n" "$FUNCNAME" >&2
 			((++j < 4)) || break
 		done
 
 		if [[ "${part:1:1}" != "${qrversion:=${part:1:1}}" ]] ; then
-			printf "%s: Crit: QR codes doesn't share the same version (%s)" "$FUNCNAME" "$qrversion != ${part:1:1}" >&2
+			printf "%s: Crit: QR codes doesn't share the same version (%s)\n" "$FUNCNAME" "$qrversion != ${part:1:1}" >&2
 			return 3
 		fi
 		if [[ "${part:2:1}" != "${max:=${part:2:1}}" ]] ; then
-			printf "%s: Crit: QR codes doesn't share the same division (%s)" "$FUNCNAME" "$max != ${part:2:1}" >&2
+			printf "%s: Crit: QR codes doesn't share the same division (%s)\n" "$FUNCNAME" "$max != ${part:2:1}" >&2
 			return 3
 		fi
 		i=${part:3:1}
 		parts[$i]="${part:4}"
-		printf "%s: Notice: Scanning part %s -> OK" "$FUNCNAME" "$((i+1)) / $((max+1))" >&2
+		printf "%s: Notice: Scanning part %s -> OK\n" "$FUNCNAME" "$((i+1)) / $((max+1))" >&2
 		i=-1
 	done
 
@@ -517,13 +516,13 @@ Options:
 	for ((i=1;i<=3;i++)) ; do
 
 		if [[ "$qrversion" == "0" ]] ; then
-			printf "%s: Crit: Invalid qrcode version (%s)" "$FUNCNAME" "$qrversion" >&2
+			printf "%s: Crit: Invalid qrcode version (%s)\n" "$FUNCNAME" "$qrversion" >&2
 			return 3
 		elif [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "3" ]] ; then
 			birth_date=$(bl_input --default "${birth_date}" "Birth date (YYYY-mm-dd)")
 			passphrase[0]="$(sed 's/[^0-9]//g' <<<"${birth_date}" )"
 		elif [[ "$qrversion" != "4" ]] && [[ "$qrversion" != "5" ]] ; then
-			printf "%s: Crit: Unsupported qrcode version (%s)" "$FUNCNAME" "$qrversion" >&2
+			printf "%s: Crit: Unsupported qrcode version (%s)\n" "$FUNCNAME" "$qrversion" >&2
 			return 3
 		fi
 
