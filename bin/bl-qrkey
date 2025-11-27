@@ -75,6 +75,7 @@ readonly BL_QRKEY_NAME BL_QRKEY_VERSION BL_QRKEY_FUNCTIONS
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-interactive --
+source "$(dirname "$BASH_SOURCE")"/bl-security --
 
 ### internal functions ###
 
@@ -139,6 +140,76 @@ Options:
 
 ### public functions / program actions ###
 
+bl_qrkey_change_passphrase() {
+	local name
+	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
+
+	local helpmsg="
+Change GnuPG passphrase protecting secret parts of an OpenPGP key.
+Missing inputs are asked interactively.
+
+Options:
+  -p, --passphrase PASSPHRASE    Current Passphrase protecting secret parts of OpenPGP key (empty \"\" for none).
+  -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+  -n, --newpassphrase PASSPHRASE New Passphrase to protect secret parts of OpenPGP key (empty \"\" for none).
+  -N, --newpassfrom FILE         Get new passphrase from the first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+  -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+"
+	local passphrase passgiven newpass newgiven
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	for ((;$#;)) ; do
+		case "$1" in
+			-p|--passphrase)
+				shift ; passgiven=true ; passphrase=$1 ;;
+			-P|--passfrom|--pass-from)
+				shift ; passgiven=true ; passwd=$( sed 1q < "$1" ) || return 1 ;;
+			-n|--newpassphrase)
+				shift ; newgiven=true ; newpass=$1 ;;
+			-N|--newpassfrom|--newpass-from)
+				shift ; newgiven=true ; newpass=$( sed 1q < "$1" ) || return 1 ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	[[ -z "$1" ]] || keyid="$1"
+	if [[ -z "$keyid" ]] ; then
+		local -a seckeyids
+		mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
+		((${#seckeyids[@]}>0)) || { printf "%s: Error: No secret to print.\n" "$FUNCNAME" ; return 1 ; }
+		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of secret to print (on ${splitn} fragments)" "${seckeyids[@]}")"
+		keyid="${keyid%% *}"
+	fi
+
+	[[ "$passgiven" ]] || passphrase=$(bl_input --password --text "(if none, leave empty)" "Current passphrase")
+
+	# Test Current passphrase
+	echo "$passphrase" | gpg --command-fd 0 --batch --pinentry-mode loopback --dry-run --change-passphrase F0145B87074B8A15BCB7C9624F2A55F1E6BEEA35 2> >(grep -i "\<bad\>") || return $?
+
+	[[ "$newgiven" ]] || newpass=$(bl_new_password "New passphrase")
+
+	if [[ "$newpass" == "$passphrase" ]] ; then
+		printf "%s: Notice: passphrase unchanged.\n" "$FUNCNAME" >&2
+		return 0
+	fi
+
+	if [[ "$passphrase" ]] ; then
+		cmd="${passphrase}\n${newpass}\n${newpass}\n${newpass}\n"
+	else
+		cmd="${newpass}\n${newpass}\n${newpass}\n"
+	fi
+
+	printf "${cmd}" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --change-passphrase "${keyid}" || return $?
+	printf "%s: Notice: passphrase successfully changed.\n" "$FUNCNAME" >&2
+}
+
 # bl_qrkey_printqr is inspired from https://gist.github.com/joostrijneveld/59ab61faa21910c8434c
 #
 # Comparison between 1) "--export-secret-key" and 2) "--export-secret-key | paperkey --output-type raw":
@@ -153,9 +224,9 @@ bl_qrkey_print() {
 
 # QRKEY QR VERSIONS:
 # * 1: simple split (splits num == threshold num) with only numbers as extra symmetric encryption (deprecated)
-# * 2: simple split with extra symmetric encryption and complex passphrase (deprecated)
+# * 2: simple split with a complex extra symmetric encryption (deprecated)
 # * 3: Shamir's secret sharing with only number as extra symmetric encryption (deprecated)
-# * 4: simple split (splits num == threshold num). In this case, removing passphrase is really UNSECURE as each split contain large unencrypted secrets.
+# * 4: simple split (splits num == threshold num). In this case, all secret protection relies on the passphrase.
 # * 5: Shamir's secret sharing (splits num > threshold num)
 #
 	local splitn=5 thresn=3 qrversion=5
@@ -167,10 +238,8 @@ Ouput the temporary directory, to be properly erased (shredded) by yourself.
 Options:
   -p, --passphrase PASSPHRASE    Passphrase to access secret parts of OpenPGP key
   -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -n, --newpassphrase PASSPHRASE if set, change the passphrase before printing QR codes. Use \"\" to remove passphrase.
-  -N, --newpassfrom FILE         Change the passphrase to the first line of FILE (eg: fifo, tmpfs, ...)
   -t, --printer PRINTER          Name of printer to use
-  -w, --with-passphrase          Also print passphrase beside QR codes (UNSECURE).
+  -w, --with-passphrase          Also print passphrase beside QR codes (INCREASE UX, DECREASE SECURITY).
   -D, --tmpdir DIRECTORY         Temporary (working) directory to use (instead of generating one).
   -S, --split NUM                Number of shares to be generated (default: $splitn)
   -T, --threshold NUM            Number of shares necessary to reconstruct the secret (default: $thresn)
@@ -178,10 +247,10 @@ Options:
 
 Note: Split number should be greater than threshold number.
       If they are equal, a simple split is used instead of Shamir's secret sharing,
-      then (if split_NUM == threshold_NUM) displaying or removing passphrase is VERY UNSECURE.
+      and all secret protection relies on the passphrase.
+      In other terms: if (split_NUM == threshold_NUM), then no passphrase or printing passphrase is VERY UNSECURE.
 "
 	local passphrase printer tmpdir withpass
-	local newpass="pas changer la passphrase" # Easter egg (It's not a bug, it's a feature !-)
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -189,10 +258,6 @@ Note: Split number should be greater than threshold number.
 				shift ; passphrase=$1 ;;
 			-P|--passfrom|--pass-from)
 				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
-			-n|--newpassphrase)
-				shift ; newpass=$1 ;;
-			-N|--newpassfrom|--newpass-from)
-				shift ; newpass=$( sed 1q < "$1" ) || return 1 ;;
 			-t|--printer)
 				shift ; printer=$1 ;;
 			-w|--with-passphrase)
@@ -261,13 +326,6 @@ Note: Split number should be greater than threshold number.
 	# TODO: Remove Photos and extras uid from exported data (containing not only secrets, but also public data)
 
 	echo "${passphrase}" | gpg --homedir "$gpghome" --batch --passphrase-fd 0 --pinentry-mode loopback --export-options export-minimal,export-clean --export-secret-key "${keyid}" > "$tmpdir/priv.gpg" || return $?
-	if [[ "$newpass" != "pas changer la passphrase" ]] ; then
-		mkdir "$tmpdir/gnupgtmp" || return $?
-		chmod 700 "$tmpdir/gnupgtmp"
-		gpg --homedir "$tmpdir/gnupgtmp" --command-fd 0 --batch --pinentry-mode loopback --passphrase "${passphrase[*]}" --import < "$tmpdir/priv.gpg" || return $?
-		printf "${passphrase}\n${newpass}\n${newpass}\n${newpass}\n" | gpg --homedir "$tmpdir/gnupgtmp" --command-fd 0 --batch --pinentry-mode loopback --change-passphrase "${keyid}" || return $?
-		echo "${newpass}" | gpg --homedir "$tmpdir/gnupgtmp" --batch --passphrase-fd 0 --pinentry-mode loopback --export-options export-minimal,export-clean --export-secret-key "${keyid}" > "$tmpdir/priv.gpg" || return $?
-	fi
 
 	if (( qrversion==1 || qrversion==3 )) ; then
 		gpg --batch --symmetric --passphrase "${passphrase//[^0-9]/}" --pinentry-mode loopback < "$tmpdir/priv.gpg" > "$tmpdir/s.gpg" || return $?
@@ -322,7 +380,7 @@ $(gpg --homedir "$gpghome" --with-colons --list-keys "$keyid" | awk -F: '$1=="ui
 
 ![qrcode $i]($f.png)
 
-$( [[ -z "$withpass" ]] || { if [[ "$newpass" == "pas changer la passphrase" ]] ; then echo "Passphrase: ${passphrase}" ; else echo "Passphrase: ${newpass}" ; fi ; } )
+$( [[ -z "$withpass" ]] || echo "Passphrase: ${passphrase}" )
 
 EOF
 		lpr -# 1 -P "${printer}" "${f}.pdf" >&2

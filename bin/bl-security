@@ -244,12 +244,15 @@ Options:
 }
 
 bl_new_password() {
-	local dict=${LANG::2} nw=3
+	local name dict=${LANG::2} nw=3
+	# TODO: i18n
+	local question="Password"
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]"
+	local usage="Usage: $name [OPTIONS] [QUESTION]..."
 	local helpmsg="
 Ask to enter a new password and force retyping it. Starting with a passphrase suggestion.
 Output the new password.
+(Default QUESTION: '$question')
 
 Options:
   -D, --dict DICTIONARY     Dictionary for passphrase suggestion (default: ${dict:=en})
@@ -267,16 +270,16 @@ Options:
 		esac
 		shift
 	done
-	((! $#)) || printf "%s: Warning: ignoring arguments %s\n" "$FUNCNAME" "$*" >&2
+	((! $#)) || question="$*"
 
 	local passwd passwd2 preamble suggpwd
 
 	suggpwd=$(bl_gen_passphrase --dict "$dict" --num "$nw")
-	preamble=$(printf "Password suggestion: $suggpwd")
-	passwd2=$(bl_input --password --text "$preamble" "Password")
+	preamble=$(printf "Suggestion: $suggpwd")
+	passwd2=$(bl_input --password --text "$preamble" "$question")
 	preamble=$(printf "Retype %s's password" "$username")
 	while true ; do
-		passwd=$(bl_input --password --text "$preamble" "Password")
+		passwd=$(bl_input --password --text "$preamble" "$question")
 		[[ "$passwd2" != $passwd ]] || break
 		preamble="Passwords do not match. Please retype"
 		passwd2=$passwd
