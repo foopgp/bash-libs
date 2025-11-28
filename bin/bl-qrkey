@@ -256,14 +256,14 @@ Note: Split number should be greater than threshold number.
       and all secret protection relies on the passphrase.
       In other terms: if (split_NUM == threshold_NUM), then no passphrase or printing passphrase is VERY UNSECURE.
 "
-	local passphrase printer tmpdir withpass
+	local passphrase passgiven printer tmpdir withpass
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
 			-p|--passphrase)
-				shift ; passphrase=$1 ;;
+				shift ; passgiven=true ; passphrase=$1 ;;
 			-P|--passfrom|--pass-from)
-				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
+				shift ; passgiven=true ; passphrase=$( sed 1q < "$1" ) || return 1 ;;
 			-t|--printer)
 				shift ; printer=$1 ;;
 			-w|--with-passphrase)
@@ -326,7 +326,7 @@ Note: Split number should be greater than threshold number.
 		keyid="${keyid%% *}"
 	fi
 
-	[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(protecting your secret key)" "Passphrase")
+	[[ "$passgiven" ]] || passphrase=$(bl_input --password --text "(protecting your secret key)" "Passphrase")
 
 	# TODO: Remove Photos and extras uid from exported data (containing not only secrets, but also public data)
 
@@ -409,11 +409,11 @@ Options:
   -c, --camera V4LDEVICE        Video device to scan for QR code (/dev/v4l/by-id/...)
   -p, --passphrase PASSPHRASE   This input is related to QR VERSIONS:
                                   * 1 to 3: Only numbers, use to be a date: YYYYMMDD.
-                                  * 4 to 5: No passphrase -> option ignored.
+                                  * 4 to 5: No passphrase (for QRcode, a passphrase may still protect contained secret).
   -P, --passfrom FILE           Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
 "
 
-	local passphrase
+	local -a passphrase
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -557,7 +557,7 @@ Options:
 	done
 
 	gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase-fd 0 --import "$tmpdir/s.gpg" <<<"${passphrase[*]}" || return $?
-	echo "${passphrase[*]}" > "$tmpdir/passphrase"
+	[[ -z "${passphrase[*]}" ]] || echo "${passphrase[*]}" > "$tmpdir/passphrase"
 
 	# Output certification key fpr
 	gpg --list-packets "$tmpdir/s.gpg" | sed -n --regexp-extended  '/issuer.*[0-9ABCDEF]{40}/ { s,.*([0-9ABCDEF]{40}).*,\1,p ; q }'
