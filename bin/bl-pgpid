@@ -763,6 +763,7 @@ bl_pgpid_gen_key() {
 	local keyserv="hkps://keys.foopgp.org"
 	local helpmsg="
 Generate an OpenPGP key pair (public and secret) according to foopgp standards.
+Missing passphrase => passphrase asked interactively.
 Output 3 lines for each fingerprints :
 * main key (Sign Certify)
 * decryption key (Encrypt)
@@ -816,7 +817,8 @@ Options:
 #TODO: implement --verify to check input and ask when incoherent or missing.
 #TODO (also): check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.2.27 libgcrypt 1.8.8)
 
-	[[ "$passphrase" ]] || passphrase=$(bl_new_password)
+	[[ "$passphrase" ]] || passphrase=$(bl_new_password "Passphrase")
+	[[ "$passphrase" ]] || { printf "%s: Error: Passphrase can't be empty at this stage.\n" "$FUNCNAME" >&2 ; return 2 ;}
 
 	[[ "$pseudo" ]] || pseudo=${email%%@*}
 
