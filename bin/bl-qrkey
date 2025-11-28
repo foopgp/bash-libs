@@ -156,21 +156,25 @@ Options:
   -n, --newpassphrase PASSPHRASE New Passphrase to protect secret parts of OpenPGP key (empty \"\" for none).
   -N, --newpassfrom FILE         Get new passphrase from the first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+  -v, --verbose                  Increase verbosity
 "
 	local passphrase passgiven newpass newgiven
 	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local filter="grep -i '\<bad\>'"
 	for ((;$#;)) ; do
 		case "$1" in
 			-p|--passphrase)
 				shift ; passgiven=true ; passphrase=$1 ;;
 			-P|--passfrom|--pass-from)
-				shift ; passgiven=true ; passwd=$( sed 1q < "$1" ) || return 1 ;;
+				shift ; passgiven=true ; passphrase=$( sed 1q < "$1" ) || return 1 ;;
 			-n|--newpassphrase)
 				shift ; newgiven=true ; newpass=$1 ;;
 			-N|--newpassfrom|--newpass-from)
 				shift ; newgiven=true ; newpass=$( sed 1q < "$1" ) || return 1 ;;
 			-H|--homedir)
 				shift ; gpghome=$1 ;;
+			-v|--verbose)
+				filter="cat" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -192,7 +196,7 @@ Options:
 	[[ "$passgiven" ]] || passphrase=$(bl_input --password --text "(if none, leave empty)" "Current passphrase")
 
 	# Test Current passphrase
-	echo "$passphrase" | gpg --command-fd 0 --batch --pinentry-mode loopback --dry-run --change-passphrase F0145B87074B8A15BCB7C9624F2A55F1E6BEEA35 2> >(grep -i "\<bad\>") || return $?
+	echo "$passphrase" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --dry-run --change-passphrase "$keyid" 2> >( $filter ) || return $?
 
 	[[ "$newgiven" ]] || newpass=$(bl_new_password "New passphrase")
 
