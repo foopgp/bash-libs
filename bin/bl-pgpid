@@ -75,7 +75,7 @@ declare -r BL_PGPID_DATE_REGEX="(18|19|20)[0-9]{2}(0[1-9]|1[0,1,2])(0[1-9]|[12][
 declare -r BL_PGPID_N2_REGEX="${BL_PGPID_DATE_REGEX}${BL_PGPID_CO_REGEX}"
 
 declare -r BL_PGPID_XUID_MIN=$((1<<18))
-declare -r BL_PGPID_XUID_MAX=$(((1<<32)-4))
+declare -r BL_PGPID_XUID_MAX=$(((1<<31)-2))
 
 declare -Ar BL_PGPID_COORDINATES=(
 [ABW]="e_12.52-069.98 Aruba"
@@ -702,6 +702,9 @@ bl_pgpid_gen_uid() {
 #   Confer https://www.debian.org/doc/debian-policy/ch-opersys.html#users-and-groups
 #
 #   Which make 4294705148 slots, ~= about half of the actual human population (~8 billions).
+#   But we encounter many problems when ( uid >= 2^31 ), probably because many software manipulate uid as signed instead of unsigned.
+#   Then we have had to decrease BL_PGPID_XUID_MAX to 2^31-2=2147483646
+#
 #   Constants: BL_PGPID_XUID_MIN and BL_PGPID_XUID_MAX
 
 	local name
