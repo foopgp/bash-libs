@@ -181,8 +181,9 @@ Options:
 		pubkeyurl=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
 		if [[ "$pubkeyurl" ]] ; then
 			printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${pubkeyurl}" >&2
-			curl --progress-bar "$pubkeyurl" | gpg --import-options keep-ownertrust,import-clean --import || true
-			cardstatus=$(su --command "gpg --card-status" "${SUDO_USER:-$USER}") || return $?
+			if curl --progress-bar "$pubkeyurl" | gpg --import-options keep-ownertrust,import-clean --import ; then
+				cardstatus=$(su --command "gpg --card-status" "${SUDO_USER:-$USER}") || return $?
+			fi
 		fi
 
 		email=($(grep --only-matching --extended-regexp "${BL_INTERACTIVE_EMAIL_REGEX}" <<<"${cardstatus}"))

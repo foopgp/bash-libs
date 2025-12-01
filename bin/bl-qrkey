@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that backup or restore OpenPGP keys using printed QR codes.
+# Bash library and executable that backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
 #
 # Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
@@ -12,6 +12,7 @@
 # shellcheck disable=SC2086 # Double quote warning
 # shellcheck disable=SC2128 # expanding array without index warning
 
+##TODO: check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.4.7 libgcrypt 1.11.0)
 
 if [[ "$1" == --bash-completion ]] ; then
 	BL_tmp_a=$("${BASH_SOURCE[0]}" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
@@ -75,6 +76,7 @@ readonly BL_QRKEY_NAME BL_QRKEY_VERSION BL_QRKEY_FUNCTIONS
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-interactive --
+source "$(dirname "$BASH_SOURCE")"/bl-security --
 
 ### internal functions ###
 
@@ -139,6 +141,76 @@ Options:
 
 ### public functions / program actions ###
 
+bl_qrkey_change_passphrase() {
+	local name
+	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
+
+	local helpmsg="
+Change GnuPG passphrase protecting secret parts of an OpenPGP key.
+Missing inputs are asked interactively.
+
+Options:
+  -p, --passphrase PASSPHRASE    Current Passphrase protecting secret parts of OpenPGP key (empty \"\" for none).
+  -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+  -n, --newpassphrase PASSPHRASE New Passphrase to protect secret parts of OpenPGP key (empty \"\" for none).
+  -N, --newpassfrom FILE         Get new passphrase from the first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+  -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+"
+	local passphrase passgiven newpass newgiven
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	for ((;$#;)) ; do
+		case "$1" in
+			-p|--passphrase)
+				shift ; passgiven=true ; passphrase=$1 ;;
+			-P|--passfrom|--pass-from)
+				shift ; passgiven=true ; passphrase=$( sed 1q < "$1" ) || return 1 ;;
+			-n|--newpassphrase)
+				shift ; newgiven=true ; newpass=$1 ;;
+			-N|--newpassfrom|--newpass-from)
+				shift ; newgiven=true ; newpass=$( sed 1q < "$1" ) || return 1 ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	[[ -z "$1" ]] || keyid="$1"
+	if [[ -z "$keyid" ]] ; then
+		local -a seckeyids
+		mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
+		((${#seckeyids[@]}>0)) || { printf "%s: Error: No secret to print.\n" "$FUNCNAME" ; return 1 ; }
+		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of secret to print (on ${splitn} fragments)" "${seckeyids[@]}")"
+		keyid="${keyid%% *}"
+	fi
+
+	[[ "$passgiven" ]] || passphrase=$(bl_input --password --text "(if none, leave empty)" "Current passphrase")
+
+	# Test Current passphrase
+	echo "$passphrase" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --dry-run --change-passphrase "$keyid" 2> >( grep -v "Operation cancelled" ) || return $?
+
+	[[ "$newgiven" ]] || newpass=$(bl_new_password "New passphrase")
+
+	if [[ "$newpass" == "$passphrase" ]] ; then
+		printf "%s: Notice: passphrase unchanged.\n" "$FUNCNAME" >&2
+		return 0
+	fi
+
+	if [[ "$passphrase" ]] ; then
+		cmd="${passphrase}\n${newpass}\n${newpass}\n${newpass}\n"
+	else
+		cmd="${newpass}\n${newpass}\n${newpass}\n"
+	fi
+
+	printf "${cmd}" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --change-passphrase "${keyid}" || return $?
+	printf "%s: Notice: passphrase successfully changed.\n" "$FUNCNAME" >&2
+}
+
 # bl_qrkey_printqr is inspired from https://gist.github.com/joostrijneveld/59ab61faa21910c8434c
 #
 # Comparison between 1) "--export-secret-key" and 2) "--export-secret-key | paperkey --output-type raw":
@@ -149,41 +221,50 @@ Options:
 bl_qrkey_print() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... [KEYID]"
+	local tmpdir="/tmp/$FUNCNAME.$USER"
+	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 
 # QRKEY QR VERSIONS:
 # * 1: simple split (splits num == threshold num) with only numbers as extra symmetric encryption (deprecated)
-# * 2: simple split with extra symmetric encryption and complex passphrase (deprecated)
+# * 2: simple split with a complex extra symmetric encryption (deprecated)
 # * 3: Shamir's secret sharing with only number as extra symmetric encryption (deprecated)
-# * 4: simple split whith extra symmetric encryption (splits num == threshold num)
+# * 4: simple split (splits num == threshold num). In this case, all secret protection relies on the passphrase.
 # * 5: Shamir's secret sharing (splits num > threshold num)
 #
 	local splitn=5 thresn=3 qrversion=5
 	local helpmsg="
 Export and print secret keys on multiple QRcode using Shamir's secret sharing.
 Missing inputs are asked interactively.
-Ouput the temporary directory, to be properly erased (shredded) by yourself.
+Working directory should be properly erased ($ bl-security shred_path) by yourself.
 
 Options:
-  -p, --passphrase PASSPHRASE   Passphrase to (symmetric) decrypt secret part of OpenPGP key
-  -P, --passfrom FILE           Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -t, --printer PRINTER         Name of printer to use
-  -D, --tmpdir DIRECTORY        Temporary (working) directory to use (instead of generating one).
-  -S, --split NUM               Number of shares to be generated (default: $splitn)
-  -T, --threshold NUM           Number of shares necessary to reconstruct the secret (default: $thresn)
-  -H, --homedir GNUPGHOME       GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+  -p, --passphrase PASSPHRASE    Passphrase to access secret parts of OpenPGP key
+  -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+  -t, --printer PRINTER          Name of printer to use
+  -w, --with-passphrase          Also print passphrase beside QR codes (INCREASE UX, DECREASE SECURITY).
+  -W, --workdir DIRECTORY        Working directory. Don't forget to shred its content once your done (default: $tmpdir).
+  -S, --split NUM                Number of shares to be generated (default: $splitn)
+  -T, --threshold NUM            Number of shares necessary to reconstruct the secret (default: $thresn)
+  -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+
+Note: Split number should be greater than threshold number.
+      If they are equal, a simple split is used instead of Shamir's secret sharing,
+      and all secret protection relies on the passphrase.
+      In other terms: if (split_NUM == threshold_NUM), then no passphrase or printing passphrase is VERY UNSECURE.
 "
-	local passphrase printer tmpdir
+	local passphrase passgiven printer tmpdir withpass
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
 			-p|--passphrase)
-				shift ; passphrase=$1 ;;
+				shift ; passgiven=true ; passphrase=$1 ;;
 			-P|--passfrom|--pass-from)
-				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
+				shift ; passgiven=true ; passphrase=$( sed 1q < "$1" ) || return 1 ;;
 			-t|--printer)
 				shift ; printer=$1 ;;
-			-D|--tmpdir|--tempdir)
+			-w|--with-passphrase)
+				withpass=true ;;
+			-D|--tmpdir|--tempdir|-W|--workdir)
 				shift
 				[[ -d "$1" ]] || { printf "%s: Error: nonexistent or unattainable directory (%s)\n" "$FUNCNAME" "$1" >&2 ; return 2 ; }
 				tmpdir=$1 ;;
@@ -202,16 +283,15 @@ Options:
 		shift
 	done
 
-	if [[ -z "$tmpdir" ]] ; then
-			tmpdir=$(mktemp -d -t "$FUNCNAME".XXXXXX) || { printf "%s: Error: Can't create tmp dir.\n" "$FUNCNAME" >&2 ; return 1 ; } ;
-			echo "$tmpdir"
-	else
-		if rm -- $(mktemp --tmpdir="$tmpdir" testw.XXX) ; then
-			echo "$(readlink -f "$tmpdir")"
-		else
-			printf "%s: Error: Can't write in tmp dir (%s).\n" "$FUNCNAME" "$tmpdir" >&2
-			return 2
-		fi
+	mkdir -p "$tmpdir"
+	if [[ "$(find "$tmpdir" -name "SECRET*" -print -quit)" ]] ; then
+		printf "%s: Error: Working directory is unclean (containing SECRET*).\n" "$FUNCNAME" >&2
+		printf "%s: Suggestion: $ bl-security shred_path --remove '%s'/*\n" "$FUNCNAME" "$tmpdir" >&2
+		return 2
+	fi
+	if ! rm -- $(mktemp --tmpdir="$tmpdir" testw.XXX) ; then
+		printf "%s: Error: Can't write in working directory (%s).\n" "$FUNCNAME" "$tmpdir" >&2
+		return 2
 	fi
 
 	if ((splitn<3)) ; then
@@ -242,15 +322,15 @@ Options:
 		keyid="${keyid%% *}"
 	fi
 
-	[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(protecting your secret key)" "Passphrase")
+	[[ "$passgiven" ]] || passphrase=$(bl_input --password --text "(protecting your secret key)" "Passphrase")
 
 	# TODO: Remove Photos and extras uid from exported data (containing not only secrets, but also public data)
+
 	echo "${passphrase}" | gpg --homedir "$gpghome" --batch --passphrase-fd 0 --pinentry-mode loopback --export-options export-minimal,export-clean --export-secret-key "${keyid}" > "$tmpdir/priv.gpg" || return $?
+
 	if (( qrversion==1 || qrversion==3 )) ; then
 		gpg --batch --symmetric --passphrase "${passphrase//[^0-9]/}" --pinentry-mode loopback < "$tmpdir/priv.gpg" > "$tmpdir/s.gpg" || return $?
-	elif (( qrversion==4 )) ; then
-		gpg --batch --symmetric --passphrase "${passphrase}" --pinentry-mode loopback < "$tmpdir/priv.gpg" > "$tmpdir/s.gpg" || return $?
-	elif (( qrversion==5 )) ; then
+	elif (( qrversion==4 || qrversion==5 )) ; then
 		mv "$tmpdir/priv.gpg" "$tmpdir/s.gpg"
 	else
 		printf "%s: Error: Unexpected QR Version (%s)\n" "$FUNCNAME" "$qrversion" >&2
@@ -301,7 +381,7 @@ $(gpg --homedir "$gpghome" --with-colons --list-keys "$keyid" | awk -F: '$1=="ui
 
 ![qrcode $i]($f.png)
 
-$( ((qrversion!=4)) || echo "passphrase: ${passphrase}" )
+$( [[ -z "$withpass" ]] || echo "Passphrase: ${passphrase}" )
 
 EOF
 		lpr -# 1 -P "${printer}" "${f}.pdf" >&2
@@ -311,25 +391,25 @@ EOF
 bl_qrkey_scan() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local tmpdir="/tmp/$FUNCNAME.$USER"
 	local usage="Usage: $name [OPTIONS]... [IMAGES]..."
-
 	local helpmsg="
 Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or webcam.
 Missing inputs are asked interactively.
-Ouput the temporary directory, to be properly erased (shredded) by yourself.
+Working directory should be properly erased ($ bl-security shred_path) by yourself.
+Output OpenPGP certification key fingerprint.
 
 Options:
-  -D, --tmpdir DIRECTORY        Temporary (working) directory to use (instead of generating one).
+  -W, --workdir DIRECTORY       Working directory. Don't forget to shred its content once your done (default: $tmpdir).
   -H, --homedir GNUPGHOME       GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
   -c, --camera V4LDEVICE        Video device to scan for QR code (/dev/v4l/by-id/...)
   -p, --passphrase PASSPHRASE   This input is related to QR VERSIONS:
                                   * 1 to 3: Only numbers, use to be a date: YYYYMMDD.
-                                  * 4: May be anything, confer bl_qrkey_print().
-                                  * 5: No passphrase -> option ignored.
+                                  * 4 to 5: No passphrase (for QRcode, a passphrase may still protect contained secret).
   -P, --passfrom FILE           Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
 "
 
-	local passphrase tmpdir
+	local -a passphrase
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -337,7 +417,7 @@ Options:
 				shift ; passphrase=$1 ;;
 			-P|--passfrom|--pass-from)
 				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
-			-D|--tmpdir|--tempdir)
+			-D|--tmpdir|--tempdir|-W|--workdir)
 				shift
 				[[ -d "$1" ]] || { printf "%s: Error: nonexistent or unattainable directory (%s)\n" "$FUNCNAME" "$1" >&2 ; return 2 ; }
 				tmpdir=$1 ;;
@@ -352,17 +432,10 @@ Options:
 		shift
 	done
 
-	if [[ -z "$tmpdir" ]] ; then
-			tmpdir=$(mktemp -d -t "$FUNCNAME".XXXXXX) || { printf "%s: Error: Can't create tmp dir.\n" "$FUNCNAME" >&2 ; return 1 ; } ;
-			touch "$tmpdir/qrcontent"
-			echo "$tmpdir"
-	else
-		if echo -n > "$tmpdir/qrcontent" ; then
-			echo "$(readlink -f "$tmpdir")"
-		else
-			printf "%s: Error: Can't write in tmp dir (%s).\n" "$FUNCNAME" "$tmpdir" >&2
-			return 2
-		fi
+	mkdir -p "$tmpdir"
+	if ! echo -n > "$tmpdir/qrcontent" ; then
+		printf "%s: Error: Can't write in working directory (%s).\n" "$FUNCNAME" "$tmpdir" >&2
+		return 2
 	fi
 
 	local file imgfile
@@ -390,11 +463,11 @@ Options:
 	local -a parts
 	while read -r part ; do
 		if [[ "${part:1:1}" != "${qrversion:=${part:1:1}}" ]] ; then
-			printf "%s: Crit: QR codes doesn't share the same version (%s)" "$FUNCNAME" "$qrversion != ${part:1:1}" >&2
+			printf "%s: Crit: QR codes doesn't share the same version (%s)\n" "$FUNCNAME" "$qrversion != ${part:1:1}" >&2
 			return 3
 		fi
 		if [[ "${part:2:1}" != "${max:=${part:2:1}}" ]] ; then
-			printf "%s: Crit: QR codes doesn't share the same division (%s)" "$FUNCNAME" "$max != ${part:2:1}" >&2
+			printf "%s: Crit: QR codes doesn't share the same division (%s)\n" "$FUNCNAME" "$max != ${part:2:1}" >&2
 			return 3
 		fi
 		parts[${part:3:1}]="${part:4}"
@@ -407,7 +480,7 @@ Options:
 
 		if [[ -z "$v4ldevice" ]] ; then
 			if ! v4ldevices=($(ls /dev/v4l/by-id/*index0)) ; then
-				printf "%s: Crit: No video input (eg. webcam) detected" "$FUNCNAME" >&2
+				printf "%s: Crit: No video input (eg. webcam) detected\n" "$FUNCNAME" >&2
 				return 3
 			elif [[ ${#v4ldevices[@]} == 1 ]] ; then
 				v4ldevice=${v4ldevices[0]}
@@ -419,75 +492,73 @@ Options:
 
 		j=0
 		while ! part="$(zbarcam -Sdisable -Sqrcode.enable --oneshot --prescale=640x480 "$v4ldevice" | tr -d '\n' | sed 's,QR-Code:,\n,g' | grep "^~[1-9]")" ; do
-			printf "%s: Notice: No QR code with expected data detected..." "$FUNCNAME" >&2
+			printf "%s: Notice: No QR code with expected data detected...\n" "$FUNCNAME" >&2
 			((++j < 4)) || break
 		done
 
 		if [[ "${part:1:1}" != "${qrversion:=${part:1:1}}" ]] ; then
-			printf "%s: Crit: QR codes doesn't share the same version (%s)" "$FUNCNAME" "$qrversion != ${part:1:1}" >&2
+			printf "%s: Crit: QR codes doesn't share the same version (%s)\n" "$FUNCNAME" "$qrversion != ${part:1:1}" >&2
 			return 3
 		fi
 		if [[ "${part:2:1}" != "${max:=${part:2:1}}" ]] ; then
-			printf "%s: Crit: QR codes doesn't share the same division (%s)" "$FUNCNAME" "$max != ${part:2:1}" >&2
+			printf "%s: Crit: QR codes doesn't share the same division (%s)\n" "$FUNCNAME" "$max != ${part:2:1}" >&2
 			return 3
 		fi
 		i=${part:3:1}
 		parts[$i]="${part:4}"
-		printf "%s: Notice: Scanning part %s -> OK" "$FUNCNAME" "$((i+1)) / $((max+1))" >&2
+		printf "%s: Notice: Scanning part %s -> OK\n" "$FUNCNAME" "$((i+1)) / $((max+1))" >&2
 		i=-1
 	done
 
 # If we are using paperkey, we have to retrieve the PGPcert (use to need network) and use something like:
 # ... base64 -d | paperkey --pubring "$tmpdir/PGPcert.gpg" 2> >(bl_log crit) | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "${passphrase[*]}" --import 2> >(bl_log notice)
 
-while true ; do
+	for ((i=1;i<=3;i++)) ; do
 
-	if [[ "$qrversion" == "0" ]] ; then
-		printf "%s: Crit: Invalid qrcode version (%s)" "$FUNCNAME" "$qrversion" >&2
-		return 3
-	elif [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "3" ]] ; then
-		birth_date=$(bl_input --default "${birth_date}" "Birth date (YYYY-mm-dd)")
-		passphrase[0]="$(sed 's/[^0-9]//g' <<<"${birth_date}" )"
-	elif [[ "$qrversion" == "4" ]] ; then
-		passphrase[0]=$(bl_input --default "${passphrase[0]}" "Passphrase")
-	elif [[ "$qrversion" != "5" ]] ; then
-		printf "%s: Crit: Unsupported qrcode version (%s)" "$FUNCNAME" "$qrversion" >&2
-		return 3
-	fi
+		if [[ "$qrversion" == "0" ]] ; then
+			printf "%s: Crit: Invalid qrcode version (%s)\n" "$FUNCNAME" "$qrversion" >&2
+			return 3
+		elif [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "3" ]] ; then
+			birth_date=$(bl_input --default "${birth_date}" "Birth date (YYYY-mm-dd)")
+			passphrase[0]="$(sed 's/[^0-9]//g' <<<"${birth_date}" )"
+		elif [[ "$qrversion" != "4" ]] && [[ "$qrversion" != "5" ]] ; then
+			printf "%s: Crit: Unsupported qrcode version (%s)\n" "$FUNCNAME" "$qrversion" >&2
+			return 3
+		fi
 
-	if [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "4" ]] ; then
-		# Simple split
-		if [[ "$qrversion" == "2" ]] ; then
-			for ((i=1;i<=max+1;i++)) ; do
-				passphrase[$i]="$(bl_input --default "${passphrase[$i]}" "Secret word $i/$((max+1))")"
+		if [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "4" ]] ; then
+			# Simple split
+			if [[ "$qrversion" == "2" ]] ; then
+				for ((j=1;j<=max+1;j++)) ; do
+					passphrase[$j]="$(bl_input --default "${passphrase[$j]}" "Secret word $j/$((max+1))")"
+				done
+			fi
+			printf "%s" ${parts[@]} | basenc --decode --base64url > "$tmpdir/SECRET"
+		elif [[ "$qrversion" == "3" ]] || [[ "$qrversion" == "5" ]] ; then
+			# Shamir Secret Sharing
+			for j in ${!parts[@]} ; do
+				printf "%s" ${parts[$j]:3} | basenc --decode --base64url > "$tmpdir/SECRET.${parts[$j]:0:3}"
 			done
+			gfcombine "$tmpdir/SECRET."*
 		fi
-		printf "%s" ${parts[@]} | basenc --decode --base64url > "$tmpdir/SECRET"
-	elif [[ "$qrversion" == "3" ]] || [[ "$qrversion" == "5" ]] ; then
-		# Shamir Secret Sharing
-		for i in ${!parts[@]} ; do
-			printf "%s" ${parts[$i]:3} | basenc --decode --base64url > "$tmpdir/SECRET.${parts[$i]:0:3}"
-		done
-		gfcombine "$tmpdir/SECRET."*
-	fi
 
-	if [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "3" ]] || [[ "$qrversion" == "4" ]] ; then
-		if cat "$tmpdir/SECRET" | gpg --decrypt --batch --pinentry-mode loopback --passphrase "${passphrase[*]}" | gpg --homedir "$gpghome" --batch --pinentry-mode loopback --import ; then
+		if [[ "$qrversion" == "1" ]] || [[ "$qrversion" == "2" ]] || [[ "$qrversion" == "3" ]] ; then
+			if gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt "$tmpdir/SECRET" <<<"${passphrase[*]}" > "$tmpdir/s.gpg" ; then
+				break
+			fi
+		elif [[ "$qrversion" == "4" ]] || [[ "$qrversion" == "5" ]] ; then
+			mv "$tmpdir/SECRET" "$tmpdir/s.gpg"
 			break
 		fi
-	elif [[ "$qrversion" == "5" ]] ; then
-		if cat "$tmpdir/SECRET" | gpg --homedir "$gpghome" --batch --pinentry-mode loopback --import ; then
-			break
-		fi
-	fi
-done
+	done
 
-#FPRS=($(gpg --homedir "$gpghome" --list-secret-keys --with-colons | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'))
+	gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase-fd 0 --import "$tmpdir/s.gpg" <<<"${passphrase[*]}" || return $?
+	[[ -z "${passphrase[*]}" ]] || echo "${passphrase[*]}" > "$tmpdir/passphrase"
 
-##TODO: check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.2.27 libgcrypt 1.8.8)
-
+	# Output certification key fpr
+	gpg --list-packets "$tmpdir/s.gpg" | sed -n --regexp-extended  '/issuer.*[0-9ABCDEF]{40}/ { s,.*([0-9ABCDEF]{40}).*,\1,p ; q }'
+	return ${PIPESTATUS[0]}
 }
-
 
 ### General Help Messages ###
 
@@ -525,7 +596,7 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_QRKEY_chelpmsg="
-Backup or restore OpenPGP keys using printed QR codes.
+Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
 
 Options:
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"
