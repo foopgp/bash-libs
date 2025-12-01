@@ -1,3 +1,20 @@
+bash-libs (0.1.6-1) unstable; urgency=medium
+
+  [ JJ ]
+  * bl-djibian: minor fix ; bl-qrkey: better description
+  * bl_pgpid_gen_uid(): add --from option + improve regexp usage
+  * bl-qrkey: Change behaviour of QRcode version 4 + new option to change passphrase
+  * improve bl_security_new_password(), new bl_qrkey_change_passphrase(), simplify bl_qrkey_print()
+  * bl_qrkey_scan(): change one option, to output a more usefull information
+  * bl_qrkey_print(): change 1 option + typo, description and bug fixes
+  * bl-qrkey scan: bugfixe (QR version <4)
+  * bl_qrkey_change_passphrase(): 2 bugfixes + new --verbose option
+  * bl-qrkey: bugfixes
+  * bl-pgpid + bl-qrkey: minor bugfixes
+  * decrease BL_PGPID_XUID_MAX to 2^31-2 to solve many problems with software misleading unsigned (uint32_t)
+
+ -- piseb <piseb@mailo.com>  Mon, 01 Dec 2025 12:57:59 +0100
+
 bash-libs (0.1.5-2) unstable; urgency=medium
 
   [ JJ ]
