@@ -143,13 +143,17 @@ Options:
   -f, --force          Change file permissions if necessary, never prompt
   -v, --verbose        Explain what is being done (stdout)
   -r, --remove         Also recursively remove given path(|s)
+  -n, --iterations N   Overwrite N times instead of the default (3)
+  -z, --zero           Add a final overwrite with zeros to hide shredding
 "
-	local farg varg files rmcmd=true
+	local farg varg extrasargs files file rmcmd=true
 	for ((;$#;)) ; do
 		case "$1" in
 			-f|--force) farg="-f" ;;
 			-v|--verb*) varg="-v" ;;
 			-r|--remove) rmcmd="rm" ;;
+			-n|--iterations) shift ; extrasargs+=" -n $1" ;;
+			-z|--zero) extrasargs+=" -z" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -169,9 +173,13 @@ Options:
 			bl_yesno --default=no --text "$(printf "%s\n" "${files[@]@Q}")" "Shred this ${#files[@]} file(s)" || return 0
 		fi
 
-		# Don't pass $varg to shred as it use to write too many things, and moreover on stderr instead of stdin
-		! [[ "$varg" ]] || echo "shredding:" "${files[@]@Q}"
-		shred $farg "${files[@]}" || return $?
+		for file in "${files[@]}" ; do
+			# Don't pass $varg to shred as it use to write too many things, and moreover on stderr instead of stdin
+			! [[ "$varg" ]] || echo "shredding:" "${file@Q}"
+			shred $farg $extrasargs "${file}" || return $?
+			# If we have to delete files, first overwrite it with empty file to not loosing time shredding them again. Notably if a previous bl_shred_path --remove was interrupted.
+			[[ "$rmcmd" == true ]] || echo -n > "${file}" || return $?
+		done
 	fi
 	$rmcmd -r $farg $varg "$@" || return $?
 }
