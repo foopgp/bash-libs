@@ -174,30 +174,13 @@ Options:
 	local udid4 uid ret
 
 	if [[ "$fromcard" ]] ; then
-		local cardstatus pubkeyurl
-		cardstatus=$(su --command "gpg --card-status" "${SUDO_USER:-$USER}") || return $?
+		local -A cardinfo
 
-		# Try Import/Refresh Key from URL metadata (as email use to be in public certificate only)
-		pubkeyurl=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
-		if [[ "$pubkeyurl" ]] ; then
-			printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${pubkeyurl}" >&2
-			if curl --progress-bar "$pubkeyurl" | gpg --import-options keep-ownertrust,import-clean --import ; then
-				cardstatus=$(su --command "gpg --card-status" "${SUDO_USER:-$USER}") || return $?
-			fi
-		fi
+		bl_pgpid_tocken_check --aaname cardinfo || return $?
 
-		email=($(grep --only-matching --extended-regexp "${BL_INTERACTIVE_EMAIL_REGEX}" <<<"${cardstatus}"))
-		(( ${#email[@]} != 0 )) || { printf "%s: Error: OpenPGP smartcard doesn't indicate any %s ...\n" "$FUNCNAME" "email" >&2 ; return 1 ; }
-		(( ${#email[@]} < 2 )) || printf "%s: Warning: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "email" "${email[1]}" >&2
-
-		udid4=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,\1,p" <<<"${cardstatus}"))
-		(( ${#udid4[@]} != 0 )) || { printf "%s: Error: OpenPGP smartcard doesn't indicate any %s ...\n" "$FUNCNAME" "udid4" >&2 ; return 1 ; }
-		(( ${#udid4[@]} < 2 )) || printf "%s: Warning: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "udid4" "${udid4[1]}" >&2
-
-		username=$(sed --silent ' /Name of cardholder:/ { s,.*: ,,p } ' <<<"${cardstatus}")
-		# If "Name of cardholder" hasn't been set, generate username from email
-		[[ "$username" ]] || username="${email%%@*}"
-
+		email=${cardinfo[pgpid_email]}
+		udid4=${cardinfo[pgpid_id]:2} # TODO: start managing u5 ids
+		username=${cardinfo[pgpid_name]}
 		sname=$(printf "// Already hashed in u4=%s" "$udid4")
 		gname=$(printf "// Already hashed in u4=%s" "$udid4")
 		bdate="// Also already hashed"

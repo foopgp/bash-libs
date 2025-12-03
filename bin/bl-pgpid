@@ -889,7 +889,15 @@ Options:
 		case "$1" in
 			-A|--aaname)
 				shift
-				((BL_PGPID_isprogram)) && printf "%s: Warning: --aaname only effect when used as bash library.\n" "$FUNCNAME" >&2 || varname=$1 ;;
+				if ((BL_PGPID_isprogram)) ; then
+					printf "%s: Warning: --aaname only effect when used as bash library.\n" "$FUNCNAME" >&2
+				elif [[ "$(eval echo \${$1@a})" =~ A ]] ; then
+					varname=$1
+				else
+					printf "%s: Error: '%s' must be an associative array.\n" "$FUNCNAME" "$1" >&2
+					return 2
+				fi
+				;;
 			-i|--info) verbose=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
