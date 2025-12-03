@@ -143,7 +143,7 @@ Options:
   -f, --force          Change file permissions if necessary, never prompt
   -v, --verbose        Explain what is being done (stdout)
   -r, --remove         Also recursively remove given path(|s)
-  -n, --iterations N   Overwrite N times instead of the default (3)
+  -n, --iterations N   Overwrite N times instead of the shred's default
   -z, --zero           Add a final overwrite with zeros to hide shredding
 "
 	local farg varg extrasargs files file rmcmd=true
