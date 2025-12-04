@@ -42,6 +42,12 @@ if [[ "$1" == --bash-completion ]] ; then
 				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
 				return 0 ;;
 		esac
+		if grep -qE "(\<readwallet\>|\<[0-9])" <<< "${COMP_WORDS[@]}" ; then
+			local IFS=$'\'\\n\''
+			compopt -o plusdirs
+			COMPREPLY=( $(compgen -A file -- $cur) )
+			return 0
+		fi
 		# complete actions if none in ${COMP_WORDS[@]}
 		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
 		return 0

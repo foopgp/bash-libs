@@ -286,7 +286,7 @@ Note: Split number should be greater than threshold number.
 	mkdir -p "$tmpdir"
 	if [[ "$(find "$tmpdir" -name "SECRET*" -print -quit)" ]] ; then
 		printf "%s: Error: Working directory is unclean (containing SECRET*).\n" "$FUNCNAME" >&2
-		printf "%s: Suggestion: $ bl-security shred_path --remove '%s'/*\n" "$FUNCNAME" "$tmpdir" >&2
+		printf "%s: Suggestion: $ bl-security shred_path --remove '%s'\n" "$FUNCNAME" "$tmpdir" >&2
 		return 2
 	fi
 	if ! rm -- $(mktemp --tmpdir="$tmpdir" testw.XXX) ; then
@@ -311,7 +311,8 @@ Note: Split number should be greater than threshold number.
 
 	if [[ -z "$printer" ]] ; then
 		local -a printers
-		printers=($(LANG= lpstat -p | sed -n 's,^printer \([^ ]*\).*,\1,p')) || { printf "%s: Error: No printer detected.\n" "$FUNCNAME" ; return 1 ; }
+		printers=($(LANG= lpstat -p | sed -n 's,^printer \([^ ]*\).*,\1,p'))
+		[[ "${printers[0]}" ]] || { printf "%s: Error: No printer detected.\n" "$FUNCNAME" ; return 1 ; }
 		printer="$(bl_radiolist --output-value --default-value "$(lpstat -d | sed 's,.* ,,')" --num-per-line 1 --text "Where to print the ${splitn} secret fragments ?" "${printers[@]}")"
 	fi
 	if [[ -z "$keyid" ]] ; then

@@ -713,7 +713,7 @@ bl_pgpid_gen_uid() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [UDID4]"
 	local helpmsg="
-Generate a 32bit Unix User ID, from 2^18 to (2^32)-4 ([$BL_PGPID_XUID_MIN,$BL_PGPID_XUID_MAX]).
+Generate a 32bit Unix User ID, from 2^18 to (2^31)-2 ([$BL_PGPID_XUID_MIN,$BL_PGPID_XUID_MAX]).
 If UDID4 is not given, it will ask for surname, names and date of birth.
 
 Options:
