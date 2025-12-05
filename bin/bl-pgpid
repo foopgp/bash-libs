@@ -72,7 +72,7 @@ declare -r BL_PGPID_CO_REGEX="e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9]{2}\.[0-9]{2}"
 declare -r BL_PGPID_U4H_REGEX="[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0-9_-]{22}"
 declare -r BL_PGPID_U4_REGEX="${BL_PGPID_U4H_REGEX}${BL_PGPID_CO_REGEX}"							# Birth of "human" (must have a name, should have a soul)
 declare -r BL_PGPID_TIME_REGEX="[01-][0-9]{11}\.[0-9]"												# From 'Thu Feb 15 14:22:42 LMT -1199' to 'Wed Nov 16 10:46:39 CET 5138'
-declare -r BL_PGPID_U5_REGEX="${BL_PGPID_TIME_REGEX}${BL_PGPID_CO_REGEX}"							# Birth of anything (with or without any soul)
+declare -r BL_PGPID_U5_REGEX="${BL_PGPID_TIME_REGEX}${BL_PGPID_CO_REGEX}"							# Apparition of anything (with or without any ghost in the shell)
 declare -r BL_PGPID_DATE_REGEX="(18|19|20)[0-9]{2}(0[1-9]|1[0,1,2])(0[1-9]|[12][0-9]|3[01])"
 declare -r BL_PGPID_N2_REGEX="${BL_PGPID_DATE_REGEX}${BL_PGPID_CO_REGEX}"							# Deprecated
 

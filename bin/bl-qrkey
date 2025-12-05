@@ -105,7 +105,7 @@ Call 'gpg --with-colon' and ouput exportable secret keys, one by line:
 KeyID     Creation_Date    Public_Key_Algorithm
 
 Options:
-  -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+  -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
 "
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
@@ -155,7 +155,7 @@ Options:
   -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -n, --newpassphrase PASSPHRASE New Passphrase to protect secret parts of OpenPGP key (empty \"\" for none).
   -N, --newpassfrom FILE         Get new passphrase from the first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+  -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
 "
 	local passphrase passgiven newpass newgiven
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -184,8 +184,8 @@ Options:
 	if [[ -z "$keyid" ]] ; then
 		local -a seckeyids
 		mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
-		((${#seckeyids[@]}>0)) || { printf "%s: Error: No secret to print.\n" "$FUNCNAME" ; return 1 ; }
-		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of secret to print (on ${splitn} fragments)" "${seckeyids[@]}")"
+		((${#seckeyids[@]}>0)) || { printf "%s: Error: No local (on drive) OpenPGP secret.\n" "$FUNCNAME" >&2 ; return 1 ; }
+		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "For which OpenPGP secret key you want to change passphrase" "${seckeyids[@]}")"
 		keyid="${keyid%% *}"
 	fi
 
@@ -209,6 +209,7 @@ Options:
 
 	printf "${cmd}" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --change-passphrase "${keyid}" || return $?
 	printf "%s: Notice: passphrase successfully changed.\n" "$FUNCNAME" >&2
+	return 0
 }
 
 # bl_qrkey_printqr is inspired from https://gist.github.com/joostrijneveld/59ab61faa21910c8434c
@@ -221,7 +222,7 @@ Options:
 bl_qrkey_print() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local tmpdir="/tmp/$FUNCNAME.$USER"
+	local tmpdir="/tmp/$BL_QRKEY_NAME.$USER"
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 
 # QRKEY QR VERSIONS:
@@ -233,7 +234,7 @@ bl_qrkey_print() {
 #
 	local splitn=5 thresn=3 qrversion=5
 	local helpmsg="
-Export and print secret keys on multiple QRcode using Shamir's secret sharing.
+Export and print OpenPGP secrets on multiple QRcode using Shamir's secret sharing.
 Missing inputs are asked interactively.
 Working directory should be properly erased ($ bl-security shred_path) by yourself.
 
@@ -245,7 +246,7 @@ Options:
   -W, --workdir DIRECTORY        Working directory. Don't forget to shred its content once your done (default: $tmpdir).
   -S, --split NUM                Number of shares to be generated (default: $splitn)
   -T, --threshold NUM            Number of shares necessary to reconstruct the secret (default: $thresn)
-  -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+  -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
 
 Note: Split number should be greater than threshold number.
       If they are equal, a simple split is used instead of Shamir's secret sharing,
@@ -312,14 +313,14 @@ Note: Split number should be greater than threshold number.
 	if [[ -z "$printer" ]] ; then
 		local -a printers
 		printers=($(LANG= lpstat -p | sed -n 's,^printer \([^ ]*\).*,\1,p'))
-		[[ "${printers[0]}" ]] || { printf "%s: Error: No printer detected.\n" "$FUNCNAME" ; return 1 ; }
+		[[ "${printers[0]}" ]] || { printf "%s: Error: No printer detected.\n" "$FUNCNAME" >&2 ; return 1 ; }
 		printer="$(bl_radiolist --output-value --default-value "$(lpstat -d | sed 's,.* ,,')" --num-per-line 1 --text "Where to print the ${splitn} secret fragments ?" "${printers[@]}")"
 	fi
 	if [[ -z "$keyid" ]] ; then
 		local -a seckeyids
 		mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
-		((${#seckeyids[@]}>0)) || { printf "%s: Error: No secret to print.\n" "$FUNCNAME" ; return 1 ; }
-		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of secret to print (on ${splitn} fragments)" "${seckeyids[@]}")"
+		((${#seckeyids[@]}>0)) || { printf "%s: Error: No secret to print.\n" "$FUNCNAME" >&2 ; return 1 ; }
+		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of secrets to print (on ${splitn} fragments)" "${seckeyids[@]}")"
 		keyid="${keyid%% *}"
 	fi
 
@@ -392,7 +393,7 @@ EOF
 bl_qrkey_scan() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local tmpdir="/tmp/$FUNCNAME.$USER"
+	local tmpdir="/tmp/$BL_QRKEY_NAME.$USER"
 	local usage="Usage: $name [OPTIONS]... [IMAGES]..."
 	local helpmsg="
 Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or webcam.
@@ -402,12 +403,12 @@ Output OpenPGP certification key fingerprint.
 
 Options:
   -W, --workdir DIRECTORY       Working directory. Don't forget to shred its content once your done (default: $tmpdir).
-  -H, --homedir GNUPGHOME       GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+  -H, --homedir GNUPGHOME       GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -c, --camera V4LDEVICE        Video device to scan for QR code (/dev/v4l/by-id/...)
-  -p, --passphrase PASSPHRASE   This input is related to QR VERSIONS:
+  -p, --passphrase PASSPHRASE   This extra passphrase is related to QR VERSIONS:
                                   * 1 to 3: Only numbers, use to be a date: YYYYMMDD.
-                                  * 4 to 5: No passphrase (for QRcode, a passphrase may still protect contained secret).
-  -P, --passfrom FILE           Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+                                  * 4 to 5: $FUNCNAME don't need an extra passphrase (in addition to the ones defined in RFC4880).
+  -P, --passfrom FILE           Get extra passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
 "
 
 	local -a passphrase
@@ -417,7 +418,7 @@ Options:
 			-p|--passphrase)
 				shift ; passphrase=$1 ;;
 			-P|--passfrom|--pass-from)
-				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
+				shift ; passphrase=$( sed 1q < "$1" ) || return 1 ;;
 			-D|--tmpdir|--tempdir|-W|--workdir)
 				shift
 				[[ -d "$1" ]] || { printf "%s: Error: nonexistent or unattainable directory (%s)\n" "$FUNCNAME" "$1" >&2 ; return 2 ; }
@@ -559,6 +560,158 @@ Options:
 	# Output certification key fpr
 	gpg --list-packets "$tmpdir/s.gpg" | sed -n --regexp-extended  '/issuer.*[0-9ABCDEF]{40}/ { s,.*([0-9ABCDEF]{40}).*,\1,p ; q }'
 	return ${PIPESTATUS[0]}
+}
+
+bl_qrkey_totoken() {
+	local name
+	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local tmpdir="/tmp/$BL_QRKEY_NAME.$USER"
+	local hkpsserv="keys.foopgp.org"
+	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
+	local helpmsg="
+Move OpenPGP secrets to security token (OpenPGP smartcard).
+Missing inputs are asked interactively.
+Security token (OpenPGP smartcard) must be connected.
+Working directory should be properly erased ($ bl-security shred_path) by yourself.
+Output ASCII armored OpenPGP certificate, PIN code and admin code.
+
+Options:
+  -W, --workdir DIRECTORY      Working directory. Don't forget to shred its content once your done (default: $tmpdir).
+  -H, --homedir GNUPGHOME      GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
+  -p, --passphrase PASSPHRASE  Passphrase to access secret parts of OpenPGP key
+  -P, --passfrom FILE          Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+  -K, --keyserver HKPSSERV     Name of keyserver to send PGP public key (default: $hkpsserv)
+  -U, --certurl URL            URL to retrieve your OpenPGP certificate (default: https://{HKPSSERV}/pks/lookup?op=get&search=0x{KEYFPR} )
+  -v, --verbose                Increase verbosity
+      --no-send                Don't send PGP public key (OpenPGP certificate) to the HKPS keyserver
+      --force                  Don't ask before resetting security token (OpenPGP smartcard)
+"
+
+	local passphrase certurl nosend force
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local gpgfilter="grep ^gpg"
+	for ((;$#;)) ; do
+		case "$1" in
+			-W|--workdir)
+				shift
+				[[ -d "$1" ]] || { printf "%s: Error: nonexistent or unattainable directory (%s)\n" "$FUNCNAME" "$1" >&2 ; return 2 ; }
+				tmpdir=$1 ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-p|--passphrase)
+				shift ; passphrase=$1 ;;
+			-P|--passfrom|--pass-from)
+				shift ; passphrase=$( sed 1q < "$1" ) || return 1 ;;
+			-K|--keyserver)
+				shift ; hkpsserv=$1 ;;
+			-U|--certurl)
+				shift ; certurl=$1 ;;
+			-v|--verbose) gpgfilter="cat" ;;
+			--no-send) nosend="." ;;
+			--force) force="." ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local keyid secstatus
+	local -a seckeyids emails udid4
+
+	mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
+	((${#seckeyids[@]}>0)) || { printf "%s: Error: No OpenPGP secret to move.\n" "$FUNCNAME" >&2 ; return 1 ; }
+
+	[[ -z "$1" ]] || keyid="$1"
+	if [[ -z "$keyid" ]] ; then
+		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of OpenPGP secrets to move on security token" "${seckeyids[@]}")"
+		keyid="${keyid%% *}"
+	fi
+
+	# Check and get metadata
+	#  replace eventual keyID (short) by its keyFPR (longest)
+	secstatus=$(gpg --quiet --homedir "$gpghome" --list-secret-keys "$keyid") || return $?
+	keyid=$(grep -o -m1 "\<[0-9ABCDEF]\{40\}\>" <<<"${secstatus}") || { printf "%s: Error: Can't get fingerprint (maybe due to incompatible gpg's version).\n" "$FUNCNAME" >&2 ; return 1 ; }
+	emails=($(sed --silent --regexp-extended "s,^uid.*[<[:space:]](${BL_INTERACTIVE_EMAIL_REGEX}).*,\1,p" <<<"${secstatus}"))
+	[[ "$emails" ]] || { printf "%s: Error: No email for OpenPGP key '%s'.\n" "$FUNCNAME" "$keyid" >&2 ; return 1 ; }
+	#  don't error if there is no pgp_id. TODO: manage also u5.
+	udid4=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,\1,p" <<<"${secstatus}"))
+
+	grep -q "${keyid: 24}" <<<"${seckeyids[@]}" || { printf "%s: Error: No local (on drive) OpenPGP secrets for key '%s'.\n" "$FUNCNAME" "${keyid}" >&2 ; return 1 ; }
+
+	# Check and errout card-status
+	gpg --card-status | grep -A2 "^Manufacturer\>" >&2 || return ${PIPESTATUS[0]}
+
+	# If we fail testing no passphrase, there is one. Then we have to remove it, or we can't exec gpg's keytocard
+	if ! gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase "" --dry-run --change-passphrase "$keyid" 2> /dev/null ; then
+		[[ "$passphrase" ]] || read passphrase < "$tmpdir/passphrase" || passphrase=$(bl_input --password --text "(To put OpenPGP secrets on security tocken)" "Passphrase")
+		i=0
+		while ! bl_qrkey_change_passphrase --homedir "$gpghome" --passfrom /dev/stdin --newpassphrase "" "$keyid" <<<"$passphrase" >&2 ; do
+				((++i <= 3 )) || return 2
+				passphrase=$(bl_input --password --text "(To put secret keys on security tocken)" "Passphrase")
+		done
+	fi
+
+	[[ "$force" ]] || bl_yesno "Factory reset OpenPGP security tocken (This will destroys all OpenPGP keys stored on the card!)" || exit 42
+
+	printf "%s: Notice: Resetting OpenPGP security tocken...\n" "$FUNCNAME" >&2
+
+	echo "admin
+factory-reset
+y
+yes
+quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --card-edit 2> >( $gpgfilter ) || { printf "Factory Reset OpenPGP card FAIL ($?)\n" ; return 1 ;}
+
+	printf "%s: Notice: Configuring OpenPGP security tocken...\n" "$FUNCNAME" >&2
+
+	echo "admin
+login
+u4=${udid4[0]}
+url
+https://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}
+name
+${emails[0]}
+${emails[1]}
+quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" ; return 1 ;}
+
+echo "admin
+key-attr
+2
+1
+2
+1
+2
+1
+quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card keys attributes FAIL ($?)\n" ; return 1 ;}
+
+#TODO WKS address calculated from email
+
+	printf "%s: Notice: Moving OpenPGP secrets to security tocken...\n" "$FUNCNAME" >&2
+
+echo "keytocard
+y
+1
+key 1
+keytocard
+2
+key 1
+key 2
+keytocard
+3
+save " | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --edit-key "${keyid}" 2> >( $gpgfilter ) || { printf "Moving OpenPGP keys to card FAIL ($?)\n" ; return 1 ;}
+
+#	printf "%s: Notice: Setting PIN code and admin code...\n" "$FUNCNAME" >&2
+# ...TODO
+
+	gpg --homedir "$gpghome" --export --armor "$keyid"
+	if [[ "$nosend" ]] || ! gpg --homedir "$gpghome" --keyserver "${hkpsserv}" --send-keys "$keyid" ; then
+		printf "%s: Warning: Please publish this PGP public key on the Internet (eg: on a keyserver)\n" "$FUNCNAME" >&2
+	fi
+# TODO: output PIN code and admin code
+
+	return 0
 }
 
 ### General Help Messages ###
