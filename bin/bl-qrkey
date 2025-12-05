@@ -77,6 +77,7 @@ readonly BL_QRKEY_NAME BL_QRKEY_VERSION BL_QRKEY_FUNCTIONS
 
 source "$(dirname "$BASH_SOURCE")"/bl-interactive --
 source "$(dirname "$BASH_SOURCE")"/bl-security --
+source "$(dirname "$BASH_SOURCE")"/bl-pgpid --
 
 ### internal functions ###
 
@@ -222,7 +223,7 @@ Options:
 bl_qrkey_print() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local tmpdir="/tmp/$BL_QRKEY_NAME.$USER"
+	local tmpdir="/tmp/$FUNCNAME.$USER"
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 
 # QRKEY QR VERSIONS:
@@ -393,7 +394,7 @@ EOF
 bl_qrkey_scan() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local tmpdir="/tmp/$BL_QRKEY_NAME.$USER"
+	local tmpdir="/tmp/$FUNCNAME.$USER"
 	local usage="Usage: $name [OPTIONS]... [IMAGES]..."
 	local helpmsg="
 Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or webcam.
@@ -565,7 +566,6 @@ Options:
 bl_qrkey_totoken() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local tmpdir="/tmp/$BL_QRKEY_NAME.$USER"
 	local hkpsserv="keys.foopgp.org"
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 	local helpmsg="
@@ -576,14 +576,13 @@ Working directory should be properly erased ($ bl-security shred_path) by yourse
 Output ASCII armored OpenPGP certificate, PIN code and admin code.
 
 Options:
-  -W, --workdir DIRECTORY      Working directory. Don't forget to shred its content once your done (default: $tmpdir).
   -H, --homedir GNUPGHOME      GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -p, --passphrase PASSPHRASE  Passphrase to access secret parts of OpenPGP key
   -P, --passfrom FILE          Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -K, --keyserver HKPSSERV     Name of keyserver to send PGP public key (default: $hkpsserv)
+  -K, --keyserver HKPSSERV     Name of keyserver to send PGP PUBLIC KEY (default: $hkpsserv)
   -U, --certurl URL            URL to retrieve your OpenPGP certificate (default: https://{HKPSSERV}/pks/lookup?op=get&search=0x{KEYFPR} )
   -v, --verbose                Increase verbosity
-      --no-send                Don't send PGP public key (OpenPGP certificate) to the HKPS keyserver
+      --no-send                Don't send PGP PUBLIC KEY (OpenPGP certificate) to the HKPS keyserver
       --force                  Don't ask before resetting security token (OpenPGP smartcard)
 "
 
@@ -592,10 +591,6 @@ Options:
 	local gpgfilter="grep ^gpg"
 	for ((;$#;)) ; do
 		case "$1" in
-			-W|--workdir)
-				shift
-				[[ -d "$1" ]] || { printf "%s: Error: nonexistent or unattainable directory (%s)\n" "$FUNCNAME" "$1" >&2 ; return 2 ; }
-				tmpdir=$1 ;;
 			-H|--homedir)
 				shift ; gpghome=$1 ;;
 			-p|--passphrase)
@@ -631,13 +626,16 @@ Options:
 	fi
 
 	# Check and get metadata
-	#  replace eventual keyID (short) by its keyFPR (longest)
 	secstatus=$(gpg --quiet --homedir "$gpghome" --list-secret-keys "$keyid") || return $?
+	#  replace eventual keyID (short) by its keyFPR (longest)
 	keyid=$(grep -o -m1 "\<[0-9ABCDEF]\{40\}\>" <<<"${secstatus}") || { printf "%s: Error: Can't get fingerprint (maybe due to incompatible gpg's version).\n" "$FUNCNAME" >&2 ; return 1 ; }
 	emails=($(sed --silent --regexp-extended "s,^uid.*[<[:space:]](${BL_INTERACTIVE_EMAIL_REGEX}).*,\1,p" <<<"${secstatus}"))
 	[[ "$emails" ]] || { printf "%s: Error: No email for OpenPGP key '%s'.\n" "$FUNCNAME" "$keyid" >&2 ; return 1 ; }
 	#  don't error if there is no pgp_id. TODO: manage also u5.
+	set -x
 	udid4=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,\1,p" <<<"${secstatus}"))
+	set +x
+	declare -p udid4
 
 	grep -q "${keyid: 24}" <<<"${seckeyids[@]}" || { printf "%s: Error: No local (on drive) OpenPGP secrets for key '%s'.\n" "$FUNCNAME" "${keyid}" >&2 ; return 1 ; }
 
@@ -646,7 +644,7 @@ Options:
 
 	# If we fail testing no passphrase, there is one. Then we have to remove it, or we can't exec gpg's keytocard
 	if ! gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase "" --dry-run --change-passphrase "$keyid" 2> /dev/null ; then
-		[[ "$passphrase" ]] || read passphrase < "$tmpdir/passphrase" || passphrase=$(bl_input --password --text "(To put OpenPGP secrets on security tocken)" "Passphrase")
+		[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(To put OpenPGP secrets on security tocken)" "Passphrase")
 		i=0
 		while ! bl_qrkey_change_passphrase --homedir "$gpghome" --passfrom /dev/stdin --newpassphrase "" "$keyid" <<<"$passphrase" >&2 ; do
 				((++i <= 3 )) || return 2
@@ -702,14 +700,21 @@ keytocard
 3
 save " | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --edit-key "${keyid}" 2> >( $gpgfilter ) || { printf "Moving OpenPGP keys to card FAIL ($?)\n" ; return 1 ;}
 
-#	printf "%s: Notice: Setting PIN code and admin code...\n" "$FUNCNAME" >&2
+#printf "%s: Notice: Setting PIN code and admin code...\n" "$FUNCNAME" >&2
 # ...TODO
+# gpg (GnuPG) 2.4.7 --batch can't do it, then we may:
+# - Send direct APDU through gpg-connect-agent, confer:
+#   - https://foopgp.org/blog/2014-08-21-openpgp-card-une-application-cryptographique-pour-carte-a-puce/#communiquer-avec-scdaemon-et-la-carte
+#   - https://g10code.com/docs/openpgp-card-2.0.pdf
+# - Package and use new tool 'oct': https://codeberg.org/openpgp-card/openpgp-card-tools
 
 	gpg --homedir "$gpghome" --export --armor "$keyid"
 	if [[ "$nosend" ]] || ! gpg --homedir "$gpghome" --keyserver "${hkpsserv}" --send-keys "$keyid" ; then
-		printf "%s: Warning: Please publish this PGP public key on the Internet (eg: on a keyserver)\n" "$FUNCNAME" >&2
+		printf "%s: Warning: Please publish this PGP PUBLIC KEY on the Internet (eg: on a keyserver)\n" "$FUNCNAME" >&2
 	fi
-# TODO: output PIN code and admin code
+	echo "ADMIN_CODE='12345678'"
+	echo "PIN_CODE='123456'"
+	printf "%s: Notice: You may change these codes using: $ gpg --change-pin\n" "$FUNCNAME" >&2
 
 	return 0
 }

@@ -915,7 +915,7 @@ Options:
 
 	# Try Import/Refresh Key from URL metadata (as email may be in public certificate only)
 	aaname[pgpid_certurl]=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
-	if [[ "${aaname[pgpid_certurl]}" ]] ; then
+	if [[ "${aaname[pgpid_certurl]}" ]] && [[ "${aaname[pgpid_certurl]}" != "[not set]" ]] ; then
 		printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${aaname[pgpid_certurl]}" >&2
 		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --import-options keep-ownertrust,import-clean --import ; then
 			cardstatus=$(LANG= gpg --card-status) || return $?
@@ -948,12 +948,12 @@ Options:
 		fi
 	done <<<"${cardstatus}"
 
-	(( ${#emails[@]} < 2 )) || printf "%s: Warning: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "email" "${emails[1]}" >&2
+	(( ${#emails[@]} < 2 )) || printf "%s: Notice: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "email" "${emails[1]}" >&2
 	aaname[pgpid_email]="${emails[0]}"
 
 	# Should be in 'Login data' field, but who knows ? (yet...) 
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}"))
-	(( ${#ids[@]} < 2 )) || printf "%s: Warning: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "id" "${ids[1]}" >&2
+	(( ${#ids[@]} < 2 )) || printf "%s: Notice: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "id" "${ids[1]}" >&2
 	aaname[pgpid_id]="${ids[0]}"
 
 	# If "Name of cardholder" hasn't been set, generate username from pgpid_email
