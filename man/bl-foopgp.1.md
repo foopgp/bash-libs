@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-foopgp - manual page for bl-foopgp 0.1.5
+bl-foopgp - manual page for bl-foopgp 0.1.7
 
 # SYNOPSIS
 
@@ -32,7 +32,7 @@ to the the foopgp association.
 
 **-s**, **\--stingynalty** VALUE
 
-:   set STINGYNALTY (2025-11: 1.08848650703240391871)
+:   set STINGYNALTY (2025-12: 1.09392893956756593830)
 
 **-d**, **\--date** STRING
 

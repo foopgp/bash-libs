@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-interactive - manual page for bl-interactive 0.1.5
+bl-interactive - manual page for bl-interactive 0.1.7
 
 # SYNOPSIS
 

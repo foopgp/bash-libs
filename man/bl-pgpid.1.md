@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-pgpid - manual page for bl-pgpid 0.1.5
+bl-pgpid - manual page for bl-pgpid 0.1.7
 
 # SYNOPSIS
 
@@ -56,13 +56,18 @@ gen_u4
 
 gen_uid
 
-:   Generate a 32bit Unix User ID, from 2\^18 to (2\^32)-4
-    (\[262144,4294967292\]).
+:   Generate a 32bit Unix User ID, from 2\^18 to (2\^31)-2
+    (\[262144,2147483646\]).
 
 gen_key
 
 :   Generate an OpenPGP key pair (public and secret) according to foopgp
     standards.
+
+tocken_check
+
+:   Check if OpenPGP tocken is correctly configured for pgpid ; may
+    output informations.
 
  
 All actions support a **\--help** options, eg: \$ bl-pgpid ACTION
