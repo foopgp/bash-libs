@@ -567,6 +567,7 @@ bl_qrkey_totoken() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local hkpsserv="keys.foopgp.org"
+	local lang="${LANG:: 2}"
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 	local helpmsg="
 Move OpenPGP secrets to security token (OpenPGP smartcard).
@@ -581,12 +582,14 @@ Options:
   -P, --passfrom FILE          Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -K, --keyserver HKPSSERV     Name of keyserver to send PGP PUBLIC KEY (default: $hkpsserv)
   -U, --certurl URL            URL to retrieve your OpenPGP certificate (default: https://{HKPSSERV}/pks/lookup?op=get&search=0x{KEYFPR} )
+  -L, --lang LANG              Security tocken (OpenPGP smartcard) prefered language (default: $lang)
+  -N, --name NAME              Customize name of security tocken's cardholder
   -v, --verbose                Increase verbosity
       --no-send                Don't send PGP PUBLIC KEY (OpenPGP certificate) to the HKPS keyserver
       --force                  Don't ask before resetting security token (OpenPGP smartcard)
 "
 
-	local passphrase certurl nosend force
+	local passphrase certurl username nosend force
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local gpgfilter="grep ^gpg"
 	for ((;$#;)) ; do
@@ -601,6 +604,10 @@ Options:
 				shift ; hkpsserv=$1 ;;
 			-U|--certurl)
 				shift ; certurl=$1 ;;
+			-L|--lang)
+				shift ; lang=$(sed -nE ' s,.*([abcdefghijklmnopqrstuvwxyz]{2}).*,\1,p ' <<<"$1") ;;
+			-N|--name)
+				shift ; username="${1//[^0-9a-zA-Z ._-]/}" ;;
 			-v|--verbose) gpgfilter="cat" ;;
 			--no-send) nosend="." ;;
 			--force) force="." ;;
@@ -612,6 +619,8 @@ Options:
 		esac
 		shift
 	done
+
+	[[ "$lang" =~ ^[abcdefghijklmnopqrstuvwxyz]{2}$ ]] || { printf "%s: Warning: only 2 lower case letters can define prefered language, fallback to 'en'.\n" "$FUNCNAME" >&2 ; lang=en ;}
 
 	local keyid secstatus
 	local -a seckeyids emails udid4
@@ -669,10 +678,12 @@ login
 u4=${udid4[0]}
 url
 https://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}
+lang
+$lang
 name
 ${emails[0]}
-${emails[1]}
-quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" ; return 1 ;}
+${username}
+" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" ; return 1 ;}
 
 echo "admin
 key-attr
