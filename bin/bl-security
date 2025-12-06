@@ -252,22 +252,24 @@ Options:
 }
 
 bl_new_password() {
-	local name dict=${LANG::2} nw=3
-	# TODO: i18n
+	local name
+	local preamble dict=${LANG::2} nw=3
 	local question="Password"
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [QUESTION]..."
 	local helpmsg="
-Ask to enter a new password and force retyping it. Starting with a passphrase suggestion.
+Ask to enter a new password and force retyping it.
 Output the new password.
 (Default QUESTION: '$question')
 
 Options:
+  -t, --text TEXT           Text to display as preamble. If none generate a passphrase suggestion.
   -D, --dict DICTIONARY     Dictionary for passphrase suggestion (default: ${dict:=en})
   -n, --num NUMBER          Number of words for passphrase suggestion (default: $nw)
 "
 	for ((;$#;)) ; do
 		case "$1" in
+			-t|--text|--preamble) shift ; preamble="$1" ;;
 			-D|--dict*) shift ; dict="$1" ;;
 			-n|--num*) shift ; nw="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -280,10 +282,9 @@ Options:
 	done
 	((! $#)) || question="$*"
 
-	local passwd passwd2 preamble suggpwd
+	local passwd passwd2
 
-	suggpwd=$(bl_gen_passphrase --dict "$dict" --num "$nw")
-	preamble=$(printf "Suggestion: %s" "$suggpwd")
+	[[ "$preamble" ]] || preamble="Suggestion: "$(bl_gen_passphrase --dict "$dict" --num "$nw")
 	passwd2=$(bl_input --password --text "$preamble" "$question")
 	preamble=$(printf "Retype %s" "$question")
 	while true ; do

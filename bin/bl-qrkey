@@ -116,7 +116,7 @@ Options:
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) echo -e "$FUNCNAME: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -140,6 +140,98 @@ Options:
 	return ${PIPESTATUS[0]}
 }
 
+_bl_iso7816_sw_analyse() {
+	local helpmsg="Usage: $FUNCNAME SW
+
+Status word (SW) is four hexa digits, as defined by ISO 7816-4.
+Return: - 0 if SW means Success (SW == 0x9000)
+        - 194 (OxC2) if only 2 remaining attempt.
+        - 193 (OxC1) if only 1 remaining attempt.
+        - 192 (OxC0) if code is blocked.
+        - other non-zero (usually SW1) with an error message in other cases.
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--h*) echo "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local sw sw1 sw2
+
+	# Sanitize input (upper case + only keep hexa digits)
+	sw=${*^^}
+	sw=${sw//[^0-9ABCDEF]/}
+
+	[[ "$sw" =~ ^[0-9ABCDEF]{4}$ ]] || { printf "%s: Error: invalid arguments '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$*" "$FUNCNAME" >&2 ; return 2 ; }
+
+	sw1=${sw:0:2}
+	sw2=${sw:2:2}
+
+	# Take care of order: precise case before fuzzy ones (whith '?'), then most common first.
+	case "$sw" in
+		9000)
+			return 0 ;;
+		00??)
+			printf "%s: Error: Unknown Status Word (%s).\n" "$FUNCNAME" "$sw" >&2
+			return $((16#90)) ;;
+		6300)
+			printf "%s: Error: Verification/authentication failed (%s) - no retry info.\n" "$FUNCNAME" "$sw" >&2
+			return $((16#$sw1)) ;;
+		63??)
+			# Typical usage: 63Cx where low nibble of SW2 indicates remaining retries (x).
+			printf "%s: Error: Verification/authentication failed (%s) - remaining retries: %d .\n" "$FUNCNAME" "$sw" "$((16#${sw2:1:1}))" >&2
+			return $((16#C${sw2:1:1})) ;;
+		6C??)
+			# 6C XX : wrong Le, card indicates correct Le = XX
+			printf "%s: Error: Wrong expected length (%s) - correct lenght: %d .\n" "$FUNCNAME" "$sw" "$((16#sw2))" >&2
+			return $((16#$sw1)) ;;
+		6700)
+			printf "%s: Error: Wrong length (67 00). Incorrect Lc and/or Le.\n" "$FUNCNAME" >&2
+			return $((16#$sw1)) ;;
+		6982)
+			printf "%s: Error: Security status not satisfied (69 82). Likely need prior VERIFY or secure messaging.\n" "$FUNCNAME" >&2
+			return $((16#$sw1)) ;;
+		6983)
+			printf "%s: Error: Authentication method blocked (69 83). PIN/method probably blocked; follow reset/unblock procedure.\n" "$FUNCNAME" >&2
+			return $((16#$sw1)) ;;
+		6985)
+			printf "%s: Error: Conditions of use not satisfied (69 85). Operation not allowed in current state.\n" "$FUNCNAME" >&2
+			return $((16#$sw1)) ;;
+		6A82)
+			printf "%s: Error: File / application not found (6A 82). Check AID or object reference (P1/P2).\n" "$FUNCNAME" >&2
+			return $((16#$sw1)) ;;
+		6B00)
+			printf "%s: Error: Wrong parameters P1-P2 (6B 00). Verify P1/P2 are correct for this INS.\n" "$FUNCNAME" >&2
+			return $((16#$sw1)) ;;
+		6D00)
+			printf "%s: Error: INS not supported (6D 00). The card does not implement this instruction.\n" "$FUNCNAME" >&2
+			return $((16#$sw1)) ;;
+		6E00)
+			printf "%s: Error: CLA not supported (6E 00). The class byte is not acceptable.\n" "$FUNCNAME" >&2
+			return $((16#$sw1)) ;;
+		6F00)
+			printf "%s: Error: No precise diagnosis / internal error (6F 00). Card refused without a detailed reason.\n" "$FUNCNAME" >&2
+			return $((16#$sw1)) ;;
+		61??)
+			# 61 XX : response available, XX bytes remain
+			printf "%s: Error: More data available (%s) - bytes to retrieve: %d .\n" "$FUNCNAME" "$sw" "$((16#sw2))" >&2
+			return $((16#$sw1)) ;;
+			# Note: to get full response : gpg-connect-agent "SCD APDU 00 C0 00 00 $sw2" /bye
+		62??|64??)
+			printf "%s: Error: Warning/non-fatal condition (%s). Check returned data or card documentation for details.\n" "$FUNCNAME" "$sw" >&2
+			return $((16#$sw1)) ;;
+		*)
+			printf "%s: Error: Unhandled or unknown Status Word (%s).\n" "$FUNCNAME" "$sw" >&2
+			return $((16#$sw1)) ;;
+	esac
+	return 255
+}
+
 ### public functions / program actions ###
 
 bl_qrkey_change_passphrase() {
@@ -152,9 +244,9 @@ Change GnuPG passphrase protecting secret parts of an OpenPGP key.
 Missing inputs are asked interactively.
 
 Options:
-  -p, --passphrase PASSPHRASE    Current Passphrase protecting secret parts of OpenPGP key (empty \"\" for none).
+  -p, --passphrase PASSPHRASE    Current passphrase protecting secret parts of OpenPGP key (empty \"\" for none)
   -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -n, --newpassphrase PASSPHRASE New Passphrase to protect secret parts of OpenPGP key (empty \"\" for none).
+  -n, --newpassphrase PASSPHRASE New passphrase to protect secret parts of OpenPGP key (empty \"\" for none)
   -N, --newpassfrom FILE         Get new passphrase from the first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
 "
@@ -185,7 +277,7 @@ Options:
 	if [[ -z "$keyid" ]] ; then
 		local -a seckeyids
 		mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
-		((${#seckeyids[@]}>0)) || { printf "%s: Error: No local (on drive) OpenPGP secret.\n" "$FUNCNAME" >&2 ; return 1 ; }
+		((${#seckeyids[@]}>0)) || { printf "%s: Error: No OpenPGP secret (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
 		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "For which OpenPGP secret key you want to change passphrase" "${seckeyids[@]}")"
 		keyid="${keyid%% *}"
 	fi
@@ -210,6 +302,111 @@ Options:
 
 	printf "${cmd}" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --change-passphrase "${keyid}" || return $?
 	printf "%s: Notice: passphrase successfully changed.\n" "$FUNCNAME" >&2
+	return 0
+}
+
+# gpg (GnuPG) 2.4.7 --batch can't do it, then we send direct APDU through gpg-connect-agent, confer:
+#   - https://foopgp.org/blog/2014-08-21-openpgp-card-une-application-cryptographique-pour-carte-a-puce/#communiquer-avec-scdaemon-et-la-carte
+#   - https://g10code.com/docs/openpgp-card-2.0.pdf
+# Note: existence of a (new in 2025) tool: 'oct' - https://codeberg.org/openpgp-card/openpgp-card-tools
+bl_qrkey_change_token_code() {
+	local name
+	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]..."
+
+	local helpmsg="
+Check and change PIN (or Admin) code protecting use of a security token (OpenPGP smartcard).
+Missing inputs are asked interactively.
+Return: - 194 (OxC2) if only 2 remaining attempt.
+        - 193 (OxC1) if only 1 remaining attempt.
+        - 192 (OxC0) if code is blocked.
+		- other non-zero value on other errors.
+
+Options:
+  -p, --code CODE           Current PIN (or Admin) code protecting use of security token (empty \"\" for none)
+  -P, --codefrom FILE       Get current PIN (or Admin) code from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+  -n, --newcode CODE        New PIN (or Admin) code to protect use of security token
+  -N, --newcodefrom FILE    Get new PIN (or Admin) code from the first line of FILE (eg: fifo, tmpfs ...)
+  -C, --onlycheck           Only check current PIN (or Admin) code, don't change it
+  -A, --admin               Change (or check) Admin code instead of PIN code
+"
+	local ccode ccodegiven newcode newgiven onlycheck
+	local ctype="PIN" xPW="81" lPW="6"
+	for ((;$#;)) ; do
+		case "$1" in
+			-p|--code)
+				shift ; ccodegiven=true ; ccode=$1 ;;
+			-P|--codefrom|--code-from)
+				shift ; ccodegiven=true ; ccode=$( head -n 1 < "$1" ) || return 1 ;;
+			-n|--newcode)
+				shift ; newgiven=true ; newcode=$1 ;;
+			-N|--newcodefrom|--newcode-from)
+				shift ; newgiven=true ; newcode=$( head -n 1 < "$1" ) || return 1 ;;
+			-C|--onlycheck|--only-check)
+				onlycheck="." ;;
+			-A|--admin)
+				ctype="Admin" xPW="83" lPW="8" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local out SW datalen ccodehex newhex
+
+	# Select OpenPGP card application
+	mapfile -t out < <(gpg-connect-agent --hex "SCD APDU 00 A4 04 00 06 D2 76 00 01 24 01" "/bye")
+	if [[ "${out[*]}" =~ ^D\[[0-9ABCDEF]+\]\ *([0-9ABCDEF]{2})\ *([0-9ABCDEF]{2})\ {4,}.*OK$ ]] ; then
+		SW="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
+		_bl_iso7816_sw_analyse "$SW" || return $?
+	else
+		printf "%s: Error: %s ..." "$FUNCNAME" "${out[0]}" >&2
+		return 1
+	fi
+
+	[[ "$ccodegiven" ]] || ccode=$(bl_input --password --text "(usually: $lPW digits)" "Current $ctype code")
+
+	[[ "$ccode" =~ ^[0-9]{$lPW}$ ]] || printf "%s: Warning: given %s code doesn't match %d digits.\n" "$FUNCNAME" "$ctype" "$lPW" >&2
+
+	datalen=${#ccode}
+	ccodehex=$(printf "$ccode" | xxd -p)
+
+	# Verify given code (wrong code decrease retry counter, good code reset it to its maximum)
+	mapfile -t out < <(gpg-connect-agent --hex "SCD APDU 00 20 00 $xPW $(printf "%02X" $datalen) $ccodehex" "/bye")
+	if [[ "${out[*]}" =~ ^D\[[0-9ABCDEF]+\]\ *([0-9ABCDEF]{2})\ *([0-9ABCDEF]{2})\ {4,}.*OK$ ]] ; then
+		SW="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
+		_bl_iso7816_sw_analyse "$SW" || return $?
+	else
+		printf "%s: Error: %s ...\n" "$FUNCNAME" "${out[0]}" >&2
+		return 1
+	fi
+
+	[[ -z "$onlycheck" ]] || { printf "%s: Notice: %s code successfully verified.\n" "$FUNCNAME" "$ctype" >&2 ; return 0 ;}
+
+	[[ "$newgiven" ]] || newcode=$(bl_new_password --text "($lPW digits)" "New $ctype code")
+
+	[[ "$newcode" != "$ccode" ]] || { printf "%s: Notice: %s code unchanged.\n" "$FUNCNAME" "$ctype" >&2 ; return 0 ;}
+
+	[[ "$newcode" =~ ^[0-9]{$lPW}$ ]] || { printf "%s: Error: given %s code doesn't match %d digits.\n" "$FUNCNAME" "$ctype" "$lPW" >&2 ; return 2 ;}
+
+	((datalen+=${lPW}))
+	newhex=$(printf "$newcode" | xxd -p)
+
+	# Change code
+	# gpg-connect-agent --hex "scd apdu 00 24 00 81 0C 31 32 33 34 35 36 31 32 33 31 32 33" "/bye"
+	mapfile -t out < <(gpg-connect-agent --hex "SCD APDU 00 24 00 $xPW $(printf "%02X" $datalen) $ccodehex $newhex" "/bye")
+	if [[ "${out[*]}" =~ ^D\[[0-9ABCDEF]+\]\ *([0-9ABCDEF]{2})\ *([0-9ABCDEF]{2})\ {4,}.*OK$ ]] ; then
+		SW="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
+		_bl_iso7816_sw_analyse "$SW" || return $?
+	else
+		printf "%s: Error: %s ..." "$FUNCNAME" "${out[0]}" >&2
+		return 1
+	fi
+
+	printf "%s: Notice: %s code successfully changed.\n" "$FUNCNAME" "$ctype" >&2
 	return 0
 }
 
@@ -408,7 +605,7 @@ Options:
   -c, --camera V4LDEVICE        Video device to scan for QR code (/dev/v4l/by-id/...)
   -p, --passphrase PASSPHRASE   This extra passphrase is related to QR VERSIONS:
                                   * 1 to 3: Only numbers, use to be a date: YYYYMMDD.
-                                  * 4 to 5: $FUNCNAME don't need an extra passphrase (in addition to the ones defined in RFC4880).
+                                  * 4 to 5: $FUNCNAME don't need an extra passphrase (in addition to the ones defined in RFC9580).
   -P, --passfrom FILE           Get extra passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
 "
 
@@ -605,7 +802,7 @@ Options:
 			-U|--certurl)
 				shift ; certurl=$1 ;;
 			-L|--lang)
-				shift ; lang=$(sed -nE ' s,.*([abcdefghijklmnopqrstuvwxyz]{2}).*,\1,p ' <<<"$1") ;;
+				shift ; lang=$(sed -nE ' s,.*([A-Za-z]{2}).*,\L\1,p ' <<<"${1:: 2}") ;;
 			-N|--name)
 				shift ; username="${1//[^0-9a-zA-Z ._-]/}" ;;
 			-v|--verbose) gpgfilter="cat" ;;
@@ -620,13 +817,13 @@ Options:
 		shift
 	done
 
-	[[ "$lang" =~ ^[abcdefghijklmnopqrstuvwxyz]{2}$ ]] || { printf "%s: Warning: only 2 lower case letters can define prefered language, fallback to 'en'.\n" "$FUNCNAME" >&2 ; lang=en ;}
+	[[ "$lang" =~ ^[abcdefghijklmnopqrstuvwxyz]{2}$ ]] || { printf "%s: Warning: only 2 lower case ASCII letters can define prefered language, fallback to 'en'.\n" "$FUNCNAME" >&2 ; lang=en ;}
 
 	local keyid secstatus
 	local -a seckeyids emails udid4
 
 	mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
-	((${#seckeyids[@]}>0)) || { printf "%s: Error: No OpenPGP secret to move.\n" "$FUNCNAME" >&2 ; return 1 ; }
+	((${#seckeyids[@]}>0)) || { printf "%s: Error: No OpenPGP secret to move (from %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
 
 	[[ -z "$1" ]] || keyid="$1"
 	if [[ -z "$keyid" ]] ; then
@@ -641,12 +838,9 @@ Options:
 	emails=($(sed --silent --regexp-extended "s,^uid.*[<[:space:]](${BL_INTERACTIVE_EMAIL_REGEX}).*,\1,p" <<<"${secstatus}"))
 	[[ "$emails" ]] || { printf "%s: Error: No email for OpenPGP key '%s'.\n" "$FUNCNAME" "$keyid" >&2 ; return 1 ; }
 	#  don't error if there is no pgp_id. TODO: manage also u5.
-	set -x
 	udid4=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,\1,p" <<<"${secstatus}"))
-	set +x
-	declare -p udid4
 
-	grep -q "${keyid: 24}" <<<"${seckeyids[@]}" || { printf "%s: Error: No local (on drive) OpenPGP secrets for key '%s'.\n" "$FUNCNAME" "${keyid}" >&2 ; return 1 ; }
+	grep -q "${keyid: 24}" <<<"${seckeyids[@]}" || { printf "%s: Error: No OpenPGP secrets for key '%s' (in %s).\n" "$FUNCNAME" "${keyid}" "$gpghome" >&2 ; return 1 ; }
 
 	# Check and errout card-status
 	gpg --card-status | grep -A2 "^Manufacturer\>" >&2 || return ${PIPESTATUS[0]}
@@ -711,21 +905,20 @@ keytocard
 3
 save " | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --edit-key "${keyid}" 2> >( $gpgfilter ) || { printf "Moving OpenPGP keys to card FAIL ($?)\n" ; return 1 ;}
 
-#printf "%s: Notice: Setting PIN code and admin code...\n" "$FUNCNAME" >&2
-# ...TODO
-# gpg (GnuPG) 2.4.7 --batch can't do it, then we may:
-# - Send direct APDU through gpg-connect-agent, confer:
-#   - https://foopgp.org/blog/2014-08-21-openpgp-card-une-application-cryptographique-pour-carte-a-puce/#communiquer-avec-scdaemon-et-la-carte
-#   - https://g10code.com/docs/openpgp-card-2.0.pdf
-# - Package and use new tool 'oct': https://codeberg.org/openpgp-card/openpgp-card-tools
+	# Change default PIN and Admin code
+	local pincode admincode
+	pincode=$(printf "%06d" $(bl-security urandom 1000000))
+	admincode=$(printf "%08d" $(bl-security urandom 100000000))
+	bl_qrkey_change_token_code --code 123456 --newcodefrom <(cat <<<"$pincode") || { printf "Changing PIN code FAIL ($?)\n" ; return 1 ;} 
+	bl_qrkey_change_token_code --admin --code 12345678 --newcodefrom <(cat <<<"$admincode") || { printf "Changing Admin code FAIL ($?)\n" ; return 1 ;} 
 
 	gpg --homedir "$gpghome" --export --armor "$keyid"
 	if [[ "$nosend" ]] || ! gpg --homedir "$gpghome" --keyserver "${hkpsserv}" --send-keys "$keyid" ; then
 		printf "%s: Warning: Please publish this PGP PUBLIC KEY on the Internet (eg: on a keyserver)\n" "$FUNCNAME" >&2
 	fi
-	echo "ADMIN_CODE='12345678'"
-	echo "PIN_CODE='123456'"
-	printf "%s: Notice: You may change these codes using: $ gpg --change-pin\n" "$FUNCNAME" >&2
+	echo "ADMIN_CODE=$admincode"
+	echo "PIN_CODE=$pincode"
+	printf "%s: Notice: You may change these codes using: \"bl-qrkey change_token_code\" or \"gpg --change-pin\"\n" "$FUNCNAME" >&2
 
 	return 0
 }
