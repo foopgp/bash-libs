@@ -863,13 +863,13 @@ Options:
 factory-reset
 y
 yes
-quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --card-edit 2> >( $gpgfilter ) || { printf "Factory Reset OpenPGP card FAIL ($?)\n" ; return 1 ;}
+quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --card-edit 2> >( $gpgfilter ) || { printf "Factory Reset OpenPGP card FAIL ($?)\n" >&2 ; return 1 ;}
 
 	printf "%s: Notice: Configuring OpenPGP security tocken...\n" "$FUNCNAME" >&2
 
 	echo "admin
 login
-u4=${udid4[0]}
+id=u4${udid4[0]}
 url
 https://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}
 lang
@@ -877,7 +877,7 @@ $lang
 name
 ${emails[0]}
 ${username}
-" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" ; return 1 ;}
+" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" >&2 ; return 1 ;}
 
 echo "admin
 key-attr
@@ -887,7 +887,7 @@ key-attr
 1
 2
 1
-quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card keys attributes FAIL ($?)\n" ; return 1 ;}
+quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card keys attributes FAIL ($?)\n" >&2 ; return 1 ;}
 
 #TODO WKS address calculated from email
 
@@ -903,22 +903,24 @@ key 1
 key 2
 keytocard
 3
-save " | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --edit-key "${keyid}" 2> >( $gpgfilter ) || { printf "Moving OpenPGP keys to card FAIL ($?)\n" ; return 1 ;}
+save " | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --edit-key "${keyid}" 2> >( $gpgfilter ) || { printf "Moving OpenPGP keys to card FAIL ($?)\n" >&2 ; return 1 ;}
 
 	# Change default PIN and Admin code
 	local pincode admincode
 	pincode=$(printf "%06d" $(bl-security urandom 1000000))
 	admincode=$(printf "%08d" $(bl-security urandom 100000000))
-	bl_qrkey_change_token_code --code 123456 --newcodefrom <(cat <<<"$pincode") || { printf "Changing PIN code FAIL ($?)\n" ; return 1 ;} 
-	bl_qrkey_change_token_code --admin --code 12345678 --newcodefrom <(cat <<<"$admincode") || { printf "Changing Admin code FAIL ($?)\n" ; return 1 ;} 
+	bl_qrkey_change_token_code --code 123456 --newcodefrom <(cat <<<"$pincode") || { printf "Changing PIN code FAIL ($?)\n" >&2 ; return 1 ;}
+	bl_qrkey_change_token_code --admin --code 12345678 --newcodefrom <(cat <<<"$admincode") || { printf "Changing Admin code FAIL ($?)\n" >&2 ; return 1 ;}
 
+	echo
 	gpg --homedir "$gpghome" --export --armor "$keyid"
 	if [[ "$nosend" ]] || ! gpg --homedir "$gpghome" --keyserver "${hkpsserv}" --send-keys "$keyid" ; then
 		printf "%s: Warning: Please publish this PGP PUBLIC KEY on the Internet (eg: on a keyserver)\n" "$FUNCNAME" >&2
 	fi
+	echo
 	echo "ADMIN_CODE=$admincode"
 	echo "PIN_CODE=$pincode"
-	printf "%s: Notice: You may change these codes using: \"bl-qrkey change_token_code\" or \"gpg --change-pin\"\n" "$FUNCNAME" >&2
+	printf "%s: Notice: You should note these code, or change them using: \"bl-qrkey change_token_code\" or \"gpg --change-pin\"\n" "$FUNCNAME" >&2
 
 	return 0
 }
