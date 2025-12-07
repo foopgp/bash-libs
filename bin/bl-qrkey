@@ -39,6 +39,11 @@ if [[ "$1" == --bash-completion ]] ; then
 			--camera)
 				COMPREPLY=( $(compgen -W "$(ls /dev/v4l/by-id/*)" -- $cur ) )
 				return 0 ;;
+			--*from)
+				local IFS=$'\'\\n\''
+				compopt -o plusdirs
+				COMPREPLY=( $(compgen -A file -- $cur) )
+				return 0 ;;
 		esac
 		case $cur in
 			-*)
@@ -323,14 +328,15 @@ Return: - 194 (OxC2) if only 2 remaining attempt.
 		- other non-zero value on other errors.
 
 Options:
-  -p, --code CODE           Current PIN (or Admin) code protecting use of security token (empty \"\" for none)
+  -p, --code CURRENTCODE    Current PIN (or Admin) code protecting use of security token (empty \"\" for none)
   -P, --codefrom FILE       Get current PIN (or Admin) code from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -n, --newcode CODE        New PIN (or Admin) code to protect use of security token
+  -n, --newcode NEWCODE     New PIN (or Admin) code to protect use of security token
   -N, --newcodefrom FILE    Get new PIN (or Admin) code from the first line of FILE (eg: fifo, tmpfs ...)
   -C, --onlycheck           Only check current PIN (or Admin) code, don't change it
   -A, --admin               Change (or check) Admin code instead of PIN code
+  -U, --unblock             Unblock PIN. Need Admin code to be passed to --code, and new PIN code to be passed to --newcode
 "
-	local ccode ccodegiven newcode newgiven onlycheck
+	local ccode ccodegiven newcode newgiven onlycheck unblock
 	local ctype="PIN" xPW="81" lPW="6"
 	for ((;$#;)) ; do
 		case "$1" in
@@ -344,6 +350,8 @@ Options:
 				shift ; newgiven=true ; newcode=$( head -n 1 < "$1" ) || return 1 ;;
 			-C|--onlycheck|--only-check)
 				onlycheck="." ;;
+			-U|--unblock)
+				unblock="unblock" ;&
 			-A|--admin)
 				ctype="Admin" xPW="83" lPW="8" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -363,7 +371,7 @@ Options:
 		SW="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
 		_bl_iso7816_sw_analyse "$SW" || return $?
 	else
-		printf "%s: Error: %s ..." "$FUNCNAME" "${out[0]}" >&2
+		printf "%s: Error: %s ...\n" "$FUNCNAME" "${out[0]}" >&2
 		return 1
 	fi
 
@@ -386,27 +394,33 @@ Options:
 
 	[[ -z "$onlycheck" ]] || { printf "%s: Notice: %s code successfully verified.\n" "$FUNCNAME" "$ctype" >&2 ; return 0 ;}
 
+	[[ -z "$unblock" ]] || { ctype="PIN" ; xPW="81" ; lPW="6" ;}
+
 	[[ "$newgiven" ]] || newcode=$(bl_new_password --text "($lPW digits)" "New $ctype code")
 
 	[[ "$newcode" != "$ccode" ]] || { printf "%s: Notice: %s code unchanged.\n" "$FUNCNAME" "$ctype" >&2 ; return 0 ;}
 
 	[[ "$newcode" =~ ^[0-9]{$lPW}$ ]] || { printf "%s: Error: given %s code doesn't match %d digits.\n" "$FUNCNAME" "$ctype" "$lPW" >&2 ; return 2 ;}
 
-	((datalen+=${lPW}))
 	newhex=$(printf "$newcode" | xxd -p)
 
-	# Change code
-	# gpg-connect-agent --hex "scd apdu 00 24 00 81 0C 31 32 33 34 35 36 31 32 33 31 32 33" "/bye"
-	mapfile -t out < <(gpg-connect-agent --hex "SCD APDU 00 24 00 $xPW $(printf "%02X" $datalen) $ccodehex $newhex" "/bye")
+	if [[ "$unblock" ]] ; then
+		# Unblock PIN
+		mapfile -t out < <(gpg-connect-agent --hex "SCD APDU 00 2C 02 $xPW $(printf "%02X" $lPW) $newhex" "/bye")
+	else
+		# Change code
+		((datalen+=${lPW}))
+		mapfile -t out < <(gpg-connect-agent --hex "SCD APDU 00 24 00 $xPW $(printf "%02X" $datalen) $ccodehex $newhex" "/bye")
+	fi
 	if [[ "${out[*]}" =~ ^D\[[0-9ABCDEF]+\]\ *([0-9ABCDEF]{2})\ *([0-9ABCDEF]{2})\ {4,}.*OK$ ]] ; then
 		SW="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
 		_bl_iso7816_sw_analyse "$SW" || return $?
 	else
-		printf "%s: Error: %s ..." "$FUNCNAME" "${out[0]}" >&2
+		printf "%s: Error: %s ...\n" "$FUNCNAME" "${out[0]}" >&2
 		return 1
 	fi
 
-	printf "%s: Notice: %s code successfully changed.\n" "$FUNCNAME" "$ctype" >&2
+	printf "%s: Notice: %s code successfully %s.\n" "$FUNCNAME" "$ctype" "${unblock:-chang}ed" >&2
 	return 0
 }
 
