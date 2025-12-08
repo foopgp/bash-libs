@@ -985,6 +985,7 @@ fi
 
 BL_QRKEY_chelpmsg="
 Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
+Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, ...).
 
 Options:
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"

@@ -369,7 +369,7 @@ Reminder: when used as a library, all functions calls share the same environment
 fi
 
 BL_DJIBIAN_chelpmsg="
-System tools for Djibian GNU/Linux.
+System tools for Djibian GNU/Linux. Mainly to manage users.
 
 Options:
 "

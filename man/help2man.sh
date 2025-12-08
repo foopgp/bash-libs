@@ -25,7 +25,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: ${blname^^}
 section: 1
 header: User Commands
-footer: bash-libs
+footer: bash-libs $versionstring
 ---
 
 EOF
