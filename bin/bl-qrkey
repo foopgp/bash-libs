@@ -928,8 +928,8 @@ save " | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopbac
 
 	# Change default PIN and Admin code
 	local pincode admincode
-	pincode=$(printf "%06d" $(bl-security urandom 1000000))
-	admincode=$(printf "%08d" $(bl-security urandom 100000000))
+	pincode=$(printf "%06d" $(bl_urandom 1000000))
+	admincode=$(printf "%08d" $(bl_urandom 100000000))
 	bl_qrkey_change_token_code --homedir "$gpghome" --code 123456 --newcodefrom <(cat <<<"$pincode") || { printf "Changing PIN code FAIL ($?)\n" >&2 ; return 1 ;}
 	bl_qrkey_change_token_code --homedir "$gpghome" --admin --code 12345678 --newcodefrom <(cat <<<"$admincode") || { printf "Changing Admin code FAIL ($?)\n" >&2 ; return 1 ;}
 
