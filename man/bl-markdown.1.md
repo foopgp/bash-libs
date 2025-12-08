@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-markdown - manual page for bl-markdown 0.1.7
+bl-markdown - manual page for bl-markdown 0.1.8
 
 # SYNOPSIS
 

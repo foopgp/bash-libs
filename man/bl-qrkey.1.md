@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-qrkey - manual page for bl-qrkey 0.1.7
+bl-qrkey - manual page for bl-qrkey 0.1.8
 
 # SYNOPSIS
 
@@ -44,6 +44,11 @@ secret sharing.
 change_passphrase
 
 :   Change GnuPG passphrase protecting secret parts of an OpenPGP key.
+
+change_token_code
+
+:   Check and change PIN (or Admin) code protecting use of a security
+    token (OpenPGP smartcard).
 
 print
 
