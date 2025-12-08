@@ -44,6 +44,11 @@ if [[ "$1" == --bash-completion ]] ; then
 				compopt -o plusdirs
 				COMPREPLY=( $(compgen -A file -- $cur) )
 				return 0 ;;
+			--homedir)
+				local IFS=$'\'\\n\''
+				compopt -o plusdirs
+				COMPREPLY=( $(compgen -A directory -- $cur) )
+				return 0 ;;
 		esac
 		case $cur in
 			-*)

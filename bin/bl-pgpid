@@ -35,6 +35,11 @@ if [[ "$1" == --bash-completion ]] ; then
 			--frontend)
 				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
 				return 0 ;;
+			--homedir)
+				local IFS=$'\'\\n\''
+				compopt -o plusdirs
+				COMPREPLY=( $(compgen -A directory -- $cur) )
+				return 0 ;;
 		esac
 		case $cur in
 			-*)
