@@ -249,11 +249,11 @@ Change GnuPG passphrase protecting secret parts of an OpenPGP key.
 Missing inputs are asked interactively.
 
 Options:
+  -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -p, --passphrase PASSPHRASE    Current passphrase protecting secret parts of OpenPGP key (empty \"\" for none)
   -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -n, --newpassphrase PASSPHRASE New passphrase to protect secret parts of OpenPGP key (empty \"\" for none)
   -N, --newpassfrom FILE         Get new passphrase from the first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
 "
 	local passphrase passgiven newpass newgiven
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -328,6 +328,7 @@ Return: - 194 (OxC2) if only 2 remaining attempt.
 		- other non-zero value on other errors.
 
 Options:
+  -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -p, --code CURRENTCODE    Current PIN (or Admin) code protecting use of security token (empty \"\" for none)
   -P, --codefrom FILE       Get current PIN (or Admin) code from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -n, --newcode NEWCODE     New PIN (or Admin) code to protect use of security token
@@ -336,10 +337,13 @@ Options:
   -A, --admin               Change (or check) Admin code instead of PIN code
   -U, --unblock             Unblock PIN. Need Admin code to be passed to --code, and new PIN code to be passed to --newcode
 "
+	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local ccode ccodegiven newcode newgiven onlycheck unblock
 	local ctype="PIN" xPW="81" lPW="6"
 	for ((;$#;)) ; do
 		case "$1" in
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
 			-p|--code)
 				shift ; ccodegiven=true ; ccode=$1 ;;
 			-P|--codefrom|--code-from)
@@ -366,7 +370,7 @@ Options:
 	local out SW datalen ccodehex newhex
 
 	# Select OpenPGP card application
-	mapfile -t out < <(gpg-connect-agent --hex "SCD APDU 00 A4 04 00 06 D2 76 00 01 24 01" "/bye")
+	mapfile -t out < <(gpg-connect-agent --homedir "$gpghome" --hex "SCD APDU 00 A4 04 00 06 D2 76 00 01 24 01" "/bye")
 	if [[ "${out[*]}" =~ ^D\[[0-9ABCDEF]+\]\ *([0-9ABCDEF]{2})\ *([0-9ABCDEF]{2})\ {4,}.*OK$ ]] ; then
 		SW="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
 		_bl_iso7816_sw_analyse "$SW" || return $?
@@ -383,7 +387,7 @@ Options:
 	ccodehex=$(printf "$ccode" | xxd -p)
 
 	# Verify given code (wrong code decrease retry counter, good code reset it to its maximum)
-	mapfile -t out < <(gpg-connect-agent --hex "SCD APDU 00 20 00 $xPW $(printf "%02X" $datalen) $ccodehex" "/bye")
+	mapfile -t out < <(gpg-connect-agent --homedir "$gpghome" --hex "SCD APDU 00 20 00 $xPW $(printf "%02X" $datalen) $ccodehex" "/bye")
 	if [[ "${out[*]}" =~ ^D\[[0-9ABCDEF]+\]\ *([0-9ABCDEF]{2})\ *([0-9ABCDEF]{2})\ {4,}.*OK$ ]] ; then
 		SW="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
 		_bl_iso7816_sw_analyse "$SW" || return $?
@@ -406,11 +410,11 @@ Options:
 
 	if [[ "$unblock" ]] ; then
 		# Unblock PIN
-		mapfile -t out < <(gpg-connect-agent --hex "SCD APDU 00 2C 02 $xPW $(printf "%02X" $lPW) $newhex" "/bye")
+		mapfile -t out < <(gpg-connect-agent --homedir "$gpghome" --hex "SCD APDU 00 2C 02 $xPW $(printf "%02X" $lPW) $newhex" "/bye")
 	else
 		# Change code
 		((datalen+=${lPW}))
-		mapfile -t out < <(gpg-connect-agent --hex "SCD APDU 00 24 00 $xPW $(printf "%02X" $datalen) $ccodehex $newhex" "/bye")
+		mapfile -t out < <(gpg-connect-agent --homedir "$gpghome" --hex "SCD APDU 00 24 00 $xPW $(printf "%02X" $datalen) $ccodehex $newhex" "/bye")
 	fi
 	if [[ "${out[*]}" =~ ^D\[[0-9ABCDEF]+\]\ *([0-9ABCDEF]{2})\ *([0-9ABCDEF]{2})\ {4,}.*OK$ ]] ; then
 		SW="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
@@ -857,7 +861,7 @@ Options:
 	grep -q "${keyid: 24}" <<<"${seckeyids[@]}" || { printf "%s: Error: No OpenPGP secrets for key '%s' (in %s).\n" "$FUNCNAME" "${keyid}" "$gpghome" >&2 ; return 1 ; }
 
 	# Check and errout card-status
-	gpg --card-status | grep -A2 "^Manufacturer\>" >&2 || return ${PIPESTATUS[0]}
+	gpg --homedir "$gpghome" --card-status | grep -A2 "^Manufacturer\>" >&2 || return ${PIPESTATUS[0]}
 
 	# If we fail testing no passphrase, there is one. Then we have to remove it, or we can't exec gpg's keytocard
 	if ! gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase "" --dry-run --change-passphrase "$keyid" 2> /dev/null ; then
@@ -923,8 +927,8 @@ save " | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopbac
 	local pincode admincode
 	pincode=$(printf "%06d" $(bl-security urandom 1000000))
 	admincode=$(printf "%08d" $(bl-security urandom 100000000))
-	bl_qrkey_change_token_code --code 123456 --newcodefrom <(cat <<<"$pincode") || { printf "Changing PIN code FAIL ($?)\n" >&2 ; return 1 ;}
-	bl_qrkey_change_token_code --admin --code 12345678 --newcodefrom <(cat <<<"$admincode") || { printf "Changing Admin code FAIL ($?)\n" >&2 ; return 1 ;}
+	bl_qrkey_change_token_code --homedir "$gpghome" --code 123456 --newcodefrom <(cat <<<"$pincode") || { printf "Changing PIN code FAIL ($?)\n" >&2 ; return 1 ;}
+	bl_qrkey_change_token_code --homedir "$gpghome" --admin --code 12345678 --newcodefrom <(cat <<<"$admincode") || { printf "Changing Admin code FAIL ($?)\n" >&2 ; return 1 ;}
 
 	echo
 	gpg --homedir "$gpghome" --export --armor "$keyid"
