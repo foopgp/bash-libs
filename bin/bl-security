@@ -109,8 +109,8 @@ bl_urandom() {
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [MODULO]"
 	local helpmsg="
-Output a good random number between 0 and 1<<32 (4294967296)
-or between 0 and (MODULO - 1) if MODULO is given.
+Output a good random number between 0 and 1<<32 (4294967296).
+.. or between 0 and (MODULO - 1) if MODULO is given.
 "
 	local r=$SRANDOM s=$SRANDOM
 	[[ "$r" == "$s"  ]] || helpmsg+="
@@ -189,7 +189,7 @@ bl_gen_passphrase() {
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
-Generate a good random passphrase
+Generate a good random passphrase.
 Options:
   -i, --interactive         Ask language and passphrase agreement
   -l, --list-dicts          List available dictionaries (aspell) and return
@@ -293,6 +293,84 @@ Options:
 		passwd2=$passwd
 	done
 	echo "$passwd"
+}
+
+bl_shrink_num() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... SIZE [FILE]"
+	local helpmsg="
+Shrink input data to a number limited by SIZE.
+Usefull to make hash distributed into a lesser space whith (uncommon) SIZE not matching 2^n.
+This function XOR sucessive 64bits words of raw input (or given FILE), and apply 'modulo SIZE' at the end.
+Then Maximum SIZE is 2^64-1. (And avoid to get close to this limit if you need a good number dispatching).
+About encodings: check basenc manual from GNU coreutils.
+
+Options:
+  -i, --input-encoding ENCODING  Eg: raw(default), base64, base64url, base32, base32hex, base16, base2msbf or base2lsbf.
+  -g, --ignore-garbage           When decoding (a 'baseXXX' input), ignore non-alphabet characters.
+  -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
+"
+	local ienc="raw" oenc="base10" iextropts=""
+	for ((;$#;)) ; do
+		case "$1" in
+			-i|--input-encoding)
+				shift ; ienc=$1 ;;
+			-o|--ouput-encoding)
+				shift ; oenc=$1 ;;
+			-g|--ignore-garbage)
+				iextraopts+="--ignore-garbage " ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	if ! [[ "$1" =~ ^[1-9][0-9]* ]] ; then
+		printf "$usage\n" >&2
+		return 2
+	fi
+	size="$1"
+	shift
+
+	local decoder offset hex dec=0 char encoder
+	case "$ienc" in
+		raw)
+			decoder="cat" ;;
+		base64|base64url|base32|base32hex|base16|base2msbf|base2lsbf)
+			decoder="basenc --decode --$ienc $iextraopts" ;;
+		*)
+			printf "%s: Error: Unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
+	esac
+
+	while read offset hex char; do
+		#printf "%016X\n" $((0x$hex))
+		dec=$((0x$hex ^ dec))
+		#printf "%016X\n" $((dec))
+	done < <( $decoder "$@" | xxd -c 8 -g 0 )
+
+	# Simple dec=$((dec%size)) doesn't work as (( builtin use only signed integer, then number > 0x0fff ffff ffff ffff are negative
+	# And with negative number '%', which is the reminder operator, differs from the mathematical modulo operation.
+	# see https://torstencurdt.com/tech/posts/modulo-of-negative-numbers/
+	dec=$(( ((dec % size) + size) % size ))
+
+	hex=$(printf "%02X\n" $dec)
+
+	case "$oenc" in
+		raw)
+			echo "$hex" | xxd -r -p ;;
+		base10)
+			printf "%u\n" "$dec" ;;
+		base16)
+			echo "$hex" ;;
+		base64|base64url|base32|base32hex|base2msbf|base2lsbf)
+			echo "$hex" | xxd -r -p | basenc --$oenc ;;
+		*)
+			printf "%s: Error: Unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
+	esac
 }
 
 ### General Help Messages ###

@@ -441,6 +441,49 @@ Options:
 	done
 }
 
+_bl_pgp_get_seckeyid() {
+	local helpmsg="Usage: $FUNCNAME
+Call 'gpg --with-colon' and ouput exportable secret keys, one by line:
+KeyID     Creation_Date    Public_Key_Algorithm
+
+Options:
+  -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
+  -e, --exportable          Ouput only exportable secret keys
+"
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local filtertest=true
+	for ((;$#;)) ; do
+		case "$1" in
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-e|--exportable) filtertest='[[ "${record[TockenSN]}" == \+ ]]' ;;
+			-h|--h*) echo "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	# confer https://www.rfc-editor.org/rfc/rfc9580#name-public-key-algorithms
+	local -a pka=([1]="RSA" "RSA_Encrypt-Only" "RSA_Sign-Only" [16]="Elgamal_Encrypt-Only" "DSA" "ECDH" "ECDSA" "Elgamal" "Diffie-Hellman" "EdDSALegacy" "AEDH" "AEDSA" "X25519" "X448" "Ed25519" "Ed448")
+	local pkaindex
+	local -A record
+
+	# Confer https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=blob_plain;f=doc/DETAILS
+	gpg --homedir "$gpghome" --list-secret-keys --with-colons | grep "^sec:" | while	IFS=':' read record[Type] record[Validity] record[KeyLenght] record[PubKeyAlgo] record[KeyID] record[CreationDate] record[ExpirationDate] record[Field8] record[Ownertrust] record[UserID] record[SignatureClass] record[KeyCapabilities] record[Field13] record[Flags] record[TockenSN] record[HashAlgo] record[CurveName] record[ComplianceFlags] record[LastUpdate] record[Origin] record[Comment] record[rfu] ; do
+		if eval "$filtertest" ; then
+			if ! pkaindex=$((${record[PubKeyAlgo]})) ; then
+				printf "%s: Error: Unexpected field 4 (Public Key Algorithm)\n" "$FUNCNAME"  >&2
+				return 1
+			fi
+			echo "${record[KeyID]}  $(date --iso-8601=hours --date "@${record[CreationDate]}")  ${pka[${pkaindex}]:-unkown}"
+		fi
+	done
+	return ${PIPESTATUS[0]}
+}
+
 ### public functions / program actions ###
 
 bl_pgpid_mrz_to_u4() {
@@ -448,7 +491,7 @@ bl_pgpid_mrz_to_u4() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... MRZ..."
 	local helpmsg="
-Convert the Machine Readable Zone of an icao9303 passport to an udid4 (aka 'u4')
+Convert the Machine Readable Zone of an icao9303 passport to an udid4 (aka 'u4').
 
 Option:
   -u, --uncheck                Dont verify checksums
@@ -606,85 +649,6 @@ Options:
 	bl_pgpid_mrz_to_u4 --uncheck --birth-date "$bdate" "${fakemrz: 0:88}"
 }
 
-
-bl_pgpid_2num() {
-	local name
-	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... SIZE [FILE]"
-	local helpmsg="
-Shrink input data to a number limited by SIZE.
-Usefull to make hash distributed into a lesser space whith (uncommon) SIZE not matching 2^n.
-This function XOR sucessive 64bits words of raw input, and apply 'modulo SIZE' at the end.
-Then Maximum SIZE is 2^64-1. (And avoid to get close to this limit if you need a good number dispatching).
-About encodings: check basenc manual from GNU coreutils.
-
-Options:
-  -i, --input-encoding ENCODING  Eg: raw(default), base64, base64url, base32, base32hex, base16, base2msbf or base2lsbf.
-  -g, --ignore-garbage           When decoding (a 'baseXXX' input), ignore non-alphabet characters.
-  -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
-"
-	local ienc="raw" oenc="base10" iextropts=""
-	for ((;$#;)) ; do
-		case "$1" in
-			-i|--input-encoding)
-				shift ; ienc=$1 ;;
-			-o|--ouput-encoding)
-				shift ; oenc=$1 ;;
-			-g|--ignore-garbage)
-				iextraopts+="--ignore-garbage " ;;
-			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
-			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
-			*) break ;;
-		esac
-		shift
-	done
-
-	if ! [[ "$1" =~ ^[1-9][0-9]* ]] ; then
-		printf "$usage\n" >&2
-		return 2
-	fi
-	size="$1"
-	shift
-
-	local decoder offset hex dec=0 char encoder
-	case "$ienc" in
-		raw)
-			decoder="cat" ;;
-		base64|base64url|base32|base32hex|base16|base2msbf|base2lsbf)
-			decoder="basenc --decode --$ienc $iextraopts" ;;
-		*)
-			printf "%s: Error: Unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
-	esac
-
-	while read offset hex char; do
-		#printf "%016X\n" $((0x$hex))
-		dec=$((0x$hex ^ dec))
-		#printf "%016X\n" $((dec))
-	done < <( $decoder "$@" | xxd -c 8 -g 0 )
-
-	# Simple dec=$((dec%size)) doesn't work as (( builtin use only signed integer, then number > 0x0fff ffff ffff ffff are negative
-	# And with negative number '%', which is the reminder operator, differs from the mathematical modulo operation.
-	# see https://torstencurdt.com/tech/posts/modulo-of-negative-numbers/
-	dec=$(( ((dec % size) + size) % size ))
-
-	hex=$(printf "%02X\n" $dec)
-
-	case "$oenc" in
-		raw)
-			echo "$hex" | xxd -r -p ;;
-		base10)
-			printf "%u\n" "$dec" ;;
-		base16)
-			echo "$hex" ;;
-		base64|base64url|base32|base32hex|base2msbf|base2lsbf)
-			echo "$hex" | xxd -r -p | basenc --$oenc ;;
-		*)
-			printf "%s: Error: Unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
-	esac
-}
-
 bl_pgpid_gen_uid() {
 #  Since linux kernel 2.6, user ID (uid) are coded on 32 bit, so it should range from 0 (root) to 2^32-1 = 4294967295
 #  On older unix systems it was coded on 16 bit (0 to 65535) :
@@ -762,7 +726,7 @@ Options:
 		return 2
 	fi
 
-	num=$(bl_pgpid_2num --input-encoding base64url $((BL_PGPID_XUID_MAX - BL_PGPID_XUID_MIN)) <<<"$u4h") && echo $((num + BL_PGPID_XUID_MIN))
+	num=$(bl_shrink_num --input-encoding base64url $((BL_PGPID_XUID_MAX - BL_PGPID_XUID_MIN)) <<<"$u4h") && echo $((num + BL_PGPID_XUID_MIN))
 }
 
 bl_pgpid_gen_key() {
