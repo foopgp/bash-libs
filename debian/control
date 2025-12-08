@@ -32,7 +32,7 @@ Package: bashlibs-common
 Replaces: bash-libs (<< 0.0.6~)
 Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
-Depends: bsdutils (>= 3.0-0), aspell,
+Depends: bsdutils (>= 3.0-0), aspell, xxd
          ${misc:Depends}
 Recommends: bash-completion, whiptail
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
@@ -63,7 +63,7 @@ Package: bashlibs-pgpid
 Replaces: bash-libs (<< 0.0.6~)
 Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
-Depends: bashlibs-common, gpg, xxd, adduser, passwd, curl,
+Depends: bashlibs-common, gpg, xxd, adduser, passwd, curl, qrencode,
          libgfshare-bin, pandoc, texlive-extra-utils, cups-client, cups-bsd, zbar-tools,
          ${misc:Depends}
 Recommends: bash-completion
