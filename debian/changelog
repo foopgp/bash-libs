@@ -1,3 +1,23 @@
+bash-libs (0.1.8-1) unstable; urgency=medium
+
+  [ JJ ]
+  * bl_shred_path(): improve behaviour + 2 new options
+  * bl-pgpid: introduce BL_PGPID_U5_REGEX + new function bl_pgpid_tocken_check()
+  * use bl_pgpid_tocken_check() in bl_djibian_adduser()
+  * improve some completions + wording
+  * new function bl_qrkey_totoken() + wording improvments
+  * minor fixes + discovering than auto setting new pin or admin code won't be easy
+  * update manpages
+  * bl_qrkey_totoken(): 2 new options: --lang and --name
+  * new function bl_qrkey_change_token_code(), used in bl_qrkey_totoken()
+  * little wording improvments
+  * new option --unblock to unblock PIN code
+  * fix bug when using an other GnuPG homedir
+  * bash-completion: support --homedir
+  * update manpages
+
+ -- piseb <piseb@mailo.com>  Mon, 08 Dec 2025 11:02:09 +0100
+
 bash-libs (0.1.6-1) unstable; urgency=medium
 
   [ JJ ]
