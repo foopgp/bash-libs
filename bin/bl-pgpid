@@ -334,7 +334,7 @@ _bl_pgpid_parseoptions() {
 			-h|--help) printf "%s\n%s%s" "$BL_PGPID_usage" "$BL_PGPID_chelpmsg" "$BL_PGPID_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_PGPID_NAME" "$BL_PGPID_VERSION" ; return 1 ;;
 			--) shift ; break ;;
-			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			-*) printf "%s: Unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -541,7 +541,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -635,7 +635,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -655,7 +655,7 @@ Options:
 		base64|base64url|base32|base32hex|base16|base2msbf|base2lsbf)
 			decoder="basenc --decode --$ienc $iextraopts" ;;
 		*)
-			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
+			printf "%s: Error: Unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
 	esac
 
 	while read offset hex char; do
@@ -681,7 +681,7 @@ Options:
 		base64|base64url|base32|base32hex|base2msbf|base2lsbf)
 			echo "$hex" | xxd -r -p | basenc --$oenc ;;
 		*)
-			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
+			printf "%s: Error: Unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
 	esac
 }
 
@@ -715,7 +715,7 @@ bl_pgpid_gen_uid() {
 
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] [UDID4]"
+	local usage="Usage: $name [OPTIONS]... [UDID4]"
 	local helpmsg="
 Generate a 32bit Unix User ID, from 2^18 to (2^31)-2 ([$BL_PGPID_XUID_MIN,$BL_PGPID_XUID_MAX]).
 If UDID4 is not given, it will ask for surname, names and date of birth.
@@ -733,7 +733,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -810,7 +810,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -878,7 +878,7 @@ bl_pgpid_tocken_check()
 {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]"
+	local usage="Usage: $name [OPTIONS]..."
 	local helpmsg="
 Check if OpenPGP tocken is correctly configured for pgpid ; may output informations.
 Will try to import cleaned certificate indicated in 'URL of public key' field.
@@ -886,11 +886,14 @@ Return 0 if no error and OpenPGP tocken is correctly configured for pgpid, non-z
 
 Options:
   -i, --info            Output content of the associative array containing relevant metadata (may be evaluted with eval)
+  -f, --no-fetch        Don't try to fetch public certificate (from URL indicated in tocken metadata).
   -A, --aaname VARNAME  $( ((BL_PGPID_isprogram)) && printf "Only effect when used as bash library" || printf "Name of associative array to be filled with relevant metadata")
 "
-	local varname verbose
+	local varname verbose=0 fetch=1
 	for ((;$#;)) ; do
 		case "$1" in
+			-i|--info) verbose=1 ;;
+			-f|--no-fetch) fetch=0 ;;
 			-A|--aaname)
 				shift
 				if ((BL_PGPID_isprogram)) ; then
@@ -902,15 +905,16 @@ Options:
 					return 2
 				fi
 				;;
-			-i|--info) verbose=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
+
+	[[ -z "$1" ]] || printf "%s: Warning: Ignoring extra args '%s'...\n" "$FUNCNAME" "$1" >&2
 
 	[[ "$varname" ]] && local -n aaname=$varname || local -A aaname
 
@@ -919,7 +923,8 @@ Options:
 
 	# Try Import/Refresh Key from URL metadata (as email may be in public certificate only)
 	aaname[pgpid_certurl]=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
-	if [[ "${aaname[pgpid_certurl]}" ]] && [[ "${aaname[pgpid_certurl]}" != "[not set]" ]] ; then
+	[[ "${aaname[pgpid_certurl]}" != "[not set]" ]] || aaname[pgpid_certurl]=""
+	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
 		printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${aaname[pgpid_certurl]}" >&2
 		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --import-options keep-ownertrust,import-clean --import ; then
 			cardstatus=$(LANG= gpg --card-status) || return $?
@@ -975,7 +980,7 @@ Options:
 		echo >&2
 	fi
 
-	for key in pgpid_name pgpid_id pgpid_email pgpid_Skeyfpr pgpid_Ekeyfpr pgpid_Akeyfpr ; do
+	for key in pgpid_name pgpid_id pgpid_email pgpid_Skeyfpr pgpid_Ekeyfpr pgpid_Akeyfpr pgpid_certurl ; do
 		if [[ -z "${aaname[$key]}" ]] ; then
 			ret=6
 			printf "%s: Notice: Invalid pgpid tocken: missing '%s'.\n" "$FUNCNAME" "${key}" >&2
@@ -1049,7 +1054,7 @@ if function=$(grep -o "\<bl_pgpid_$1\>" <<< "${BL_PGPID_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2
+	printf "%s: Unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

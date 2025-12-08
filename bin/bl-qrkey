@@ -108,19 +108,22 @@ _bl_qrkey_parseoptions() {
 	fi
 }
 
-_bl_gpg_get_exportable_seckeyid() {
+_bl_gpg_get_seckeyid() {
 	local helpmsg="Usage: $FUNCNAME
 Call 'gpg --with-colon' and ouput exportable secret keys, one by line:
 KeyID     Creation_Date    Public_Key_Algorithm
 
 Options:
-  -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
+  -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
+  -e, --exportable          Ouput only exportable secret keys
 "
 	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local filtertest=true
 	for ((;$#;)) ; do
 		case "$1" in
 			-H|--homedir)
 				shift ; gpghome=$1 ;;
+			-e|--exportable) filtertest='[[ "${record[TockenSN]}" == \+ ]]' ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -137,12 +140,12 @@ Options:
 
 	# Confer https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=blob_plain;f=doc/DETAILS
 	gpg --homedir "$gpghome" --list-secret-keys --with-colons | grep "^sec:" | while	IFS=':' read record[Type] record[Validity] record[KeyLenght] record[PubKeyAlgo] record[KeyID] record[CreationDate] record[ExpirationDate] record[Field8] record[Ownertrust] record[UserID] record[SignatureClass] record[KeyCapabilities] record[Field13] record[Flags] record[TockenSN] record[HashAlgo] record[CurveName] record[ComplianceFlags] record[LastUpdate] record[Origin] record[Comment] record[rfu] ; do
-	if [[ "${record[TockenSN]}" == \+ ]] ; then
-				if ! pkaindex=$((${record[PubKeyAlgo]})) ; then
-						printf "%s: Error: Unexpected field 4 (Public Key Algorithm)\n" "$FUNCNAME"  >&2
-						return 1
-				fi
-				echo "${record[KeyID]}  $(date --iso-8601=hours --date "@${record[CreationDate]}")  ${pka[${pkaindex}]:-unkown}"
+		if eval "$filtertest" ; then
+			if ! pkaindex=$((${record[PubKeyAlgo]})) ; then
+				printf "%s: Error: Unexpected field 4 (Public Key Algorithm)\n" "$FUNCNAME"  >&2
+				return 1
+			fi
+			echo "${record[KeyID]}  $(date --iso-8601=hours --date "@${record[CreationDate]}")  ${pka[${pkaindex}]:-unkown}"
 		fi
 	done
 	return ${PIPESTATUS[0]}
@@ -284,7 +287,7 @@ Options:
 	[[ -z "$1" ]] || keyid="$1"
 	if [[ -z "$keyid" ]] ; then
 		local -a seckeyids
-		mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
+		mapfile -t seckeyids < <(_bl_gpg_get_seckeyid --exportable --homedir "$gpghome")
 		((${#seckeyids[@]}>0)) || { printf "%s: Error: No OpenPGP secret (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
 		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "For which OpenPGP secret key you want to change passphrase" "${seckeyids[@]}")"
 		keyid="${keyid%% *}"
@@ -537,7 +540,7 @@ Note: Split number should be greater than threshold number.
 	fi
 	if [[ -z "$keyid" ]] ; then
 		local -a seckeyids
-		mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
+		mapfile -t seckeyids < <(_bl_gpg_get_seckeyid --exportable --homedir "$gpghome")
 		((${#seckeyids[@]}>0)) || { printf "%s: Error: No secret to print.\n" "$FUNCNAME" >&2 ; return 1 ; }
 		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of secrets to print (on ${splitn} fragments)" "${seckeyids[@]}")"
 		keyid="${keyid%% *}"
@@ -843,7 +846,7 @@ Options:
 	local keyid secstatus
 	local -a seckeyids emails udid4
 
-	mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
+	mapfile -t seckeyids < <(_bl_gpg_get_seckeyid --exportable --homedir "$gpghome")
 	((${#seckeyids[@]}>0)) || { printf "%s: Error: No OpenPGP secret to move (from %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
 
 	[[ -z "$1" ]] || keyid="$1"
