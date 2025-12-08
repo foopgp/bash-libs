@@ -43,7 +43,6 @@ if [[ "$1" == --bash-completion ]] ; then
 				return 0 ;;
 		esac
 		if grep -qE "(\<readwallet\>|\<[0-9])" <<< "${COMP_WORDS[@]}" ; then
-			local IFS=$'\'\\n\''
 			compopt -o plusdirs
 			COMPREPLY=( $(compgen -A file -- $cur) )
 			return 0

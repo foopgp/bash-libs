@@ -49,7 +49,6 @@ if [[ "$1" == --bash-completion ]] ; then
 				return 0 ;;
 		esac
 		if grep -q "\<shred_path\>" <<< "${COMP_WORDS[@]}" ; then
-			local IFS=$'\'\\n\''
 			compopt -o plusdirs
 			COMPREPLY=( $(compgen -A file -- $cur) )
 			return 0
