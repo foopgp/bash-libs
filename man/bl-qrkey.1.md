@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-qrkey - manual page for bl-qrkey 0.1.5
+bl-qrkey - manual page for bl-qrkey 0.1.8
 
 # SYNOPSIS
 
@@ -21,7 +21,8 @@ bl-qrkey - manual page for bl-qrkey 0.1.5
 
 # DESCRIPTION
 
-Backup or restore OpenPGP keys using printed QR codes.
+Backup or restore OpenPGP keys using printed QR codes and Shamir\'s
+secret sharing.
 
 # OPTIONS
 
@@ -40,15 +41,28 @@ Backup or restore OpenPGP keys using printed QR codes.
 
 ## Actions:
 
+change_passphrase
+
+:   Change GnuPG passphrase protecting secret parts of an OpenPGP key.
+
+change_token_code
+
+:   Check and change PIN (or Admin) code protecting use of a security
+    token (OpenPGP smartcard).
+
 print
 
-:   Export and print secret keys on multiple QRcode using Shamir\'s
+:   Export and print OpenPGP secrets on multiple QRcode using Shamir\'s
     secret sharing.
 
 scan
 
 :   Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or
     webcam.
+
+totoken
+
+:   Move OpenPGP secrets to security token (OpenPGP smartcard).
 
  
 All actions support a **\--help** options, eg: \$ bl-qrkey ACTION

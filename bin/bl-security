@@ -48,10 +48,10 @@ if [[ "$1" == --bash-completion ]] ; then
 				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
 				return 0 ;;
 		esac
-		if grep -q "\<shred-path\>" <<< "${COMP_WORDS[@]}" ; then
+		if grep -q "\<shred_path\>" <<< "${COMP_WORDS[@]}" ; then
 			local IFS=$'\'\\n\''
-			compopt -o filenames
-			COMPREPLY=( $(compgen -f -- $cur) )
+			compopt -o plusdirs
+			COMPREPLY=( $(compgen -A file -- $cur) )
 			return 0
 		fi
 		# complete actions if none in ${COMP_WORDS[@]}
@@ -143,13 +143,17 @@ Options:
   -f, --force          Change file permissions if necessary, never prompt
   -v, --verbose        Explain what is being done (stdout)
   -r, --remove         Also recursively remove given path(|s)
+  -n, --iterations N   Overwrite N times instead of the shred's default
+  -z, --zero           Add a final overwrite with zeros to hide shredding
 "
-	local farg varg files rmcmd=true
+	local farg varg extrasargs files file rmcmd=true
 	for ((;$#;)) ; do
 		case "$1" in
 			-f|--force) farg="-f" ;;
 			-v|--verb*) varg="-v" ;;
 			-r|--remove) rmcmd="rm" ;;
+			-n|--iterations) shift ; extrasargs+=" -n $1" ;;
+			-z|--zero) extrasargs+=" -z" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -169,9 +173,13 @@ Options:
 			bl_yesno --default=no --text "$(printf "%s\n" "${files[@]@Q}")" "Shred this ${#files[@]} file(s)" || return 0
 		fi
 
-		# Don't pass $varg to shred as it use to write too many things, and moreover on stderr instead of stdin
-		! [[ "$varg" ]] || echo "shredding:" "${files[@]@Q}"
-		shred $farg "${files[@]}" || return $?
+		for file in "${files[@]}" ; do
+			# Don't pass $varg to shred as it use to write too many things, and moreover on stderr instead of stdin
+			! [[ "$varg" ]] || echo "shredding:" "${file@Q}"
+			shred $farg $extrasargs "${file}" || return $?
+			# If we have to delete files, first overwrite it with empty file to not loosing time shredding them again. Notably if a previous bl_shred_path --remove was interrupted.
+			[[ "$rmcmd" == true ]] || echo -n > "${file}" || return $?
+		done
 	fi
 	$rmcmd -r $farg $varg "$@" || return $?
 }
@@ -244,22 +252,24 @@ Options:
 }
 
 bl_new_password() {
-	local name dict=${LANG::2} nw=3
-	# TODO: i18n
+	local name
+	local preamble dict=${LANG::2} nw=3
 	local question="Password"
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [QUESTION]..."
 	local helpmsg="
-Ask to enter a new password and force retyping it. Starting with a passphrase suggestion.
+Ask to enter a new password and force retyping it.
 Output the new password.
 (Default QUESTION: '$question')
 
 Options:
+  -t, --text TEXT           Text to display as preamble. If none generate a passphrase suggestion.
   -D, --dict DICTIONARY     Dictionary for passphrase suggestion (default: ${dict:=en})
   -n, --num NUMBER          Number of words for passphrase suggestion (default: $nw)
 "
 	for ((;$#;)) ; do
 		case "$1" in
+			-t|--text|--preamble) shift ; preamble="$1" ;;
 			-D|--dict*) shift ; dict="$1" ;;
 			-n|--num*) shift ; nw="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -272,10 +282,9 @@ Options:
 	done
 	((! $#)) || question="$*"
 
-	local passwd passwd2 preamble suggpwd
+	local passwd passwd2
 
-	suggpwd=$(bl_gen_passphrase --dict "$dict" --num "$nw")
-	preamble=$(printf "Suggestion: %s" "$suggpwd")
+	[[ "$preamble" ]] || preamble="Suggestion: "$(bl_gen_passphrase --dict "$dict" --num "$nw")
 	passwd2=$(bl_input --password --text "$preamble" "$question")
 	preamble=$(printf "Retype %s" "$question")
 	while true ; do

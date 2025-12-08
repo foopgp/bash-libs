@@ -13,7 +13,7 @@ footer: bash-libs
 
 # NAME
 
-bl-security - manual page for bl-security 0.1.5
+bl-security - manual page for bl-security 0.1.8
 
 # SYNOPSIS
 
@@ -54,8 +54,7 @@ gen_passphrase
 
 new_password
 
-:   Ask to enter a new password and force retyping it. Starting with a
-    passphrase suggestion.
+:   Ask to enter a new password and force retyping it.
 
  
 All actions support a **\--help** options, eg: \$ bl-security
