@@ -1,5 +1,5 @@
 <!--
-© 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+© 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 
 SPDX-License-Identifier: LGPL-3.0-only
 -->
@@ -8,12 +8,12 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs
+footer: bash-libs 0.1.9
 ---
 
 # NAME
 
-bl-pgpid - manual page for bl-pgpid 0.1.8
+bl-pgpid - manual page for bl-pgpid 0.1.9
 
 # SYNOPSIS
 
@@ -44,15 +44,11 @@ humans, or a fixed Unix User ID for each of them.
 mrz_to_u4
 
 :   Convert the Machine Readable Zone of an icao9303 passport to an
-    udid4 (aka \'u4\')
+    udid4 (aka \'u4\').
 
 gen_u4
 
 :   Generate udid4. Missing inputs are asked interactively.
-
-2num
-
-:   Shrink input data to a number limited by SIZE.
 
 gen_uid
 
@@ -64,9 +60,14 @@ gen_key
 :   Generate an OpenPGP key pair (public and secret) according to foopgp
     standards.
 
-tocken_check
+avatar
 
-:   Check if OpenPGP tocken is correctly configured for pgpid ; may
+:   Resize and add new IMAGE inside OpenPGP certificate (and revoke any
+    previous image)
+
+token_check
+
+:   Check if OpenPGP token is correctly configured for pgpid ; may
     output informations.
 
  

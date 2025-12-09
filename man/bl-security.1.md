@@ -1,5 +1,5 @@
 <!--
-© 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+© 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 
 SPDX-License-Identifier: LGPL-3.0-only
 -->
@@ -8,12 +8,12 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-SECURITY
 section: 1
 header: User Commands
-footer: bash-libs
+footer: bash-libs 0.1.9
 ---
 
 # NAME
 
-bl-security - manual page for bl-security 0.1.8
+bl-security - manual page for bl-security 0.1.9
 
 # SYNOPSIS
 
@@ -42,7 +42,7 @@ Provide some cybersecurity features.
 
 urandom
 
-:   Output a good random number between 0 and 1\<\<32 (4294967296)
+:   Output a good random number between 0 and 1\<\<32 (4294967296).
 
 shred_path
 
@@ -50,11 +50,15 @@ shred_path
 
 gen_passphrase
 
-:   Generate a good random passphrase
+:   Generate a good random passphrase.
 
 new_password
 
 :   Ask to enter a new password and force retyping it.
+
+shrink_num
+
+:   Shrink input data to a number limited by SIZE.
 
  
 All actions support a **\--help** options, eg: \$ bl-security

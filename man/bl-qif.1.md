@@ -1,5 +1,5 @@
 <!--
-© 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+© 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 
 SPDX-License-Identifier: LGPL-3.0-only
 -->
@@ -8,12 +8,12 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-QIF
 section: 1
 header: User Commands
-footer: bash-libs
+footer: bash-libs 0.1.9
 ---
 
 # NAME
 
-bl-qif - manual page for bl-qif 0.1.8
+bl-qif - manual page for bl-qif 0.1.9
 
 # SYNOPSIS
 
@@ -47,7 +47,7 @@ qif_stat
 qif_tofecp4
 
 :   Parse qif file, and ask some questions for each entries to manage
-    foopgp tockens, expenses, inventory\....
+    foopgp tokens, expenses, inventory\....
 
  
 All actions support a **\--help** options, eg: \$ bl-qif ACTION
