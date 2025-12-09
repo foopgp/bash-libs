@@ -205,7 +205,7 @@ Return: - 0 if SW means Success (SW == 0x9000)
 bl_qrkey_change_passphrase() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
+	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR|EMAIL|NAME]"
 
 	local helpmsg="
 Change GnuPG passphrase protecting secret parts of an OpenPGP key.
@@ -248,6 +248,9 @@ Options:
 		((${#seckeyids[@]}>0)) || { printf "%s: Error: No OpenPGP secret (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
 		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "For which OpenPGP secret key you want to change passphrase" "${seckeyids[@]}")"
 		keyid="${keyid%% *}"
+	else
+		# Test input
+		gpg --homedir "$gpghome" --list-secret-keys "$keyid" > /dev/null || { printf "%s: Error: No secret for '%s' (in %s).\n" "$FUNCNAME" "$keyid" "$gpghome" >&2 ; return 1 ; }
 	fi
 
 	[[ "$passgiven" ]] || passphrase=$(bl_input --password --text "(if none, leave empty)" "Current passphrase")
