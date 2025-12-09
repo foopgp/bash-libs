@@ -824,7 +824,6 @@ Keyserver: ${keyserv}
 # Do a commit here, so that we can later print 'done' :-)
 %commit
 "
-
 	gpg --homedir "$gpghome" --batch --generate-key --allow-freeform-uid <<<"$genkey_batch" || return $?
 
 	# get first 2 fprs
@@ -838,6 +837,96 @@ Keyserver: ${keyserv}
 	gpg --homedir "$gpghome" --list-secret-keys --with-colons "$email" | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'
 }
 
+bl_pgpid_avatar() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local tmpdir="/tmp/$FUNCNAME.$USER"
+	local usage="Usage: $name [OPTIONS]... [IMAGE]"
+	local keyserv #="hkps://keys.foopgp.org"
+	local helpmsg="
+Resize and add new IMAGE inside OpenPGP certificate (and revoke any previous image)
+If IMAGE argument is non-existant or empty (\"\"), just revoke existing image(s).
+Missing --user => KEYID is asked interactively.
+
+Options:
+  -u, --user NAME|KEYID      User for the avatar edition (or extraction).
+  -W, --workdir DIRECTORY    Working directory. Will contain previous and new resized images (default: $tmpdir).
+  -w, --onlyimagework        Only copy previous image and new resized image in working directory.
+  -k, --keyserver KEYSERVER  If non-empty, send new certificate to this keyserver (default: $keyserv)
+  -H, --homedir GNUPGHOME    GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME.
+"
+	local user passphrase onlywork
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local expire=11 verify=""
+	for ((;$#;)) ; do
+		case "$1" in
+			-u|--user)
+				shift ; user=$1 ;;
+			-W|--tmpdir|--workdir)
+				shift
+				tmpdir=$1 ;;
+			-w|--only-image-work|--onlyimagework)
+				onlywork="." ;;
+			-k|--keyserver)
+				shift ; keyserv=$1 ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-v|--verify) verify=1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local image fpr
+	image="$1"
+
+	if [[ -z "$user" ]] ; then
+		local -a seckeyids
+		mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome")
+		((${#seckeyids[@]}>0)) || { printf "%s: Error: No editable OpenPGP certificate (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
+		user="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of the OpenPGP certificate you want to change" "${seckeyids[@]}")"
+		user="${user%% *}"
+	fi
+
+	mkdir -p "$tmpdir" || return $?
+
+	# Backup existing (non-revoked) photos and get fingerprint
+	fpr=$(gpg --homedir "$gpghome" --list-key --list-options show-photos --photo-viewer "cp -v %i ${tmpdir@Q}/\$(md5sum %i | head -c 32).%t > /proc/$$/fd/2 2>&1" "$user" | grep -oEm 1 "[0-9ABCDEF]{40}" || true)
+	[[ "$fpr" ]] || { printf "%s: Error: No fingerprint for user '%s'.\n" "$FUNCNAME" "$user" >&2 ; return 1 ; }
+
+	# Resize image
+	[[ -z "$image" ]] || gm convert -geometry x180 "$image" jpeg:${tmpdir}/new.jpg || {  printf "%s: Error: Unable to resize image %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
+
+	[[ -z "$onlywork" ]] || { find "${tmpdir}" -maxdepth 1 -type f >&2 ; return ;}
+
+	local commands
+	# Revoke non-revoked photos
+	commands=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$fpr" | awk ' /^(uid|uat):/ { i+=1 }  /^uat:[^r]/ { printf "uid "i"\nrevuid\ny\n4\n\ny\nuid "i"\n" } END { if (i) printf "save\n" }')
+	[[ "$commands" ]] || { printf "%s: Error: No editable certificate for '%s' (in %s).\n" "$FUNCNAME" "$user" "$gpghome" >&2 ; return 1 ; }
+
+	if [[ "$commands" =~ ^uid ]] ; then
+		printf "%s: Notice: Revoking previous image(s) in %s certificate...\n" "$FUNCNAME" "$user" >&2
+		gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$fpr" 2> >(grep "image of size" | sort -u >&2) <<<"$commands" || { printf "%s: Error: Can't revoke - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
+	fi
+
+	# Add photo
+	if [[ "$image" ]] ; then
+		commands=$(printf "addphoto\n${tmpdir}/new.jpg\ny\nsave\n")
+		printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "$image" "$user" >&2
+		[[ -z "$image" ]] || gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$fpr" 2> >(grep "image of size" | sort -u >&2 ) <<<"$commands" || { printf "%s: Error: Can't addphoto - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
+	fi
+
+	# Send new certificate to keyserver
+	[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "$fpr"
+
+	sleep 1 # to not mess stderr with slowest previous (grep | sort -u )
+	printf "%s: Info: Well done !\n" "$FUNCNAME" >&2
+}
+
 bl_pgpid_tocken_check()
 {
 	local name
@@ -849,15 +938,19 @@ Will try to import cleaned certificate indicated in 'URL of public key' field.
 Return 0 if no error and OpenPGP tocken is correctly configured for pgpid, non-zero otherwise.
 
 Options:
-  -i, --info            Output content of the associative array containing relevant metadata (may be evaluted with eval)
-  -f, --no-fetch        Don't try to fetch public certificate (from URL indicated in tocken metadata).
-  -A, --aaname VARNAME  $( ((BL_PGPID_isprogram)) && printf "Only effect when used as bash library" || printf "Name of associative array to be filled with relevant metadata")
+  -i, --info              Output content of the associative array containing relevant metadata (may be evaluted with eval)
+  -f, --no-fetch          Don't try to fetch public certificate (from URL indicated in tocken metadata).
+  -H, --homedir GNUPGHOME GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+  -A, --aaname VARNAME    $( ((BL_PGPID_isprogram)) && printf "Only effect when used as bash library" || printf "Name of associative array to be filled with relevant metadata")
 "
 	local varname verbose=0 fetch=1
+	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
 			-i|--info) verbose=1 ;;
 			-f|--no-fetch) fetch=0 ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
 			-A|--aaname)
 				shift
 				if ((BL_PGPID_isprogram)) ; then
@@ -883,15 +976,15 @@ Options:
 	[[ "$varname" ]] && local -n aaname=$varname || local -A aaname
 
 	local cardstatus
-	cardstatus=$(LANG= gpg --card-status) || return $?
+	cardstatus=$(LANG= gpg --homedir "$gpghome" --card-status) || return $?
 
 	# Try Import/Refresh Key from URL metadata (as email may be in public certificate only)
 	aaname[pgpid_certurl]=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
 	[[ "${aaname[pgpid_certurl]}" != "[not set]" ]] || aaname[pgpid_certurl]=""
 	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
 		printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${aaname[pgpid_certurl]}" >&2
-		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --import-options keep-ownertrust,import-clean --import ; then
-			cardstatus=$(LANG= gpg --card-status) || return $?
+		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import-options keep-ownertrust,import-clean --import ; then
+			cardstatus=$(LANG= gpg --homedir "$gpghome" --card-status) || return $?
 		fi
 	fi
 
