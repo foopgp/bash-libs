@@ -63,7 +63,7 @@ Package: bashlibs-pgpid
 Replaces: bash-libs (<< 0.0.6~)
 Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
-Depends: bashlibs-common, gpg, xxd, adduser, passwd, curl, qrencode,
+Depends: bashlibs-common, gpg, xxd, adduser, passwd, curl, qrencode, graphicsmagick,
          libgfshare-bin, pandoc, texlive-extra-utils, cups-client, cups-bsd, zbar-tools,
          ${misc:Depends}
 Recommends: bash-completion
