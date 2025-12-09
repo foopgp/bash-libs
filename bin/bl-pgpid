@@ -927,19 +927,19 @@ Options:
 	printf "%s: Info: Well done !\n" "$FUNCNAME" >&2
 }
 
-bl_pgpid_tocken_check()
+bl_pgpid_token_check()
 {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]..."
 	local helpmsg="
-Check if OpenPGP tocken is correctly configured for pgpid ; may output informations.
+Check if OpenPGP token is correctly configured for pgpid ; may output informations.
 Will try to import cleaned certificate indicated in 'URL of public key' field.
-Return 0 if no error and OpenPGP tocken is correctly configured for pgpid, non-zero otherwise.
+Return 0 if no error and OpenPGP token is correctly configured for pgpid, non-zero otherwise.
 
 Options:
   -i, --info              Output content of the associative array containing relevant metadata (may be evaluted with eval)
-  -f, --no-fetch          Don't try to fetch public certificate (from URL indicated in tocken metadata).
+  -f, --no-fetch          Don't try to fetch public certificate (from URL indicated in token metadata).
   -H, --homedir GNUPGHOME GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
   -A, --aaname VARNAME    $( ((BL_PGPID_isprogram)) && printf "Only effect when used as bash library" || printf "Name of associative array to be filled with relevant metadata")
 "
@@ -1025,8 +1025,8 @@ Options:
 	# If "Name of cardholder" hasn't been set, generate username from pgpid_email
 	[[ "${aaname[pgpid_name]}" ]] || aaname[pgpid_name]="${aaname[pgpid_email]%%@*}"
 
-	aaname[tocken_fullversion]="${ttype}_${tversion}"
-	aaname[tocken_fullSN]="${manufacturer}_${sn}"
+	aaname[token_fullversion]="${ttype}_${tversion}"
+	aaname[token_fullSN]="${manufacturer}_${sn}"
 
 	local key ret=0
 	if ((verbose)) ; then
@@ -1040,13 +1040,13 @@ Options:
 	for key in pgpid_name pgpid_id pgpid_email pgpid_Skeyfpr pgpid_Ekeyfpr pgpid_Akeyfpr pgpid_certurl ; do
 		if [[ -z "${aaname[$key]}" ]] ; then
 			ret=6
-			printf "%s: Notice: Invalid pgpid tocken: missing '%s'.\n" "$FUNCNAME" "${key}" >&2
+			printf "%s: Notice: Invalid pgpid token: missing '%s'.\n" "$FUNCNAME" "${key}" >&2
 		fi
 	done
 
 	! ((ret)) || return $ret
 
-	printf "%s: Info: Valid tocken, pgpid_id='%s'.\n" "$FUNCNAME" "${aaname[pgpid_id]}" >&2
+	printf "%s: Info: Valid token, pgpid_id='%s'.\n" "$FUNCNAME" "${aaname[pgpid_id]}" >&2
 	return 0
 }
 

@@ -763,8 +763,8 @@ Options:
   -P, --passfrom FILE          Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -K, --keyserver HKPSSERV     Name of keyserver to send PGP PUBLIC KEY (default: $hkpsserv)
   -U, --certurl URL            URL to retrieve your OpenPGP certificate (default: https://{HKPSSERV}/pks/lookup?op=get&search=0x{KEYFPR} )
-  -L, --lang LANG              Security tocken (OpenPGP smartcard) prefered language (default: $lang)
-  -N, --name NAME              Customize name of security tocken's cardholder
+  -L, --lang LANG              Security token (OpenPGP smartcard) prefered language (default: $lang)
+  -N, --name NAME              Customize name of security token's cardholder
   -v, --verbose                Increase verbosity
       --no-send                Don't send PGP PUBLIC KEY (OpenPGP certificate) to the HKPS keyserver
       --force                  Don't ask before resetting security token (OpenPGP smartcard)
@@ -831,17 +831,17 @@ Options:
 
 	# If we fail testing no passphrase, there is one. Then we have to remove it, or we can't exec gpg's keytocard
 	if ! gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase "" --dry-run --change-passphrase "$keyid" 2> /dev/null ; then
-		[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(To put OpenPGP secrets on security tocken)" "Passphrase")
+		[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(To put OpenPGP secrets on security token)" "Passphrase")
 		i=0
 		while ! bl_qrkey_change_passphrase --homedir "$gpghome" --passfrom /dev/stdin --newpassphrase "" "$keyid" <<<"$passphrase" >&2 ; do
 				((++i <= 3 )) || return 2
-				passphrase=$(bl_input --password --text "(To put secret keys on security tocken)" "Passphrase")
+				passphrase=$(bl_input --password --text "(To put secret keys on security token)" "Passphrase")
 		done
 	fi
 
-	[[ "$force" ]] || bl_yesno "Factory reset OpenPGP security tocken (This will destroys all OpenPGP keys stored on the card!)" || exit 42
+	[[ "$force" ]] || bl_yesno "Factory reset OpenPGP security token (This will destroys all OpenPGP keys stored on the card!)" || exit 42
 
-	printf "%s: Notice: Resetting OpenPGP security tocken...\n" "$FUNCNAME" >&2
+	printf "%s: Notice: Resetting OpenPGP security token...\n" "$FUNCNAME" >&2
 
 	echo "admin
 factory-reset
@@ -849,7 +849,7 @@ y
 yes
 quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --card-edit 2> >( $gpgfilter ) || { printf "Factory Reset OpenPGP card FAIL ($?)\n" >&2 ; return 1 ;}
 
-	printf "%s: Notice: Configuring OpenPGP security tocken...\n" "$FUNCNAME" >&2
+	printf "%s: Notice: Configuring OpenPGP security token...\n" "$FUNCNAME" >&2
 
 	echo "admin
 login
@@ -875,7 +875,7 @@ quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback
 
 #TODO WKS address calculated from email
 
-	printf "%s: Notice: Moving OpenPGP secrets to security tocken...\n" "$FUNCNAME" >&2
+	printf "%s: Notice: Moving OpenPGP secrets to security token...\n" "$FUNCNAME" >&2
 
 echo "keytocard
 y

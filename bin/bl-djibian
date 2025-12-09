@@ -176,7 +176,7 @@ Options:
 	if [[ "$fromcard" ]] ; then
 		local -A cardinfo
 
-		bl_pgpid_tocken_check --aaname cardinfo || return $?
+		bl_pgpid_token_check --aaname cardinfo || return $?
 
 		email=${cardinfo[pgpid_email]}
 		udid4=${cardinfo[pgpid_id]:2} # TODO: start managing u5 ids
