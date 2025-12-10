@@ -36,7 +36,6 @@ if [[ "$1" == --bash-completion ]] ; then
 				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
 				return 0 ;;
 			--homedir)
-				local IFS=$'\'\\n\''
 				compopt -o plusdirs
 				COMPREPLY=( $(compgen -A directory -- $cur) )
 				return 0 ;;
@@ -335,7 +334,7 @@ _bl_pgpid_parseoptions() {
 			-h|--help) printf "%s\n%s%s" "$BL_PGPID_usage" "$BL_PGPID_chelpmsg" "$BL_PGPID_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_PGPID_NAME" "$BL_PGPID_VERSION" ; return 1 ;;
 			--) shift ; break ;;
-			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			-*) printf "%s: Unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -442,6 +441,49 @@ Options:
 	done
 }
 
+_bl_pgp_get_seckeyid() {
+	local helpmsg="Usage: $FUNCNAME
+Call 'gpg --with-colon' and ouput exportable secret keys, one by line:
+KeyID     Creation_Date    Public_Key_Algorithm
+
+Options:
+  -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
+  -e, --exportable          Ouput only exportable secret keys
+"
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local filtertest=true
+	for ((;$#;)) ; do
+		case "$1" in
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-e|--exportable) filtertest='[[ "${record[TockenSN]}" == \+ ]]' ;;
+			-h|--h*) echo "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	# confer https://www.rfc-editor.org/rfc/rfc9580#name-public-key-algorithms
+	local -a pka=([1]="RSA" "RSA_Encrypt-Only" "RSA_Sign-Only" [16]="Elgamal_Encrypt-Only" "DSA" "ECDH" "ECDSA" "Elgamal" "Diffie-Hellman" "EdDSALegacy" "AEDH" "AEDSA" "X25519" "X448" "Ed25519" "Ed448")
+	local pkaindex
+	local -A record
+
+	# Confer https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=blob_plain;f=doc/DETAILS
+	gpg --homedir "$gpghome" --list-secret-keys --with-colons | grep "^sec:" | while	IFS=':' read record[Type] record[Validity] record[KeyLenght] record[PubKeyAlgo] record[KeyID] record[CreationDate] record[ExpirationDate] record[Field8] record[Ownertrust] record[UserID] record[SignatureClass] record[KeyCapabilities] record[Field13] record[Flags] record[TockenSN] record[HashAlgo] record[CurveName] record[ComplianceFlags] record[LastUpdate] record[Origin] record[Comment] record[rfu] ; do
+		if eval "$filtertest" ; then
+			if ! pkaindex=$((${record[PubKeyAlgo]})) ; then
+				printf "%s: Error: Unexpected field 4 (Public Key Algorithm)\n" "$FUNCNAME"  >&2
+				return 1
+			fi
+			echo "${record[KeyID]}  $(date --iso-8601=hours --date "@${record[CreationDate]}")  ${pka[${pkaindex}]:-unkown}"
+		fi
+	done
+	return ${PIPESTATUS[0]}
+}
+
 ### public functions / program actions ###
 
 bl_pgpid_mrz_to_u4() {
@@ -449,7 +491,7 @@ bl_pgpid_mrz_to_u4() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... MRZ..."
 	local helpmsg="
-Convert the Machine Readable Zone of an icao9303 passport to an udid4 (aka 'u4')
+Convert the Machine Readable Zone of an icao9303 passport to an udid4 (aka 'u4').
 
 Option:
   -u, --uncheck                Dont verify checksums
@@ -542,7 +584,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -607,85 +649,6 @@ Options:
 	bl_pgpid_mrz_to_u4 --uncheck --birth-date "$bdate" "${fakemrz: 0:88}"
 }
 
-
-bl_pgpid_2num() {
-	local name
-	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... SIZE [FILE]"
-	local helpmsg="
-Shrink input data to a number limited by SIZE.
-Usefull to make hash distributed into a lesser space whith (uncommon) SIZE not matching 2^n.
-This function XOR sucessive 64bits words of raw input, and apply 'modulo SIZE' at the end.
-Then Maximum SIZE is 2^64-1. (And avoid to get close to this limit if you need a good number dispatching).
-About encodings: check basenc manual from GNU coreutils.
-
-Options:
-  -i, --input-encoding ENCODING  Eg: raw(default), base64, base64url, base32, base32hex, base16, base2msbf or base2lsbf.
-  -g, --ignore-garbage           When decoding (a 'baseXXX' input), ignore non-alphabet characters.
-  -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
-"
-	local ienc="raw" oenc="base10" iextropts=""
-	for ((;$#;)) ; do
-		case "$1" in
-			-i|--input-encoding)
-				shift ; ienc=$1 ;;
-			-o|--ouput-encoding)
-				shift ; oenc=$1 ;;
-			-g|--ignore-garbage)
-				iextraopts+="--ignore-garbage " ;;
-			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
-			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
-			*) break ;;
-		esac
-		shift
-	done
-
-	if ! [[ "$1" =~ ^[1-9][0-9]* ]] ; then
-		printf "$usage\n" >&2
-		return 2
-	fi
-	size="$1"
-	shift
-
-	local decoder offset hex dec=0 char encoder
-	case "$ienc" in
-		raw)
-			decoder="cat" ;;
-		base64|base64url|base32|base32hex|base16|base2msbf|base2lsbf)
-			decoder="basenc --decode --$ienc $iextraopts" ;;
-		*)
-			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
-	esac
-
-	while read offset hex char; do
-		#printf "%016X\n" $((0x$hex))
-		dec=$((0x$hex ^ dec))
-		#printf "%016X\n" $((dec))
-	done < <( $decoder "$@" | xxd -c 8 -g 0 )
-
-	# Simple dec=$((dec%size)) doesn't work as (( builtin use only signed integer, then number > 0x0fff ffff ffff ffff are negative
-	# And with negative number '%', which is the reminder operator, differs from the mathematical modulo operation.
-	# see https://torstencurdt.com/tech/posts/modulo-of-negative-numbers/
-	dec=$(( ((dec % size) + size) % size ))
-
-	hex=$(printf "%02X\n" $dec)
-
-	case "$oenc" in
-		raw)
-			echo "$hex" | xxd -r -p ;;
-		base10)
-			printf "%u\n" "$dec" ;;
-		base16)
-			echo "$hex" ;;
-		base64|base64url|base32|base32hex|base2msbf|base2lsbf)
-			echo "$hex" | xxd -r -p | basenc --$oenc ;;
-		*)
-			printf "%s: Error: unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
-	esac
-}
-
 bl_pgpid_gen_uid() {
 #  Since linux kernel 2.6, user ID (uid) are coded on 32 bit, so it should range from 0 (root) to 2^32-1 = 4294967295
 #  On older unix systems it was coded on 16 bit (0 to 65535) :
@@ -716,7 +679,7 @@ bl_pgpid_gen_uid() {
 
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] [UDID4]"
+	local usage="Usage: $name [OPTIONS]... [UDID4]"
 	local helpmsg="
 Generate a 32bit Unix User ID, from 2^18 to (2^31)-2 ([$BL_PGPID_XUID_MIN,$BL_PGPID_XUID_MAX]).
 If UDID4 is not given, it will ask for surname, names and date of birth.
@@ -734,7 +697,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -763,7 +726,7 @@ Options:
 		return 2
 	fi
 
-	num=$(bl_pgpid_2num --input-encoding base64url $((BL_PGPID_XUID_MAX - BL_PGPID_XUID_MIN)) <<<"$u4h") && echo $((num + BL_PGPID_XUID_MIN))
+	num=$(bl_shrink_num --input-encoding base64url $((BL_PGPID_XUID_MAX - BL_PGPID_XUID_MIN)) <<<"$u4h") && echo $((num + BL_PGPID_XUID_MIN))
 }
 
 bl_pgpid_gen_key() {
@@ -811,7 +774,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -861,7 +824,6 @@ Keyserver: ${keyserv}
 # Do a commit here, so that we can later print 'done' :-)
 %commit
 "
-
 	gpg --homedir "$gpghome" --batch --generate-key --allow-freeform-uid <<<"$genkey_batch" || return $?
 
 	# get first 2 fprs
@@ -875,23 +837,120 @@ Keyserver: ${keyserv}
 	gpg --homedir "$gpghome" --list-secret-keys --with-colons "$email" | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'
 }
 
-bl_pgpid_tocken_check()
+bl_pgpid_avatar() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local tmpdir="/tmp/$FUNCNAME.$USER"
+	local usage="Usage: $name [OPTIONS]... [IMAGE]"
+	local keyserv #="hkps://keys.foopgp.org"
+	local helpmsg="
+Resize and add new IMAGE inside OpenPGP certificate (and revoke any previous image)
+If IMAGE argument is non-existant or empty (\"\"), just revoke existing image(s).
+Missing --user => KEYID is asked interactively.
+
+Options:
+  -u, --user NAME|KEYID      User for the avatar edition (or extraction).
+  -W, --workdir DIRECTORY    Working directory. Will contain previous and new resized images (default: $tmpdir).
+  -w, --onlyimagework        Only copy previous image and new resized image in working directory.
+  -k, --keyserver KEYSERVER  If non-empty, send new certificate to this keyserver (default: $keyserv)
+  -H, --homedir GNUPGHOME    GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME.
+"
+	local user passphrase onlywork
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local expire=11 verify=""
+	for ((;$#;)) ; do
+		case "$1" in
+			-u|--user)
+				shift ; user=$1 ;;
+			-W|--tmpdir|--workdir)
+				shift
+				tmpdir=$1 ;;
+			-w|--only-image-work|--onlyimagework)
+				onlywork="." ;;
+			-k|--keyserver)
+				shift ; keyserv=$1 ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-v|--verify) verify=1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local image fpr
+	image="$1"
+
+	if [[ -z "$user" ]] ; then
+		local -a seckeyids
+		mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome")
+		((${#seckeyids[@]}>0)) || { printf "%s: Error: No editable OpenPGP certificate (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
+		user="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of the OpenPGP certificate you want to change" "${seckeyids[@]}")"
+		user="${user%% *}"
+	fi
+
+	mkdir -p "$tmpdir" || return $?
+
+	# Backup existing (non-revoked) photos and get fingerprint
+	fpr=$(gpg --homedir "$gpghome" --list-key --list-options show-photos --photo-viewer "cp -v %i ${tmpdir@Q}/\$(md5sum %i | head -c 32).%t > /proc/$$/fd/2 2>&1" "$user" | grep -oEm 1 "[0-9ABCDEF]{40}" || true)
+	[[ "$fpr" ]] || { printf "%s: Error: No fingerprint for user '%s'.\n" "$FUNCNAME" "$user" >&2 ; return 1 ; }
+
+	# Resize image
+	[[ -z "$image" ]] || gm convert -geometry x180 "$image" jpeg:${tmpdir}/new.jpg || {  printf "%s: Error: Unable to resize image %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
+
+	[[ -z "$onlywork" ]] || { find "${tmpdir}" -maxdepth 1 -type f >&2 ; return ;}
+
+	local commands
+	# Revoke non-revoked photos
+	commands=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$fpr" | awk ' /^(uid|uat):/ { i+=1 }  /^uat:[^r]/ { printf "uid "i"\nrevuid\ny\n4\n\ny\nuid "i"\n" } END { if (i) printf "save\n" }')
+	[[ "$commands" ]] || { printf "%s: Error: No editable certificate for '%s' (in %s).\n" "$FUNCNAME" "$user" "$gpghome" >&2 ; return 1 ; }
+
+	if [[ "$commands" =~ ^uid ]] ; then
+		printf "%s: Notice: Revoking previous image(s) in %s certificate...\n" "$FUNCNAME" "$user" >&2
+		gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$fpr" 2> >(grep "image of size" | sort -u >&2) <<<"$commands" || { printf "%s: Error: Can't revoke - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
+	fi
+
+	# Add photo
+	if [[ "$image" ]] ; then
+		commands=$(printf "addphoto\n${tmpdir}/new.jpg\ny\nsave\n")
+		printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "$image" "$user" >&2
+		[[ -z "$image" ]] || gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$fpr" 2> >(grep "image of size" | sort -u >&2 ) <<<"$commands" || { printf "%s: Error: Can't addphoto - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
+	fi
+
+	# Send new certificate to keyserver
+	[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "$fpr"
+
+	sleep 1 # to not mess stderr with slowest previous (grep | sort -u )
+	printf "%s: Info: Well done !\n" "$FUNCNAME" >&2
+}
+
+bl_pgpid_token_check()
 {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]"
+	local usage="Usage: $name [OPTIONS]..."
 	local helpmsg="
-Check if OpenPGP tocken is correctly configured for pgpid ; may output informations.
+Check if OpenPGP token is correctly configured for pgpid ; may output informations.
 Will try to import cleaned certificate indicated in 'URL of public key' field.
-Return 0 if no error and OpenPGP tocken is correctly configured for pgpid, non-zero otherwise.
+Return 0 if no error and OpenPGP token is correctly configured for pgpid, non-zero otherwise.
 
 Options:
-  -i, --info            Output content of the associative array containing relevant metadata (may be evaluted with eval)
-  -A, --aaname VARNAME  $( ((BL_PGPID_isprogram)) && printf "Only effect when used as bash library" || printf "Name of associative array to be filled with relevant metadata")
+  -i, --info              Output content of the associative array containing relevant metadata (may be evaluted with eval)
+  -f, --no-fetch          Don't try to fetch public certificate (from URL indicated in token metadata).
+  -H, --homedir GNUPGHOME GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+  -A, --aaname VARNAME    $( ((BL_PGPID_isprogram)) && printf "Only effect when used as bash library" || printf "Name of associative array to be filled with relevant metadata")
 "
-	local varname verbose
+	local varname verbose=0 fetch=1
+	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
+			-i|--info) verbose=1 ;;
+			-f|--no-fetch) fetch=0 ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
 			-A|--aaname)
 				shift
 				if ((BL_PGPID_isprogram)) ; then
@@ -903,27 +962,29 @@ Options:
 					return 2
 				fi
 				;;
-			-i|--info) verbose=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
 
+	[[ -z "$1" ]] || printf "%s: Warning: Ignoring extra args '%s'...\n" "$FUNCNAME" "$1" >&2
+
 	[[ "$varname" ]] && local -n aaname=$varname || local -A aaname
 
 	local cardstatus
-	cardstatus=$(LANG= gpg --card-status) || return $?
+	cardstatus=$(LANG= gpg --homedir "$gpghome" --card-status) || return $?
 
 	# Try Import/Refresh Key from URL metadata (as email may be in public certificate only)
 	aaname[pgpid_certurl]=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
-	if [[ "${aaname[pgpid_certurl]}" ]] && [[ "${aaname[pgpid_certurl]}" != "[not set]" ]] ; then
+	[[ "${aaname[pgpid_certurl]}" != "[not set]" ]] || aaname[pgpid_certurl]=""
+	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
 		printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${aaname[pgpid_certurl]}" >&2
-		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --import-options keep-ownertrust,import-clean --import ; then
-			cardstatus=$(LANG= gpg --card-status) || return $?
+		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import-options keep-ownertrust,import-clean --import ; then
+			cardstatus=$(LANG= gpg --homedir "$gpghome" --card-status) || return $?
 		fi
 	fi
 
@@ -964,8 +1025,8 @@ Options:
 	# If "Name of cardholder" hasn't been set, generate username from pgpid_email
 	[[ "${aaname[pgpid_name]}" ]] || aaname[pgpid_name]="${aaname[pgpid_email]%%@*}"
 
-	aaname[tocken_fullversion]="${ttype}_${tversion}"
-	aaname[tocken_fullSN]="${manufacturer}_${sn}"
+	aaname[token_fullversion]="${ttype}_${tversion}"
+	aaname[token_fullSN]="${manufacturer}_${sn}"
 
 	local key ret=0
 	if ((verbose)) ; then
@@ -976,16 +1037,16 @@ Options:
 		echo >&2
 	fi
 
-	for key in pgpid_name pgpid_id pgpid_email pgpid_Skeyfpr pgpid_Ekeyfpr pgpid_Akeyfpr ; do
+	for key in pgpid_name pgpid_id pgpid_email pgpid_Skeyfpr pgpid_Ekeyfpr pgpid_Akeyfpr pgpid_certurl ; do
 		if [[ -z "${aaname[$key]}" ]] ; then
 			ret=6
-			printf "%s: Notice: Invalid pgpid tocken: missing '%s'.\n" "$FUNCNAME" "${key}" >&2
+			printf "%s: Notice: Invalid pgpid token: missing '%s'.\n" "$FUNCNAME" "${key}" >&2
 		fi
 	done
 
 	! ((ret)) || return $ret
 
-	printf "%s: Info: Valid tocken, pgpid_id='%s'.\n" "$FUNCNAME" "${aaname[pgpid_id]}" >&2
+	printf "%s: Info: Valid token, pgpid_id='%s'.\n" "$FUNCNAME" "${aaname[pgpid_id]}" >&2
 	return 0
 }
 
@@ -1050,7 +1111,7 @@ if function=$(grep -o "\<bl_pgpid_$1\>" <<< "${BL_PGPID_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2
+	printf "%s: Unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

@@ -1,5 +1,5 @@
 <!--
-© 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+© 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 
 SPDX-License-Identifier: LGPL-3.0-only
 -->
@@ -8,12 +8,12 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-QRKEY
 section: 1
 header: User Commands
-footer: bash-libs
+footer: bash-libs 0.1.9
 ---
 
 # NAME
 
-bl-qrkey - manual page for bl-qrkey 0.1.8
+bl-qrkey - manual page for bl-qrkey 0.1.9
 
 # SYNOPSIS
 
@@ -22,7 +22,9 @@ bl-qrkey - manual page for bl-qrkey 0.1.8
 # DESCRIPTION
 
 Backup or restore OpenPGP keys using printed QR codes and Shamir\'s
-secret sharing.
+secret sharing. Also facilitate changing passphrase protecting OpenPGP
+keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey,
+\...).
 
 # OPTIONS
 

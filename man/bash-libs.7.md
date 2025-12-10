@@ -23,11 +23,24 @@ Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fi
 
 See [**bl-pgpid**](bl-pgpid.1.md)(1) manual for more details.
 
+## bl-qrkey
+
+Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
+Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, ...).
+
+See [**bl-qrkey**](bl-qrkey.1.md)(1) manual for more details.
+
 ## bl-dji
 
 Manage djis (Ɉ), also known as foopgp tokens.
 
 See [**bl-dji**](bl-dji.1.md)(1) manual for more details.
+
+## bl-djibian
+
+System tools for Djibian GNU/Linux. Mainly to manage users.
+
+See [**bl-djibian**](bl-djibian.1.md)(1) manual for more details.
 
 ## bl-foopgp
 

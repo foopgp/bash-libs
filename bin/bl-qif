@@ -392,7 +392,7 @@ bl_qif_tofecp4() {
 	((BL_QIF_isprogram)) && name="$BL_QIF_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] FILE.qif ..."
 	local helpmsg="
-Parse qif file, and ask some questions for each entries to manage foopgp tockens, expenses, inventory....
+Parse qif file, and ask some questions for each entries to manage foopgp tokens, expenses, inventory....
 Options:
   -p, --path PATH      Set the path to the account dir (default: assume input files are in current dir)
 "

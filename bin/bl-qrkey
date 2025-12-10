@@ -40,12 +40,10 @@ if [[ "$1" == --bash-completion ]] ; then
 				COMPREPLY=( $(compgen -W "$(ls /dev/v4l/by-id/*)" -- $cur ) )
 				return 0 ;;
 			--*from)
-				local IFS=$'\'\\n\''
 				compopt -o plusdirs
 				COMPREPLY=( $(compgen -A file -- $cur) )
 				return 0 ;;
 			--homedir)
-				local IFS=$'\'\\n\''
 				compopt -o plusdirs
 				COMPREPLY=( $(compgen -A directory -- $cur) )
 				return 0 ;;
@@ -108,46 +106,6 @@ _bl_qrkey_parseoptions() {
 	if [[ "$frontend" ]] ; then
 		source "$(dirname "$BASH_SOURCE")"/bl-interactive --frontend "$frontend" --
 	fi
-}
-
-_bl_gpg_get_exportable_seckeyid() {
-	local helpmsg="Usage: $FUNCNAME
-Call 'gpg --with-colon' and ouput exportable secret keys, one by line:
-KeyID     Creation_Date    Public_Key_Algorithm
-
-Options:
-  -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
-"
-	local gpghome=${GNUPGHOME:-~/.gnupg}
-	for ((;$#;)) ; do
-		case "$1" in
-			-H|--homedir)
-				shift ; gpghome=$1 ;;
-			-h|--h*) echo "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
-			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
-			*) break ;;
-		esac
-		shift
-	done
-
-	# confer https://www.rfc-editor.org/rfc/rfc9580#name-public-key-algorithms
-	local -a pka=([1]="RSA" "RSA_Encrypt-Only" "RSA_Sign-Only" [16]="Elgamal_Encrypt-Only" "DSA" "ECDH" "ECDSA" "Elgamal" "Diffie-Hellman" "EdDSALegacy" "AEDH" "AEDSA" "X25519" "X448" "Ed25519" "Ed448")
-	local pkaindex
-	local -A record
-
-	# Confer https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=blob_plain;f=doc/DETAILS
-	gpg --homedir "$gpghome" --list-secret-keys --with-colons | grep "^sec:" | while	IFS=':' read record[Type] record[Validity] record[KeyLenght] record[PubKeyAlgo] record[KeyID] record[CreationDate] record[ExpirationDate] record[Field8] record[Ownertrust] record[UserID] record[SignatureClass] record[KeyCapabilities] record[Field13] record[Flags] record[TockenSN] record[HashAlgo] record[CurveName] record[ComplianceFlags] record[LastUpdate] record[Origin] record[Comment] record[rfu] ; do
-	if [[ "${record[TockenSN]}" == \+ ]] ; then
-				if ! pkaindex=$((${record[PubKeyAlgo]})) ; then
-						printf "%s: Error: Unexpected field 4 (Public Key Algorithm)\n" "$FUNCNAME"  >&2
-						return 1
-				fi
-				echo "${record[KeyID]}  $(date --iso-8601=hours --date "@${record[CreationDate]}")  ${pka[${pkaindex}]:-unkown}"
-		fi
-	done
-	return ${PIPESTATUS[0]}
 }
 
 _bl_iso7816_sw_analyse() {
@@ -247,7 +205,7 @@ Return: - 0 if SW means Success (SW == 0x9000)
 bl_qrkey_change_passphrase() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
+	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR|EMAIL|NAME]"
 
 	local helpmsg="
 Change GnuPG passphrase protecting secret parts of an OpenPGP key.
@@ -286,10 +244,13 @@ Options:
 	[[ -z "$1" ]] || keyid="$1"
 	if [[ -z "$keyid" ]] ; then
 		local -a seckeyids
-		mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
+		mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --exportable --homedir "$gpghome")
 		((${#seckeyids[@]}>0)) || { printf "%s: Error: No OpenPGP secret (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
 		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "For which OpenPGP secret key you want to change passphrase" "${seckeyids[@]}")"
 		keyid="${keyid%% *}"
+	else
+		# Test input
+		gpg --homedir "$gpghome" --list-secret-keys "$keyid" > /dev/null || { printf "%s: Error: No secret for '%s' (in %s).\n" "$FUNCNAME" "$keyid" "$gpghome" >&2 ; return 1 ; }
 	fi
 
 	[[ "$passgiven" ]] || passphrase=$(bl_input --password --text "(if none, leave empty)" "Current passphrase")
@@ -539,7 +500,7 @@ Note: Split number should be greater than threshold number.
 	fi
 	if [[ -z "$keyid" ]] ; then
 		local -a seckeyids
-		mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
+		mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --exportable --homedir "$gpghome")
 		((${#seckeyids[@]}>0)) || { printf "%s: Error: No secret to print.\n" "$FUNCNAME" >&2 ; return 1 ; }
 		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of secrets to print (on ${splitn} fragments)" "${seckeyids[@]}")"
 		keyid="${keyid%% *}"
@@ -802,8 +763,8 @@ Options:
   -P, --passfrom FILE          Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -K, --keyserver HKPSSERV     Name of keyserver to send PGP PUBLIC KEY (default: $hkpsserv)
   -U, --certurl URL            URL to retrieve your OpenPGP certificate (default: https://{HKPSSERV}/pks/lookup?op=get&search=0x{KEYFPR} )
-  -L, --lang LANG              Security tocken (OpenPGP smartcard) prefered language (default: $lang)
-  -N, --name NAME              Customize name of security tocken's cardholder
+  -L, --lang LANG              Security token (OpenPGP smartcard) prefered language (default: $lang)
+  -N, --name NAME              Customize name of security token's cardholder
   -v, --verbose                Increase verbosity
       --no-send                Don't send PGP PUBLIC KEY (OpenPGP certificate) to the HKPS keyserver
       --force                  Don't ask before resetting security token (OpenPGP smartcard)
@@ -845,7 +806,7 @@ Options:
 	local keyid secstatus
 	local -a seckeyids emails udid4
 
-	mapfile -t seckeyids < <(_bl_gpg_get_exportable_seckeyid --homedir "$gpghome")
+	mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --exportable --homedir "$gpghome")
 	((${#seckeyids[@]}>0)) || { printf "%s: Error: No OpenPGP secret to move (from %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
 
 	[[ -z "$1" ]] || keyid="$1"
@@ -870,17 +831,17 @@ Options:
 
 	# If we fail testing no passphrase, there is one. Then we have to remove it, or we can't exec gpg's keytocard
 	if ! gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase "" --dry-run --change-passphrase "$keyid" 2> /dev/null ; then
-		[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(To put OpenPGP secrets on security tocken)" "Passphrase")
+		[[ "$passphrase" ]] || passphrase=$(bl_input --password --text "(To put OpenPGP secrets on security token)" "Passphrase")
 		i=0
 		while ! bl_qrkey_change_passphrase --homedir "$gpghome" --passfrom /dev/stdin --newpassphrase "" "$keyid" <<<"$passphrase" >&2 ; do
 				((++i <= 3 )) || return 2
-				passphrase=$(bl_input --password --text "(To put secret keys on security tocken)" "Passphrase")
+				passphrase=$(bl_input --password --text "(To put secret keys on security token)" "Passphrase")
 		done
 	fi
 
-	[[ "$force" ]] || bl_yesno "Factory reset OpenPGP security tocken (This will destroys all OpenPGP keys stored on the card!)" || exit 42
+	[[ "$force" ]] || bl_yesno "Factory reset OpenPGP security token (This will destroys all OpenPGP keys stored on the card!)" || exit 42
 
-	printf "%s: Notice: Resetting OpenPGP security tocken...\n" "$FUNCNAME" >&2
+	printf "%s: Notice: Resetting OpenPGP security token...\n" "$FUNCNAME" >&2
 
 	echo "admin
 factory-reset
@@ -888,7 +849,7 @@ y
 yes
 quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --card-edit 2> >( $gpgfilter ) || { printf "Factory Reset OpenPGP card FAIL ($?)\n" >&2 ; return 1 ;}
 
-	printf "%s: Notice: Configuring OpenPGP security tocken...\n" "$FUNCNAME" >&2
+	printf "%s: Notice: Configuring OpenPGP security token...\n" "$FUNCNAME" >&2
 
 	echo "admin
 login
@@ -914,7 +875,7 @@ quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback
 
 #TODO WKS address calculated from email
 
-	printf "%s: Notice: Moving OpenPGP secrets to security tocken...\n" "$FUNCNAME" >&2
+	printf "%s: Notice: Moving OpenPGP secrets to security token...\n" "$FUNCNAME" >&2
 
 echo "keytocard
 y
@@ -930,8 +891,8 @@ save " | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopbac
 
 	# Change default PIN and Admin code
 	local pincode admincode
-	pincode=$(printf "%06d" $(bl-security urandom 1000000))
-	admincode=$(printf "%08d" $(bl-security urandom 100000000))
+	pincode=$(printf "%06d" $(bl_urandom 1000000))
+	admincode=$(printf "%08d" $(bl_urandom 100000000))
 	bl_qrkey_change_token_code --homedir "$gpghome" --code 123456 --newcodefrom <(cat <<<"$pincode") || { printf "Changing PIN code FAIL ($?)\n" >&2 ; return 1 ;}
 	bl_qrkey_change_token_code --homedir "$gpghome" --admin --code 12345678 --newcodefrom <(cat <<<"$admincode") || { printf "Changing Admin code FAIL ($?)\n" >&2 ; return 1 ;}
 
@@ -985,6 +946,7 @@ fi
 
 BL_QRKEY_chelpmsg="
 Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
+Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, ...).
 
 Options:
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"

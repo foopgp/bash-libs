@@ -146,7 +146,7 @@ _bl_foopgp_parseoptions() {
 
 bl_foopgp_g2t() {
 	local name
-	local tockens
+	local tokens
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
@@ -181,28 +181,28 @@ Options:
 	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
 
 	for i in "$@" ; do
-		tockens=$(bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else 0 ; scale=16 ")
+		tokens=$(bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else 0 ; scale=16 ")
 		case "$symbol" in
 			d|deci)
 				[[ "$printsym" ]] && outsym=" dɈ" || outsym=""
-				LANG=C printf "%0.5f%s\n" "$(bc -l <<<"$tockens*10")" "$outsym"
+				LANG=C printf "%0.5f%s\n" "$(bc -l <<<"$tokens*10")" "$outsym"
 				;;
 			c|centi)
 				[[ "$printsym" ]] && outsym=" cɈ" || outsym=""
-				LANG=C printf "%0.4f%s\n" "$(bc -l <<<"$tockens*100")" "$outsym"
+				LANG=C printf "%0.4f%s\n" "$(bc -l <<<"$tokens*100")" "$outsym"
 				;;
 			m|milli)
 				[[ "$printsym" ]] && outsym=" mɈ" || outsym=""
-				LANG=C printf "%0.3f%s\n" "$(bc -l <<<"$tockens*1000")" "$outsym"
+				LANG=C printf "%0.3f%s\n" "$(bc -l <<<"$tokens*1000")" "$outsym"
 				;;
 			µ|micro)
 				[[ "$printsym" ]] && outsym=" µɈ" || outsym=""
-				LANG=C printf "%d%s\n" "$(bc -l <<<"$tockens*1000000")" "$outsym"
+				LANG=C printf "%d%s\n" "$(bc -l <<<"$tokens*1000000")" "$outsym"
 				;;
 			*)
 				[[ -z "$symbol" ]] || printf "%s: Warning: Ignoring unrecognized symbol %s.\n" "$FUNCNAME" "$symbol" >&2
 				[[ "$printsym" ]] && outsym=" Ɉ" || outsym=""
-				LANG=C printf "%0.6f%s\n" "$tockens" "$outsym"
+				LANG=C printf "%0.6f%s\n" "$tokens" "$outsym"
 				;;
 		esac
 	done

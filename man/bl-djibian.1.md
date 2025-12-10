@@ -1,5 +1,5 @@
 <!--
-© 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+© 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 
 SPDX-License-Identifier: LGPL-3.0-only
 -->
@@ -8,12 +8,12 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-DJIBIAN
 section: 1
 header: User Commands
-footer: bash-libs
+footer: bash-libs 0.1.9
 ---
 
 # NAME
 
-bl-djibian - manual page for bl-djibian 0.1.8
+bl-djibian - manual page for bl-djibian 0.1.9
 
 # SYNOPSIS
 
@@ -21,7 +21,7 @@ bl-djibian - manual page for bl-djibian 0.1.8
 
 # DESCRIPTION
 
-System tools for Djibian GNU/Linux.
+System tools for Djibian GNU/Linux. Mainly to manage users.
 
 # OPTIONS
 
