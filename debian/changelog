@@ -1,3 +1,20 @@
+bash-libs (0.1.9-1) unstable; urgency=medium
+
+  [ JJ ]
+  * update man/descriptions
+  * minor clean in completion functions
+  * minor performance fix (using bash functions instead of forking)
+  * wording + 2 new options:
+  * rename and move 2 functions:
+  * fix 2 missing dependencies: qrencode and xxd
+  * bl_qrkey_change_passphrase(): manage invalid user input
+  * new function bl_pgpid_avatar() (TO BE MORE TESTED) + fix bug in bl_pgpid_tocken_check()
+  * wording: tocken -> token
+  * update manpages
+  * new dep for bl-pgpid: graphicsmagick
+
+ -- piseb <piseb@mailo.com>  Wed, 10 Dec 2025 01:16:57 +0100
+
 bash-libs (0.1.8-1) unstable; urgency=medium
 
   [ JJ ]
