@@ -1,3 +1,10 @@
+bash-libs (0.1.9-2) unstable; urgency=medium
+
+  [ jjbrucker ]
+  * fix missing dep for bl-qrkey print
+
+ -- piseb <piseb@mailo.com>  Thu, 11 Dec 2025 19:27:16 +0100
+
 bash-libs (0.1.9-1) unstable; urgency=medium
 
   [ JJ ]
