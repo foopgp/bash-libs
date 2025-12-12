@@ -1014,12 +1014,12 @@ Options:
 		fi
 	done <<<"${cardstatus}"
 
-	(( ${#emails[@]} < 2 )) || printf "%s: Notice: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "email" "${emails[1]}" >&2
 	aaname[pgpid_email]="${emails[0]}"
+	(( $(sort -u <<<"${emails[@]}" | wc -l) < 2 )) || printf "%s: Notice: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "email" "$(sort -u <<<"${emails[@]}" | grep -v "${emails[0]}")" >&2
 
 	# Should be in 'Login data' field, but who knows ? (yet...) 
-	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}"))
-	(( ${#ids[@]} < 2 )) || printf "%s: Notice: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "id" "${ids[1]}" >&2
+	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}" | sort -u))
+	(( ${#ids[@]} < 2 )) || { printf "%s: Error: supernumerary %s (%s)\n" "$FUNCNAME" "id" "${ids[*]}" >&2 ; return 1 ;}
 	aaname[pgpid_id]="${ids[0]}"
 
 	# If "Name of cardholder" hasn't been set, generate username from pgpid_email
