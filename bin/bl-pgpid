@@ -605,7 +605,7 @@ Options:
 
 	[[ "$sname" ]] || sname=$(bl_input "Birth surname (family name)")
 	[[ "$gname" ]] || gname=$(bl_input "Birth names (given names)")
-	[[ "$bdate" ]] || bdate=$(bl_input "Birth date (YYYY-MM-DD)")
+	[[ "$bdate" ]] || bdate=$(bl_input --iso-8601 "Birth date (YYYY-MM-DD)")
 	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "Birth country (3 letter code)")
 
 	while [[ "$verify" ]] ; do
@@ -620,7 +620,7 @@ Options:
 
 		sname=$(bl_input --default "${sname^^}" "Birth surname (family name)")
 		gname=$(bl_input --default "${gname}" "Birth names (given names)")
-		bdate=$(bl_input --default "${bdate}" "Birth date (YYYY-MM-DD)")
+		bdate=$(bl_input --iso-8601 --default "${bdate}" "Birth date (YYYY-MM-DD)")
 		bcountry=$(bl_input --default "${bcountry}" "Birth country (3 letter code)")
 	done
 
@@ -736,30 +736,33 @@ bl_pgpid_gen_key() {
 	local keyserv="hkps://keys.foopgp.org"
 	local helpmsg="
 Generate an OpenPGP key pair (public and secret) according to foopgp standards.
-Missing passphrase => passphrase asked interactively.
+Missing inputs are asked interactively.
 Output 3 lines for each fingerprints :
 * main key (Sign Certify)
 * decryption key (Encrypt)
 * authentication key (Auth)
 
 Options:
-  -n, --name PSEUDONYM             Common name or pseudonym (default: first part of email)
-  -c, --comment U4|U5              Comment field, expect an udid4, regex: ${BL_PGPID_U4_REGEX}
-  -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key
+  -N, --name PSEUDONYM             Common name or pseudonym (default: first part of email)
+  -c, --comment U4|U5              First part of comment field MUST be a pgpid string. Confer \$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
+  -C, --extra-comment COMMENT      Comment (second part of comment field, free to use).
+  -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage).
   -P, --passfrom FILE              Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -e, --expiration YEARS           Number of years before certificate expiration (default: 11 -> $(date -I -d "+11 years"))
   -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: $keyserv)
   -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
 "
-	local email passphrase pseudo comment
+	local email passphrase pseudo pgpidu pgpidugiven extracomment
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local expire=11 verify=""
 	for ((;$#;)) ; do
 		case "$1" in
-			-n|--name*)
+			-n|-N|--name*)
 				shift ; pseudo=$1 ;;
 			-c|--comment)
-				shift ; comment=$1 ;;
+				shift ; pgpidu=$1 ; pgpidugiven="." ;;
+			-C|--extracomment|--extra-comment)
+				shift ; extracomment=$1 ;; # TODO: (maybe) sanitize this input (removing '\' '(' ')' ... ) ? 
 			-p|--passphrase)
 				shift ; passphrase=$1 ;;
 			-P|--passfrom|--pass-from)
@@ -790,22 +793,21 @@ Options:
 #TODO: implement --verify to check input and ask when incoherent or missing.
 #TODO (also): check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.2.27 libgcrypt 1.8.8)
 
-	[[ "$passphrase" ]] || passphrase=$(bl_new_password "Passphrase")
-	[[ "$passphrase" ]] || { printf "%s: Error: Passphrase can't be empty at this stage.\n" "$FUNCNAME" >&2 ; return 2 ;}
+	if [[ "$pgpidu" =~ ${BL_PGPID_U4_REGEX} ]] ; then
+		pgpidu="u4=${BASH_REMATCH[0]}"
+	elif [[ "$pgpidu" =~ ${BL_PGPID_U5_REGEX} ]] ; then
+		pgpidu="u5=${BASH_REMATCH[0]}"
+	elif [[ "$pgpidugiven" ]] ; then
+		printf "%s: Error: No pgpid string in given '%s'.\n" "$FUNCNAME" "$pgpidu" >&2
+		return 2
+	else
+		pgpidu="u4=$(bl_pgpid_gen_u4 --verify)"
+	fi
 
 	[[ "$pseudo" ]] || pseudo=${email%%@*}
 
-	if [[ "$comment" =~ ${BL_PGPID_U4_REGEX} ]] ; then
-		comment="u4=${BASH_REMATCH[0]}"
-	elif [[ "$comment" =~ ${BL_PGPID_U5_REGEX} ]] ; then
-		comment="u5=${BASH_REMATCH[0]}"
-	elif [[ "$comment" =~ ${BL_PGPID_N2_REGEX} ]] ; then
-		comment="n2=${BASH_REMATCH[0]}"
-	elif [[ -z "$comment" ]] ; then
-		comment="generated with $name"
-	else
-		printf "%s: Notice: unexpected comment: %s\n" "$FUNCNAME" "$comment" >&2
-	fi
+	[[ "$passphrase" ]] || passphrase=$(bl_new_password "Passphrase")
+	[[ "$passphrase" ]] || { printf "%s: Error: Passphrase can't be empty at this stage.\n" "$FUNCNAME" >&2 ; return 2 ;}
 
 	local genkey_batch="
 %echo Generating OpenPGP key for ${email}
@@ -816,7 +818,7 @@ Subkey-Type: ecdh
 Subkey-Curve: Curve25519
 Subkey-Usage: encrypt
 Name-Real: ${pseudo}
-Name-Comment: ${comment}
+Name-Comment: ${pgpidu} ${extracomment}
 Name-Email: ${email}
 Expire-Date: $(date -I -d "+$expire years")
 Passphrase: ${passphrase}
