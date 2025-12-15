@@ -987,7 +987,7 @@ Options:
 
 	# Try Import/Refresh Key from URL metadata (as email may be in public certificate only)
 	aaname[pgpid_certurl]=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
-	[[ "${aaname[pgpid_certurl]}" != "[not set]" ]] || aaname[pgpid_certurl]=""
+	[[ "${aaname[pgpid_certurl]}" != "[not set]" ]] || aaname[pgpid_certurl]=""
 	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
 		printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${aaname[pgpid_certurl]}" >&2
 		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import-options keep-ownertrust,import-clean --import ; then
@@ -1029,7 +1029,8 @@ Options:
 	(( ${#ids[@]} < 2 )) || { printf "%s: Error: supernumerary %s (%s)\n" "$FUNCNAME" "id" "${ids[*]}" >&2 ; return 1 ;}
 	aaname[pgpid_id]="${ids[0]}"
 
-	# If "Name of cardholder" hasn't been set, generate username from pgpid_email
+	# If "Name of cardholder" hasn't been set or is empty, generate username from pgpid_email
+	[[ "${aaname[pgpid_name]}" != "[not set]" ]] || aaname[pgpid_name]=""
 	[[ "${aaname[pgpid_name]}" ]] || aaname[pgpid_name]="${aaname[pgpid_email]%%@*}"
 
 	aaname[token_fullversion]="${ttype}_${tversion}"
