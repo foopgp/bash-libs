@@ -35,6 +35,10 @@ if [[ "$1" == --bash-completion ]] ; then
 			--frontend)
 				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
 				return 0 ;;
+			--*from)
+				compopt -o plusdirs
+				COMPREPLY=( $(compgen -A file -- $cur) )
+				return 0 ;;
 			--homedir)
 				compopt -o plusdirs
 				COMPREPLY=( $(compgen -A directory -- $cur) )
@@ -886,7 +890,7 @@ Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.
 Ouput last 2 *.jpg inside working directory
 
 Options:
-  -A, --add IMAGE             Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image)
+  -A, --addfrom IMAGE         Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image)
   -R, --revoke                Just revoke all existing images inside OpenPGP certificate.
   -W, --workdir DIRECTORY     Working directory. Will contain previous and new resized images (default: $tmpdir).
   -k, --keyserver KEYSERVER   If non-empty, send updated certificate to this keyserver (default: $keyserv)
@@ -897,7 +901,7 @@ Options:
 	local expire=11 verify=""
 	for ((;$#;)) ; do
 		case "$1" in
-			-A|--add)
+			-A|--add|--addfrom|--add-from)
 				shift ; image=$1 ;&
 			-R|--revoke)
 				revoke="." ;;
@@ -923,8 +927,8 @@ Options:
 
 	mkdir -p "$tmpdir" || return $?
 
-	# Backup existing (non-revoked) photos and get fingerprints
-	fprs=($(gpg --homedir "$gpghome" --list-key --list-options show-photos --photo-viewer "cp -v %i ${tmpdir@Q}/\$(md5sum %i | head -c 32).%t > /proc/$$/fd/2 2>&1" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
+	# Backup existing photos and get fingerprints
+	fprs=($(gpg --homedir "$gpghome" --list-key --list-options show-photos,show-unusable-uids --photo-viewer "cp -v %i ${tmpdir@Q}/\$(md5sum %i | head -c 32).%t > /proc/$$/fd/2 2>&1" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
 	(( ${#fprs[@]} > 0 )) || { printf "%s: Error: No certificate for user '%s'.\n" "$FUNCNAME" "$user" >&2 ; return 1 ;}
 
 	# Resize image
