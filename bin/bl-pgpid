@@ -442,8 +442,8 @@ Options:
 }
 
 _bl_pgp_get_seckeyid() {
-	local helpmsg="Usage: $FUNCNAME
-Call 'gpg --with-colon' and ouput exportable secret keys, one by line:
+	local helpmsg="Usage: $FUNCNAME [NAME|U4|U5|EMAIL]
+Call 'gpg --with-colon' and ouput exportable secret keys (all if no argument), one by line:
 KeyID     Creation_Date    Public_Key_Algorithm
 
 Options:
@@ -472,7 +472,7 @@ Options:
 	local -A record
 
 	# Confer https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=blob_plain;f=doc/DETAILS
-	gpg --homedir "$gpghome" --list-secret-keys --with-colons | grep "^sec:" | while	IFS=':' read record[Type] record[Validity] record[KeyLenght] record[PubKeyAlgo] record[KeyID] record[CreationDate] record[ExpirationDate] record[Field8] record[Ownertrust] record[UserID] record[SignatureClass] record[KeyCapabilities] record[Field13] record[Flags] record[TockenSN] record[HashAlgo] record[CurveName] record[ComplianceFlags] record[LastUpdate] record[Origin] record[Comment] record[rfu] ; do
+	gpg --homedir "$gpghome" --list-secret-keys --with-colons $1 | grep "^sec:" | while	IFS=':' read record[Type] record[Validity] record[KeyLenght] record[PubKeyAlgo] record[KeyID] record[CreationDate] record[ExpirationDate] record[Field8] record[Ownertrust] record[UserID] record[SignatureClass] record[KeyCapabilities] record[Field13] record[Flags] record[TockenSN] record[HashAlgo] record[CurveName] record[ComplianceFlags] record[LastUpdate] record[Origin] record[Comment] record[rfu] ; do
 		if eval "$filtertest" ; then
 			if ! pkaindex=$((${record[PubKeyAlgo]})) ; then
 				printf "%s: Error: Unexpected field 4 (Public Key Algorithm)\n" "$FUNCNAME"  >&2
@@ -482,6 +482,40 @@ Options:
 		fi
 	done
 	return ${PIPESTATUS[0]}
+}
+
+_bl_pgp_choose_seckeyid() {
+	local helpmsg="Usage: $FUNCNAME
+If there is more than one available seckeys, ask for seckeyid to choose.
+If no error, output the KeyID of a secret key
+
+Options:
+  -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
+"
+	local keyid gpghome=${GNUPGHOME:-~/.gnupg}
+	for ((;$#;)) ; do
+		case "$1" in
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-h|--h*) echo "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local -a seckeyids
+	mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome")
+	((${#seckeyids[@]}>0)) || { printf "%s: Error: No editable OpenPGP certificate (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
+	if ((${#seckeyids[@]}==1)) ; then
+		keyid=${seckeyids[0]}
+		printf "%s: Notice: Choosing the only one editable OpenPGP certificate (%s).\n" "$FUNCNAME" "$keyid" >&2
+	else
+		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of the OpenPGP certificate you want to change" "${seckeyids[@]}")"
+	fi
+	echo "${keyid%% *}"
 }
 
 ### public functions / program actions ###
@@ -526,7 +560,7 @@ People have to check, and fix when NOK.
 
 	if ! _bl_icao9303_mrz_analyse $uncheck mrza "$@" ; then
 		printf "%s: Error: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" >&2
-			return 1
+		return 1
 	fi
 
 	if ! allnames=$(LC_COLLATE="C.UTF-8" grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${mrza[all_names]}" ) ; then
@@ -752,6 +786,7 @@ Options:
   -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: $keyserv)
   -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
 "
+	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
 	local email passphrase pseudo pgpidu pgpidugiven extracomment
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local expire=11 verify=""
@@ -762,7 +797,7 @@ Options:
 			-c|--comment)
 				shift ; pgpidu=$1 ; pgpidugiven="." ;;
 			-C|--extracomment|--extra-comment)
-				shift ; extracomment=$1 ;; # TODO: (maybe) sanitize this input (removing '\' '(' ')' ... ) ? 
+				shift ; extracomment=$1 ;;
 			-p|--passphrase)
 				shift ; passphrase=$1 ;;
 			-P|--passfrom|--pass-from)
@@ -843,37 +878,36 @@ bl_pgpid_avatar() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local tmpdir="/tmp/$FUNCNAME.$USER"
-	local usage="Usage: $name [OPTIONS]... [IMAGE]"
+	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
 	local keyserv #="hkps://keys.foopgp.org"
 	local helpmsg="
-Resize and add new IMAGE inside OpenPGP certificate (and revoke any previous image)
-If IMAGE argument is non-existant or empty (\"\"), just revoke existing image(s).
-Missing --user => KEYID is asked interactively.
+Extract and/or add image from/to OpenPGP certificate
+Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.
+Ouput last 2 *.jpg inside working directory
 
 Options:
-  -u, --user NAME|KEYID|U4|U5 User for the avatar edition (or extraction).
+  -A, --add IMAGE             Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image)
+  -R, --revoke                Just revoke all existing images inside OpenPGP certificate.
   -W, --workdir DIRECTORY     Working directory. Will contain previous and new resized images (default: $tmpdir).
-  -w, --onlyimagework         Only copy previous image and new resized image in working directory.
-  -k, --keyserver KEYSERVER   If non-empty, send new certificate to this keyserver (default: $keyserv)
+  -k, --keyserver KEYSERVER   If non-empty, send updated certificate to this keyserver (default: $keyserv)
   -H, --homedir GNUPGHOME     GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME.
 "
-	local user passphrase onlywork
+	local image revoke
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local expire=11 verify=""
 	for ((;$#;)) ; do
 		case "$1" in
-			-u|--user)
-				shift ; user=$1 ;;
+			-A|--add)
+				shift ; image=$1 ;&
+			-R|--revoke)
+				revoke="." ;;
 			-W|--tmpdir|--workdir)
 				shift
 				tmpdir=$1 ;;
-			-w|--only-image-work|--onlyimagework)
-				onlywork="." ;;
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
 				shift ; gpghome=$1 ;;
-			-v|--verify) verify=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -883,55 +917,144 @@ Options:
 		shift
 	done
 
-	local image fpr
-	image="$1"
+	local user fprs
 
-	if [[ -z "$user" ]] ; then
-		local -a seckeyids
-		mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome")
-		((${#seckeyids[@]}>0)) || { printf "%s: Error: No editable OpenPGP certificate (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
-		if ((${#seckeyids[@]}==1)) ; then
-			user=${seckeyids[0]}
-			printf "%s: Notice: Using the only one editable OpenPGP certificate (%s).\n" "$FUNCNAME" "$user" >&2
-		else
-			user="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of the OpenPGP certificate you want to change" "${seckeyids[@]}")"
-		fi
-		user="${user%% *}"
-	fi
+	[[ "$1" ]] && user=$1 || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
 
 	mkdir -p "$tmpdir" || return $?
 
-	# Backup existing (non-revoked) photos and get fingerprint
-	fpr=$(gpg --homedir "$gpghome" --list-key --list-options show-photos --photo-viewer "cp -v %i ${tmpdir@Q}/\$(md5sum %i | head -c 32).%t > /proc/$$/fd/2 2>&1" "$user" | grep -oEm 1 "[0-9ABCDEF]{40}" || true)
-	[[ "$fpr" ]] || { printf "%s: Error: No fingerprint for user '%s'.\n" "$FUNCNAME" "$user" >&2 ; return 1 ; }
+	# Backup existing (non-revoked) photos and get fingerprints
+	fprs=($(gpg --homedir "$gpghome" --list-key --list-options show-photos --photo-viewer "cp -v %i ${tmpdir@Q}/\$(md5sum %i | head -c 32).%t > /proc/$$/fd/2 2>&1" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
+	(( ${#fprs[@]} > 0 )) || { printf "%s: Error: No certificate for user '%s'.\n" "$FUNCNAME" "$user" >&2 ; return 1 ;}
 
 	# Resize image
-	[[ -z "$image" ]] || gm convert -geometry x180 "$image" jpeg:${tmpdir}/new.jpg || {  printf "%s: Error: Unable to resize image %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
+	[[ -z "$image" ]] || gm convert -geometry x180 "$image" jpeg:${tmpdir}/new.jpg || { printf "%s: Error: Unable to resize image %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
 
-	[[ -z "$onlywork" ]] || { find "${tmpdir}" -maxdepth 1 -type f >&2 ; return ;}
+	if [[ "$revoke" ]] ; then
+		(( ${#fprs[@]} < 2 )) || { printf "%s: Error: user '%s' match many certificates (%s)\n" "$FUNCNAME" "$user" "${fprs[*]}" >&2 ; return 1 ;}
 
-	local commands
-	# Revoke non-revoked photos
-	commands=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$fpr" | awk ' /^(uid|uat):/ { i+=1 }  /^uat:[^r]/ { printf "uid "i"\nrevuid\ny\n4\n\ny\nuid "i"\n" } END { if (i) printf "save\n" }')
-	[[ "$commands" ]] || { printf "%s: Error: No editable certificate for '%s' (in %s).\n" "$FUNCNAME" "$user" "$gpghome" >&2 ; return 1 ; }
+		local commands
+		# Revoke non-revoked photos
+		commands=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "${fprs[0]}" | awk ' /^(uid|uat):/ { i+=1 }  /^uat:[^r]/ { printf "uid "i"\nrevuid\ny\n4\n\ny\nuid "i"\n" } END { if (i) printf "save\n" }')
+		[[ "$commands" ]] || { printf "%s: Error: No editable certificate %s (in %s).\n" "$FUNCNAME" "'$user'" "$gpghome" >&2 ; return 1 ; }
 
-	if [[ "$commands" =~ ^uid ]] ; then
-		printf "%s: Notice: Revoking previous image(s) in %s certificate...\n" "$FUNCNAME" "$user" >&2
-		gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$fpr" 2> >(grep "image of size" | sort -u >&2) <<<"$commands" || { printf "%s: Error: Can't revoke - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
+		if [[ "$commands" =~ ^uid ]] ; then
+			printf "%s: Notice: Revoking %s inside %s certificate...\n" "$FUNCNAME" "previous image(s)" "$user" >&2
+			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "${fprs[0]}" 2> >(grep "image of size" | sort -u >&2) <<<"$commands" || { printf "%s: Error: Can't revoke - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
+		fi
+
+		if [[ "$image" ]] ; then
+			commands=$(printf "addphoto\n${tmpdir}/new.jpg\ny\nsave\n")
+			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "$image" "$user" >&2
+			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "${fprs[0]}" 2> >(grep "image of size" | sort -u >&2 ) <<<"$commands" || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "addphoto" >&2 ; return 1 ;}
+		fi
+
+		# Send new certificate to keyserver
+		[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "${fprs[0]}" || return 1
 	fi
 
-	# Add photo
-	if [[ "$image" ]] ; then
-		commands=$(printf "addphoto\n${tmpdir}/new.jpg\ny\nsave\n")
-		printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "$image" "$user" >&2
-		[[ -z "$image" ]] || gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$fpr" 2> >(grep "image of size" | sort -u >&2 ) <<<"$commands" || { printf "%s: Error: Can't addphoto - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
+	ls -t -r "$tmpdir"/*.jpg | tail -n 2
+	return "${PIPESTATUS[0]}"
+}
+
+bl_pgpid_email() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
+	local keyserv #="hkps://keys.foopgp.org"
+	local helpmsg="
+Display and add or revoke emails inside OpenPGP certificate.
+Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.
+Output usable emails (non-revoked and non-expired).
+
+Options:
+  -R, --revoke EMAIL          Revoke existing EMAIL (may be used more than once).
+  -A, --add EMAIL             Add EMAIL. Enable --name and --extra-comment options.
+  -N, --name PSEUDONYM        Common name or pseudonym beside new EMAIL (default: first part of email).
+  -C, --extra-comment COMMENT (Free to use part of) comment beside new EMAIL (default: \"\").
+  -k, --keyserver KEYSERVER   If non-empty, send updated certificate to this keyserver (default: $keyserv).
+  -H, --homedir GNUPGHOME     GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME.
+  -v, --verbose               Increase verbosity.
+"
+	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
+	local toadd torev pseudo extracomment
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local gpgfilter=false
+	for ((;$#;)) ; do
+		case "$1" in
+			-R|--rev|--revoke)
+				[[ "$2" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$2'" >&2 ; return 2 ;}
+				shift ; torev+=("$1") ;;
+			-A|--add)
+				[[ "$2" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$2'" >&2 ; return 2 ;}
+				shift ; toadd+=("$1") ;;
+			-N|--name)
+				shift ; pseudo=$1 ;;
+			-C|--extracomment|--extra-comment)
+				shift ; extracomment=" $1" ;;
+			-k|--keyserver)
+				shift ; keyserv=$1 ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-v|--verbose) gpgfilter="cat" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local user fprs
+
+	[[ "$1" ]] && user=$1 || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+
+	# Check that $user match only one certificate
+	local fprs
+	fprs=($(gpg --homedir "$gpghome" --list-key "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
+	(( ${#fprs[@]} > 0 )) || { printf "%s: Error: No certificate for user '%s'.\n" "$FUNCNAME" "$user" >&2 ; return 1 ;}
+	(( ${#fprs[@]} < 2 )) || { printf "%s: Error: user '%s' match many certificates (%s)\n" "$FUNCNAME" "$user" "${fprs[*]}" >&2 ; return 1 ;}
+	user=${fprs[0]}
+
+	if [[ "$torev" || "$toadd" ]] ; then
+		local uids email commands
+		# Get all uid/uat
+		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | grep -E "^(uid|uat):") || { printf "%s: Error: No editable certificate %s (in %s).\n" "$FUNCNAME" "$user" "$gpghome" >&2 ; return 1 ; }
 	fi
 
-	# Send new certificate to keyserver
-	[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "$fpr"
+	if [[ "$torev" ]] ; then
+		for email in "${torev[@]}" ; do
+			commands=$(awk "/^uid:[^r].*<$email>/ "'{ printf "uid "NR"\nrevuid\ny\n4\n\ny\nsave\n" }' <<<"$uids")
+			[[ "$commands" ]] || { printf "%s: Error: No revokable %s inside certificate %s (in %s).\n" "$FUNCNAME" "<$email>" "$user" "$gpghome" >&2 ; return 1 ; }
 
-	sleep 1 # to not mess stderr with slowest previous (grep | sort -u )
-	printf "%s: Info: Well done !\n" "$FUNCNAME" >&2
+			printf "%s: Notice: Revoking %s inside %s certificate...\n" "$FUNCNAME" "<$email>" "$user" >&2
+			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\[" | sort -u | sort -t'(' --key=2n ) <<<"$commands" || { printf "%s: Error: Can't revoke - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
+		done
+	fi
+
+	if [[ "$toadd" ]] ; then
+		local ids
+
+		ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4=\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5=\1,p" <<<"$uids" | sort -u))
+		(( ${#ids[@]} > 0 )) || { printf "%s: Error: No pgpid string (u4|u5) in %s certificate\n" "$FUNCNAME" "$user" >&2 ; return 1 ;}
+		(( ${#ids[@]} < 2 )) || { printf "%s: Error: supernumerary %s (%s)\n" "$FUNCNAME" "id" "${ids[*]}" >&2 ; return 1 ;}
+
+		# Add emails
+		for email in "${toadd[@]}" ; do
+			[[ "$pseudo" ]] || pseudo=${email%%@*}
+			commands=$(printf "adduid\n$pseudo\n$email\n${ids[0]}$extracomment\nsave\n")
+			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'$pseudo (${ids[0]}$extracomment) <$email>'" "$user" >&2
+			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^ *[A-Z«]" ) <<<"$commands" || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
+		done
+	fi
+
+	# Send updated certificate to keyserver
+	if [[ "$keyserv" ]] && [[ "$torev" || "$toadd" ]] ; then
+		gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "$user" || return 1
+	fi
+
+	gpg --list-key "$user"  | grep -o "<[^>]\+>" | grep -oE "${BL_INTERACTIVE_EMAIL_REGEX}"
 }
 
 bl_pgpid_token_check()

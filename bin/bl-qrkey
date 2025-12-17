@@ -12,7 +12,7 @@
 # shellcheck disable=SC2086 # Double quote warning
 # shellcheck disable=SC2128 # expanding array without index warning
 
-##TODO: check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.4.7 libgcrypt 1.11.0)
+##TODO: check gpg version, because compatibility may change (tested with gpg (GnuPG) 2.4.7 libgcrypt 1.11.0)
 
 if [[ "$1" == --bash-completion ]] ; then
 	BL_tmp_a=$("${BASH_SOURCE[0]}" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
