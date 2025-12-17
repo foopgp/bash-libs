@@ -677,7 +677,7 @@ Options:
 		j=0
 		while ! part="$(zbarcam -Sdisable -Sqrcode.enable --oneshot --prescale=640x480 "$v4ldevice" | tr -d '\n' | sed 's,QR-Code:,\n,g' | grep "^~[1-9]")" ; do
 			printf "%s: Notice: No QR code with expected data detected...\n" "$FUNCNAME" >&2
-			((++j < 4)) || break
+			((++j < 3)) || { printf "%s: Error: Giving up %s.\n" "$FUNCNAME" "'zbarcam (...) $v4ldevice'" >&2 ; return 1 ;}
 		done
 
 		if [[ "${part:1:1}" != "${qrversion:=${part:1:1}}" ]] ; then
