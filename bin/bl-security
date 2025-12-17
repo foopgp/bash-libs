@@ -166,10 +166,11 @@ Options:
 	mapfile -t files < <(find "$@" -type f)
 
 	if [[ -z "${files[*]}" ]] ; then
-		printf "%s: Notice: no file to shred\n" "$FUNCNAME" >&2
+		printf "%s: Error: no file to shred\n" "$FUNCNAME" >&2
+		return 2
 	else
 		if [[ "$farg" != -f ]] ; then
-			bl_yesno --default=no --text "$(printf "%s\n" "${files[@]@Q}")" "Shred this ${#files[@]} file(s)" || return 0
+			bl_yesno --default=no --text "$(printf "%s\n" "${files[@]@Q}")" "Shred this ${#files[@]} file(s)" || return 1
 		fi
 
 		for file in "${files[@]}" ; do
