@@ -885,22 +885,26 @@ bl_pgpid_avatar() {
 	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
 	local keyserv #="hkps://keys.foopgp.org"
 	local helpmsg="
-Extract and/or add image from/to OpenPGP certificate
+Extract and/or add image from/to OpenPGP certificate.
 Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.
-Ouput last 2 *.jpg inside working directory
+New IMAGE should be 180 pixel height, or it will be resized.
+Ouput path of last *.jpg file inside working directory.
 
 Options:
-  -A, --addfrom IMAGE         Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image)
+  -E, --extract-all           Extract also all revoked or expired existing images from OpenPGP certificate.
+  -A, --addfrom IMAGE         Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image).
   -R, --revoke                Just revoke all existing images inside OpenPGP certificate.
   -W, --workdir DIRECTORY     Working directory. Will contain previous and new resized images (default: $tmpdir).
-  -k, --keyserver KEYSERVER   If non-empty, send updated certificate to this keyserver (default: $keyserv)
+  -k, --keyserver KEYSERVER   If non-empty, send updated certificate to this keyserver (default: $keyserv).
   -H, --homedir GNUPGHOME     GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME.
 "
 	local image revoke
 	local gpghome=${GNUPGHOME:-~/.gnupg}
-	local expire=11 verify=""
+	local listopts="show-photos"
 	for ((;$#;)) ; do
 		case "$1" in
+			-E|--extract-all)
+				listopts+=",show-unusable-uids" ;;
 			-A|--add|--addfrom|--add-from)
 				shift ; image=$1 ;&
 			-R|--revoke)
@@ -928,11 +932,23 @@ Options:
 	mkdir -p "$tmpdir" || return $?
 
 	# Backup existing photos and get fingerprints
-	fprs=($(gpg --homedir "$gpghome" --list-key --list-options show-photos,show-unusable-uids --photo-viewer "cp -v %i ${tmpdir@Q}/\$(md5sum %i | head -c 32).%t > /proc/$$/fd/2 2>&1" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
-	(( ${#fprs[@]} > 0 )) || { printf "%s: Error: No certificate for user '%s'.\n" "$FUNCNAME" "$user" >&2 ; return 1 ;}
+	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "cp -v %i ${tmpdir@Q}/\$(md5sum %i | head -c 32).%t > /proc/$$/fd/2 2>&1" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
+	(( ${#fprs[@]} > 0 )) || { printf "%s: Error: No certificate for %s.\n" "$FUNCNAME" "'$user'" >&2 ; return 1 ;}
 
-	# Resize image
-	[[ -z "$image" ]] || gm convert -geometry x180 "$image" jpeg:${tmpdir}/new.jpg || { printf "%s: Error: Unable to resize image %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
+	if [[ "$image" ]] ; then
+		local height
+		# copy image to read it once if it was a fifo or /dev/stdin ...
+		cat "$image" > "$tmpdir/origin.image" || { printf "%s: Error: Can't retrieve image file %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
+		height=$(gm identify -format "%h" "$tmpdir/origin.image") || { printf "%s: Error: Unable to identify image %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
+		if ((height==180)) ; then
+			# Image has already the expected height, don't alter it.
+			mv "$tmpdir/origin.image" "$tmpdir/new.jpg" || return $?
+		else
+			# Resize
+			gm convert -geometry x180 "$tmpdir/origin.image" jpeg:"$tmpdir/new.jpg" || { printf "%s: Error: Unable to resize image %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
+			rm "$tmpdir/origin.image" || return $?
+		fi
+	fi
 
 	if [[ "$revoke" ]] ; then
 		(( ${#fprs[@]} < 2 )) || { printf "%s: Error: user '%s' match many certificates (%s)\n" "$FUNCNAME" "$user" "${fprs[*]}" >&2 ; return 1 ;}
@@ -957,7 +973,7 @@ Options:
 		[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "${fprs[0]}" || return 1
 	fi
 
-	ls -t -r "$tmpdir"/*.jpg | tail -n 2
+	ls -t "$tmpdir"/*.jpg | head -n 1
 	return "${PIPESTATUS[0]}"
 }
 
