@@ -1,0 +1,6 @@
+
+# EXEMPLE
+
+```bash
+$ bl-json from_var BASH_VERSINFO
+```

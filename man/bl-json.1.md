@@ -8,23 +8,25 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-JSON
 section: 1
 header: User Commands
-footer: bash-libs 0.1.9
+footer: bash-libs 0.1.10
 ---
 
 # NAME
 
-bl-json - manual page for bl-json 0.1.9
+bl-json - Use jq (Command-line JSON processor) to convert json data to
+bash variables or arrays, and vice-versa.
 
 # SYNOPSIS
 
-**bl-json** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
+**bl-json** \[*MAIN_OPTIONS*\]\... *ACTION *\[*OPTIONS*\]\...
+\[*ARGUMENTS*\]\...
 
 # DESCRIPTION
 
 Use jq (Command-line JSON processor) to convert json data to bash
 variables or arrays, and vice-versa.
 
-# OPTIONS
+## Main options:
 
 **-h**, **\--help**
 
@@ -54,8 +56,8 @@ to_var
 :   Output string to be put into bash variable or array.
 
  
-All actions support a **\--help** options, eg: \$ bl-json ACTION
-**\--help**
+All actions support a **\--help** options, eg: \$ bl-json
+from_str **\--help**
 
 bl-json is also bash library, see: \$ source bl-json **\--help**
 

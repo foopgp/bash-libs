@@ -140,7 +140,7 @@ Cf: https://www.gnu.org/prep/standards/standards.html#g_t_002d_002dversion
 ### General Help Messages ###
 
 BL_TEST_chelpmsg="
-Options:
+Main options:
   -h, --help               show help and exit/return
   -V, --version            show version and exit/return"
 
@@ -156,7 +156,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 		exit $?
 	fi
 
-	BL_TEST_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_TEST_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_TEST_shelpmsg="
 Actions:
 $(for f in "${BL_TEST_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
@@ -170,7 +170,7 @@ $ source $BASH_SOURCE --help"
 else
 	# run as a library (source $0)
 
-	BL_TEST_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+	BL_TEST_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
 
 	BL_TEST_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)

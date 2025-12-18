@@ -8,16 +8,18 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-QRKEY
 section: 1
 header: User Commands
-footer: bash-libs 0.1.9
+footer: bash-libs 0.1.10
 ---
 
 # NAME
 
-bl-qrkey - manual page for bl-qrkey 0.1.9
+bl-qrkey - Backup or restore OpenPGP keys using printed QR codes and
+Shamir\'s secret sharing.
 
 # SYNOPSIS
 
-**bl-qrkey** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
+**bl-qrkey** \[*MAIN_OPTIONS*\]\... *ACTION *\[*OPTIONS*\]\...
+\[*ARGUMENTS*\]\...
 
 # DESCRIPTION
 
@@ -26,7 +28,7 @@ secret sharing. Also facilitate changing passphrase protecting OpenPGP
 keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey,
 \...).
 
-# OPTIONS
+## Main options:
 
 **-f**, **\--frontend** PROGRAM
 
@@ -67,8 +69,8 @@ totoken
 :   Move OpenPGP secrets to security token (OpenPGP smartcard).
 
  
-All actions support a **\--help** options, eg: \$ bl-qrkey ACTION
-**\--help**
+All actions support a **\--help** options, eg: \$ bl-qrkey
+change_passphrase **\--help**
 
 bl-qrkey is also bash library, see: \$ source bl-qrkey
 **\--help**

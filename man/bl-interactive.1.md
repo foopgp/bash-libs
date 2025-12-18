@@ -8,23 +8,25 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-INTERACTIVE
 section: 1
 header: User Commands
-footer: bash-libs 0.1.9
+footer: bash-libs 0.1.10
 ---
 
 # NAME
 
-bl-interactive - manual page for bl-interactive 0.1.9
+bl-interactive - Help managing interactive choices, while supporting
+multiple frontends: NONE, whiptail or dialog.
 
 # SYNOPSIS
 
-**bl-interactive** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
+**bl-interactive** \[*MAIN_OPTIONS*\]\... *ACTION *\[*OPTIONS*\]\...
+\[*ARGUMENTS*\]\...
 
 # DESCRIPTION
 
 Help managing interactive choices, while supporting multiple frontends:
 NONE, whiptail or dialog.
 
-# OPTIONS
+## Main options:
 
 **-f**, **\--frontend** PROGRAM
 
@@ -59,7 +61,7 @@ radiolist
 
  
 All actions support a **\--help** options, eg: \$ bl-interactive
-ACTION **\--help**
+msgstop **\--help**
 
 bl-interactive is also bash library, see: \$ source
 ../bin/bl-interactive **\--help**

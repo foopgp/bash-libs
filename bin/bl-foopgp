@@ -310,7 +310,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
 	declare -r BL_FOOPGP_isprogram=1
 
-	BL_FOOPGP_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_FOOPGP_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_FOOPGP_shelpmsg="
   -h, --help               show help and exit
   -V, --version            show version and exit
@@ -319,7 +319,7 @@ Actions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:10}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help options, eg:
-$ $BASH_SOURCE ACTION --help
+$ $BASH_SOURCE ${BL_FOOPGP_FUNCTIONS:10} --help
 
 $BL_FOOPGP_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
@@ -327,7 +327,7 @@ $ source $BASH_SOURCE --help
 else
 	# run as a library (source $0)
 
-	BL_FOOPGP_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+	BL_FOOPGP_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
 
 	BL_FOOPGP_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
@@ -342,7 +342,7 @@ fi
 BL_FOOPGP_chelpmsg="
 Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
 
-Options:
+Main options:
   -v, --verbose            output important infos on stderr, like stingynalty value
   -s, --stingynalty VALUE  set STINGYNALTY ($(date --iso-8601 | head -c 7): $BL_FOOPGP_STINGYNALTY)
   -d, --date STRING        set STINGYNALTY according to given date (cf. <https://www.gnu.org/software/coreutils/date>)

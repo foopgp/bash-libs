@@ -8,18 +8,21 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-TEST
 section: 1
 header: User Commands
-footer: bash-libs 0.1.9
+footer: bash-libs 0.1.10
 ---
 
 # NAME
 
-bl-test - manual page for bl-test 0.1.9
+bl-test - Main options:
 
 # SYNOPSIS
 
-**bl-test** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
+**bl-test** \[*MAIN_OPTIONS*\]\... *ACTION *\[*OPTIONS*\]\...
+\[*ARGUMENTS*\]\...
 
-# OPTIONS
+# DESCRIPTION
+
+## Main options:
 
 **-h**, **\--help**
 

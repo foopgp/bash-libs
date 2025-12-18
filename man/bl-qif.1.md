@@ -8,18 +8,21 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-QIF
 section: 1
 header: User Commands
-footer: bash-libs 0.1.9
+footer: bash-libs 0.1.10
 ---
 
 # NAME
 
-bl-qif - manual page for bl-qif 0.1.9
+bl-qif - Main options:
 
 # SYNOPSIS
 
-**bl-qif** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
+**bl-qif** \[*MAIN_OPTIONS*\]\... *ACTION *\[*OPTIONS*\]\...
+\[*ARGUMENTS*\]\...
 
-# OPTIONS
+# DESCRIPTION
+
+## Main options:
 
 **-h**, **\--help**
 
@@ -31,26 +34,26 @@ bl-qif - manual page for bl-qif 0.1.9
 
 ## Actions:
 
-qif_tobash
+tobash
 
 :   Convert each qif entry to a \"declare **-A** \...\" statement to be
     loaded with eval.
 
-qif_tojournal
+tojournal
 
 :   Reorganize qif entries to maintain coherent monthly journal
 
-qif_stat
+stat
 
 :   Extract stats from Given .qif files
 
-qif_tofecp4
+tofecp4
 
 :   Parse qif file, and ask some questions for each entries to manage
     foopgp tokens, expenses, inventory\....
 
  
-All actions support a **\--help** options, eg: \$ bl-qif ACTION
+All actions support a **\--help** options, eg: \$ bl-qif tobash
 **\--help**
 
 bl-qif is also bash library, see: \$ source bl-qif **\--help**

@@ -302,7 +302,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
 	declare -r BL_JSON_isprogram=1
 
-	BL_JSON_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_JSON_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_JSON_shelpmsg="
   -h, --help               show help and exit
   -V, --version            show version and exit
@@ -311,14 +311,14 @@ Actions:
 $(for f in "${BL_JSON_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:8}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help options, eg:
-$ $BASH_SOURCE ACTION --help
+$ $BASH_SOURCE ${BL_JSON_FUNCTIONS:8} --help
 
 $BL_JSON_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"
 else
 	# run as a library (source $0)
 
-	BL_JSON_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+	BL_JSON_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
 
 	BL_JSON_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
@@ -332,7 +332,7 @@ fi
 BL_JSON_chelpmsg="
 Use jq (Command-line JSON processor) to convert json data to bash variables or arrays, and vice-versa.
 
-Options:"
+Main options:"
 
 ### Init ###
 
