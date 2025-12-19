@@ -747,7 +747,7 @@ Options:
 bl_qrkey_totoken() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local hkpsserv="keys.foopgp.org"
+	local hkpsserv=${BL_PGPID_KEYSERVERS[0]##*//}
 	local lang="${LANG:: 2}"
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 	local helpmsg="
@@ -843,51 +843,23 @@ Options:
 
 	printf "%s: Notice: Resetting OpenPGP security token...\n" "$FUNCNAME" >&2
 
-	echo "admin
-factory-reset
-y
-yes
-quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --card-edit 2> >( $gpgfilter ) || { printf "Factory Reset OpenPGP card FAIL ($?)\n" >&2 ; return 1 ;}
+	echo -e "admin\nfactory-reset\ny\nyes\nquit" | \
+	gpg --homedir "$gpghome" --command-fd 0 --batch --card-edit 2> >( $gpgfilter ) || { printf "Factory Reset OpenPGP card FAIL ($?)\n" >&2 ; return 1 ;}
 
 	printf "%s: Notice: Configuring OpenPGP security token...\n" "$FUNCNAME" >&2
 
-	echo "admin
-login
-id=u4${udid4[0]}
-url
-https://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}
-lang
-$lang
-name
-${emails[0]}
-${username}
-" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" >&2 ; return 1 ;}
+	echo -e "admin\nlogin\nid=u4${udid4[0]}\nurl\nhttps://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}\nlang\n$lang\nname\n${emails[0]}\n${username}\n" | \
+	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" >&2 ; return 1 ;}
 
-echo "admin
-key-attr
-2
-1
-2
-1
-2
-1
-quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card keys attributes FAIL ($?)\n" >&2 ; return 1 ;}
+	echo -e "admin\nkey-attr\n2\n1\n2\n1\n2\n1\nquit" | \
+	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card keys attributes FAIL ($?)\n" >&2 ; return 1 ;}
 
 #TODO WKS address calculated from email
 
 	printf "%s: Notice: Moving OpenPGP secrets to security token...\n" "$FUNCNAME" >&2
 
-echo "keytocard
-y
-1
-key 1
-keytocard
-2
-key 1
-key 2
-keytocard
-3
-save " | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --edit-key "${keyid}" 2> >( $gpgfilter ) || { printf "Moving OpenPGP keys to card FAIL ($?)\n" >&2 ; return 1 ;}
+	echo -e "keytocard\ny\n1\nkey 1\nkeytocard\n2\nkey 1\nkey 2\nkeytocard\n3\nsave" | \
+	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --edit-key "${keyid}" 2> >( $gpgfilter ) || { printf "Moving OpenPGP keys to card FAIL ($?)\n" >&2 ; return 1 ;}
 
 	# Change default PIN and Admin code
 	local pincode admincode

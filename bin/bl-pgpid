@@ -323,6 +323,10 @@ declare -Ar BL_PGPID_COORDINATES=(
 
 ### Default option values ###
 
+BL_PGPID_KEYSERVERS=(
+"hkps://keys.foopgp.org"
+)
+
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-interactive --
@@ -771,7 +775,7 @@ bl_pgpid_gen_key() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... EMAIL"
-	local keyserv="hkps://keys.foopgp.org"
+	local keyserv=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
 Generate an OpenPGP key pair (public and secret) according to foopgp standards.
 Missing inputs are asked interactively.
@@ -883,7 +887,7 @@ bl_pgpid_avatar() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local tmpdir="/tmp/$FUNCNAME.$USER"
 	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
-	local keyserv #="hkps://keys.foopgp.org"
+	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
 Extract and/or add image from/to OpenPGP certificate.
 Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.
@@ -981,7 +985,7 @@ bl_pgpid_email() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
-	local keyserv #="hkps://keys.foopgp.org"
+	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
 Display and add or revoke emails inside OpenPGP certificate.
 Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.

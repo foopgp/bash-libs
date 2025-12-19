@@ -77,10 +77,6 @@ declare -r BL_DJIBIAN_EXTRA_GROUPS="cdrom,floppy,audio,dip,video,plugdev,netdev,
 
 ### Default option values ###
 
-BL_DJIBIAN_KEYSERVERLIST=(
-	"hkps://keys.foopgp.org/"
-)
-
 ### external functions ###
 
 # shellcheck source=bl-interactive
@@ -301,35 +297,6 @@ Options:
 	ret=$((ret+${PIPESTATUS[0]}))
 
 	return "$ret"
-}
-
-
-
-_wip_bl_djibian_addpgpuser()
-{
-	local name
-	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] [UDID4] ..."
-	local helpmsg="
-You may pass a foopgp UDID4 as an argument, as ouput is calculated from it.
-
-Options:
-  -s, --surname SURNAME            Surname/family name at birth
-  -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
-  -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
-  -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
-"
-	for ((;$#;)) ; do
-		case "$1" in
-			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
-			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
-			*) break ;;
-		esac
-		shift
-	done
-	return $ret
 }
 
 ### General Help Messages ###
