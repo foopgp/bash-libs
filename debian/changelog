@@ -1,3 +1,23 @@
+bash-libs (0.1.11-1) unstable; urgency=medium
+
+  [ JJ ]
+  * bl-pgpid token_check: improve stderr
+  * Modify (unused and undocumented futur) 'u5' (BL_PGPID_U5_REGEX)
+  * bl_input(): add --iso-8601 and --utc-iso-8601 options to manage date/time
+  * bl_pgpid_gen_key() now force u4|u5 existence + use new option --iso-8601
+  * bl_pgpid_token_check(): fix bug when pgpid_certurl or pgpid_name are '[not set]'
+  * shred_path: Make it returns non-zero when expected.
+  * bl_qrkey_scan(): Make it error returns after 3 zbarcam attempts
+  * bl_pgpid_avatar() + new bl_pgpid_email() seems OK (still experimental btw)
+  * now bl_pgpid_avatar also extract revoked photos + improve completion
+  * bl_pgpid_avatar(): add --extract-all option + don't resize input image with expected format (x180)
+  * improve in-source doc, generate manpages
+  * code cleaning
+  * bl_pgpid_gen_u4(): use date --iso-8601 --date to format mrza[date_of_birth]
+  * update manpages
+
+ -- piseb <piseb@mailo.com>  Fri, 19 Dec 2025 12:55:39 +0100
+
 bash-libs (0.1.9-2) unstable; urgency=medium
 
   [ jjbrucker ]
