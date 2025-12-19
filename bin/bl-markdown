@@ -95,7 +95,7 @@ _bl_md_todecnum2() {
 
 bl_md_arraytobash() {
 	local name
-	((BL_MD_isprogram)) && name="$BL_MD_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_MD_isprogram)) && name="$BL_MD_NAME ${FUNCNAME:6}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [FIELD_NAMES]..."
 	local helpmsg="
 Expect stdin to be a markdwon array (with or whithout header), and convert each line of this array to a  \"declare -A ...\" statement to be loaded with eval.
@@ -178,7 +178,7 @@ Options:
 
 bl_md_arrayfrombash() {
 	local name
-	((BL_MD_isprogram)) && name="$BL_MD_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
+	((BL_MD_isprogram)) && name="$BL_MD_NAME ${FUNCNAME:6}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [FIELD_NAMES]..."
 	local helpmsg="
 Expect stdin to be lines of \"declare -A ...\" statement with the identical indexes/fieldnames.
@@ -252,23 +252,22 @@ Options:
 	done
 }
 
-
 ### General Help Messages ###
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
 	declare -r BL_MD_isprogram=1
 
-	BL_MD_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_MD_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_MD_shelpmsg="
   -h, --help               show help and exit
   -V, --version            show version and exit
 
 Actions:
-$(for f in "${BL_MD_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in "${BL_MD_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:6}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help options, eg:
-$ $BASH_SOURCE ACTION --help
+$ $BASH_SOURCE ${BL_MD_FUNCTIONS:6} --help
 
 $BL_MD_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
@@ -276,7 +275,7 @@ $ source $BASH_SOURCE --help
 else
 	# run as a library (source $0)
 
-	BL_MD_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+	BL_MD_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
 
 	BL_MD_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
@@ -291,7 +290,7 @@ fi
 BL_MD_chelpmsg="
 Manipulate [markdown](https://en.wikipedia.org/wiki/Markdown). Today, only converts: markdown arrays <> bash arrays.
 
-Options:"
+Main options:"
 
 ### Init ###
 

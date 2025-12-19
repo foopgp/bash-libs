@@ -8,22 +8,23 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-DJIBIAN
 section: 1
 header: User Commands
-footer: bash-libs 0.1.9
+footer: bash-libs 0.1.11
 ---
 
 # NAME
 
-bl-djibian - manual page for bl-djibian 0.1.9
+bl-djibian - System tools for Djibian GNU/Linux. Mainly to manage users.
 
 # SYNOPSIS
 
-**bl-djibian** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
+**bl-djibian** \[*MAIN_OPTIONS*\]\... *ACTION *\[*OPTIONS*\]\...
+\[*ARGUMENTS*\]\...
 
 # DESCRIPTION
 
 System tools for Djibian GNU/Linux. Mainly to manage users.
 
-# OPTIONS
+## Main options:
 
 **-f**, **\--frontend** PROGRAM
 
@@ -52,7 +53,7 @@ admins
 
  
 All actions support a **\--help** options, eg: \$ bl-djibian
-ACTION **\--help**
+adduser **\--help**
 
 bl-djibian is also bash library, see: \$ source bl-djibian
 **\--help**

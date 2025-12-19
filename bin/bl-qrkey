@@ -12,7 +12,7 @@
 # shellcheck disable=SC2086 # Double quote warning
 # shellcheck disable=SC2128 # expanding array without index warning
 
-##TODO: check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.4.7 libgcrypt 1.11.0)
+##TODO: check gpg version, because compatibility may change (tested with gpg (GnuPG) 2.4.7 libgcrypt 1.11.0)
 
 if [[ "$1" == --bash-completion ]] ; then
 	BL_tmp_a=$("${BASH_SOURCE[0]}" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
@@ -677,7 +677,7 @@ Options:
 		j=0
 		while ! part="$(zbarcam -Sdisable -Sqrcode.enable --oneshot --prescale=640x480 "$v4ldevice" | tr -d '\n' | sed 's,QR-Code:,\n,g' | grep "^~[1-9]")" ; do
 			printf "%s: Notice: No QR code with expected data detected...\n" "$FUNCNAME" >&2
-			((++j < 4)) || break
+			((++j < 3)) || { printf "%s: Error: Giving up %s.\n" "$FUNCNAME" "'zbarcam (...) $v4ldevice'" >&2 ; return 1 ;}
 		done
 
 		if [[ "${part:1:1}" != "${qrversion:=${part:1:1}}" ]] ; then
@@ -747,7 +747,7 @@ Options:
 bl_qrkey_totoken() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local hkpsserv="keys.foopgp.org"
+	local hkpsserv=${BL_PGPID_KEYSERVERS[0]##*//}
 	local lang="${LANG:: 2}"
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 	local helpmsg="
@@ -843,51 +843,23 @@ Options:
 
 	printf "%s: Notice: Resetting OpenPGP security token...\n" "$FUNCNAME" >&2
 
-	echo "admin
-factory-reset
-y
-yes
-quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --card-edit 2> >( $gpgfilter ) || { printf "Factory Reset OpenPGP card FAIL ($?)\n" >&2 ; return 1 ;}
+	echo -e "admin\nfactory-reset\ny\nyes\nquit" | \
+	gpg --homedir "$gpghome" --command-fd 0 --batch --card-edit 2> >( $gpgfilter ) || { printf "Factory Reset OpenPGP card FAIL ($?)\n" >&2 ; return 1 ;}
 
 	printf "%s: Notice: Configuring OpenPGP security token...\n" "$FUNCNAME" >&2
 
-	echo "admin
-login
-id=u4${udid4[0]}
-url
-https://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}
-lang
-$lang
-name
-${emails[0]}
-${username}
-" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" >&2 ; return 1 ;}
+	echo -e "admin\nlogin\nid=u4${udid4[0]}\nurl\nhttps://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}\nlang\n$lang\nname\n${emails[0]}\n${username}\n" | \
+	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" >&2 ; return 1 ;}
 
-echo "admin
-key-attr
-2
-1
-2
-1
-2
-1
-quit" | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card keys attributes FAIL ($?)\n" >&2 ; return 1 ;}
+	echo -e "admin\nkey-attr\n2\n1\n2\n1\n2\n1\nquit" | \
+	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card keys attributes FAIL ($?)\n" >&2 ; return 1 ;}
 
 #TODO WKS address calculated from email
 
 	printf "%s: Notice: Moving OpenPGP secrets to security token...\n" "$FUNCNAME" >&2
 
-echo "keytocard
-y
-1
-key 1
-keytocard
-2
-key 1
-key 2
-keytocard
-3
-save " | gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --edit-key "${keyid}" 2> >( $gpgfilter ) || { printf "Moving OpenPGP keys to card FAIL ($?)\n" >&2 ; return 1 ;}
+	echo -e "keytocard\ny\n1\nkey 1\nkeytocard\n2\nkey 1\nkey 2\nkeytocard\n3\nsave" | \
+	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --edit-key "${keyid}" 2> >( $gpgfilter ) || { printf "Moving OpenPGP keys to card FAIL ($?)\n" >&2 ; return 1 ;}
 
 	# Change default PIN and Admin code
 	local pincode admincode
@@ -915,7 +887,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
 	declare -r BL_QRKEY_isprogram=1
 
-	BL_QRKEY_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_QRKEY_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_QRKEY_shelpmsg="
   -h, --help               show help and exit
   -V, --version            show version and exit
@@ -924,7 +896,7 @@ Actions:
 $(for f in "${BL_QRKEY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help options, eg:
-$ $BASH_SOURCE ACTION --help
+$ $BASH_SOURCE ${BL_QRKEY_FUNCTIONS:9} --help
 
 $BL_QRKEY_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
@@ -932,7 +904,7 @@ $ source $BASH_SOURCE --help
 else
 	# run as a library (source $0)
 
-	BL_QRKEY_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+	BL_QRKEY_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
 
 	BL_QRKEY_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
@@ -948,7 +920,7 @@ BL_QRKEY_chelpmsg="
 Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
 Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, ...).
 
-Options:
+Main options:
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"
 
 ### Init ###

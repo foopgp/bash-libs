@@ -77,10 +77,6 @@ declare -r BL_DJIBIAN_EXTRA_GROUPS="cdrom,floppy,audio,dip,video,plugdev,netdev,
 
 ### Default option values ###
 
-BL_DJIBIAN_KEYSERVERLIST=(
-	"hkps://keys.foopgp.org/"
-)
-
 ### external functions ###
 
 # shellcheck source=bl-interactive
@@ -303,42 +299,13 @@ Options:
 	return "$ret"
 }
 
-
-
-_wip_bl_djibian_addpgpuser()
-{
-	local name
-	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] [UDID4] ..."
-	local helpmsg="
-You may pass a foopgp UDID4 as an argument, as ouput is calculated from it.
-
-Options:
-  -s, --surname SURNAME            Surname/family name at birth
-  -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
-  -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
-  -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
-"
-	for ((;$#;)) ; do
-		case "$1" in
-			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
-			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
-			*) break ;;
-		esac
-		shift
-	done
-	return $ret
-}
-
 ### General Help Messages ###
 
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
 	declare -r BL_DJIBIAN_isprogram=1
 
-	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)
   -h, --help               show help and exit
@@ -348,7 +315,7 @@ Actions:
 $(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:11}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help options, eg:
-$ $BASH_SOURCE ACTION --help
+$ $BASH_SOURCE ${BL_DJIBIAN_FUNCTIONS:11} --help
 
 $BL_DJIBIAN_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
@@ -356,7 +323,7 @@ $ source $BASH_SOURCE --help
 else
 	# run as a library (source $0)
 
-	BL_DJIBIAN_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+	BL_DJIBIAN_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
 
 	BL_DJIBIAN_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
@@ -371,7 +338,7 @@ fi
 BL_DJIBIAN_chelpmsg="
 System tools for Djibian GNU/Linux. Mainly to manage users.
 
-Options:
+Main options:
 "
 
 ### Init ###

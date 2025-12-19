@@ -8,22 +8,23 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-DJI
 section: 1
 header: User Commands
-footer: bash-libs 0.1.9
+footer: bash-libs 0.1.11
 ---
 
 # NAME
 
-bl-dji - manual page for bl-dji 0.1.9
+bl-dji - Manage djis (Ɉ), also known as foopgp tokens.
 
 # SYNOPSIS
 
-**bl-dji** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
+**bl-dji** \[*MAIN_OPTIONS*\]\... *ACTION *\[*OPTIONS*\]\...
+\[*ARGUMENTS*\]\...
 
 # DESCRIPTION
 
 Manage djis (Ɉ), also known as foopgp tokens.
 
-# OPTIONS
+## Main options:
 
 **-h**, **\--help**
 
@@ -68,7 +69,7 @@ stripwallet
     VALUE.
 
  
-All actions support a **\--help** options, eg: \$ bl-dji ACTION
+All actions support a **\--help** options, eg: \$ bl-dji 2micro
 **\--help**
 
 bl-dji is also bash library, see: \$ source bl-dji **\--help**

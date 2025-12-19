@@ -8,23 +8,25 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-FOOPGP
 section: 1
 header: User Commands
-footer: bash-libs 0.1.9
+footer: bash-libs 0.1.11
 ---
 
 # NAME
 
-bl-foopgp - manual page for bl-foopgp 0.1.9
+bl-foopgp - Calculate how many foopgp token (Ɉ) may be created for each
+cotisations to the the foopgp association.
 
 # SYNOPSIS
 
-**bl-foopgp** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
+**bl-foopgp** \[*MAIN_OPTIONS*\]\... *ACTION *\[*OPTIONS*\]\...
+\[*ARGUMENTS*\]\...
 
 # DESCRIPTION
 
 Calculate how many foopgp token (Ɉ) may be created for each cotisations
 to the the foopgp association.
 
-# OPTIONS
+## Main options:
 
 **-v**, **\--verbose**
 
@@ -64,8 +66,8 @@ giftarray
     gift.
 
  
-All actions support a **\--help** options, eg: \$ bl-foopgp
-ACTION **\--help**
+All actions support a **\--help** options, eg: \$ bl-foopgp g2t
+**\--help**
 
 bl-foopgp is also bash library, see: \$ source bl-foopgp
 **\--help**

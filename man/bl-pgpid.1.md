@@ -8,23 +8,25 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs 0.1.9
+footer: bash-libs 0.1.11
 ---
 
 # NAME
 
-bl-pgpid - manual page for bl-pgpid 0.1.9
+bl-pgpid - Generate and manage (foo)pgp id : u4 identifiers (for
+world-wide humans), fixed system \*uid\*, OpenPGP certificate, etc.
 
 # SYNOPSIS
 
-**bl-pgpid** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
+**bl-pgpid** \[*MAIN_OPTIONS*\]\... *ACTION *\[*OPTIONS*\]\...
+\[*ARGUMENTS*\]\...
 
 # DESCRIPTION
 
-Generate foopgp identifiers, like \*udid4\* to identify world-wide
-humans, or a fixed Unix User ID for each of them.
+Generate and manage (foo)pgp id : u4 identifiers (for world-wide
+humans), fixed system \*uid\*, OpenPGP certificate, etc.
 
-# OPTIONS
+## Main options:
 
 **-f**, **\--frontend** PROGRAM
 
@@ -43,12 +45,12 @@ humans, or a fixed Unix User ID for each of them.
 
 mrz_to_u4
 
-:   Convert the Machine Readable Zone of an icao9303 passport to an
-    udid4 (aka \'u4\').
+:   Convert the Machine Readable Zone of an icao9303 passport to its u4
+    identifier.
 
 gen_u4
 
-:   Generate udid4. Missing inputs are asked interactively.
+:   Generate u4 identifier. Missing inputs are asked interactively.
 
 gen_uid
 
@@ -62,8 +64,11 @@ gen_key
 
 avatar
 
-:   Resize and add new IMAGE inside OpenPGP certificate (and revoke any
-    previous image)
+:   Extract and/or add image from/to OpenPGP certificate.
+
+email
+
+:   Display and add or revoke emails inside OpenPGP certificate.
 
 token_check
 
@@ -71,8 +76,8 @@ token_check
     output informations.
 
  
-All actions support a **\--help** options, eg: \$ bl-pgpid ACTION
-**\--help**
+All actions support a **\--help** options, eg: \$ bl-pgpid
+mrz_to_u4 **\--help**
 
 bl-pgpid is also bash library, see: \$ source bl-pgpid
 **\--help**

@@ -166,10 +166,11 @@ Options:
 	mapfile -t files < <(find "$@" -type f)
 
 	if [[ -z "${files[*]}" ]] ; then
-		printf "%s: Notice: no file to shred\n" "$FUNCNAME" >&2
+		printf "%s: Error: no file to shred\n" "$FUNCNAME" >&2
+		return 2
 	else
 		if [[ "$farg" != -f ]] ; then
-			bl_yesno --default=no --text "$(printf "%s\n" "${files[@]@Q}")" "Shred this ${#files[@]} file(s)" || return 0
+			bl_yesno --default=no --text "$(printf "%s\n" "${files[@]@Q}")" "Shred this ${#files[@]} file(s)" || return 1
 		fi
 
 		for file in "${files[@]}" ; do
@@ -379,7 +380,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
 	declare -r BL_SECURITY_isprogram=1
 
-	BL_SECURITY_usage="Usage: $BASH_SOURCE [OPTIONS]... ACTION [ACTION_ARGUMENTS]..."
+	BL_SECURITY_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_SECURITY_shelpmsg="
   -h, --help               show help and exit
   -V, --version            show version and exit
@@ -388,14 +389,14 @@ Actions:
 $(for f in "${BL_SECURITY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help options, eg:
-$ $BASH_SOURCE ACTION --help
+$ $BASH_SOURCE ${BL_SECURITY_FUNCTIONS:3} --help
 
 $BL_SECURITY_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"
 else
 	# run as a library (source $0)
 
-	BL_SECURITY_usage="Usage: source $BASH_SOURCE [OPTIONS]..."
+	BL_SECURITY_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
 
 	BL_SECURITY_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
@@ -409,7 +410,7 @@ fi
 BL_SECURITY_chelpmsg="
 Provide some cybersecurity features.
 
-Options:
+Main options:
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"
 
 ### Init ###

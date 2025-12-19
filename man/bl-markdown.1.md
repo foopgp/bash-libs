@@ -8,23 +8,26 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-MARKDOWN
 section: 1
 header: User Commands
-footer: bash-libs 0.1.9
+footer: bash-libs 0.1.11
 ---
 
 # NAME
 
-bl-markdown - manual page for bl-markdown 0.1.9
+bl-markdown - Manipulate
+\[markdown\](https://en.wikipedia.org/wiki/Markdown). Today, only
+converts: markdown arrays \<\> bash arrays.
 
 # SYNOPSIS
 
-**bl-markdown** \[*OPTIONS*\]\... *ACTION *\[*ACTION_ARGUMENTS*\]\...
+**bl-markdown** \[*MAIN_OPTIONS*\]\... *ACTION *\[*OPTIONS*\]\...
+\[*ARGUMENTS*\]\...
 
 # DESCRIPTION
 
 Manipulate \[markdown\](https://en.wikipedia.org/wiki/Markdown). Today,
 only converts: markdown arrays \<\> bash arrays.
 
-# OPTIONS
+## Main options:
 
 **-h**, **\--help**
 
@@ -36,20 +39,20 @@ only converts: markdown arrays \<\> bash arrays.
 
 ## Actions:
 
-md_arraytobash
+arraytobash
 
 :   Expect stdin to be a markdwon array (with or whithout header), and
     convert each line of this array to a \"declare **-A** \...\"
     statement to be loaded with eval.
 
-md_arrayfrombash
+arrayfrombash
 
 :   Expect stdin to be lines of \"declare **-A** \...\" statement with
     the identical indexes/fieldnames.
 
  
 All actions support a **\--help** options, eg: \$ bl-markdown
-ACTION **\--help**
+arraytobash **\--help**
 
 bl-markdown is also bash library, see: \$ source bl-markdown
 **\--help**
