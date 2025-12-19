@@ -640,7 +640,7 @@ Options:
 		else
 			[[ "$sname" ]] || sname=$(tr '<' ' ' <<<"${mrza[all_names]%%<<*}")
 			[[ "$gname" ]] || gname=$(sed ' s,<*$,,g ; s,<, , ' <<<"${mrza[all_names]#*<<}")
-			[[ "$bdate" ]] || {	bdate="${mrza[date_of_birth]}" ; bdarg="--birth-date" ; }
+			[[ "$bdate" ]] || bdate=$(date --iso-8601 --date "${mrza[date_of_birth]}")
 			[[ "$bcountry" ]] || bcountry="${mrza[country]}"
 		fi
 	fi

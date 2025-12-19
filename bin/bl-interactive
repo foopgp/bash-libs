@@ -234,6 +234,7 @@ Options:
 				iso8601+=" --utc" ;&
 			-I*|--iso-8601*)
 				iso8601+=" ${1/--utc-/--}"
+				# test eventual [=FMT]
 				date $iso8601 --date now > /dev/null || return $?
 				;;
 			-d|--default) shift ; def="$1" ;;
