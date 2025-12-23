@@ -387,17 +387,20 @@ else return non-zero if EXPECTED_RESULT differs from calculated check digit.
 }
 
 _bl_icao9303_mrz_analyse() {
-	local helpmsg="Usage: $FUNCNAME [Options] AANAME MRZ
+	local helpmsg="Usage: $FUNCNAME [Options] AANAME [MRZ]
 Analyse a Machine Readable Zone and fill the associative array named AANAME
+If MRZ is not passed as argument, it will we read from STDIN.
 
 Options:
-  -u, --uncheck                Dont verify checksums
+  -u, --uncheck                Change some MRZ errors to warnings (size and digitchecks)
+  -d, --declare                Output content of AANAME as a 'declare -A ...' statement
 "
 
-	local uncheck
+	local errlvl="Error" outdec
 	for ((;$#;)) ; do
 		case "$1" in
-			-u|--uncheck) uncheck="--uncheck" ;;
+			-u|--uncheck) errlvl="Warning" ;;
+			-d|--declare) outdec="." ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -409,17 +412,19 @@ Options:
 
 	local -n doc=$1
 	shift
-	local ch mrz=$*
+	local mrz
+	[[ "$*" ]] && mrz=$* || mrz=$(< /dev/stdin)
 	mrz=${mrz//[$'\t\r\n ']}
 
+	local ch ret=0
 	if [[ ${mrz:0:1} != P ]] ; then
 		# Only ICAO-9303 (ISO/IEC-7501-1) passport are yet supported.
-		printf "%s: Error: Unsupported MRZ '%s...'." "$FUNCNAME" "${mrz:0:1}"
+		printf "%s: Error: Unsupported MRZ '%s...'.\n" "$FUNCNAME" "${mrz:0:1}" >&2
 		return 1
 	fi
 	if [[ ${#mrz} != 88 ]] ; then
-		printf "%s: Error: Invalid MRZ lenght: %d." "$FUNCNAME" "${#mrz}"
-		return 1
+		printf "%s: %s: Invalid MRZ lenght: %d/88.\n" "$FUNCNAME" "$errlvl" "${#mrz}" >&2
+		[[ "$errlvl" == "Warning" ]] || ret=1
 	fi
 
 	doc=(
@@ -440,13 +445,18 @@ Options:
 		[check_composite]=${mrz:87:1}
 	)
 
-	[[ -z "$uncheck" ]] || return 0
 
 	for ch in number date_of_birth expiration_date personal_number composite ; do
 		doc[checked_$ch]=$(_bl_icao9303_mrz_checkdigit "${doc[$ch]}")
 		doc[valid_$ch]=$( [[ ${doc[checked_$ch]} == ${doc[check_$ch]} ]] && echo true || echo false )
-		${doc[valid_$ch]} || printf "%s: Warning: %s checksum -> %s. Should be %s.'\n" "$FUNCNAME" "$ch" "${doc[check_$ch]}" "${doc[checked_$ch]}" >&2
+		if ! ${doc[valid_$ch]} ; then
+			printf "%s: %s: %s checksum -> %s. Should be %s.'\n" "$FUNCNAME" "$errlvl" "$ch" "${doc[check_$ch]}" "${doc[checked_$ch]}" >&2
+			[[ "$errlvl" == "Warning" ]] || ret=1
+		fi
 	done
+	[[ -z "$outdec" ]] || echo "${doc[@]@A}"
+
+	return $ret
 }
 
 _bl_pgp_get_seckeyid() {
@@ -531,13 +541,14 @@ Options:
 bl_pgpid_mrz_to_u4() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... MRZ..."
+	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
-Convert the Machine Readable Zone of an icao9303 passport to its u4 identifier.
+Calculate and output a pgpid u4 identifier from the Machine Readable Zone of an icao9303 passport.
+If MRZ is not passed as argument, it will we read from STDIN.
 
 Option:
-  -u, --uncheck                Dont verify checksums
   -d, --birth-date YYYY-MM-DD  Birth date, expected format : Year-Month-Day (for people born 100+ years ago)
+  -u, --uncheck                Change some MRZ errors to warnings (only if you really know what you do !).
 
 WARNING: mrz data may be irrelevant to generate u4 identifier. eg:
          * Surname or given names may be incomplete (cut bc exceed mrz size)
@@ -563,13 +574,13 @@ People have to check, and fix when NOK.
 		shift
 	done
 
-	local -A mrza=()
-	local allnames bdate countrycode coordinates
-
+	local -A mrza
 	if ! _bl_icao9303_mrz_analyse $uncheck mrza "$@" ; then
-		printf "%s: Error: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" >&2
+		printf "%s: %s: Invalid Machine Readable Zone (ICAO9303)\n" "Error" "$FUNCNAME" >&2
 		return 1
 	fi
+
+	local allnames bdate countrycode coordinates
 
 	if ! allnames=$(LC_COLLATE="C.UTF-8" grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${mrza[all_names]}" ) ; then
 		printf "%s: Error: no valid and complete surname and given names extracted from '%s'\n" "$FUNCNAME" "${mrza[all_names]}" >&2
@@ -611,7 +622,7 @@ Options:
   -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
   -v, --verify                     Ask for verification
 "
-	local sname gname translit bdate bcountry verify=""
+	local sname gname translit bdate bcountry errlvl="Error"
 	for ((;$#;)) ; do
 		case "$1" in
 			-s|--s*)
@@ -622,7 +633,7 @@ Options:
 				shift ; bdate=$1 ;; # $bdate is always be passed as an argument to bl_pgpid_mrz_to_u4()
 			-c|--birth-c*)
 				shift ; bcountry=$1 ;;
-			-v|--verify) verify=1 ;;
+			-v|--verify) errlvl="Warning" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -636,13 +647,14 @@ Options:
 	if [[ "$1" ]] ; then
 		local -A mrza=()
 		if ! _bl_icao9303_mrz_analyse mrza "$@" ; then
-			printf "%s: Warning: Can't analyse given Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" >&2
-		else
-			[[ "$sname" ]] || sname=$(tr '<' ' ' <<<"${mrza[all_names]%%<<*}")
-			[[ "$gname" ]] || gname=$(sed ' s,<*$,,g ; s,<, , ' <<<"${mrza[all_names]#*<<}")
-			[[ "$bdate" ]] || bdate=$(date --iso-8601 --date "${mrza[date_of_birth]}")
-			[[ "$bcountry" ]] || bcountry="${mrza[country]}"
+			printf "%s: %s: Invalid Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" "$errlvl" >&2
+			# If not --verify, errexit.
+			[[ "$errlvl" == Warning ]] || return 1
 		fi
+		[[ "$sname" ]] || sname=$(tr '<' ' ' <<<"${mrza[all_names]%%<<*}")
+		[[ "$gname" ]] || gname=$(sed ' s,<*$,,g ; s,<, , ' <<<"${mrza[all_names]#*<<}")
+		[[ "$bdate" ]] || bdate=$(date --iso-8601 --date "${mrza[date_of_birth]}")
+		[[ "$bcountry" ]] || bcountry="${mrza[country]}"
 	fi
 
 	[[ "$sname" ]] || sname=$(bl_input "Birth surname (family name)")
@@ -650,7 +662,8 @@ Options:
 	[[ "$bdate" ]] || bdate=$(bl_input --iso-8601 "Birth date (YYYY-MM-DD)")
 	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "Birth country (3 letter code)")
 
-	while [[ "$verify" ]] ; do
+	# --verify
+	while [[ "$errlvl" == Warning ]] ; do
 		! bl_yesno --default=no --text \
 	"
 	Surname at birth:     ${sname}
@@ -686,7 +699,7 @@ Options:
 		printf "%s: Error: only [A-Z] characters allowed in names.\n" "$FUNCNAME" >&2
 		return 1
 	fi
-	fakemrz+="<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+	fakemrz+="000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 
 	bl_pgpid_mrz_to_u4 --uncheck --birth-date "$bdate" "${fakemrz: 0:88}"
 }
