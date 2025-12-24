@@ -601,7 +601,7 @@ _bl_qif_parseoptions "$@" || _BL_QIF_RETVAL=$?
 ### Run ###
 set -e
 shift $BL_QIF_NOPTIONS
-if function=$(grep -o "\<bl_$1\>" <<< "${BL_QIF_FUNCTIONS[@]}") ; then
+if function=$(grep -o "\<bl_qif_$1\>" <<< "${BL_QIF_FUNCTIONS[@]}") ; then
 	shift
 	$function "$@"
 	exit $?

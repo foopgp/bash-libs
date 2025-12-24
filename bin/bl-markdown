@@ -307,7 +307,7 @@ _bl_md_parseoptions "$@" || _BL_MD_RETVAL=$?
 ### Run ###
 set -e
 shift $BL_MD_NOPTIONS
-if function=$(grep -o "\<bl_$1\>" <<< "${BL_MD_FUNCTIONS[@]}") ; then
+if function=$(grep -o "\<bl_md_$1\>" <<< "${BL_MD_FUNCTIONS[@]}") ; then
 	shift
 	$function "$@"
 	exit $?
