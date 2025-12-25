@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs 0.1.11
+footer: bash-libs 0.2.0
 ---
 
 # NAME
@@ -30,8 +30,8 @@ humans), fixed system \*uid\*, OpenPGP certificate, etc.
 
 **-f**, **\--frontend** PROGRAM
 
-:   select a frontend program {NONE,whiptail,dialog} (environment var:
-    BL_INTERACTIVE_FRONTEND)
+:   select a frontend program {NONE,whiptail,dialog,zenity} (environment
+    var: BL_INTERACTIVE_FRONTEND)
 
 **-h**, **\--help**
 
@@ -45,8 +45,8 @@ humans), fixed system \*uid\*, OpenPGP certificate, etc.
 
 mrz_to_u4
 
-:   Convert the Machine Readable Zone of an icao9303 passport to its u4
-    identifier.
+:   Calculate and output a pgpid u4 identifier from the Machine Readable
+    Zone of an icao9303 passport.
 
 gen_u4
 
