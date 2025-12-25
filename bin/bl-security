@@ -284,11 +284,11 @@ Options:
 
 	local passwd passwd2
 
-	[[ "$preamble" ]] || preamble="Suggestion: "$(bl_gen_passphrase --dict "$dict" --num "$nw")
-	passwd2=$(bl_input --password --text "$preamble" "$question")
+	[[ "$preamble" ]] || preamble="Suggestion: "$(bl_gen_passphrase --delimiter " " --dict "$dict" --num "$nw")
+	passwd2=$(bl_input --password --text "$preamble" "$question") || return $?
 	preamble=$(printf "Retype %s" "$question")
 	while true ; do
-		passwd=$(bl_input --password --text "$preamble" "$question")
+		passwd=$(bl_input --password --text "$preamble" "$question") || return $?
 		[[ "$passwd2" != $passwd ]] || break
 		preamble="Passwords do not match. Please retype"
 		passwd2=$passwd
