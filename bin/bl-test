@@ -68,7 +68,7 @@ readonly BL_TEST_NAME BL_TEST_VERSION BL_TEST_FUNCTIONS
 
 ### functions ###
 
-. "$(dirname "$BASH_SOURCE")"/bl-log --no-act
+source "$(dirname "$BASH_SOURCE")"/bl-log --no-act
 
 _bl_test_parseoptions() {
 	local earlyend

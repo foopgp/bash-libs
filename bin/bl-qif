@@ -64,8 +64,8 @@ readonly BL_QIF_NAME BL_QIF_VERSION BL_QIF_FUNCTIONS
 ### external functions ###
 
 # shellcheck source=bl-interactive
-. "$(dirname "$BASH_SOURCE")"/bl-interactive --
-. "$(dirname "$BASH_SOURCE")"/bl-log --no-act --log-level "${BL_LOGLEVEL:-5}" --log-exit "crit"
+source "$(dirname "$BASH_SOURCE")"/bl-interactive --
+source "$(dirname "$BASH_SOURCE")"/bl-log --no-act --log-level "${BL_LOGLEVEL:-5}" --log-exit "crit"
 
 ### internal functions ###
 

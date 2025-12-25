@@ -33,7 +33,7 @@ if [[ "$1" == --bash-completion ]] ; then
 				# should exit without executing any actions, so do not complete anything
 				return 0 ;;
 			--frontend)
-				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
+				COMPREPLY=( $(compgen -W "whiptail dialog zenity NONE" -- $cur ) )
 				return 0 ;;
 			--add)
 				COMPREPLY=( $(compgen -W "$(getent passwd | awk -F ":" "{ if ( \$3 >= 1000 ) print \$1}")" -- $cur ) )
@@ -80,10 +80,10 @@ declare -r BL_DJIBIAN_EXTRA_GROUPS="cdrom,floppy,audio,dip,video,plugdev,netdev,
 ### external functions ###
 
 # shellcheck source=bl-interactive
-. "$(dirname "$BASH_SOURCE")"/bl-interactive --
+source "$(dirname "$BASH_SOURCE")"/bl-interactive --
 # shellcheck source=bl-pgpid
-. "$(dirname "$BASH_SOURCE")"/bl-pgpid --
-. "$(dirname "$BASH_SOURCE")"/bl-security --
+source "$(dirname "$BASH_SOURCE")"/bl-pgpid --
+source "$(dirname "$BASH_SOURCE")"/bl-security --
 
 ### internal functions ###
 
@@ -307,7 +307,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 
 	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)
+  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)
   -h, --help               show help and exit
   -V, --version            show version and exit
 
