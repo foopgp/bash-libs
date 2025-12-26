@@ -167,7 +167,7 @@ Options:
 		return 2
 	fi
 
-	local udid4 uid ret
+	local identifier uid ret
 
 	if [[ "$fromcard" ]] ; then
 		local -A cardinfo
@@ -175,12 +175,12 @@ Options:
 		bl_pgpid_token_check --aaname cardinfo || return $?
 
 		email=${cardinfo[pgpid_email]}
-		udid4=${cardinfo[pgpid_id]:2} # TODO: start managing u5 ids
+		identifier=${cardinfo[pgpid_id]}
 		username=${cardinfo[pgpid_name]}
-		sname=$(printf "// Already hashed in u4=%s" "$udid4")
-		gname=$(printf "// Already hashed in u4=%s" "$udid4")
-		bdate="// Also already hashed"
-		bcountry=$(printf "// Already present in u4=%s" "$udid4")
+		sname=$(printf "// substitued by %s" "${identifier:: 6}...")
+		gname=$(printf "// substitued by %s" "${identifier:: 6}...")
+		bdate=$(printf "// substitued by %s" "${identifier:: 6}...")
+		bcountry=$(printf "// substitued by %s" "${identifier:: 6}...")
 	fi
 
 	# If username is given as first argument, override username extracted from smartcard
@@ -228,18 +228,18 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 		username="$(LANG=C ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
 		passwd=$(bl_input --password --default "${passwd}" --text "User password (for this system)" "Password")
 	done
-	[[ "$udid4" ]] || udid4=$(bl_pgpid_gen_u4 --surname "$sname" --given-names "$gname" --birth-date "$bdate" --birth-country "$bcountry") || return $?
-	uid=$(bl_pgpid_gen_uid -- "$udid4") || return $?
+	[[ "$identifier" ]] || identifier="u4$(bl_pgpid_gen_u4 --surname "$sname" --given-names "$gname" --birth-date "$bdate" --birth-country "$bcountry")" || return $?
+	uid=$(bl_pgpid_gen_uid -- "${identifier: 2}") || return $?
 	
-	adduser --disabled-password --comment "${username},${bdate//[^0-9]/},,$phone,$email" --home "/home/u4$udid4" "$username" || return $?
+	adduser --disabled-password --comment "${username},${bdate//[^0-9]/},,$phone,$email" --home "/home/$identifier" "$username" || return $?
 	# groupmod, usermod and passwd are used after "adduser" because these 4 commands are overcomplicated and/or buggy.
 	groupmod --gid "$uid" "$username" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
 	usermod --append --groups "$extragroups" --uid "$uid" --gid "$uid" "$username" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
 	# following chgrp should be done by usermod, but it doesn't ...
-	chgrp --no-dereference --recursive "$username" "/home/u4$udid4" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
+	chgrp --no-dereference --recursive "$username" "/home/$identifier" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
 
 	echo "$passwd" | passwd --stdin "$username" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
-	printf "%s: Notice: user %s (u4=%s) successfully added to current system.\n" "$FUNCNAME" "$username" "$udid4" >&2
+	printf "%s: Notice: user %s (%s) successfully added to current system.\n" "$FUNCNAME" "$username" "$identifier" >&2
 }
 
 bl_djibian_admins()
