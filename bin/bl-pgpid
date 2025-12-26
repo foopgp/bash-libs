@@ -912,7 +912,7 @@ bl_pgpid_avatar() {
 Extract and/or add image from/to OpenPGP certificate.
 Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.
 New IMAGE should be 180 pixel height, or it will be resized.
-Ouput path of last *.jpg file inside working directory.
+Ouput extracted *.jpg files inside working directory.
 
 Options:
   -E, --extract-all           Extract also all revoked or expired existing images from OpenPGP certificate.
@@ -956,7 +956,8 @@ Options:
 	mkdir -p "$tmpdir" || return $?
 
 	# Backup existing photos and get fingerprints
-	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "cp -v %i ${tmpdir@Q}/\$(md5sum %i | head -c 32).%t > /proc/$$/fd/2 2>&1" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
+	echo -n > "$tmpdir/imglist" || return $?
+	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "img=\$(md5sum %i | head -c 32).%t && cp -v %i ${tmpdir@Q}/\$img > /proc/$$/fd/2 2>&1 && echo ${tmpdir@Q}/\$img >> ${tmpdir@Q}/imglist" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
 	(( ${#fprs[@]} > 0 )) || { printf "%s: Error: No certificate for %s.\n" "$FUNCNAME" "'$user'" >&2 ; return 1 ;}
 
 	if [[ "$image" ]] ; then
@@ -983,13 +984,13 @@ Options:
 		[[ "$commands" ]] || { printf "%s: Error: No editable certificate %s (in %s).\n" "$FUNCNAME" "'$user'" "$gpghome" >&2 ; return 1 ; }
 
 		if [[ "$commands" =~ ^uid ]] ; then
-			printf "%s: Notice: Revoking %s inside %s certificate...\n" "$FUNCNAME" "previous image(s)" "$user" >&2
+			printf "%s: Info: Revoking %s inside %s certificate...\n" "$FUNCNAME" "previous image(s)" "$user" >&2
 			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "${fprs[0]}" 2> >(grep "image of size" | sort -u >&2) <<<"$commands" || { printf "%s: Error: Can't revoke - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
 		fi
 
 		if [[ "$image" ]] ; then
 			commands=$(printf "addphoto\n${tmpdir}/new.jpg\ny\nsave\n")
-			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "$image" "$user" >&2
+			printf "%s: Info: Adding %s into %s certificate...\n" "$FUNCNAME" "$image" "$user" >&2
 			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "${fprs[0]}" 2> >(grep "image of size" | sort -u >&2 ) <<<"$commands" || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "addphoto" >&2 ; return 1 ;}
 		fi
 
@@ -997,8 +998,11 @@ Options:
 		[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "${fprs[0]}" || return 1
 	fi
 
-	ls -t "$tmpdir"/*.jpg | head -n 1
-	return "${PIPESTATUS[0]}"
+	if [[ -s "$tmpdir/imglist" ]] ; then
+		cat "$tmpdir/imglist"
+	else
+		printf "%s: Notice: No image extracted from %s certificate...\n" "$FUNCNAME" "$user" >&2
+	fi
 }
 
 bl_pgpid_email() {
