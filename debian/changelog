@@ -1,3 +1,9 @@
+bash-libs (0.2.0-2) unstable; urgency=medium
+
+  * chore: remove reuse build dependence
+
+ -- piseb <piseb@mailo.com>  Wed, 31 Dec 2025 12:25:59 +0100
+
 bash-libs (0.2.0-1) unstable; urgency=medium
 
   [ JJ ]
