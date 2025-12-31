@@ -8,13 +8,13 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-INTERACTIVE
 section: 1
 header: User Commands
-footer: bash-libs 0.1.11
+footer: bash-libs 0.2.0
 ---
 
 # NAME
 
 bl-interactive - Help managing interactive choices, while supporting
-multiple frontends: NONE, whiptail or dialog.
+multiple frontends: NONE, whiptail, dialog or zenity.
 
 # SYNOPSIS
 
@@ -24,14 +24,14 @@ multiple frontends: NONE, whiptail or dialog.
 # DESCRIPTION
 
 Help managing interactive choices, while supporting multiple frontends:
-NONE, whiptail or dialog.
+NONE, whiptail, dialog or zenity.
 
 ## Main options:
 
 **-f**, **\--frontend** PROGRAM
 
-:   select a frontend program {NONE,whiptail,dialog} (environment var:
-    BL_INTERACTIVE_FRONTEND, default: NONE)
+:   select a frontend program {NONE,whiptail,dialog,zenity} (environment
+    var: BL_INTERACTIVE_FRONTEND, default: NONE)
 
 **-h**, **\--help**
 
@@ -45,19 +45,19 @@ NONE, whiptail or dialog.
 
 msgstop
 
-:   Display a message and wait for user to press \[Enter\]
+:   Display a MESSAGE and wait for user to press \[Enter\].
 
 input
 
-:   Helper to ask for a string
+:   Helper to ask for a string.
 
 yesno
 
-:   Helper for a yes/no question (binary choice)
+:   Helper for a yes/no QUESTION (binary choice).
 
 radiolist
 
-:   Helper for a single choice in a list (like radiobutton)
+:   Helper for a single choice in a list (like radiobutton).
 
  
 All actions support a **\--help** options, eg: \$ bl-interactive

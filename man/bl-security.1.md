@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-SECURITY
 section: 1
 header: User Commands
-footer: bash-libs 0.1.11
+footer: bash-libs 0.2.0
 ---
 
 # NAME
@@ -28,8 +28,8 @@ Provide some cybersecurity features.
 
 **-f**, **\--frontend** PROGRAM
 
-:   select a frontend program {NONE,whiptail,dialog} (environment var:
-    BL_INTERACTIVE_FRONTEND)
+:   select a frontend program {NONE,whiptail,dialog,zenity} (environment
+    var: BL_INTERACTIVE_FRONTEND)
 
 **-h**, **\--help**
 

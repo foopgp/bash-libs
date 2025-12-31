@@ -36,7 +36,7 @@ if [[ "$1" == --bash-completion ]] ; then
 				COMPREPLY=( $(compgen -W "$("'$BASH_SOURCE'" gen_passphrase --list-dicts)" -- $cur ) )
 				return 0 ;;
 			--frontend)
-				COMPREPLY=( $(compgen -W "whiptail dialog NONE" -- $cur ) )
+				COMPREPLY=( $(compgen -W "whiptail dialog zenity NONE" -- $cur ) )
 				return 0 ;;
 		esac
 		case $cur in
@@ -78,7 +78,7 @@ readonly BL_SECURITY_NAME BL_SECURITY_VERSION BL_SECURITY_FUNCTIONS
 ### external functions ###
 
 # shellcheck source=bl-interactive
-. "$(dirname "$BASH_SOURCE")"/bl-interactive --
+source "$(dirname "$BASH_SOURCE")"/bl-interactive --
 
 ### internal functions ###
 
@@ -411,7 +411,7 @@ BL_SECURITY_chelpmsg="
 Provide some cybersecurity features.
 
 Main options:
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog} (environment var: BL_INTERACTIVE_FRONTEND)"
+  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"
 
 ### Init ###
 
