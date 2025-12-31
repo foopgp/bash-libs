@@ -1,3 +1,13 @@
+bash-libs (0.2.0-1) unstable; urgency=medium
+
+  [ JJ ]
+  * bl-pgpid: improve stdout and stderr messages + allow MRZ to be read from STDIN
+  * bl-markdown,bl-qif: fix bug (unable to launch action) introduced at 50d19a4c
+  * bl-interactive: new support: zenity frontend + --title option
+  * update manpages
+
+ -- piseb <piseb@mailo.com>  Wed, 31 Dec 2025 11:58:19 +0100
+
 bash-libs (0.1.11-1) unstable; urgency=medium
 
   [ JJ ]
