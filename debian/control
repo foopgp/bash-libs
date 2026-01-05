@@ -10,17 +10,7 @@ Rules-Requires-Root: no
 Vcs-Git: https://codeberg.org/foopgp/bash-libs.git
 Vcs-Browser: https://codeberg.org/foopgp/bash-libs
 
-Package: bash-libs
-Depends: bashlibs-all, ${misc:Depends}
-Architecture: all
-Priority: optional
-Section: oldlibs
-Description: transitional package
- This is a transitional package. It can safely be removed.
-
 Package: bashlibs-all
-Replaces: bash-libs (<< 0.0.6~)
-Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
 Depends: bashlibs-common, bashlibs-convert, bashlibs-pgpid, bashlibs-dji,
          ${misc:Depends}
@@ -29,10 +19,8 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  « Djibian ».
 
 Package: bashlibs-common
-Replaces: bash-libs (<< 0.0.6~)
-Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
-Depends: bsdutils (>= 3.0-0), aspell, xxd
+Depends: bsdutils (>= 3.0-0), aspell, xxd,
          ${misc:Depends}
 Recommends: bash-completion, whiptail
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
@@ -40,14 +28,12 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  .
  bl-log: Wrapper for logger command, which also print pretty logs on stderr.
  .
- bl-interactive: Help managing interactive choices, while supporting multiple frontends:
- NONE, whiptail or dialog.
+ bl-interactive: Help managing interactive choices,
+ while supporting multiple frontends: NONE, whiptail or dialog.
  .
  bl-security: Provide some security features, notably a passphrase generator.
 
 Package: bashlibs-convert
-Replaces: bash-libs (<< 0.0.6~)
-Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
 Depends: jq,
          ${misc:Depends}
@@ -55,13 +41,13 @@ Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
  This package contains:
  .
- bl-markdown: Manipulate [markdown](https://en.wikipedia.org/wiki/Markdown). Today, only converts: markdown arrays <> bash arrays.
+ bl-markdown: Manipulate [markdown](https://en.wikipedia.org/wiki/Markdown).
+ Today, only converts: markdown arrays <> bash arrays.
  .
- bl-json: Use jq (Command-line JSON processor) to convert json data to bash variables or arrays, and vice-versa.
+ bl-json: Use jq (Command-line JSON processor) to convert json data
+ to bash variables or arrays, and vice-versa.
 
 Package: bashlibs-pgpid
-Replaces: bash-libs (<< 0.0.6~)
-Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
 Depends: bashlibs-common, gpg, xxd, adduser, passwd, curl, qrencode, graphicsmagick,
          libgfshare-bin, pandoc, texlive-extra-utils, cups-client, cups-bsd, zbar-tools,
@@ -71,15 +57,14 @@ Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
  This package contains:
  .
- bl-pgpid: Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fixed Unix User ID for each of them.
+ bl-pgpid: Generate foopgp identifiers, like *udid4* to identify world-wide humans,
+ or a fixed Unix User ID for each of them.
  .
  bl-djibian: System tools for the Debian blend « Djibian ».
  .
  bl-qrkey: Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
 
 Package: bashlibs-dji
-Replaces: bash-libs (<< 0.0.6~)
-Breaks: bash-libs (<< 0.0.6~)
 Architecture: all
 Depends: bashlibs-common, bc, git,
          ${misc:Depends}
@@ -87,7 +72,8 @@ Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
  This package contains:
  .
- bl-foopgp: Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
+ bl-foopgp: Calculate how many foopgp token (Ɉ) may be created for each cotisations
+ to the the foopgp association.
  .
  bl-dji: Manage djis (Ɉ), also known as foopgp tokens.
 

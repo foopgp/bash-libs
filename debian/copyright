@@ -2,23 +2,15 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: bash-libs
 Upstream-Contact: Jean-Jacques Brucker <jjbrucker@foopgp.org>
 
+Files:     bash-completion/*
+Copyright: © 2025 foopgp <info@foopgp.org>
+License: LGPL-3.0-only
+
 Files:     Makefile
-           bin/bl-dji
-           bin/bl-foopgp
-           bin/bl-interactive
-           bin/bl-json
-           bin/bl-log
-           bin/bl-markdown
-           bin/bl-qif
-           bin/bl-security
-           bin/bl-test
-           man/Makefile
-           man/bash-libs.7.md
-           man/bl-interactive.1.md
-           man/bl-log.1.md
-           man/bl-security.1.md
+           bin/*
+           man/*
            i18n/README.md
-Copyright: 2021-2024 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+Copyright: 2021-2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 License: LGPL-3.0-only
 
 Files:     pre-commit.hook
@@ -37,11 +29,11 @@ Files:     .editorconfig
            .gitignore
            README.md
 Copyright: 2024 Henri GEIST <geist.henri@laposte.net>
-License: CC0-1.0+
+License: CC0-1.0
 
 Files:     .github/FUNDING.yml
 Copyright: 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
-License: CC0-1.0+
+License: CC0-1.0
 
 Files:     specs/bl-interactive.adoc
            specs/bl-log.adoc
@@ -49,5 +41,35 @@ Copyright: 2024 Henri GEIST <geist.henri@laposte.net>
 License: CC-BY-SA-4.0
 
 Files:     debian/*
-Copyright: 2025 Sébastien Picardeau <piseb@mailo.com>
+Copyright: 2025-2026 foopgp (n2=20230403e_44.52_006.02) <info@foopgp.org>
 License: GPL-3.0-only
+
+Files: LICENSES/CC-BY-SA-4.0.txt
+Copyright: NONE
+License: CC-BY-SA-4.0
+Comment: License text copy shipped by upstream.
+
+Files: LICENSES/CC0-1.0.txt
+Copyright: NONE
+License: CC0-1.0
+Comment: License text copy shipped by upstream.
+
+Files: LICENSES/LGPL-3.0-only.txt
+Copyright: NONE
+License: LGPL-3.0-only
+Comment: License text copy shipped by upstream.
+
+License: CC0-1.0
+ On Debian systems, the full text of the CC0 1.0 Universal license can be found in
+ /usr/share/common-licenses/CC0-1.0.
+
+License: CC-BY-SA-4.0
+ Full text: see LICENSES/CC-BY-SA-4.0.txt
+
+License: GPL-3.0-only
+ On Debian systems, the full text of the GNU General Public License version 3 can be found in
+ /usr/share/common-licenses/GPL-3.
+
+License: LGPL-3.0-only
+ On Debian systems, the full text of the GNU Lesser General Public License version 3 can be found in
+ /usr/share/common-licenses/LGPL-3.
