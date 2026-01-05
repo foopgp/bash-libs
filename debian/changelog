@@ -1,3 +1,19 @@
+bash-libs (0.2.1-1) unstable; urgency=medium
+
+  [ JJ ]
+  * fix 2 small bugs:
+    - return value of canceled bl_input()
+    - underscore with zenity --entry, cf: https://bugzilla.redhat.com/show_bug.cgi?id=1696157
+  * bl_qrkey_totoken(): improve login field (u4|u5)
+  * bl-interactive: Introduce envvar BL_INTERACTIVE_ZENITY_EXTRA, to pass extra args to zenity
+  * bl_djibian_adduser() now manage all identifiers (u4|u5) given by bl_pgpid_token_check()
+  * little factorization using _bl_pgp_choose_seckeyid()
+  * improve bl_pgpid_avatar()
+  * fix UTF-8 regexp bug (thx maël)
+  * update manpages
+
+ -- piseb <piseb@mailo.com>  Mon, 05 Jan 2026 11:28:28 +0100
+
 bash-libs (0.2.0-2) unstable; urgency=medium
 
   * chore: remove reuse build dependence
