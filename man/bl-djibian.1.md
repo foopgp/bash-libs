@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-DJIBIAN
 section: 1
 header: User Commands
-footer: bash-libs 0.2.0
+footer: bash-libs 0.2.1
 ---
 
 # NAME
