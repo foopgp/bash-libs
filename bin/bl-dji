@@ -133,11 +133,11 @@ Options:
 		siprefix=$(sed -nE 's/,/./ ; s/^[[:space:]]*([0-9]*\.?[0-9]+)[[:space:]]*(.*)$/\2/p ' <<<"$value")
 		value=$(sed -nE 's/,/./ ; s/^[[:space:]]*([0-9]*\.?[0-9]+)[[:space:]]*(.*)$/\1/p ' <<<"$value")
 		case "${siprefix}" in
-			µ|micro) num=$(LANG=C printf "%0.0f\n" "${value:?}") || num="" ;;
-			m|milli) num=$(LANG=C printf "%0.3f\n" "${value:?}") || num="" ;;
-			c|centi) num=$(LANG=C printf "%0.4f\n" "${value:?}") || num="" ;;
-			d|deci)  num=$(LANG=C printf "%0.5f\n" "${value:?}") || num="" ;;
-			"")      num=$(LANG=C printf "%0.6f\n" "${value:?}") || num="" ;;
+			µ|micro) num=$(LANG=C.UTF-8 printf "%0.0f\n" "${value:?}") || num="" ;;
+			m|milli) num=$(LANG=C.UTF-8 printf "%0.3f\n" "${value:?}") || num="" ;;
+			c|centi) num=$(LANG=C.UTF-8 printf "%0.4f\n" "${value:?}") || num="" ;;
+			d|deci)  num=$(LANG=C.UTF-8 printf "%0.5f\n" "${value:?}") || num="" ;;
+			"")      num=$(LANG=C.UTF-8 printf "%0.6f\n" "${value:?}") || num="" ;;
 			*)
 				printf "%s: warning: unrecognized SI prefix '%s'\n" "$FUNCNAME" "${siprefix}" >&2
 				num=""
@@ -177,7 +177,7 @@ bl_dji_2deci()
 	local num
 	bl_dji_2micro "$@" | while read num etc ; do
 		if [[ "$num" ]] ; then
-			LANG=C printf "%0.5f\n" $(bc -l <<<"scale=5 ; $num/100000")
+			LANG=C.UTF-8 printf "%0.5f\n" $(bc -l <<<"scale=5 ; $num/100000")
 		else #Error: propagate empty line.
 			echo
 		fi
@@ -208,7 +208,7 @@ bl_dji_2milli()
 	local num
 	bl_dji_2micro "$@" | while read num etc ; do
 		if [[ "$num" ]] ; then
-			LANG=C printf "%0.3f\n" $(bc -l <<<"scale=3 ; $num/1000")
+			LANG=C.UTF-8 printf "%0.3f\n" $(bc -l <<<"scale=3 ; $num/1000")
 		else #Error: propagate empty line.
 			echo
 		fi
@@ -404,7 +404,7 @@ Option:
 	for expnt in "${!grains[@]}" ; do
 		printf " %4d × 2^%-2d ( %4d x%8d µɈ)\n" "${grains[$expnt]}" "$expnt" "${grains[$expnt]}" "$((1<<expnt))"
 	done
-	LANG=C printf "total: %4d grains -> %0.6f Ɉ\n" "$nbg" "$(bc -l <<<"${tot}/1000000")"
+	LANG=C.UTF-8 printf "total: %4d grains -> %0.6f Ɉ\n" "$nbg" "$(bc -l <<<"${tot}/1000000")"
 	return $ret
 }
 

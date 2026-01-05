@@ -185,24 +185,24 @@ Options:
 		case "$symbol" in
 			d|deci)
 				[[ "$printsym" ]] && outsym=" dɈ" || outsym=""
-				LANG=C printf "%0.5f%s\n" "$(bc -l <<<"$tokens*10")" "$outsym"
+				LANG=C.UTF-8 printf "%0.5f%s\n" "$(bc -l <<<"$tokens*10")" "$outsym"
 				;;
 			c|centi)
 				[[ "$printsym" ]] && outsym=" cɈ" || outsym=""
-				LANG=C printf "%0.4f%s\n" "$(bc -l <<<"$tokens*100")" "$outsym"
+				LANG=C.UTF-8 printf "%0.4f%s\n" "$(bc -l <<<"$tokens*100")" "$outsym"
 				;;
 			m|milli)
 				[[ "$printsym" ]] && outsym=" mɈ" || outsym=""
-				LANG=C printf "%0.3f%s\n" "$(bc -l <<<"$tokens*1000")" "$outsym"
+				LANG=C.UTF-8 printf "%0.3f%s\n" "$(bc -l <<<"$tokens*1000")" "$outsym"
 				;;
 			µ|micro)
 				[[ "$printsym" ]] && outsym=" µɈ" || outsym=""
-				LANG=C printf "%d%s\n" "$(bc -l <<<"$tokens*1000000")" "$outsym"
+				LANG=C.UTF-8 printf "%d%s\n" "$(bc -l <<<"$tokens*1000000")" "$outsym"
 				;;
 			*)
 				[[ -z "$symbol" ]] || printf "%s: Warning: Ignoring unrecognized symbol %s.\n" "$FUNCNAME" "$symbol" >&2
 				[[ "$printsym" ]] && outsym=" Ɉ" || outsym=""
-				LANG=C printf "%0.6f%s\n" "$tokens" "$outsym"
+				LANG=C.UTF-8 printf "%0.6f%s\n" "$tokens" "$outsym"
 				;;
 		esac
 	done

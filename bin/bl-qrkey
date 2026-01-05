@@ -243,11 +243,7 @@ Options:
 
 	[[ -z "$1" ]] || keyid="$1"
 	if [[ -z "$keyid" ]] ; then
-		local -a seckeyids
-		mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --exportable --homedir "$gpghome")
-		((${#seckeyids[@]}>0)) || { printf "%s: Error: No OpenPGP secret (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
-		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "For which OpenPGP secret key you want to change passphrase" "${seckeyids[@]}")"
-		keyid="${keyid%% *}"
+		keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome" --exportable --text "For which OpenPGP secret key you want to change passphrase") || return $?
 	else
 		# Test input
 		gpg --homedir "$gpghome" --list-secret-keys "$keyid" > /dev/null || { printf "%s: Error: No secret for '%s' (in %s).\n" "$FUNCNAME" "$keyid" "$gpghome" >&2 ; return 1 ; }
@@ -499,11 +495,7 @@ Note: Split number should be greater than threshold number.
 		printer="$(bl_radiolist --output-value --default-value "$(lpstat -d | sed 's,.* ,,')" --num-per-line 1 --text "Where to print the ${splitn} secret fragments ?" "${printers[@]}")"
 	fi
 	if [[ -z "$keyid" ]] ; then
-		local -a seckeyids
-		mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --exportable --homedir "$gpghome")
-		((${#seckeyids[@]}>0)) || { printf "%s: Error: No secret to print.\n" "$FUNCNAME" >&2 ; return 1 ; }
-		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of secrets to print (on ${splitn} fragments)" "${seckeyids[@]}")"
-		keyid="${keyid%% *}"
+		keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome" --exportable --text "Select KeyID of secrets to print (on ${splitn} fragments)") || return $?
 	fi
 
 	[[ "$passgiven" ]] || passphrase=$(bl_input --password --text "(protecting your secret key)" "Passphrase")
@@ -804,27 +796,25 @@ Options:
 	[[ "$lang" =~ ^[abcdefghijklmnopqrstuvwxyz]{2}$ ]] || { printf "%s: Warning: only 2 lower case ASCII letters can define prefered language, fallback to 'en'.\n" "$FUNCNAME" >&2 ; lang=en ;}
 
 	local keyid secstatus
-	local -a seckeyids emails udid4
-
-	mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --exportable --homedir "$gpghome")
-	((${#seckeyids[@]}>0)) || { printf "%s: Error: No OpenPGP secret to move (from %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
+	local -a emails ids
 
 	[[ -z "$1" ]] || keyid="$1"
 	if [[ -z "$keyid" ]] ; then
-		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of OpenPGP secrets to move on security token" "${seckeyids[@]}")"
-		keyid="${keyid%% *}"
+		keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome" --exportable --text "Select KeyID of OpenPGP secrets to move on security token") || return $?
 	fi
 
 	# Check and get metadata
-	secstatus=$(gpg --quiet --homedir "$gpghome" --list-secret-keys "$keyid") || return $?
-	#  replace eventual keyID (short) by its keyFPR (longest)
+	secstatus=$(gpg --quiet --homedir "$gpghome" --list-secret-keys "$keyid") || { printf "%s: Error: No secret for '%s' (in %s).\n" "$FUNCNAME" "$keyid" "$gpghome" >&2 ; return 1 ; }
+
+	# Replace eventual keyID (short) by its keyFPR (longest)
 	keyid=$(grep -o -m1 "\<[0-9ABCDEF]\{40\}\>" <<<"${secstatus}") || { printf "%s: Error: Can't get fingerprint (maybe due to incompatible gpg's version).\n" "$FUNCNAME" >&2 ; return 1 ; }
+
 	emails=($(sed --silent --regexp-extended "s,^uid.*[<[:space:]](${BL_INTERACTIVE_EMAIL_REGEX}).*,\1,p" <<<"${secstatus}"))
 	[[ "$emails" ]] || { printf "%s: Error: No email for OpenPGP key '%s'.\n" "$FUNCNAME" "$keyid" >&2 ; return 1 ; }
-	#  don't error if there is no pgp_id. TODO: manage also u5.
-	udid4=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,\1,p" <<<"${secstatus}"))
 
-	grep -q "${keyid: 24}" <<<"${seckeyids[@]}" || { printf "%s: Error: No OpenPGP secrets for key '%s' (in %s).\n" "$FUNCNAME" "${keyid}" "$gpghome" >&2 ; return 1 ; }
+	# Don't error if there is no pgp_id
+	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${secstatus}" | sort -u))
+	(( ${#ids[@]} < 2 )) || { printf "%s: Error: supernumerary %s (%s)\n" "$FUNCNAME" "id" "${ids[*]}" >&2 ; return 1 ;}
 
 	# Check and errout card-status
 	gpg --homedir "$gpghome" --card-status | grep -A2 "^Manufacturer\>" >&2 || return ${PIPESTATUS[0]}
@@ -848,7 +838,7 @@ Options:
 
 	printf "%s: Notice: Configuring OpenPGP security token...\n" "$FUNCNAME" >&2
 
-	echo -e "admin\nlogin\nid=u4${udid4[0]}\nurl\nhttps://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}\nlang\n$lang\nname\n${emails[0]}\n${username}\n" | \
+	echo -e "admin\nlogin\n${ids[0]}\nurl\nhttps://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}\nlang\n$lang\nname\n${emails[0]}\n${username}\n" | \
 	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" >&2 ; return 1 ;}
 
 	echo -e "admin\nkey-attr\n2\n1\n2\n1\n2\n1\nquit" | \

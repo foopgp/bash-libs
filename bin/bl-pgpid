@@ -466,7 +466,7 @@ KeyID     Creation_Date    Public_Key_Algorithm
 
 Options:
   -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
-  -e, --exportable          Ouput only exportable secret keys
+  -e, --exportable          Ouput only exportable secret keys (ie. present localy, excluding those on security token)
 "
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local filtertest=true
@@ -503,18 +503,25 @@ Options:
 }
 
 _bl_pgp_choose_seckeyid() {
-	local helpmsg="Usage: $FUNCNAME
-If there is more than one available seckeys, ask for seckeyid to choose.
-If no error, output the KeyID of a secret key
+	local qtxt="Select KeyID (your OpenPGP certificate)"
+	local helpmsg="Usage: $FUNCNAME [NAME|U4|U5|EMAIL]
+Output keyid choosen from available (main) secrets keys.
+If there is only one available, output its keyid whithout asking.
+Argument NAME|U4|U5|EMAIL allow to make an (almost totaly useless) input filter.
 
 Options:
   -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
+  -t, --text QUESTION       Text to introduce selection's radiolist (default: '$qtxt')
+  -e, --exportable          Only exportable secret keys (ie. present localy, excluding those on security token)
 "
-	local keyid gpghome=${GNUPGHOME:-~/.gnupg}
+	local keyid gpghome=${GNUPGHOME:-~/.gnupg} getargs
 	for ((;$#;)) ; do
 		case "$1" in
 			-H|--homedir)
 				shift ; gpghome=$1 ;;
+			-t|--text)
+				shift ; qtxt=$1 ;;
+			-e|--exportable) getargs+="$1 " ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -525,13 +532,13 @@ Options:
 	done
 
 	local -a seckeyids
-	mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome")
+	mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome" $getargs $1)
 	((${#seckeyids[@]}>0)) || { printf "%s: Error: No editable OpenPGP certificate (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
 	if ((${#seckeyids[@]}==1)) ; then
 		keyid=${seckeyids[0]}
 		printf "%s: Notice: Choosing the only one editable OpenPGP certificate (%s).\n" "$FUNCNAME" "$keyid" >&2
 	else
-		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "Select KeyID of the OpenPGP certificate you want to change" "${seckeyids[@]}")"
+		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "$qtxt" "${seckeyids[@]}")"
 	fi
 	echo "${keyid%% *}"
 }
@@ -714,10 +721,10 @@ bl_pgpid_gen_uid() {
 #  - up to 65534, which is use by convention by the user 'nobody'.
 #
 #  tests:
-#  - $ LANG=C sudo useradd -u 4294967295 test
+#  - $ LANG=C.UTF-8 sudo useradd -u 4294967295 test
 #    useradd: invalid user ID '4294967295'
 #    Return value $?: 3 (error)
-#  - $ LANG=C sudo useradd -u 4294967294 test
+#  - $ LANG=C.UTF-8 sudo useradd -u 4294967294 test
 #    useradd warning: test's uid -2 outside of the UID_MIN 1000 and UID_MAX 60000 range.
 #    Return value $?: 0 (OK)
 #
@@ -905,7 +912,7 @@ bl_pgpid_avatar() {
 Extract and/or add image from/to OpenPGP certificate.
 Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.
 New IMAGE should be 180 pixel height, or it will be resized.
-Ouput path of last *.jpg file inside working directory.
+Ouput extracted *.jpg files inside working directory.
 
 Options:
   -E, --extract-all           Extract also all revoked or expired existing images from OpenPGP certificate.
@@ -949,7 +956,8 @@ Options:
 	mkdir -p "$tmpdir" || return $?
 
 	# Backup existing photos and get fingerprints
-	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "cp -v %i ${tmpdir@Q}/\$(md5sum %i | head -c 32).%t > /proc/$$/fd/2 2>&1" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
+	echo -n > "$tmpdir/imglist" || return $?
+	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "img=\$(md5sum %i | head -c 32).%t && cp -v %i ${tmpdir@Q}/\$img > /proc/$$/fd/2 2>&1 && echo ${tmpdir@Q}/\$img >> ${tmpdir@Q}/imglist" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
 	(( ${#fprs[@]} > 0 )) || { printf "%s: Error: No certificate for %s.\n" "$FUNCNAME" "'$user'" >&2 ; return 1 ;}
 
 	if [[ "$image" ]] ; then
@@ -976,13 +984,13 @@ Options:
 		[[ "$commands" ]] || { printf "%s: Error: No editable certificate %s (in %s).\n" "$FUNCNAME" "'$user'" "$gpghome" >&2 ; return 1 ; }
 
 		if [[ "$commands" =~ ^uid ]] ; then
-			printf "%s: Notice: Revoking %s inside %s certificate...\n" "$FUNCNAME" "previous image(s)" "$user" >&2
+			printf "%s: Info: Revoking %s inside %s certificate...\n" "$FUNCNAME" "previous image(s)" "$user" >&2
 			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "${fprs[0]}" 2> >(grep "image of size" | sort -u >&2) <<<"$commands" || { printf "%s: Error: Can't revoke - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
 		fi
 
 		if [[ "$image" ]] ; then
 			commands=$(printf "addphoto\n${tmpdir}/new.jpg\ny\nsave\n")
-			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "$image" "$user" >&2
+			printf "%s: Info: Adding %s into %s certificate...\n" "$FUNCNAME" "$image" "$user" >&2
 			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "${fprs[0]}" 2> >(grep "image of size" | sort -u >&2 ) <<<"$commands" || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "addphoto" >&2 ; return 1 ;}
 		fi
 
@@ -990,8 +998,11 @@ Options:
 		[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "${fprs[0]}" || return 1
 	fi
 
-	ls -t "$tmpdir"/*.jpg | head -n 1
-	return "${PIPESTATUS[0]}"
+	if [[ -s "$tmpdir/imglist" ]] ; then
+		cat "$tmpdir/imglist"
+	else
+		printf "%s: Notice: No image extracted from %s certificate...\n" "$FUNCNAME" "$user" >&2
+	fi
 }
 
 bl_pgpid_email() {
@@ -1143,7 +1154,7 @@ Options:
 	[[ "$varname" ]] && local -n aaname=$varname || local -A aaname
 
 	local cardstatus
-	cardstatus=$(LANG= gpg --homedir "$gpghome" --card-status) || return $?
+	cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 
 	# Try Import/Refresh Key from URL metadata (as email may be in public certificate only)
 	aaname[pgpid_certurl]=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
@@ -1151,7 +1162,7 @@ Options:
 	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
 		printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${aaname[pgpid_certurl]}" >&2
 		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import-options keep-ownertrust,import-clean --import ; then
-			cardstatus=$(LANG= gpg --homedir "$gpghome" --card-status) || return $?
+			cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 		fi
 	fi
 

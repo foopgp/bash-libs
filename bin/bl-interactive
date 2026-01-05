@@ -9,25 +9,12 @@
 
 # TODO:
 #   * Add a --timeout global option
-#   * Support zenity frontend
-
-_bl_interactive_list_actions_options ()
-{
-	local action act_help options foo
-
-	for action in $1
-	do
-		act_help=$("${BASH_SOURCE[0]}" "$action" --help)
-		options=$(sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' <<< "$act_help")
-		foo=$(    sed    's_<_{_ ; s_|_,_g ; s_>_}_ '           <<< "$options")
-		echo "[$action]=\"$foo\""
-	done
-}
 
 if [[ "$1" == --bash-completion ]] ; then
 	BL_tmp_a=$("${BASH_SOURCE[0]}" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
-	BL_tmp_o=$(set -e; _bl_interactive_list_actions_options "$BL_tmp_a")
-
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
 	eval '_bl_interactive_completion()
 	{
 		local cur coptions="--help --version"
@@ -93,6 +80,8 @@ _bl_interactive_parseoptions() {
 		case "$1" in
 			-f|--frontend)
 				shift ; BL_INTERACTIVE_FRONTEND="$1" ;; # WARNING: dialog use to be compatible with whiptail, but it's very buggy.
+			-z|--zenity-extra)
+				shift ; BL_INTERACTIVE_ZENITY_EXTRA="$1" ;;
 			-h|--help)
 				printf "%s\n%s\n%s\n" "$BL_INTERACTIVE_usage" "$BL_INTERACTIVE_chelpmsg" "$BL_INTERACTIVE_shelpmsg" ;
 				return 1 ;;
@@ -153,7 +142,7 @@ _bl_interactive_frontend() (
 
 _bl_interactive_zenity() {
 	# zenity use to write many useless and annoying things on stderr
-	zenity "$@" 2> >(grep -vE "(^$|AdwMessageDialog 0x|GtkLabel 0x)" >&2)
+	zenity "$@" $BL_INTERACTIVE_ZENITY_EXTRA 2> >(grep -vE "(^$|AdwMessageDialog 0x|GtkLabel 0x)" >&2)
 }
 
 _bl_interactive_indexof() {
@@ -269,9 +258,9 @@ Options:
 	fi
 	while true ; do
 		if [[ "$BL_INTERACTIVE_FRONTEND" =~ ^(whiptail|dialog)$ ]] ; then
-			rep=$(set -e; _bl_interactive_frontend --rtext "$pr" --mtext "$question ?" --last "$def" -- ${ttle:+ --title "$ttle"} --nocancel --${boxt})
+			rep=$(_bl_interactive_frontend --rtext "$pr" --mtext "$question ?" --last "$def" -- ${ttle:+ --title "$ttle"} --nocancel --${boxt}) || return $?
 		elif [[ "$BL_INTERACTIVE_FRONTEND" == zenity ]] ; then
-			rep=$(_bl_interactive_zenity --title "$ttle" --entry --text "$pr"$'\n\n'"  $question ?" --entry-text "$def" $zenityopts)
+			rep=$(_bl_interactive_zenity --title "$ttle" --entry --text "$pr"$'\n\n'"  $question ?" --entry-text "$def" $zenityopts) || return $?
 		else
 			echo "$pr" >&2
 			if [[ "${boxt}" == passwordbox ]] ; then
@@ -425,7 +414,7 @@ Options:
 		rv=$?
 		case "$output" in
 			value) echo "$ret" ;;
-			*) ret=$(set -e; _bl_interactive_indexof "$ret" "$@") ;;&
+			*) ret=$(_bl_interactive_indexof "$ret" "$@") ;;&
 			index) echo $((ret)) ;;
 			*) echo $((ret+1)) ;;
 		esac
@@ -434,7 +423,7 @@ Options:
 
 	if [[ -v def_value ]] ; then
 		# Search index of given default value
-		def="$(set -e; _bl_interactive_indexof "$def_value" "$@")"
+		def="$(_bl_interactive_indexof "$def_value" "$@")"
 		[[ -z "$def" ]] || ((++def))
 	fi
 
@@ -524,8 +513,8 @@ BL_INTERACTIVE_chelpmsg="
 Help managing interactive choices, while supporting multiple frontends: NONE, whiptail, dialog or zenity.
 
 Main options:
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND, default: $BL_INTERACTIVE_FRONTEND)"
-
+  -f, --frontend PROGRAM   Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND, default: $BL_INTERACTIVE_FRONTEND)
+  -z, --zenity-extra ARGS  Extra args for zenity (if used), cf: zenity --help-general (environment var: BL_INTERACTIVE_ZENITY_EXTRA, default: $BL_INTERACTIVE_ZENITY_EXTRA)"
 
 ### Init ###
 

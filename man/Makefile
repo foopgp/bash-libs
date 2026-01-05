@@ -18,7 +18,7 @@ SHELL             := /bin/sh
 INSTALL           := install
 INSTALL_DATA      := $(INSTALL) --mode 644
 TO_MAN            := pandoc --standalone --to=man
-GIT_DATE          := LANG=C git log --max-count 1
+GIT_DATE          := LANG=C.UTF-8 git log --max-count 1
 GIT_DATE          += --format='%ad' --date='format:%d %B %Y' --
 
 .POSIX:
