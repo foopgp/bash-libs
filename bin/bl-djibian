@@ -193,7 +193,7 @@ Options:
 	# If there is still no username, generate one from given names and surname.
 	[[ "$username" ]] || username="$(LANG= sed ' s,\b\([a-z]\)[^ ,;-]*,\1,g  ;  s,[^a-z],,g ' <<<"${gname,,}" )$(LANG= sed ' s,[^a-z],, ' <<<"${sname,,}" )"
 
-	if ! ( LANG=C ; [[ "$username" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]] ) ; then
+	if ! ( LANG=C.UTF-8 ; [[ "$username" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]] ) ; then
 		username="$(LANG= ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
 		printf "%s: Notice:
 As defined by IEEE Std 1003.1-2001, the username should consist only of
@@ -225,7 +225,7 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 		phone=$(bl_input --default "${phone}" "Phone number")
 		phone=${phone//[^0-9() .+-]/}
 		username=$(bl_input --default "${username}" "User name (only letters [a-zA-Z], digits [0-9], and [_-])")
-		username="$(LANG=C ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
+		username="$(LANG=C.UTF-8 ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
 		passwd=$(bl_input --password --default "${passwd}" --text "User password (for this system)" "Password")
 	done
 	[[ "$identifier" ]] || identifier="u4$(bl_pgpid_gen_u4 --surname "$sname" --given-names "$gname" --birth-date "$bdate" --birth-country "$bcountry")" || return $?

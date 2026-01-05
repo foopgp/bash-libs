@@ -721,10 +721,10 @@ bl_pgpid_gen_uid() {
 #  - up to 65534, which is use by convention by the user 'nobody'.
 #
 #  tests:
-#  - $ LANG=C sudo useradd -u 4294967295 test
+#  - $ LANG=C.UTF-8 sudo useradd -u 4294967295 test
 #    useradd: invalid user ID '4294967295'
 #    Return value $?: 3 (error)
-#  - $ LANG=C sudo useradd -u 4294967294 test
+#  - $ LANG=C.UTF-8 sudo useradd -u 4294967294 test
 #    useradd warning: test's uid -2 outside of the UID_MIN 1000 and UID_MAX 60000 range.
 #    Return value $?: 0 (OK)
 #
@@ -1154,7 +1154,7 @@ Options:
 	[[ "$varname" ]] && local -n aaname=$varname || local -A aaname
 
 	local cardstatus
-	cardstatus=$(LANG= gpg --homedir "$gpghome" --card-status) || return $?
+	cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 
 	# Try Import/Refresh Key from URL metadata (as email may be in public certificate only)
 	aaname[pgpid_certurl]=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
@@ -1162,7 +1162,7 @@ Options:
 	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
 		printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${aaname[pgpid_certurl]}" >&2
 		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import-options keep-ownertrust,import-clean --import ; then
-			cardstatus=$(LANG= gpg --homedir "$gpghome" --card-status) || return $?
+			cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 		fi
 	fi
 
