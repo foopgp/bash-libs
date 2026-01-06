@@ -838,7 +838,7 @@ Options:
 
 	printf "%s: Notice: Configuring OpenPGP security token...\n" "$FUNCNAME" >&2
 
-	echo -e "admin\nlogin\n${ids[0]}\nurl\nhttps://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}\nlang\n$lang\nname\n${emails[0]}\n${username}\n" | \
+	echo -e "admin\nlogin\n${ids[0]:-${emails[0]}}\nurl\nhttps://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}\nlang\n$lang\nname\n${emails[0]}\n${username}\n" | \
 	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" >&2 ; return 1 ;}
 
 	echo -e "admin\nkey-attr\n2\n1\n2\n1\n2\n1\nquit" | \
