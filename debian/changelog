@@ -1,3 +1,13 @@
+bash-libs (0.2.2-1) unstable; urgency=medium
+
+  [ JJ ]
+  * fix regression: bl_qrkey_totoken() should be possible without u4|u5
+  * bl_json_to_var(): bug fixes
+  * bl-foopgp: add 12 months of stinginalty
+  * update manpages
+
+ -- piseb <piseb@mailo.com>  Mon, 12 Jan 2026 16:49:37 +0100
+
 bash-libs (0.2.1-2) unstable; urgency=medium
 
   * fix: lintian
