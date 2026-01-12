@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-TEST
 section: 1
 header: User Commands
-footer: bash-libs 0.2.1
+footer: bash-libs 0.2.2
 ---
 
 # NAME
