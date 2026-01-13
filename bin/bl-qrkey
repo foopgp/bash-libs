@@ -397,10 +397,9 @@ Options:
 # Second export only secrets (of asymmetric keys). Then data are smaller, use smaller QRcodes, but import is more complex as it need to get certificate somewhere
 # If we are using curve 25519, we spare so much information, then we are not forced to use paperkey
 #
-bl_qrkey_print() {
+bl_qrkey_print() (
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local tmpdir="/tmp/$FUNCNAME.$USER"
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 
 # QRKEY QR VERSIONS:
@@ -421,7 +420,7 @@ Options:
   -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -t, --printer PRINTER          Name of printer to use
   -w, --with-passphrase          Also print passphrase beside QR codes (INCREASE UX, DECREASE SECURITY).
-  -W, --workdir DIRECTORY        Working directory. Don't forget to shred its content once your done (default: $tmpdir).
+  -W, --workdir DIRECTORY        Use given working directory instead of a temporary directory (don't forget to shred its content).
   -S, --split NUM                Number of shares to be generated (default: $splitn)
   -T, --threshold NUM            Number of shares necessary to reconstruct the secret (default: $thresn)
   -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
@@ -462,7 +461,11 @@ Note: Split number should be greater than threshold number.
 		shift
 	done
 
-	mkdir -p "$tmpdir"
+	if [[ -z "$tmpdir" ]] ; then
+		tmpdir=$(mktemp --directory -t "$FUNCNAME".XXXXXX) || return $?
+		trap "{ bl_shred_path --force --remove \"$tmpdir\" ; }" EXIT
+	fi
+
 	if [[ "$(find "$tmpdir" -name "SECRET*" -print -quit)" ]] ; then
 		printf "%s: Error: Working directory is unclean (containing SECRET*).\n" "$FUNCNAME" >&2
 		printf "%s: Suggestion: $ bl-security shred_path --remove '%s'\n" "$FUNCNAME" "$tmpdir" >&2
@@ -562,12 +565,11 @@ $( [[ -z "$withpass" ]] || echo "Passphrase: ${passphrase}" )
 EOF
 		lpr -# 1 -P "${printer}" "${f}.pdf" >&2
 	done
-}
+)
 
-bl_qrkey_scan() {
+bl_qrkey_scan() (
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local tmpdir="/tmp/$FUNCNAME.$USER"
 	local usage="Usage: $name [OPTIONS]... [IMAGES]..."
 	local helpmsg="
 Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or webcam.
@@ -576,17 +578,17 @@ Working directory should be properly erased ($ bl-security shred_path) by yourse
 Output OpenPGP certification key fingerprint.
 
 Options:
-  -W, --workdir DIRECTORY       Working directory. Don't forget to shred its content once your done (default: $tmpdir).
-  -H, --homedir GNUPGHOME       GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -c, --camera V4LDEVICE        Video device to scan for QR code (/dev/v4l/by-id/...)
+  -W, --workdir DIRECTORY       Use given working directory instead of a temporary directory (don't forget to shred its content).
   -p, --passphrase PASSPHRASE   This extra passphrase is related to QR VERSIONS:
                                   * 1 to 3: Only numbers, use to be a date: YYYYMMDD.
                                   * 4 to 5: $FUNCNAME don't need an extra passphrase (in addition to the ones defined in RFC9580).
   -P, --passfrom FILE           Get extra passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+  -H, --homedir GNUPGHOME       GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
 "
 
 	local -a passphrase
-	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local tmpdir gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
 			-p|--passphrase)
@@ -608,7 +610,15 @@ Options:
 		shift
 	done
 
-	mkdir -p "$tmpdir"
+	if [[ -z "$tmpdir" ]] ; then
+		tmpdir=$(mktemp --directory -t "$FUNCNAME".XXXXXX) || return $?
+		trap "{ bl_shred_path --force --remove \"$tmpdir\" ; }" EXIT
+	fi
+	if [[ "$(find "$tmpdir" -name "SECRET*" -print -quit)" ]] ; then
+		printf "%s: Error: Working directory is unclean (containing SECRET*).\n" "$FUNCNAME" >&2
+		printf "%s: Suggestion: $ bl-security shred_path --remove '%s'\n" "$FUNCNAME" "$tmpdir" >&2
+		return 2
+	fi
 	if ! echo -n > "$tmpdir/qrcontent" ; then
 		printf "%s: Error: Can't write in working directory (%s).\n" "$FUNCNAME" "$tmpdir" >&2
 		return 2
@@ -734,7 +744,7 @@ Options:
 	# Output certification key fpr
 	gpg --list-packets "$tmpdir/s.gpg" | sed -n --regexp-extended  '/issuer.*[0-9ABCDEF]{40}/ { s,.*([0-9ABCDEF]{40}).*,\1,p ; q }'
 	return ${PIPESTATUS[0]}
-}
+)
 
 bl_qrkey_totoken() {
 	local name
