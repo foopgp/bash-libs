@@ -1113,31 +1113,40 @@ bl_pgpid_token_check()
 	local helpmsg="
 Check if OpenPGP token is correctly configured for pgpid ; may output informations.
 Will try to import cleaned certificate indicated in 'URL of public key' field.
-Return 0 if no error and OpenPGP token is correctly configured for pgpid, non-zero otherwise.
+Return:
+ - 0 if no error and OpenPGP token is correctly configured for pgpid.
+ - 100 + number of missing pgpid data fields.
+ - then 107 if all required data are missing (OpenPGP card is probably empty).
+ - Other non-zero on other erros.
 
 Options:
-  -i, --info              Output content of the associative array containing relevant metadata (may be evaluted with eval)
   -f, --no-fetch          Don't try to fetch public certificate (from URL indicated in token metadata).
+  -i, --info              Output content of the associative array containing relevant metadata (may be evaluted with eval)
+  -q, --quiet             Don't errput 'Info' or 'Notice' messages.
   -H, --homedir GNUPGHOME GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
-  -A, --aaname VARNAME    $( ((BL_PGPID_isprogram)) && printf "Only effect when used as bash library" || printf "Name of associative array to be filled with relevant metadata")
+  -A, --aaname VARNAME    Depend if used as a bash library or as a program. If \$BL_PGPID_isprogram ($((BL_PGPID_isprogram))) is
+                               1: Output 'declare -A ...'
+                            else: Name of associative array to be filled with relevant metadata
 "
-	local varname verbose=0 fetch=1
+	local varname fetch=1 info=0 quiet=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
-			-i|--info) verbose=1 ;;
 			-f|--no-fetch) fetch=0 ;;
+			-i|--info) info=1 ;;
+			-q|--quiet) quiet=1 ;;
 			-H|--homedir)
 				shift ; gpghome=$1 ;;
 			-A|--aaname)
 				shift
-				if ((BL_PGPID_isprogram)) ; then
-					printf "%s: Warning: --aaname only effect when used as bash library.\n" "$FUNCNAME" >&2
-				elif [[ "$(eval echo \${$1@a})" =~ A ]] ; then
-					varname=$1
-				else
-					printf "%s: Error: '%s' must be an associative array.\n" "$FUNCNAME" "$1" >&2
-					return 2
+				varname=$1
+				if ! ((BL_PGPID_isprogram)) ; then
+					if [[ "$(eval echo \${$varname@a})" =~ A ]] ; then
+						local -n aaname=$varname
+					else
+						printf "%s: Error: '%s' must be an associative array.\n" "$FUNCNAME" "$varname" >&2
+						return 2
+					fi
 				fi
 				;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -1151,7 +1160,7 @@ Options:
 
 	[[ -z "$1" ]] || printf "%s: Warning: Ignoring extra args '%s'...\n" "$FUNCNAME" "$1" >&2
 
-	[[ "$varname" ]] && local -n aaname=$varname || local -A aaname
+	[[ "${aaname@a}" ]] || local -A aaname
 
 	local cardstatus
 	cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
@@ -1160,7 +1169,7 @@ Options:
 	aaname[pgpid_certurl]=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
 	[[ "${aaname[pgpid_certurl]}" != "[not set]" ]] || aaname[pgpid_certurl]=""
 	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
-		printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${aaname[pgpid_certurl]}" >&2
+		((quiet)) || printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${aaname[pgpid_certurl]}" >&2
 		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import-options keep-ownertrust,import-clean --import ; then
 			cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 		fi
@@ -1169,7 +1178,9 @@ Options:
 	local line emails ids ttype tversion manufacturer sn
 
 	while read line ; do
-		if [[ "$line" =~ ^Application\ type ]] ; then
+		if [[ "$line" =~ ^Application\ ID ]] ; then
+			aaname[token_ID]="${line#*: }"
+		elif [[ "$line" =~ ^Application\ type ]] ; then
 			ttype="${line#*: }"
 		elif [[ "$line" =~ ^Version ]] ; then
 			tversion="${line#*: }"
@@ -1179,6 +1190,14 @@ Options:
 			sn="${line#*: }"
 		elif [[ "$line" =~ ^Name\ of\ cardholder ]] ; then
 			aaname[pgpid_name]="${line#*: }"
+			[[ "${aaname[pgpid_name]}" != "[not set]" ]] || aaname[pgpid_name]=""
+			if [[ "${aaname[pgpid_name]}" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then
+				# Only first part of email should be relevant
+				aaname[pgpid_name]=${BASH_REMATCH[1]}
+			else
+				# remove first eventual email
+				aaname[pgpid_name]=$(sed --regexp-extended "s,${BL_INTERACTIVE_EMAIL_REGEX},, ; s, *$,, ; s,^ *,," <<<"${aaname[pgpid_name]}")
+			fi
 		elif [[ "$line" =~ ^Signature\ key ]] ; then
 			aaname[pgpid_Skeyfpr]=$(sed --regexp-extended --silent ' { s, ,,g ; s,.*([ABCDEF0-9]{40}).*,\1,p } ' <<<"${line}")
 		elif [[ "$line" =~ ^Encryption\ key ]] ; then
@@ -1193,22 +1212,18 @@ Options:
 	done <<<"${cardstatus}"
 
 	aaname[pgpid_email]="${emails[0]}"
-	(( $(sort -u <<<"${emails[@]}" | wc -l) < 2 )) || printf "%s: Notice: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "email" "$(sort -u <<<"${emails[@]}" | grep -v "${emails[0]}")" >&2
+	(( $(sort -u <<<"${emails[@]}" | wc -l) < 2 )) || ((quiet)) || printf "%s: Notice: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "email" "$(sort -u <<<"${emails[@]}" | grep -v "${emails[0]}")" >&2
 
 	# Should be in 'Login data' field, but who knows ? (yet...) 
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}" | sort -u))
 	(( ${#ids[@]} < 2 )) || { printf "%s: Error: supernumerary %s (%s)\n" "$FUNCNAME" "id" "${ids[*]}" >&2 ; return 1 ;}
 	aaname[pgpid_id]="${ids[0]}"
 
-	# If "Name of cardholder" hasn't been set or is empty, generate username from pgpid_email
-	[[ "${aaname[pgpid_name]}" != "[not set]" ]] || aaname[pgpid_name]=""
-	[[ "${aaname[pgpid_name]}" ]] || aaname[pgpid_name]="${aaname[pgpid_email]%%@*}"
-
-	aaname[token_fullversion]="${ttype}_${tversion}"
-	aaname[token_fullSN]="${manufacturer}_${sn}"
+	aaname[token_AVersion]="${ttype} ${tversion}"
+	aaname[token_MSN]="${manufacturer} ${sn}"
 
 	local key ret=0
-	if ((verbose)) ; then
+	if ((info)) ; then
 		echo >&2
 		for key in "${!aaname[@]}" ; do
 			echo "${key}=${aaname[$key]@Q}"
@@ -1216,16 +1231,20 @@ Options:
 		echo >&2
 	fi
 
+	if ((BL_PGPID_isprogram)) && [[ "$varname" ]] ; then
+	   declare -p aaname | sed "s, aaname=, $varname=,"
+	fi
+
 	for key in pgpid_name pgpid_id pgpid_email pgpid_Skeyfpr pgpid_Ekeyfpr pgpid_Akeyfpr pgpid_certurl ; do
 		if [[ -z "${aaname[$key]}" ]] ; then
-			ret=6
-			printf "%s: Notice: Invalid pgpid token: missing '%s'.\n" "$FUNCNAME" "${key}" >&2
+			((ret = ret ? ret+1 : 101))
+			((quiet)) || printf "%s: Notice: Invalid pgpid token: missing '%s'.\n" "$FUNCNAME" "${key}" >&2
 		fi
 	done
 
 	! ((ret)) || return $ret
 
-	printf "%s: Info: Valid token, pgpid_id='%s'.\n" "$FUNCNAME" "${aaname[pgpid_id]}" >&2
+	((quiet)) || printf "%s: Info: Valid token, pgpid_id='%s'.\n" "$FUNCNAME" "${aaname[pgpid_id]}" >&2
 	return 0
 }
 
@@ -1241,7 +1260,7 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
   -V, --version            show version and exit
 
 Actions:
-$(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s %s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help options, eg:
 $ $BASH_SOURCE ${BL_PGPID_FUNCTIONS:9} --help
@@ -1258,7 +1277,7 @@ else
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
-$(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+$(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s %s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
 "

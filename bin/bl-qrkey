@@ -287,7 +287,7 @@ Missing inputs are asked interactively.
 Return: - 194 (OxC2) if only 2 remaining attempt.
         - 193 (OxC1) if only 1 remaining attempt.
         - 192 (OxC0) if code is blocked.
-		- other non-zero value on other errors.
+        - other non-zero value on other errors.
 
 Options:
   -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
@@ -413,7 +413,6 @@ bl_qrkey_print() (
 	local helpmsg="
 Export and print OpenPGP secrets on multiple QRcode using Shamir's secret sharing.
 Missing inputs are asked interactively.
-Working directory should be properly erased ($ bl-security shred_path) by yourself.
 
 Options:
   -p, --passphrase PASSPHRASE    Passphrase to access secret parts of OpenPGP key
@@ -574,7 +573,6 @@ bl_qrkey_scan() (
 	local helpmsg="
 Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or webcam.
 Missing inputs are asked interactively.
-Working directory should be properly erased ($ bl-security shred_path) by yourself.
 Output OpenPGP certification key fingerprint.
 
 Options:
@@ -756,7 +754,6 @@ bl_qrkey_totoken() {
 Move OpenPGP secrets to security token (OpenPGP smartcard).
 Missing inputs are asked interactively.
 Security token (OpenPGP smartcard) must be connected.
-Working directory should be properly erased ($ bl-security shred_path) by yourself.
 Output ASCII armored OpenPGP certificate, PIN code and admin code.
 
 Options:
@@ -769,10 +766,10 @@ Options:
   -N, --name NAME              Customize name of security token's cardholder
   -v, --verbose                Increase verbosity
       --no-send                Don't send PGP PUBLIC KEY (OpenPGP certificate) to the HKPS keyserver
-      --force                  Don't ask before resetting security token (OpenPGP smartcard)
+      --force                  Don't ask before resetting unempty security token (OpenPGP smartcard)
 "
 
-	local passphrase certurl username nosend force
+	local passphrase certurl username nosend=0 force=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local gpgfilter="grep ^gpg"
 	for ((;$#;)) ; do
@@ -792,8 +789,8 @@ Options:
 			-N|--name)
 				shift ; username="${1//[^0-9a-zA-Z ._-]/}" ;;
 			-v|--verbose) gpgfilter="cat" ;;
-			--no-send) nosend="." ;;
-			--force) force="." ;;
+			--no-send) nosend=1 ;;
+			--force) force=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -805,8 +802,9 @@ Options:
 
 	[[ "$lang" =~ ^[abcdefghijklmnopqrstuvwxyz]{2}$ ]] || { printf "%s: Warning: only 2 lower case ASCII letters can define prefered language, fallback to 'en'.\n" "$FUNCNAME" >&2 ; lang=en ;}
 
-	local keyid secstatus
+	local keyid secstatus tcheck_rvalue=0
 	local -a emails ids
+	local -A tcheck_info
 
 	[[ -z "$1" ]] || keyid="$1"
 	if [[ -z "$keyid" ]] ; then
@@ -827,7 +825,11 @@ Options:
 	(( ${#ids[@]} < 2 )) || { printf "%s: Error: supernumerary %s (%s)\n" "$FUNCNAME" "id" "${ids[*]}" >&2 ; return 1 ;}
 
 	# Check and errout card-status
-	gpg --homedir "$gpghome" --card-status | grep -A2 "^Manufacturer\>" >&2 || return ${PIPESTATUS[0]}
+	bl_pgpid_token_check --no-fetch --quiet --aaname tcheck_info || tcheck_rvalue=$?
+
+	[[ "${tcheck_info[token_MSN]}" ]] || return $tcheck_rvalue
+
+	echo "$FUNCNAME:" $"Notice:" $"Detected OpenPGP security token:" "${tcheck_info[token_MSN]} -" $"Cardholder:" "${tcheck_info[pgpid_name]} <${tcheck_info[pgpid_email]}>" >&2
 
 	# If we fail testing no passphrase, there is one. Then we have to remove it, or we can't exec gpg's keytocard
 	if ! gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase "" --dry-run --change-passphrase "$keyid" 2> /dev/null ; then
@@ -839,7 +841,7 @@ Options:
 		done
 	fi
 
-	[[ "$force" ]] || bl_yesno "Factory reset OpenPGP security token (This will destroys all OpenPGP keys stored on the card!)" || exit 42
+	((tcheck_rvalue==107)) || ((force)) || bl_yesno $"Factory reset OpenPGP security token" $"(This will destroys all OpenPGP keys stored on the card!)" || exit 42
 
 	printf "%s: Notice: Resetting OpenPGP security token...\n" "$FUNCNAME" >&2
 
@@ -870,7 +872,7 @@ Options:
 
 	echo
 	gpg --homedir "$gpghome" --export --armor "$keyid"
-	if [[ "$nosend" ]] || ! gpg --homedir "$gpghome" --keyserver "${hkpsserv}" --send-keys "$keyid" ; then
+	if ((nosend)) || ! gpg --homedir "$gpghome" --keyserver "${hkpsserv}" --send-keys "$keyid" ; then
 		printf "%s: Warning: Please publish this PGP PUBLIC KEY on the Internet (eg: on a keyserver)\n" "$FUNCNAME" >&2
 	fi
 	echo
@@ -919,6 +921,8 @@ fi
 BL_QRKEY_chelpmsg="
 Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
 Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, ...).
+
+Note: OpenPGP keys should have been generated with bl-pgpid. Unexpected keys may cause unexpected issues.
 
 Main options:
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"
