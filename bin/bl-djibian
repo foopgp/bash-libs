@@ -172,7 +172,8 @@ Options:
 	if [[ "$fromcard" ]] ; then
 		local -A cardinfo
 
-		bl_pgpid_token_check --aaname cardinfo || return $?
+		umask 0002 # Because bl_pgpid_token_check may write into /var/share/djibian/keyrings (sticky bit, group 'users')
+		bl_pgpid_token_check --no-fetch --aaname cardinfo || return $?
 
 		email=${cardinfo[pgpid_email]}
 		identifier=${cardinfo[pgpid_id]}
@@ -239,6 +240,15 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 	chgrp --no-dereference --recursive "$username" "/home/$identifier" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
 
 	echo "$passwd" | passwd --stdin "$username" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
+
+	if [[ "$fromcard" ]] ; then
+		# Try configuring its ~/.gnupg/ with its ownertrust set to ultimate
+		gpgconf --kill scdaemon
+		bl_pgpid_token_check --homedir "/home/$identifier/.gnupg" || true
+		chown -hR "$username:$username" "/home/$identifier"
+		su -l "$username" -c "gpg --quick-set-ownertrust ${cardinfo[pgpid_Skeyfpr]} ultimate" || true
+	fi
+
 	printf "%s: Notice: user %s (%s) successfully added to current system.\n" "$FUNCNAME" "$username" "$identifier" >&2
 }
 
