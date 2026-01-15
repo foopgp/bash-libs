@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-FOOPGP
 section: 1
 header: User Commands
-footer: bash-libs 0.2.2
+footer: bash-libs 0.2.3
 ---
 
 # NAME
@@ -51,6 +51,10 @@ to the the foopgp association.
 
 ## Actions:
 
+symlinks
+
+:   Update symlinks in the foopgp tree.
+
 g2t
 
 :   Calculate how many foopgp tokens would be created from a gift.
@@ -66,8 +70,8 @@ giftarray
     gift.
 
  
-All actions support a **\--help** options, eg: \$ bl-foopgp g2t
-**\--help**
+All actions support a **\--help** options, eg: \$ bl-foopgp
+symlinks **\--help**
 
 bl-foopgp is also bash library, see: \$ source bl-foopgp
 **\--help**

@@ -841,7 +841,8 @@ Options:
 		done
 	fi
 
-	((tcheck_rvalue==107)) || ((force)) || bl_yesno $"Factory reset OpenPGP security token" $"(This will destroys all OpenPGP keys stored on the card!)" || exit 42
+	((tcheck_rvalue==107)) || ((force)) || bl_yesno --text "${tcheck_info[token_MSN]} " \
+		$"Factory reset OpenPGP security token" $"(This will destroys all OpenPGP keys stored on the card!)" || exit 42
 
 	printf "%s: Notice: Resetting OpenPGP security token...\n" "$FUNCNAME" >&2
 
