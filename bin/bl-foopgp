@@ -127,6 +127,8 @@ BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-${BL_FOOPGP_STINGYNALTYS[$(date 
 
 ### external functions ###
 
+source "$(dirname "$BASH_SOURCE")"/bl-pgpid --
+
 ### internal functions ###
 
 _bl_foopgp_parseoptions() {
@@ -155,6 +157,54 @@ _bl_foopgp_parseoptions() {
 }
 
 ### public functions / program actions ###
+
+# Because there is a 'cd', use sub-shell '(...' (instead of '{...').
+bl_foopgp_symlinks() (
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage=($"Usage: %s INDEX_DIR ...\n" "$name")
+	local helpmsg=$"
+Update symlinks in the foopgp tree.
+Options:
+  -c, --clean         Just remove existing symlinks (without recreating them).
+"
+	local clean
+	for ((;$#;)) ; do
+		case "$1" in
+			-c|--clean) clean="true" ;;
+			-h|--help) printf "${usage}$helpmsg\n" "${usage[@]: 1}" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf $"%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	(($#)) || { printf "${usage[@]}" >&2 ; return 2 ; }
+
+	[[ -d "$1/by-id" ]] || { printf $"%s: Error: unexpected foopgp index directory '%s'" "$FUNCNAME" "$1" >&2 ; return 2 ; }
+	cd "$1" || return $?
+
+	if [[ -d "by-email" ]] ; then
+		printf $"Deleting existing symlinks in 'by-email/' ...\n" >&2
+		find "by-email/" -type l -delete || return $?
+	fi
+	[[ -z "$clean" ]] || return 0
+
+	local file email domain tld i
+	printf $"Creating symlinks from 'by-id/' ...\n" >&2
+	find by-id/u4/*/*/*/emails/ -type f | while read file
+	do
+		email=${file##*\/}
+		[[ "$email" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf $"%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$email'" >&2 ; return 1 ;}
+		domain=${BASH_REMATCH[2]}
+		tld=${BASH_REMATCH[4]}
+		mkdir -p "by-email/${tld}/${domain}" || return $?
+		ln -s "../../../${file%%/emails/*}" "by-email/${tld}/${domain}/${email}" || return $?
+		printf "\r%8d %-40s" $((++i)) "$email" >&2
+	done
+	printf "\r\t %-40s\n" "Done !" >&2
+)
 
 bl_foopgp_g2t() {
 	local name
@@ -257,7 +307,6 @@ Options:
 		bc -l <<<"z=e(l(2)*$BL_FOOPGP_STINGYNALTY*($i+$t))-1-$g ; scale=2 ; z=z*100+1 ; z/100 ; scale=16"
 	done
 }
-
 
 bl_foopgp_giftarray() {
 	local name

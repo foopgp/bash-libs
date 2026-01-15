@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-QRKEY
 section: 1
 header: User Commands
-footer: bash-libs 0.2.2
+footer: bash-libs 0.2.3
 ---
 
 # NAME
@@ -27,6 +27,9 @@ Backup or restore OpenPGP keys using printed QR codes and Shamir\'s
 secret sharing. Also facilitate changing passphrase protecting OpenPGP
 keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey,
 \...).
+
+Note: OpenPGP keys should have been generated with bl-pgpid. Unexpected
+keys may cause unexpected issues.
 
 ## Main options:
 
