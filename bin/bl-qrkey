@@ -825,7 +825,7 @@ Options:
 	(( ${#ids[@]} < 2 )) || { printf "%s: Error: supernumerary %s (%s)\n" "$FUNCNAME" "id" "${ids[*]}" >&2 ; return 1 ;}
 
 	# Check and errout card-status
-	bl_pgpid_token_check --no-fetch --quiet --aaname tcheck_info || tcheck_rvalue=$?
+	bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname tcheck_info || tcheck_rvalue=$?
 
 	[[ "${tcheck_info[token_MSN]}" ]] || return $tcheck_rvalue
 
@@ -873,7 +873,7 @@ Options:
 
 	echo
 	gpg --homedir "$gpghome" --export --armor "$keyid"
-	if ((nosend)) || ! gpg --homedir "$gpghome" --keyserver "${hkpsserv}" --send-keys "$keyid" ; then
+	if ((nosend)) || ! timeout --verbose 8 gpg --homedir "$gpghome" --keyserver "${hkpsserv}" --send-keys "$keyid" ; then
 		printf "%s: Warning: Please publish this PGP PUBLIC KEY on the Internet (eg: on a keyserver)\n" "$FUNCNAME" >&2
 	fi
 	echo
