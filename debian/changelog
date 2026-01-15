@@ -1,3 +1,10 @@
+bash-libs (0.2.4-1) unstable; urgency=medium
+
+  [ JJ ]
+  * bl_qrkey_totoken(): 2 bug fixes
+
+ -- piseb <piseb@mailo.com>  Thu, 15 Jan 2026 16:13:21 +0100
+
 bash-libs (0.2.3-1) unstable; urgency=medium
 
   [ JJ ]
