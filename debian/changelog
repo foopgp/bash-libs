@@ -1,3 +1,18 @@
+bash-libs (0.2.3-1) unstable; urgency=medium
+
+  [ JJ ]
+  * fix regression: bl_qrkey_totoken() should be possible without u4|u5
+  * bl_json_to_var(): bug fixes
+  * bl-foopgp: add 12 months of stinginalty
+  * update manpages
+  * update BL_INTERACTIVE_EMAIL_REGEX + new bl_foopgp_symlinks()
+  * bl-qrkey: use a tmpdir (auto shreded) if --workdir is not used
+  * bl-djibian: greatly improve adduser --from-pgp-card
+  * improve bl_pgpid_token_check() + bl_qrkey_totoken() + minor rewrites:
+  * update manpage + minor wording improvement in bl_qrkey_totoken()
+
+ -- piseb <piseb@mailo.com>  Thu, 15 Jan 2026 11:20:58 +0100
+
 bash-libs (0.2.2-1) unstable; urgency=medium
 
   [ JJ ]
