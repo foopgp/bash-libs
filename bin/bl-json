@@ -67,6 +67,11 @@ readonly BL_JSON_NAME BL_JSON_VERSION BL_JSON_FUNCTIONS
 
 ### Default option values ###
 
+TEXTDOMAIN="${TEXTDOMAIN:-bashlibs}"
+TEXTDOMAINDIR="${TEXTDOMAINDIR:-$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale}"
+# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+shopt -s noexpand_translation
+
 ### external functions ###
 
 ### internal functions ###
@@ -272,7 +277,7 @@ Examples:
 			if [[ "$varname" ]] ; then
 				printf "declare -- $varname=''\n"
 			else
-				printf $"%s: Info: JSON 'null' -> BASH ''.\n" "$FUNCNAME" >&2
+				printf "%s: Info: JSON 'null' -> BASH ''.\n" "$FUNCNAME" >&2
 			fi
 			return
 			;;
@@ -284,7 +289,7 @@ Examples:
 
 		array) [[ -z "$varname" ]] || echo "declare -a -- $varname=(" ;;
 		object) [[ -z "$varname" ]] || echo "declare -A -- $varname=(" ;;
-		*) printf $"%s: Error: Invalid JSON (%s).\n" "$FUNCNAME" "${lines[0]:: 8}..." >&2
+		*) echo "$FUNCNAME: Error:" $"Invalid JSON" "(${lines[0]:: 8}...)." >&2
 		   return 2 ;;
 	esac
 
@@ -308,9 +313,9 @@ Examples:
 				# escape all double quotes, then double quote all.
 				echo "$value" | sed "$sed4jvalue"'s,",\\",g ; 1s,^,", ; $s,$,", ; ' ;;
 			*)
-			   echo
-			   printf $"%s: Error: Invalid JSON (%s).\n" "$FUNCNAME" "${value:: 8}..." >&2
-			   return 2 ;;
+				echo
+				echo "$FUNCNAME: Error:" $"Invalid JSON" "(${lines[0]:: 8}...)." >&2
+				return 2 ;;
 		esac
 	done
 

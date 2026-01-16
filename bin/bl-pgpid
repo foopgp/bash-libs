@@ -327,6 +327,11 @@ BL_PGPID_KEYSERVERS=(
 "hkps://keys.foopgp.org"
 )
 
+TEXTDOMAIN="${TEXTDOMAIN:-bashlibs}"
+TEXTDOMAINDIR="${TEXTDOMAINDIR:-$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale}"
+# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+shopt -s noexpand_translation
+
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-interactive --
@@ -575,7 +580,7 @@ People have to check, and fix when NOK.
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) echo -e "$name: Error: Unrecognized option/parameters $1\n$helpmsg" >&2 ; return 2 ;;
+			-*) echo -e "$name: Error:" $"Unrecognized option/parameters"" $1\n$helpmsg" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -583,14 +588,14 @@ People have to check, and fix when NOK.
 
 	local -A mrza
 	if ! _bl_icao9303_mrz_analyse $uncheck mrza "$@" ; then
-		printf "%s: %s: Invalid Machine Readable Zone (ICAO9303)\n" "Error" "$FUNCNAME" >&2
+		echo "$FUNCNAME: Error:" $"Invalid Machine Readable Zone (ICAO9303)" >&2
 		return 1
 	fi
 
 	local allnames bdate countrycode coordinates
 
 	if ! allnames=$(LC_COLLATE="C.UTF-8" grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${mrza[all_names]}" ) ; then
-		printf "%s: Error: no valid and complete surname and given names extracted from '%s'\n" "$FUNCNAME" "${mrza[all_names]}" >&2
+		echo "$FUNCNAME: Error:" $"No valid and complete surname and given names extracted from" "${mrza[all_names]}" >&2
 		return 1
 	fi
 
@@ -689,7 +694,7 @@ Options:
 	sname=$(sed 's,[ ;,<-]\+,<,g'<<<"$sname" ) # replace and squeeze some word separators
 	translit=$(iconv -f utf-8 -t ascii//TRANSLIT <<<"$sname") # transliterate (according to iconv), may differ from Passport transliterations.
 	if [[ "$translit" != "$sname" ]] ; then
-		printf "%s: Warning: '%s' has been transliterated to '%s'. It may be WRONG !\n" "$FUNCNAME" "$sname" "$translit" >&2
+		echo "$FUNCNAME: Warning: '$sname'" $"has been transliterated to" "'$translit'." $"It may be WRONG !" >&2
 		sname="$translit"
 	fi
 	sname="${sname^^}" # uppercase
@@ -908,20 +913,20 @@ bl_pgpid_avatar() {
 	local tmpdir="/tmp/$FUNCNAME.$USER"
 	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
 	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
-	local helpmsg="
-Extract and/or add image from/to OpenPGP certificate.
-Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.
-New IMAGE should be 180 pixel height, or it will be resized.
-Ouput extracted *.jpg files inside working directory.
+	local helpmsg='
+'$"Extract or add image inside OpenPGP certificate."'
+'$"Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively."'
+'$"New IMAGE should be 180 pixel height, or it will be resized."'
+'$"Ouput extracted *.jpg files inside working directory."'
 
-Options:
-  -E, --extract-all           Extract also all revoked or expired existing images from OpenPGP certificate.
-  -A, --addfrom IMAGE         Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image).
-  -R, --revoke                Just revoke all existing images inside OpenPGP certificate.
-  -W, --workdir DIRECTORY     Working directory. Will contain previous and new resized images (default: $tmpdir).
-  -k, --keyserver KEYSERVER   If non-empty, send updated certificate to this keyserver (default: $keyserv).
-  -H, --homedir GNUPGHOME     GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME.
-"
+'$"Options:"'
+  -E, --extract-all           '$"Extract also all revoked or expired existing images from OpenPGP certificate."'
+  -A, --addfrom IMAGE         '$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image)."'
+  -R, --revoke                '$"Just revoke all existing images inside OpenPGP certificate."'
+  -W, --workdir DIRECTORY     '$"Working directory. Will contain previous and new resized images (default:"" $tmpdir)."'
+  -k, --keyserver KEYSERVER   '$"If non-empty, send updated certificate to this keyserver (default:"" $keyserv)."'
+  -H, --homedir GNUPGHOME     '$"GnuPG home directory (default: ~/.gnupg). Environnement variable:"' $GNUPGHOME.
+'
 	local image revoke
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local listopts="show-photos"
@@ -1086,7 +1091,7 @@ Options:
 
 		ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4=\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5=\1,p" <<<"$uids" | sort -u))
 		(( ${#ids[@]} > 0 )) || { printf "%s: Error: No pgpid string (u4|u5) in %s certificate\n" "$FUNCNAME" "$user" >&2 ; return 1 ;}
-		(( ${#ids[@]} < 2 )) || { printf "%s: Error: supernumerary %s (%s)\n" "$FUNCNAME" "id" "${ids[*]}" >&2 ; return 1 ;}
+		(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary pgpid string" "(${ids[*]})" >&2 ; return 1 ;}
 
 		# Add emails
 		for email in "${toadd[@]}" ; do
@@ -1212,11 +1217,11 @@ Options:
 	done <<<"${cardstatus}"
 
 	aaname[pgpid_email]="${emails[0]}"
-	(( $(sort -u <<<"${emails[@]}" | wc -l) < 2 )) || ((quiet)) || printf "%s: Notice: supernumerary %s, skipping %s ...\n" "$FUNCNAME" "email" "$(sort -u <<<"${emails[@]}" | grep -v "${emails[0]}")" >&2
+	(( $(sort -u <<<"${emails[@]}" | wc -l) < 2 )) || ((quiet)) || echo "$FUNCNAME: Notice:" $"supernumerary emails, skipping" "$(sort -u <<<"${emails[@]}" | grep -v "${emails[0]}") ..." >&2
 
 	# Should be in 'Login data' field, but who knows ? (yet...) 
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}" | sort -u))
-	(( ${#ids[@]} < 2 )) || { printf "%s: Error: supernumerary %s (%s)\n" "$FUNCNAME" "id" "${ids[*]}" >&2 ; return 1 ;}
+	(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary pgpid string" "(${ids[*]})" >&2 ; return 1 ;}
 	aaname[pgpid_id]="${ids[0]}"
 
 	aaname[token_AVersion]="${ttype} ${tversion}"

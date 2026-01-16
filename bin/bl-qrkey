@@ -81,6 +81,11 @@ readonly BL_QRKEY_NAME BL_QRKEY_VERSION BL_QRKEY_FUNCTIONS
 
 ### Default option values ###
 
+TEXTDOMAIN="${TEXTDOMAIN:-bashlibs}"
+TEXTDOMAINDIR="${TEXTDOMAINDIR:-$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale}"
+# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+shopt -s noexpand_translation
+
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-interactive --
@@ -791,7 +796,7 @@ Options:
 			-K|--pubkey)
 				shift ; pubkeyfile="$1" ;;
 			-v|--verbose) gpgfilter="cat" ;;
-			--no-send) echo "$FUNCNAME:" $"Warning:" $"Deprecated option" "$1" >&2 ;;
+			--no-send) echo "$FUNCNAME: Warning:" $"Deprecated option" "$1" >&2 ;;
 			--force) force=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
@@ -830,14 +835,14 @@ Options:
 
 	# Don't error if there is no pgp_id
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${secstatus}" | sort -u))
-	(( ${#ids[@]} < 2 )) || { printf "%s: Error: supernumerary %s (%s)\n" "$FUNCNAME" "id" "${ids[*]}" >&2 ; return 1 ;}
+	(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary pgpid string" "(${ids[*]})" >&2 ; return 1 ;}
 
 	# Check and errout card-status
 	bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname tcheck_info || tcheck_rvalue=$?
 
 	[[ "${tcheck_info[token_MSN]}" ]] || return $tcheck_rvalue
 
-	echo "$FUNCNAME:" $"Notice:" $"Detected OpenPGP security token:" "${tcheck_info[token_MSN]} -" $"Cardholder:" "${tcheck_info[pgpid_name]} <${tcheck_info[pgpid_email]}>" >&2
+	echo "$FUNCNAME: Notice:" $"Detected OpenPGP security token:" "${tcheck_info[token_MSN]} -" $"Cardholder:" "${tcheck_info[pgpid_name]} <${tcheck_info[pgpid_email]}>" >&2
 
 	# If we fail testing no passphrase, there is one. Then we have to remove it, or we can't exec gpg's keytocard
 	if ! gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase "" --dry-run --change-passphrase "$keyid" 2> /dev/null ; then
@@ -850,7 +855,7 @@ Options:
 	fi
 
 	((tcheck_rvalue==107)) || ((force)) || bl_yesno --text "${tcheck_info[token_MSN]} " \
-		$"Factory reset OpenPGP security token" $"(This will destroys all OpenPGP keys stored on the card!)" || exit 42
+		$"Factory reset OpenPGP security token" $"(This will wipe all the OpenPGP data stored there!)" || exit 42
 
 	printf "%s: Notice: Resetting OpenPGP security token...\n" "$FUNCNAME" >&2
 

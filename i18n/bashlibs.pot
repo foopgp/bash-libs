@@ -1,0 +1,140 @@
+#: ../bin/bl-foopgp:170
+msgid "Usage:"
+msgstr ""
+
+#: ../bin/bl-foopgp:172
+msgid "Update symlinks in the foopgp tree."
+msgstr ""
+
+#: ../bin/bl-foopgp:173 ../bin/bl-pgpid:922
+msgid "Options:"
+msgstr ""
+
+#: ../bin/bl-foopgp:174
+msgid "Just remove existing symlinks (without recreating them)."
+msgstr ""
+
+#: ../bin/bl-foopgp:183
+msgid "Unrecognized option"
+msgstr ""
+
+#: ../bin/bl-foopgp:184
+msgid "Try"
+msgstr ""
+
+#: ../bin/bl-foopgp:184
+msgid "for more information."
+msgstr ""
+
+#: ../bin/bl-foopgp:192
+msgid "Unexpected foopgp index directory"
+msgstr ""
+
+#: ../bin/bl-foopgp:196
+msgid "Deleting existing symlinks in"
+msgstr ""
+
+#: ../bin/bl-foopgp:202
+msgid "Creating symlinks from"
+msgstr ""
+
+#: ../bin/bl-foopgp:206
+msgid "Invalid email"
+msgstr ""
+
+#: ../bin/bl-json:292 ../bin/bl-json:317
+msgid "Invalid JSON"
+msgstr ""
+
+#: ../bin/bl-pgpid:583
+msgid "Unrecognized option/parameters"
+msgstr ""
+
+#: ../bin/bl-pgpid:591
+msgid "Invalid Machine Readable Zone (ICAO9303)"
+msgstr ""
+
+#: ../bin/bl-pgpid:598
+msgid "No valid and complete surname and given names extracted from"
+msgstr ""
+
+#: ../bin/bl-pgpid:697
+msgid "has been transliterated to"
+msgstr ""
+
+#: ../bin/bl-pgpid:697
+msgid "It may be WRONG !"
+msgstr ""
+
+#: ../bin/bl-pgpid:917
+msgid "Extract or add image inside OpenPGP certificate."
+msgstr ""
+
+#: ../bin/bl-pgpid:918
+msgid ""
+"Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively."
+msgstr ""
+
+#: ../bin/bl-pgpid:919
+msgid "New IMAGE should be 180 pixel height, or it will be resized."
+msgstr ""
+
+#: ../bin/bl-pgpid:920
+msgid "Ouput extracted *.jpg files inside working directory."
+msgstr ""
+
+#: ../bin/bl-pgpid:923
+msgid ""
+"Extract also all revoked or expired existing images from OpenPGP certificate."
+msgstr ""
+
+#: ../bin/bl-pgpid:924
+msgid ""
+"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous "
+"image)."
+msgstr ""
+
+#: ../bin/bl-pgpid:925
+msgid "Just revoke all existing images inside OpenPGP certificate."
+msgstr ""
+
+#: ../bin/bl-pgpid:926
+msgid ""
+"Working directory. Will contain previous and new resized images (default:"
+msgstr ""
+
+#: ../bin/bl-pgpid:927
+msgid "If non-empty, send updated certificate to this keyserver (default:"
+msgstr ""
+
+#: ../bin/bl-pgpid:928
+msgid "GnuPG home directory (default: ~/.gnupg). Environnement variable:"
+msgstr ""
+
+#: ../bin/bl-pgpid:1094 ../bin/bl-pgpid:1224 ../bin/bl-qrkey:838
+msgid "supernumerary pgpid string"
+msgstr ""
+
+#: ../bin/bl-pgpid:1220
+msgid "supernumerary emails, skipping"
+msgstr ""
+
+#: ../bin/bl-qrkey:799
+msgid "Deprecated option"
+msgstr ""
+
+#: ../bin/bl-qrkey:845
+msgid "Detected OpenPGP security token:"
+msgstr ""
+
+#: ../bin/bl-qrkey:845
+msgid "Cardholder:"
+msgstr ""
+
+#: ../bin/bl-qrkey:858
+msgid "Factory reset OpenPGP security token"
+msgstr ""
+
+#: ../bin/bl-qrkey:858
+msgid "(This will wipe all the OpenPGP data stored there!)"
+msgstr ""

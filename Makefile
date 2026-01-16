@@ -31,6 +31,7 @@ all: build
 
 build:
 	$(MAKE) -C man
+	$(MAKE) -C i18n
 
 check_licenses:
 	RESULT=$$($(LICENCES_CHECKER) 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)
@@ -41,6 +42,7 @@ check clean:
 	$(MAKE) -C specs $@
 	$(MAKE) -C man   $@
 	$(MAKE) -C tests $@
+	$(MAKE) -C i18n $@
 
 html pdf docbook markdown:
 	$(MAKE) -C specs $@
@@ -48,11 +50,13 @@ html pdf docbook markdown:
 install: $(addprefix $(BINDIR)/, $(notdir $(TARGETS)))
 	$(MAKE) -C man   $@
 	$(MAKE) -C bash-completion   $@
+	$(MAKE) -C i18n   $@
 
 uninstall:
 	$(MAKE) -C man   $@
 	$(MAKE) -C bash-completion   $@
 	$(RM) $(addprefix $(BINDIR)/, $(notdir $(TARGETS)))
+	$(MAKE) -C i18n   $@
 
 install-pre-commit-hook: .git/hooks/pre-commit
 
