@@ -1,3 +1,11 @@
+bash-libs (0.2.6-1) UNRELEASED; urgency=medium
+
+  [ JJ ]
+  * bl_qrkey_totoken(): 1 bugfix: --certurl was uneffective
+  * start internationalisation and localisation
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Fri, 16 Jan 2026 21:32:54 +0100
+
 bash-libs (0.2.5-1) unstable; urgency=medium
 
   [ JJ ]

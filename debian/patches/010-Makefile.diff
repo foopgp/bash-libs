@@ -1,17 +1,8 @@
-Index: bash-libs/Makefile
-===================================================================
---- bash-libs.orig/Makefile
-+++ bash-libs/Makefile
-@@ -6,7 +6,7 @@ TARGETS               := $(wildcard bin/
- 
- SHELL                 := /bin/sh
- LICENCES_CHECKER      := reuse lint
--SUB_MAKE_DIRS         := specs man tests
-+SUB_MAKE_DIRS         := tests
- 
- prefix                ?= /usr/local
- exec_prefix           ?= $(prefix)
-@@ -14,7 +14,7 @@ bindir                ?= $(exec_prefix)/
+diff --git a/Makefile b/Makefile
+index fbabe96..e87251b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -14,7 +14,7 @@ bindir                ?= $(exec_prefix)/bin
  
  BINDIR                := $(DESTDIR)$(bindir)
  
@@ -20,7 +11,7 @@ Index: bash-libs/Makefile
  DIRTY_BROKEN          := \(dirty\|broken\)
  COMMIT_COUNT          := \([1-9][0-9]*\)
  COMMIT_HASH           := \(g[0-9a-f]\+\)
-@@ -35,12 +35,10 @@ build:
+@@ -36,12 +36,10 @@ build:
  check_licenses:
  	RESULT=$$($(LICENCES_CHECKER) 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)
  
@@ -31,6 +22,6 @@ Index: bash-libs/Makefile
 -	$(MAKE) -C specs $@
  	$(MAKE) -C man   $@
 -	$(MAKE) -C tests $@
+ 	$(MAKE) -C i18n $@
  
  html pdf docbook markdown:
- 	$(MAKE) -C specs $@

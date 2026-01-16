@@ -3,14 +3,15 @@ Upstream-Name: bash-libs
 Upstream-Contact: Jean-Jacques Brucker <jjbrucker@foopgp.org>
 
 Files:     bash-completion/*
-Copyright: © 2025 foopgp <info@foopgp.org>
+           share/locale/*/LC_MESSAGES/bashlibs.po
+Copyright: 2025-2026 foopgp <info@foopgp.org>
 License: LGPL-3.0-only
 
 Files:     Makefile
            bin/*
            man/*
-           i18n/README.md
-Copyright: 2021-2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+           i18n/*
+Copyright: 2021-2026 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 License: LGPL-3.0-only
 
 Files:     pre-commit.hook
