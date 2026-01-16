@@ -1,3 +1,11 @@
+bash-libs (0.2.5-1) unstable; urgency=medium
+
+  [ JJ ]
+  * bl_qrkey_totoken(): remove --no-send ; add --pubkey
+  * update manpages
+
+ -- piseb <piseb@mailo.com>  Fri, 16 Jan 2026 13:00:36 +0100
+
 bash-libs (0.2.4-1) unstable; urgency=medium
 
   [ JJ ]
