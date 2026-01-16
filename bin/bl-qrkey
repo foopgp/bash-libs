@@ -819,6 +819,9 @@ Options:
 	# Replace eventual keyID (short) by its keyFPR (longest)
 	keyid=$(grep -o -m1 "\<[0-9ABCDEF]\{40\}\>" <<<"${secstatus}") || { printf "%s: Error: Can't get fingerprint (maybe due to incompatible gpg's version).\n" "$FUNCNAME" >&2 ; return 1 ; }
 
+	# If no URL to get certificate, set one, assuming HKPS protocol.
+	[[ "$certurl" ]] || certurl="https://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}"
+
 	# Write possibly given $pubkeyfile
 	[[ -z "$pubkeyfile" ]] || gpg --homedir "$gpghome" --export --armor "$keyid" > "$pubkeyfile" || return $?
 
@@ -856,7 +859,7 @@ Options:
 
 	printf "%s: Notice: Configuring OpenPGP security token...\n" "$FUNCNAME" >&2
 
-	echo -e "admin\nlogin\n${ids[0]:-${emails[0]}}\nurl\nhttps://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}\nlang\n$lang\nname\n${emails[0]}\n${username}\n" | \
+	echo -e "admin\nlogin\n${ids[0]:-${emails[0]}}\nurl\n${certurl}\nlang\n$lang\nname\n${emails[0]}\n${username}\n" | \
 	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" >&2 ; return 1 ;}
 
 	echo -e "admin\nkey-attr\n2\n1\n2\n1\n2\n1\nquit" | \
