@@ -5,9 +5,9 @@ TARGETS           := $(basename $(wildcard bl-*))
 
 prefix            ?= /usr/local
 datarootdir       ?= $(prefix)/share
-completiondir            ?= $(datarootdir)/bash-completion/completions
+completiondir     ?= $(datarootdir)/bash-completion/completions
 
-COMPLETIONDIR            := $(DESTDIR)$(completiondir)
+COMPLETIONDIR     := $(DESTDIR)$(completiondir)
 DEST_TARGETS      := $(foreach ITEM, $(TARGETS), \
                        $(COMPLETIONDIR)/$(ITEM))
 DEST_TARGETS_DIRS := $(sort $(dir $(DEST_TARGETS)))

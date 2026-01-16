@@ -125,6 +125,11 @@ declare -Ar BL_FOOPGP_STINGYNALTYS=(
 
 BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-${BL_FOOPGP_STINGYNALTYS[$(date --iso-8601 | head -c 7)]}}"
 
+TEXTDOMAIN="${TEXTDOMAIN:-bashlibs}"
+TEXTDOMAINDIR="${TEXTDOMAINDIR:-$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale}"
+# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+shopt -u noexpand_translation
+
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-pgpid --
@@ -162,41 +167,43 @@ _bl_foopgp_parseoptions() {
 bl_foopgp_symlinks() (
 	local name
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
-	local usage=($"Usage: %s INDEX_DIR ...\n" "$name")
-	local helpmsg=$"
-Update symlinks in the foopgp tree.
-Options:
-  -c, --clean         Just remove existing symlinks (without recreating them).
-"
+	local usage=$"Usage:"" $name [OPTIONS] INDEX_DIR ..."
+	local helpmsg='
+'$"Update symlinks in the foopgp tree."'
+'$"Options:"'
+  -c, --clean         '$"Just remove existing symlinks (without recreating them)."'
+'
 	local clean
 	for ((;$#;)) ; do
 		case "$1" in
 			-c|--clean) clean="true" ;;
-			-h|--help) printf "${usage}$helpmsg\n" "${usage[@]: 1}" ; return ;;
+			-h|--help) printf -- "$usage\n$helpmsg\n" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf $"%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) echo "$FUNCNAME: Error: "$"Unrecognized option"" '$1'" >&2
+				printf -- $"Try"" '$name --help' "$"for more information.""\n" >&2
+				return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
-	(($#)) || { printf "${usage[@]}" >&2 ; return 2 ; }
+	(($#)) || { printf -- "${usage}\n" >&2 ; return 2 ; }
 
-	[[ -d "$1/by-id" ]] || { printf $"%s: Error: unexpected foopgp index directory '%s'" "$FUNCNAME" "$1" >&2 ; return 2 ; }
+	[[ -d "$1/by-id" ]] || { echo "$FUNCNAME: Error: "$"Unexpected foopgp index directory"" '$1'" >&2 ; return 2 ; }
 	cd "$1" || return $?
 
 	if [[ -d "by-email" ]] ; then
-		printf $"Deleting existing symlinks in 'by-email/' ...\n" >&2
+		printf -- $"Deleting existing symlinks in"" 'by-email/' ...\n" >&2
 		find "by-email/" -type l -delete || return $?
 	fi
 	[[ -z "$clean" ]] || return 0
 
 	local file email domain tld i
-	printf $"Creating symlinks from 'by-id/' ...\n" >&2
+	printf -- $"Creating symlinks from"" 'by-id/' ...\n" >&2
 	find by-id/u4/*/*/*/emails/ -type f | while read file
 	do
 		email=${file##*\/}
-		[[ "$email" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf $"%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$email'" >&2 ; return 1 ;}
+		[[ "$email" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { echo "$FUNCNAME: Error: "$"Invalid email"" '$email'." >&2 ; return 1 ;}
 		domain=${BASH_REMATCH[2]}
 		tld=${BASH_REMATCH[4]}
 		mkdir -p "by-email/${tld}/${domain}" || return $?

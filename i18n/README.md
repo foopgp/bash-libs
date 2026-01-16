@@ -4,6 +4,17 @@
 SPDX-License-Identifier: LGPL-3.0-only
 -->
 
+Translations should be written into *../share/locale/\*/LC_MESSAGES/bashlibs.po* files.
+
+To create new translation file (here for Italian):
+
+```sh
+mkdir -p ../share/locale/it/LC_MESSAGES/
+echo -e 'msgid ""\nmsgstr ""\n"Content-Type: text/plain; charset=UTF-8\\n"' > ../share/locale/it/LC_MESSAGES/bashlibs.po
+make update
+```
+---
+
 # About using gettext to internationalize bash-written software
 
 I really plan to use this bash feature:
