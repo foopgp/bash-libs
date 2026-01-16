@@ -760,16 +760,16 @@ Options:
   -H, --homedir GNUPGHOME      GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -p, --passphrase PASSPHRASE  Passphrase to access secret parts of OpenPGP key
   -P, --passfrom FILE          Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -K, --keyserver HKPSSERV     Name of keyserver to send PGP PUBLIC KEY (default: $hkpsserv)
-  -U, --certurl URL            URL to retrieve your OpenPGP certificate (default: https://{HKPSSERV}/pks/lookup?op=get&search=0x{KEYFPR} )
+  -U, --certurl URL            URL to retrieve your OpenPGP certificate (default: https://{KEYSERVER}/pks/lookup?op=get&search=0x{KEYFPR} )
   -L, --lang LANG              Security token (OpenPGP smartcard) prefered language (default: $lang)
   -N, --name NAME              Customize name of security token's cardholder
+  -k, --keyserver KEYSERVER    Send OpenPGP certificate to this public keys server. Also modify default URL (see --certurl, default: $hkpsserv)
+  -K, --pubkey FILE            Also write armored OpenPGP certificate to given FILE.
   -v, --verbose                Increase verbosity
-      --no-send                Don't send PGP PUBLIC KEY (OpenPGP certificate) to the HKPS keyserver
       --force                  Don't ask before resetting unempty security token (OpenPGP smartcard)
 "
 
-	local passphrase certurl username nosend=0 force=0
+	local passphrase certurl username force=0 pubkeyfile
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local gpgfilter="grep ^gpg"
 	for ((;$#;)) ; do
@@ -788,8 +788,10 @@ Options:
 				shift ; lang=$(sed -nE ' s,.*([A-Za-z]{2}).*,\L\1,p ' <<<"${1:: 2}") ;;
 			-N|--name)
 				shift ; username="${1//[^0-9a-zA-Z ._-]/}" ;;
+			-K|--pubkey)
+				shift ; pubkeyfile="$1" ;;
 			-v|--verbose) gpgfilter="cat" ;;
-			--no-send) nosend=1 ;;
+			--no-send) echo "$FUNCNAME:" $"Warning:" $"Deprecated option" "$1" >&2 ;;
 			--force) force=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
@@ -816,6 +818,9 @@ Options:
 
 	# Replace eventual keyID (short) by its keyFPR (longest)
 	keyid=$(grep -o -m1 "\<[0-9ABCDEF]\{40\}\>" <<<"${secstatus}") || { printf "%s: Error: Can't get fingerprint (maybe due to incompatible gpg's version).\n" "$FUNCNAME" >&2 ; return 1 ; }
+
+	# Write possibly given $pubkeyfile
+	[[ -z "$pubkeyfile" ]] || gpg --homedir "$gpghome" --export --armor "$keyid" > "$pubkeyfile" || return $?
 
 	emails=($(sed --silent --regexp-extended "s,^uid.*[<[:space:]](${BL_INTERACTIVE_EMAIL_REGEX}).*,\1,p" <<<"${secstatus}"))
 	[[ "$emails" ]] || { printf "%s: Error: No email for OpenPGP key '%s'.\n" "$FUNCNAME" "$keyid" >&2 ; return 1 ; }
@@ -872,8 +877,8 @@ Options:
 	bl_qrkey_change_token_code --homedir "$gpghome" --admin --code 12345678 --newcodefrom <(cat <<<"$admincode") || { printf "Changing Admin code FAIL ($?)\n" >&2 ; return 1 ;}
 
 	echo
-	gpg --homedir "$gpghome" --export --armor "$keyid"
-	if ((nosend)) || ! timeout --verbose 8 gpg --homedir "$gpghome" --keyserver "${hkpsserv}" --send-keys "$keyid" ; then
+	gpg --homedir "$gpghome" --export --armor "$keyid" || return $?
+	if ! timeout --verbose 8 gpg --homedir "$gpghome" --keyserver "${hkpsserv}" --send-keys "$keyid" ; then
 		printf "%s: Warning: Please publish this PGP PUBLIC KEY on the Internet (eg: on a keyserver)\n" "$FUNCNAME" >&2
 	fi
 	echo

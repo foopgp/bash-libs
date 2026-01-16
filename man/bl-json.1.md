@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-JSON
 section: 1
 header: User Commands
-footer: bash-libs 0.2.3
+footer: bash-libs 0.2.5
 ---
 
 # NAME
