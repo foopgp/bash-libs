@@ -13,6 +13,7 @@ To find out what they can do for you, [please read the bash-libs 7 manpage](man/
 
 ## For just installing and using the bash-libs
 
+TODO: Fix this section: there is missing many dependencies
 ```sh
 sudo apt install logger bash-completion
 ```

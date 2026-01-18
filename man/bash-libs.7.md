@@ -15,11 +15,20 @@ footer: bash-libs
 
 bash-libs - set of tools which may also be sourced as bash libraries
 
+# DESCRIPTION
+
+Bash-libs was initialy developped by **foopgp.org**, to manage:
+
+- OpenPGP ID
+- OpenPGP security tokens (yubikey,...)
+- Djibian GNU/Linux OS
+- a fair unit of value: the dji (Ɉ)
+
 # EXECUTABLES/LIBRARIES
 
 ## bl-pgpid
 
-Generate foopgp identifiers, like *udid4* to identify world-wide humans, or a fixed Unix User ID for each of them.
+Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, OpenPGP certificate, etc.
 
 See [**bl-pgpid**](bl-pgpid.1.md)(1) manual for more details.
 
@@ -83,34 +92,50 @@ See [**bl-log**](bl-log.1.md)(1) manual for more details.
 
 Any other file prefixed by "bl-" and not listed in current page, should be considered as experimental or deprecated.
 
+# NOTE
+
+Sourcing allows more control and performance, but requires bash skills.
+While running directly is more user friendly and allows translations.
+
 # DEVELOPER NOTES
 
 Bash executables heavily use the fact that **${BASH_SOURCE[0]}** differs from **$0** when
-sourced.
+sourced (as bash libraries).
 
-All bash-libs executables should be prefixed with «bl-», while all bash-libs
-exposed functions should be prefixed with «bl_», and functions which are intended
-to be use only internally should be prefixed with «\_bl_».
+All bash-libs executables are prefixed with «bl-», while all bash-libs
+exposed functions are prefixed with «bl_», and functions which are intended
+to be use only internally are prefixed with «\_bl_».
 
-Also all environment variables set when sourcing a bash-libs executable should be
+Also all environment variables set when sourcing a bash-libs executable are
 prefixed by «BL_».
 
-All bash-libs exposed functions should support at least *--help* and *--version* to
+All bash-libs exposed functions support at least *--help* and *--version* to
 be passed as a first argument.
 
-All bash-libs executables should also support at least *--help* and *--version*
+All bash-libs executables also support at least *--help* and *--version*
 to be passed as a first argument, even if they are sourced instead of executed.
 
-When sourced, all bash-libs executables should also support a
+When sourced, all bash-libs executables support a
 *--bash-completion* option to be passed as first argument, to load a bash
 completion for the given executable.
 
-All bash-libs exposed functions and executables should return zero on normal operation, non-zero on errors.
-
+All bash-libs exposed functions and executables return zero on normal operation, non-zero on errors.
 
 # SEE ALSO
 
-[**bl-interactive**](bl-interactive.1.md)(1), [**bl-security**](bl-security.1.md)(1), [**bl-log**](bl-log.1.md)(1).
+[**bl-interactive**](bl-interactive.1.md)(1),
+[**bl-log**](bl-log.1.md)(1),
+[**bl-security**](bl-security.1.md)(1),
+
+[**bl-json**](bl-json.1.md)(1),
+[**bl-markdown**](bl-markdown.1.md)(1),
+
+[**bl-pgpid**](bl-pgpid.1.md)(1),
+[**bl-qrkey**](bl-qrkey.1.md)(1),
+[**bl-djibian**](bl-djibian.1.md)(1),
+
+[**bl-foopgp**](bl-foopgp.1.md)(1),
+[**bl-dji**](bl-dji.1.md)(1).
 
 # AUTHORS/MAINTAINERS
 
