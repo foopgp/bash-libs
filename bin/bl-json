@@ -67,11 +67,6 @@ readonly BL_JSON_NAME BL_JSON_VERSION BL_JSON_FUNCTIONS
 
 ### Default option values ###
 
-TEXTDOMAIN="${TEXTDOMAIN:-bashlibs}"
-TEXTDOMAINDIR="${TEXTDOMAINDIR:-$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale}"
-# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
-shopt -s noexpand_translation
-
 ### external functions ###
 
 ### internal functions ###
@@ -330,6 +325,11 @@ Examples:
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
 	declare -r BL_JSON_isprogram=1
+
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
 
 	BL_JSON_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_JSON_shelpmsg="

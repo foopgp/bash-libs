@@ -482,6 +482,11 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
 	# run as a program
 	declare -r BL_INTERACTIVE_isprogram=1
 
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+
 	BL_INTERACTIVE_usage="Usage: $(basename "${BASH_SOURCE[0]}") [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_INTERACTIVE_shelpmsg="
   -h, --help               show help and exit

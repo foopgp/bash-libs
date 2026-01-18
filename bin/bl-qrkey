@@ -81,11 +81,6 @@ readonly BL_QRKEY_NAME BL_QRKEY_VERSION BL_QRKEY_FUNCTIONS
 
 ### Default option values ###
 
-TEXTDOMAIN="${TEXTDOMAIN:-bashlibs}"
-TEXTDOMAINDIR="${TEXTDOMAINDIR:-$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale}"
-# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
-shopt -s noexpand_translation
-
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-interactive --
@@ -902,6 +897,11 @@ Options:
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
 	declare -r BL_QRKEY_isprogram=1
+
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
 
 	BL_QRKEY_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_QRKEY_shelpmsg="

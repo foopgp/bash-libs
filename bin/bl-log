@@ -99,6 +99,11 @@ BL_LOGEXITLNAME="${BL_LOGEXITLNAME:-emerg}"
 if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
 	# run as a program
 
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+
 	BL_LOG_usage="Usage: $(basename "${BASH_SOURCE[0]}") [OPTIONS]... PRIORITY [MESSAGE]..."
 	BL_LOG_shelpmsg="
 $BL_LOG_NAME is also bash library, see:

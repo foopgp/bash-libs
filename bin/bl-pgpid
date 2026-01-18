@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that generate id compliant with foopgp.
+# Bash library and executable that generate id compliant with foopgp: OpenPGP ID.
 #
 # Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
@@ -327,11 +327,6 @@ BL_PGPID_KEYSERVERS=(
 "hkps://keys.foopgp.org"
 )
 
-TEXTDOMAIN="${TEXTDOMAIN:-bashlibs}"
-TEXTDOMAINDIR="${TEXTDOMAINDIR:-$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale}"
-# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
-shopt -s noexpand_translation
-
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-interactive --
@@ -347,7 +342,7 @@ _bl_pgpid_parseoptions() {
 			-h|--help) printf "%s\n%s%s" "$BL_PGPID_usage" "$BL_PGPID_chelpmsg" "$BL_PGPID_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_PGPID_NAME" "$BL_PGPID_VERSION" ; return 1 ;;
 			--) shift ; break ;;
-			-*) printf "%s: Unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			-*) printf -- "$BL_PGPID_NAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -424,11 +419,11 @@ Options:
 	local ch ret=0
 	if [[ ${mrz:0:1} != P ]] ; then
 		# Only ICAO-9303 (ISO/IEC-7501-1) passport are yet supported.
-		printf "%s: Error: Unsupported MRZ '%s...'.\n" "$FUNCNAME" "${mrz:0:1}" >&2
+		printf "$FUNCNAME: Error: "$"Unsupported MRZ"" '%s...'.\n"  "${mrz:0:1}" >&2
 		return 1
 	fi
 	if [[ ${#mrz} != 88 ]] ; then
-		printf "%s: %s: Invalid MRZ lenght: %d/88.\n" "$FUNCNAME" "$errlvl" "${#mrz}" >&2
+		printf "$FUNCNAME: %s: "$"Invalid MRZ lenght:"" %d/88.\n" "$errlvl" "${#mrz}" >&2
 		[[ "$errlvl" == "Warning" ]] || ret=1
 	fi
 
@@ -455,7 +450,7 @@ Options:
 		doc[checked_$ch]=$(_bl_icao9303_mrz_checkdigit "${doc[$ch]}")
 		doc[valid_$ch]=$( [[ ${doc[checked_$ch]} == ${doc[check_$ch]} ]] && echo true || echo false )
 		if ! ${doc[valid_$ch]} ; then
-			printf "%s: %s: %s checksum -> %s. Should be %s.'\n" "$FUNCNAME" "$errlvl" "$ch" "${doc[check_$ch]}" "${doc[checked_$ch]}" >&2
+			printf "$FUNCNAME: %s: %s checksum -> %s. "$"Should be"" %s.'\n" "$errlvl" "$ch" "${doc[check_$ch]}" "${doc[checked_$ch]}" >&2
 			[[ "$errlvl" == "Warning" ]] || ret=1
 		fi
 	done
@@ -483,7 +478,7 @@ Options:
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -498,7 +493,7 @@ Options:
 	gpg --homedir "$gpghome" --list-secret-keys --with-colons $1 | grep "^sec:" | while	IFS=':' read record[Type] record[Validity] record[KeyLenght] record[PubKeyAlgo] record[KeyID] record[CreationDate] record[ExpirationDate] record[Field8] record[Ownertrust] record[UserID] record[SignatureClass] record[KeyCapabilities] record[Field13] record[Flags] record[TockenSN] record[HashAlgo] record[CurveName] record[ComplianceFlags] record[LastUpdate] record[Origin] record[Comment] record[rfu] ; do
 		if eval "$filtertest" ; then
 			if ! pkaindex=$((${record[PubKeyAlgo]})) ; then
-				printf "%s: Error: Unexpected field 4 (Public Key Algorithm)\n" "$FUNCNAME"  >&2
+				printf "$FUNCNAME: Error: "$"Unexpected field 4 (Public Key Algorithm)"".\n" >&2
 				return 1
 			fi
 			echo "${record[KeyID]}  $(date --iso-8601=hours --date "@${record[CreationDate]}")  ${pka[${pkaindex}]:-unkown}"
@@ -530,7 +525,7 @@ Options:
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -555,7 +550,7 @@ bl_pgpid_mrz_to_u4() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
-Calculate and output a pgpid u4 identifier from the Machine Readable Zone of an icao9303 passport.
+Calculate and output a OpenPGP ID u4 string from the Machine Readable Zone of an icao9303 passport.
 If MRZ is not passed as argument, it will we read from STDIN.
 
 Option:
@@ -649,7 +644,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -764,7 +759,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -811,7 +806,7 @@ Output 3 lines for each fingerprints :
 
 Options:
   -N, --name PSEUDONYM             Common name or pseudonym (default: first part of email)
-  -c, --comment U4|U5              First part of comment field MUST be a pgpid string. Confer \$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
+  -c, --comment U4|U5              First part of comment field MUST be a OpenPGP ID string. Confer \$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
   -C, --extra-comment COMMENT      Comment (second part of comment field, free to use).
   -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage).
   -P, --passfrom FILE              Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
@@ -845,7 +840,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -866,7 +861,7 @@ Options:
 	elif [[ "$pgpidu" =~ ${BL_PGPID_U5_REGEX} ]] ; then
 		pgpidu="u5=${BASH_REMATCH[0]}"
 	elif [[ "$pgpidugiven" ]] ; then
-		printf "%s: Error: No pgpid string in given '%s'.\n" "$FUNCNAME" "$pgpidu" >&2
+		printf "%s: Error: No OpenPGP ID string in given '%s'.\n" "$FUNCNAME" "$pgpidu" >&2
 		return 2
 	else
 		pgpidu="u4=$(bl_pgpid_gen_u4 --verify)"
@@ -911,7 +906,7 @@ bl_pgpid_avatar() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local tmpdir="/tmp/$FUNCNAME.$USER"
-	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
+	local usage=$"Usage:"" $name [OPTIONS]... [NAME|KEYID|U4|U5]"
 	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg='
 '$"Extract or add image inside OpenPGP certificate."'
@@ -948,7 +943,7 @@ bl_pgpid_avatar() {
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -963,25 +958,25 @@ bl_pgpid_avatar() {
 	# Backup existing photos and get fingerprints
 	echo -n > "$tmpdir/imglist" || return $?
 	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "img=\$(md5sum %i | head -c 32).%t && cp -v %i ${tmpdir@Q}/\$img > /proc/$$/fd/2 2>&1 && echo ${tmpdir@Q}/\$img >> ${tmpdir@Q}/imglist" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
-	(( ${#fprs[@]} > 0 )) || { printf "%s: Error: No certificate for %s.\n" "$FUNCNAME" "'$user'" >&2 ; return 1 ;}
+	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for %s"".\n" "'$user'" >&2 ; return 1 ;}
 
 	if [[ "$image" ]] ; then
 		local height
 		# copy image to read it once if it was a fifo or /dev/stdin ...
 		cat "$image" > "$tmpdir/origin.image" || { printf "%s: Error: Can't retrieve image file %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
-		height=$(gm identify -format "%h" "$tmpdir/origin.image") || { printf "%s: Error: Unable to identify image %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
+		height=$(gm identify -format "%h" "$tmpdir/origin.image") || { printf "$FUNCNAME: Error: "$"Unable to identify image"" ${image@Q}.\n" >&2 ; return 1 ;}
 		if ((height==180)) ; then
 			# Image has already the expected height, don't alter it.
 			mv "$tmpdir/origin.image" "$tmpdir/new.jpg" || return $?
 		else
 			# Resize
-			gm convert -geometry x180 "$tmpdir/origin.image" jpeg:"$tmpdir/new.jpg" || { printf "%s: Error: Unable to resize image %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
+			gm convert -geometry x180 "$tmpdir/origin.image" jpeg:"$tmpdir/new.jpg" || { printf "$FUNCNAME: Error: "$"Unable to resize image"" ${image@Q}.\n" >&2 ; return 1 ;}
 			rm "$tmpdir/origin.image" || return $?
 		fi
 	fi
 
 	if [[ "$revoke" ]] ; then
-		(( ${#fprs[@]} < 2 )) || { printf "%s: Error: user '%s' match many certificates (%s)\n" "$FUNCNAME" "$user" "${fprs[*]}" >&2 ; return 1 ;}
+		(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many certificates (%s)"".\n" "$user" "${fprs[*]}" >&2 ; return 1 ;}
 
 		local commands
 		# Revoke non-revoked photos
@@ -1053,7 +1048,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -1090,8 +1085,8 @@ Options:
 		local ids
 
 		ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4=\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5=\1,p" <<<"$uids" | sort -u))
-		(( ${#ids[@]} > 0 )) || { printf "%s: Error: No pgpid string (u4|u5) in %s certificate\n" "$FUNCNAME" "$user" >&2 ; return 1 ;}
-		(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary pgpid string" "(${ids[*]})" >&2 ; return 1 ;}
+		(( ${#ids[@]} > 0 )) || { printf "%s: Error: No OpenPGP ID string (u4|u5) in %s certificate\n" "$FUNCNAME" "$user" >&2 ; return 1 ;}
+		(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary OpenPGP ID string" "(${ids[*]})" >&2 ; return 1 ;}
 
 		# Add emails
 		for email in "${toadd[@]}" ; do
@@ -1116,11 +1111,11 @@ bl_pgpid_token_check()
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]..."
 	local helpmsg="
-Check if OpenPGP token is correctly configured for pgpid ; may output informations.
+Check if OpenPGP token is correctly configured for OpenPGP ID ; may output informations.
 Will try to import cleaned certificate indicated in 'URL of public key' field.
 Return:
- - 0 if no error and OpenPGP token is correctly configured for pgpid.
- - 100 + number of missing pgpid data fields.
+ - 0 if no error and OpenPGP token is correctly configured for OpenPGP ID.
+ - 100 + number of missing OpenPGP ID data fields.
  - then 107 if all required data are missing (OpenPGP card is probably empty).
  - Other non-zero on other erros.
 
@@ -1157,7 +1152,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -1221,7 +1216,7 @@ Options:
 
 	# Should be in 'Login data' field, but who knows ? (yet...) 
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}" | sort -u))
-	(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary pgpid string" "(${ids[*]})" >&2 ; return 1 ;}
+	(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary OpenPGP ID string" "(${ids[*]})" >&2 ; return 1 ;}
 	aaname[pgpid_id]="${ids[0]}"
 
 	aaname[token_AVersion]="${ttype} ${tversion}"
@@ -1243,13 +1238,13 @@ Options:
 	for key in pgpid_name pgpid_id pgpid_email pgpid_Skeyfpr pgpid_Ekeyfpr pgpid_Akeyfpr pgpid_certurl ; do
 		if [[ -z "${aaname[$key]}" ]] ; then
 			((ret = ret ? ret+1 : 101))
-			((quiet)) || printf "%s: Notice: Invalid pgpid token: missing '%s'.\n" "$FUNCNAME" "${key}" >&2
+			((quiet)) || printf "$FUNCNAME: Notice: "$"Invalid OpenPGP ID token, missing:"" '${key}'.\n" >&2
 		fi
 	done
 
 	! ((ret)) || return $ret
 
-	((quiet)) || printf "%s: Info: Valid token, pgpid_id='%s'.\n" "$FUNCNAME" "${aaname[pgpid_id]}" >&2
+	((quiet)) || printf "$FUNCNAME: Info: "$"Valid OpenPGP ID token"", pgpid_id='${aaname[pgpid_id]}'.\n" >&2
 	return 0
 }
 
@@ -1258,6 +1253,11 @@ Options:
 if [[ "$BASH_SOURCE" == "$0" ]] ; then
 	# run as a program
 	declare -r BL_PGPID_isprogram=1
+
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
 
 	BL_PGPID_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_PGPID_shelpmsg="
