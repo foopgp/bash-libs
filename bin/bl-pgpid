@@ -321,11 +321,26 @@ declare -Ar BL_PGPID_COORDINATES=(
 [ZWE]="e-19.00_029.85 Zimbabwe"
 )
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_PGPID_isprogram=1 || declare -r BL_PGPID_isprogram=0
+
+### Others Globals ###
 
 BL_PGPID_KEYSERVERS=(
 "hkps://keys.foopgp.org"
 )
+
+if ((BL_PGPID_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_PGPID_chelpmsg="
+Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, OpenPGP certificate, etc.
+
+Main options:
+  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"
 
 ### external functions ###
 
@@ -387,7 +402,7 @@ else return non-zero if EXPECTED_RESULT differs from calculated check digit.
 }
 
 _bl_icao9303_mrz_analyse() {
-	local helpmsg="Usage: $FUNCNAME [Options] AANAME [MRZ]
+	local helpmsg="Usage: $FUNCNAME [Options] AANAME [MRZ]
 Analyse a Machine Readable Zone and fill the associative array named AANAME
 If MRZ is not passed as argument, it will we read from STDIN.
 
@@ -1248,17 +1263,9 @@ Options:
 	return 0
 }
 
-### General Help Messages ###
+### Init ###
 
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_PGPID_isprogram=1
-
-	TEXTDOMAIN="bashlibs"
-	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
-	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
-	shopt -s noexpand_translation
-
+if ((BL_PGPID_isprogram)) ; then
 	BL_PGPID_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_PGPID_shelpmsg="
   -h, --help               show help and exit
@@ -1274,10 +1281,7 @@ $BL_PGPID_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
 else
-	# run as a library (source $0)
-
 	BL_PGPID_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_PGPID_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
@@ -1287,14 +1291,6 @@ $(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s %s\n" "$f" "$($f --h
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
 "
 fi
-
-BL_PGPID_chelpmsg="
-Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, OpenPGP certificate, etc.
-
-Main options:
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"
-
-### Init ###
 
 # Parse Options
 _BL_PGPID_RETVAL=0

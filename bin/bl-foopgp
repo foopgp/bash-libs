@@ -60,7 +60,6 @@ if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_foopgp_parseoptions)" == fu
 	return $?
 fi
 
-
 ### Constants ###
 
 BL_FOOPGP_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
@@ -121,9 +120,26 @@ declare -Ar BL_FOOPGP_STINGYNALTYS=(
 [2027-06]=1.19668052482341933067
 )
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_FOOPGP_isprogram=1 || declare -r BL_FOOPGP_isprogram=0
+
+### Others Globals ###
 
 BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-${BL_FOOPGP_STINGYNALTYS[$(date --iso-8601 | head -c 7)]}}"
+
+if ((BL_FOOPGP_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_FOOPGP_chelpmsg="
+Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
+
+Main options:
+  -v, --verbose            output important infos on stderr, like stingynalty value
+  -s, --stingynalty VALUE  set STINGYNALTY ($(date --iso-8601 | head -c 7): $BL_FOOPGP_STINGYNALTY)
+  -d, --date STRING        set STINGYNALTY according to given date (cf. <https://www.gnu.org/software/coreutils/date>)"
 
 ### external functions ###
 
@@ -162,7 +178,7 @@ _bl_foopgp_parseoptions() {
 bl_foopgp_symlinks() (
 	local name
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
-	local usage=$"Usage:"" $name [OPTIONS] INDEX_DIR ..."
+	local usage=$"Usage:"" $name [OPTIONS] INDEX_DIR ..."
 	local helpmsg='
 '$"Update symlinks in the foopgp tree."'
 '$"Options:"'
@@ -175,9 +191,7 @@ bl_foopgp_symlinks() (
 			-h|--help) printf -- "$usage\n$helpmsg\n" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) echo "$FUNCNAME: Error: "$"Unrecognized option"" '$1'" >&2
-				printf -- $"Try"" '$name --help' "$"for more information.""\n" >&2
-				return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -366,18 +380,9 @@ Options:
 	done #| uniq
 }
 
+### Init ###
 
-### General Help Messages ###
-
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_FOOPGP_isprogram=1
-
-	TEXTDOMAIN="bashlibs"
-	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
-	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
-	shopt -s noexpand_translation
-
+if ((BL_FOOPGP_isprogram)) ; then
 	BL_FOOPGP_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_FOOPGP_shelpmsg="
   -h, --help               show help and exit
@@ -393,10 +398,7 @@ $BL_FOOPGP_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
 else
-	# run as a library (source $0)
-
 	BL_FOOPGP_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_FOOPGP_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
@@ -406,17 +408,6 @@ $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --h
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
 "
 fi
-
-BL_FOOPGP_chelpmsg="
-Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
-
-Main options:
-  -v, --verbose            output important infos on stderr, like stingynalty value
-  -s, --stingynalty VALUE  set STINGYNALTY ($(date --iso-8601 | head -c 7): $BL_FOOPGP_STINGYNALTY)
-  -d, --date STRING        set STINGYNALTY according to given date (cf. <https://www.gnu.org/software/coreutils/date>)
-"
-
-### Init ###
 
 # Parse Options
 _BL_FOOPGP_RETVAL=0

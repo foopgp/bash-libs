@@ -75,7 +75,21 @@ readonly BL_DJIBIAN_NAME BL_DJIBIAN_VERSION BL_DJIBIAN_FUNCTIONS
 
 declare -r BL_DJIBIAN_EXTRA_GROUPS="cdrom,floppy,audio,dip,video,plugdev,netdev,scanner,bluetooth,lpadmin"
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_DJIBIAN_isprogram=1 || declare -r BL_DJIBIAN_isprogram=0
+
+### Others Globals ###
+
+if ((BL_DJIBIAN_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_DJIBIAN_chelpmsg="
+System tools for Djibian GNU/Linux. Mainly to manage users.
+
+Main options:"
 
 ### external functions ###
 
@@ -309,17 +323,9 @@ Options:
 	return "$ret"
 }
 
-### General Help Messages ###
+### Init ###
 
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_DJIBIAN_isprogram=1
-
-	TEXTDOMAIN="bashlibs"
-	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
-	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
-	shopt -s noexpand_translation
-
+if ((BL_DJIBIAN_isprogram)) ; then
 	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
   -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)
@@ -336,10 +342,7 @@ $BL_DJIBIAN_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
 else
-	# run as a library (source $0)
-
 	BL_DJIBIAN_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_DJIBIAN_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
@@ -349,14 +352,6 @@ $(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
 "
 fi
-
-BL_DJIBIAN_chelpmsg="
-System tools for Djibian GNU/Linux. Mainly to manage users.
-
-Main options:
-"
-
-### Init ###
 
 # Parse Options
 _BL_DJIBIAN_RETVAL=0

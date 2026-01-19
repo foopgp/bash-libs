@@ -51,7 +51,6 @@ if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_qif_parseoptions)" == funct
 	return $?
 fi
 
-
 ### Constants ###
 
 BL_QIF_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
@@ -59,7 +58,22 @@ BL_QIF_VERSION="qif-sucks"
 BL_QIF_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 readonly BL_QIF_NAME BL_QIF_VERSION BL_QIF_FUNCTIONS
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_QIF_isprogram=1 || declare -r BL_QIF_isprogram=0
+
+### Others Globals ###
+
+if ((BL_QIF_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_QIF_chelpmsg="
+Main options:
+  -h, --help               show help and exit/return
+  -V, --version            show version and exit/return
+"
 
 ### external functions ###
 
@@ -354,7 +368,7 @@ Extract stats from Given .qif files
 _bl_qif_fecp4formatline() {
 
 # Note: to fix dot/comma problems, like with ' printf " %9.2f |" ${p4entry[Debit]}'
-# check environment : LC_NUMERIC="fr_FR.UTF-8" or LC_NUMERIC="C"
+# check environment : LC_NUMERIC="fr_FR.UTF-8" or LC_NUMERIC="C"
 
 	local -n p4entry="$1"
 
@@ -432,7 +446,7 @@ Options:
 #
 # À ces champs, imposés par l'administration fiscale française, nous rajoutons 1+8 champs pour satisfaire nos besoins internes de visibilité comptable :
 # |  19 |         20 |         21 |      22 |      23 |      24 |      25 |    26  |          27 |
-# |     | PackageNum | PackageLib | TypeNum | TypeLib | TypeRef | SrcType | SrcRef | SrcEntryNum |
+# |     | PackageNum | PackageLib | TypeNum | TypeLib | TypeRef | SrcType | SrcRef | SrcEntryNum |
 #
 # Le champs 19 est laissé vide, pour accentuer la séparation et "Reserve for Futur Use" (par d'autres).
 # Les champs PackageNum (20) et PackageLib (21) permettent de différencier nos enveloppes générales. Par exemple de différencier les flux liés aux activitées de Fred Renault (connexes à l'association), de celles liées au coeur de l'association.
@@ -548,17 +562,9 @@ Options:
 	done
 }
 
-### General Help Messages ###
+### Init ###
 
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_QIF_isprogram=1
-
-	TEXTDOMAIN="bashlibs"
-	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
-	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
-	shopt -s noexpand_translation
-
+if ((BL_QIF_isprogram)) ; then
 	BL_QIF_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_QIF_shelpmsg="
 Actions:
@@ -571,10 +577,7 @@ $BL_QIF_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
 else
-	# run as a library (source $0)
-
 	BL_QIF_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_QIF_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
@@ -584,14 +587,6 @@ $(for f in "${BL_QIF_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
 "
 fi
-
-BL_QIF_chelpmsg="
-Main options:
-  -h, --help               show help and exit/return
-  -V, --version            show version and exit/return
-"
-
-### Init ###
 
 # Parse Options
 _BL_QIF_RETVAL=0

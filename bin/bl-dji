@@ -73,7 +73,21 @@ declare -r BL_DJI_U4_REGEX="[a-zA-Z0-9_-]{22}e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9
 
 declare -r BL_DJI_GRAIN_REGEX="(dji)([0-9]{2})([dc])([0-9]{8})(u4${BL_DJI_U4_REGEX})([0-9A-F])"
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_DJI_isprogram=1 || declare -r BL_DJI_isprogram=0
+
+### Others Globals ###
+
+if ((BL_DJI_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_DJI_chelpmsg="
+Manage djis (Ɉ), also known as foopgp tokens.
+
+Main options:"
 
 ### external functions ###
 
@@ -501,17 +515,9 @@ Options:
 	fi
 }
 
-### General Help Messages ###
+### Init ###
 
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_DJI_isprogram=1
-
-	TEXTDOMAIN="bashlibs"
-	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
-	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
-	shopt -s noexpand_translation
-
+if ((BL_DJI_isprogram)) ; then
 	BL_DJI_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_DJI_shelpmsg="
   -h, --help               show help and exit
@@ -527,10 +533,7 @@ $BL_DJI_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
 else
-	# run as a library (source $0)
-
 	BL_DJI_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_DJI_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
@@ -540,14 +543,6 @@ $(for f in "${BL_DJI_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
 "
 fi
-
-BL_DJI_chelpmsg="
-Manage djis (Ɉ), also known as foopgp tokens.
-
-Main options:
-"
-
-### Init ###
 
 # Parse Options
 _BL_DJI_RETVAL=0

@@ -57,7 +57,6 @@ if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_json_parseoptions)" == func
 	return $?
 fi
 
-
 ### Constants ###
 
 BL_JSON_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
@@ -65,7 +64,21 @@ BL_JSON_VERSION=$(git describe --dirty --broken --always)
 BL_JSON_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 readonly BL_JSON_NAME BL_JSON_VERSION BL_JSON_FUNCTIONS
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_JSON_isprogram=1 || declare -r BL_JSON_isprogram=0
+
+### Others Globals ###
+
+if ((BL_JSON_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_JSON_chelpmsg="
+Use jq (Command-line JSON processor) to convert json data to bash variables or arrays, and vice-versa.
+
+Main options:"
 
 ### external functions ###
 
@@ -319,18 +332,9 @@ Examples:
 	return 0
 }
 
+### Init ###
 
-### General Help Messages ###
-
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_JSON_isprogram=1
-
-	TEXTDOMAIN="bashlibs"
-	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
-	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
-	shopt -s noexpand_translation
-
+if ((BL_JSON_isprogram)) ; then
 	BL_JSON_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_JSON_shelpmsg="
   -h, --help               show help and exit
@@ -345,10 +349,7 @@ $ $BASH_SOURCE ${BL_JSON_FUNCTIONS:8} --help
 $BL_JSON_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"
 else
-	# run as a library (source $0)
-
 	BL_JSON_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_JSON_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
@@ -357,13 +358,6 @@ $(for f in "${BL_JSON_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --hel
 
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
 fi
-
-BL_JSON_chelpmsg="
-Use jq (Command-line JSON processor) to convert json data to bash variables or arrays, and vice-versa.
-
-Main options:"
-
-### Init ###
 
 # Parse Options
 _BL_JSON_RETVAL=0
