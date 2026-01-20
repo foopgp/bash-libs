@@ -11,7 +11,7 @@
 #   * Add a --timeout global option
 
 if [[ "$1" == --bash-completion ]] ; then
-	BL_tmp_a=$("${BASH_SOURCE[0]}" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
+	BL_tmp_a=$("$BASH_SOURCE" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
 	BL_tmp_o=$(for a in $BL_tmp_a ; do
 		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
 	done)
@@ -48,7 +48,7 @@ if [[ "$1" == --bash-completion ]] ; then
 		return 0
 	}'
 	unset BL_tmp_a BL_tmp_o
-	complete -F _bl_interactive_completion "$(basename "${BASH_SOURCE[0]}")" "${BASH_SOURCE[0]}"
+	complete -F _bl_interactive_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
 	return 0
 fi
 
@@ -60,9 +60,9 @@ fi
 
 ### Constants ###
 
-BL_INTERACTIVE_NAME="$(basename "$(readlink -f "${BASH_SOURCE[0]}" || true)" )"
+BL_INTERACTIVE_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 BL_INTERACTIVE_VERSION=$(git describe --dirty --broken --always)
-BL_INTERACTIVE_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "${BASH_SOURCE[0]}") )
+BL_INTERACTIVE_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 readonly BL_INTERACTIVE_VERSION BL_INTERACTIVE_FUNCTIONS BL_INTERACTIVE_NAME
 
 declare -r BL_INTERACTIVE_EMAIL_REGEX="([a-zA-Z0-9_.%+-]+)@(([a-zA-Z0-9.-]+)\.([a-zA-Z]+))"
@@ -106,9 +106,7 @@ _bl_interactive_parseoptions() {
 				return 1 ;;
 			--)
 				shift ; break ;;
-			-*)
-				printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_INTERACTIVE_NAME" "$1" "${BASH_SOURCE[0]}" >&2 ;
-				return 2 ;;
+			-*) printf -- "$BL_INTERACTIVE_NAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*)
 				break ;;
 		esac
@@ -165,7 +163,6 @@ _bl_interactive_indexof() {
 	for ((;$#;)) ; do
 		case "$1" in
 			--) shift ; break ;;
-			-*) printf "Usage: %s [--] VALUE ARRAY...\n" "$FUNCNAME" >&2 ; return;;
 			*)  break ;;
 		esac
 		shift
@@ -173,12 +170,12 @@ _bl_interactive_indexof() {
 	local asize value=$1
 	shift
 	asize=$#
-	((asize)) || { printf "Usage: %s [--] VALUE ARRAY...\n" "$FUNCNAME" >&2 ; return ;}
+	((asize)) || { printf "Usage: %s [--] VALUE ARRAY...\n" "$FUNCNAME" >&2 ; return 2 ;}
 	while (($#)) ; do
 		[[ "$1" != "${value}" ]] || break
 		shift
 	done
-	(($#)) || return
+	(($#)) || return 1
 	echo $((asize-$#))
 }
 
@@ -493,7 +490,7 @@ Options:
 ### Init ###
 
 if ((BL_INTERACTIVE_isprogram)) ; then
-	BL_INTERACTIVE_usage="Usage: $(basename "${BASH_SOURCE[0]}") [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
+	BL_INTERACTIVE_usage="Usage: $(basename "$BASH_SOURCE") [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_INTERACTIVE_shelpmsg="
   -h, --help               show help and exit
   -V, --version            show version and exit
@@ -505,11 +502,11 @@ All actions support a --help options, eg:
 $ $BASH_SOURCE ${BL_INTERACTIVE_FUNCTIONS:3} --help
 
 $BL_INTERACTIVE_NAME is also bash library, see:
-$ source ${BASH_SOURCE[0]} --help"
+$ source $BASH_SOURCE --help"
 else
-	BL_INTERACTIVE_usage="Usage: source ${BASH_SOURCE[0]} [MAIN_OPTIONS]..."
+	BL_INTERACTIVE_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
 	BL_INTERACTIVE_shelpmsg="
-      --bash-completion    set completion for ${BASH_SOURCE[0]} program and return (without loading anything else)
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
 $(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
@@ -522,7 +519,7 @@ _BL_INTERACTIVE_RETVAL=0
 _bl_interactive_parseoptions "$@" || _BL_INTERACTIVE_RETVAL="$?"
 
 # Do nothing else if sourced
-[[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
+[[ "$BASH_SOURCE" == "$0" ]] || return 0
 
 [[ "$_BL_INTERACTIVE_RETVAL" != "1"  ]] || exit 0
 [[ "$_BL_INTERACTIVE_RETVAL" < 2 ]] || exit $_BL_INTERACTIVE_RETVAL
@@ -535,7 +532,7 @@ if function=$(grep -o "\<bl_$1\>" <<< "${BL_INTERACTIVE_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_INTERACTIVE_NAME" "$1" "${BASH_SOURCE[0]}" >&2
+	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_INTERACTIVE_NAME" "$1" "$BASH_SOURCE" >&2
 	exit 2
 fi
 
