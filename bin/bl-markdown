@@ -127,7 +127,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_MD_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -209,7 +209,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_MD_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -312,7 +312,7 @@ if function=$(grep -o "\<bl_md_$1\>" <<< "${BL_MD_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_MD_NAME" "$1" "$BASH_SOURCE" >&2
+	printf "$BL_MD_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 
