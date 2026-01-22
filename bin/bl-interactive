@@ -188,7 +188,7 @@ bl_msgstop() {
 	local helpmsg="
 Display a MESSAGE and wait for user to press [Enter].
 
-Options:
+OPTIONS:
   -T, --title TITLE        Title to display before the PREAMBLE
   -t, --text PREAMBLE      Text to display before the MESSAGE
 "
@@ -229,7 +229,7 @@ bl_input() {
 	local helpmsg="
 Helper to ask for a string.
 
-Options:
+OPTIONS:
   -d, --default STRING     Default initialized string
   -T, --title TITLE        Title to display before the PREAMBLE
   -t, --text PREAMBLE      Text to display before the QUESTION
@@ -328,7 +328,7 @@ If REPLY == 'yes', return 0
 If REPLY == 'no', return 1
 Else loop asking the question.
 
-Options:
+OPTIONS:
       --default=<yes|no>   Set a default answer
   -T, --title TITLE        Title to display before the PREAMBLE
   -t, --text PREAMBLE      Text to display before the QUESTION
@@ -390,7 +390,7 @@ Helper for a single choice in a list (like radiobutton).
 Display (stderr) numbered list of item and loop asking for a number in this list
 Then echo (stdout) selected number (1-n).
 
-Options:
+OPTIONS:
   -i, --output-index         Output index (= number - 1) instead of number
   -v, --output-value         Output value instead of number
   -d, --default NUMBER       Set given number as a default answer, negative count from the end (BL_INTERACTIVE_FRONTEND!=zenity)
@@ -498,7 +498,7 @@ if ((BL_INTERACTIVE_isprogram)) ; then
 Actions:
 $(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_INTERACTIVE_FUNCTIONS:3} --help
 
 $BL_INTERACTIVE_NAME is also bash library, see:

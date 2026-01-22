@@ -113,7 +113,7 @@ bl_md_arraytobash() {
 	local helpmsg="
 Expect stdin to be a markdwon array (with or whithout header), and convert each line of this array to a  \"declare -A ...\" statement to be loaded with eval.
 If first line of input isn't an array header, use positional parameter to set (or overwrite) field names.
-Options:
+OPTIONS:
   -d, --declare VARNAME Set name in declare -A VARNAME=(... statement (default: \"entry\")
 "
 	local varname=entry
@@ -196,7 +196,7 @@ bl_md_arrayfrombash() {
 	local helpmsg="
 Expect stdin to be lines of \"declare -A ...\" statement with the identical indexes/fieldnames.
 Then eval and output markdown array ; using [FIELD_NAMES]... to order columns.
-Options:
+OPTIONS:
   -H, --header-only    Only display header line, and return.
   -F, --with-header    Also display header line and separation line at the beginning of array.
 "
@@ -276,7 +276,7 @@ if ((BL_MD_isprogram)) ; then
 Actions:
 $(for f in "${BL_MD_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:6}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_MD_FUNCTIONS:6} --help
 
 $BL_MD_NAME is also bash library, see:

@@ -179,11 +179,12 @@ bl_foopgp_symlinks() (
 	local name
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage=$"Usage:"" $name [OPTIONS] INDEX_DIR ..."
-	local helpmsg='
-'$"Update symlinks in the foopgp tree."'
-'$"Options:"'
-  -c, --clean         '$"Just remove existing symlinks (without recreating them)."'
-'
+	local helpmsg="
+"$"Update symlinks in the foopgp tree"".
+
+OPTIONS:
+  -c, --clean         "$"Just remove existing symlinks (without recreating them)"".
+"
 	local clean
 	for ((;$#;)) ; do
 		case "$1" in
@@ -229,7 +230,8 @@ bl_foopgp_g2t() {
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
 Calculate how many foopgp tokens would be created from a gift.
-Options:
+
+OPTIONS:
   -t, --tokens DJISUM   Set the base of tokens Ɉ already created (default: 0)
   -g, --gifts EURSUM    Set the base of values in EUR € already given (default: 0)
   -s, --siprefix SYMBOL Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. International System of Units).
@@ -292,7 +294,8 @@ bl_foopgp_t2g() {
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
 Calculate how much should be given to create a targeted number of tokens.
-Options:
+
+OPTIONS:
   -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
   -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
 "
@@ -330,7 +333,8 @@ bl_foopgp_giftarray() {
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
 Display an array to indicate how many token gonna be created from a gift.
-Options:
+
+OPTIONS:
   -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
   -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
   -m, --max VALUE      Set a limit in term of targeted token (defaut: 12)
@@ -391,7 +395,7 @@ if ((BL_FOOPGP_isprogram)) ; then
 Actions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:10}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_FOOPGP_FUNCTIONS:10} --help
 
 $BL_FOOPGP_NAME is also bash library, see:

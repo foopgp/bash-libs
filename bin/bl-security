@@ -155,7 +155,7 @@ bl_shred_path() {
 	local usage="Usage: $name [OPTIONS] PATHS..."
 	local helpmsg="
 Recursively shred all files in given path(|s).
-Options:
+OPTIONS:
   -f, --force          Change file permissions if necessary, never prompt
   -v, --verbose        Explain what is being done (stdout)
   -r, --remove         Also recursively remove given path(|s)
@@ -208,7 +208,7 @@ bl_gen_passphrase() {
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
 Generate a good random passphrase.
-Options:
+OPTIONS:
   -i, --interactive         Ask language and passphrase agreement
   -l, --list-dicts          List available dictionaries (aspell) and return
   -D, --dict DICTIONARY     Dictionary to use (ignored if --interactive, default: ${dict:=en})
@@ -279,7 +279,7 @@ Ask to enter a new password and force retyping it.
 Output the new password.
 (Default QUESTION: '$question')
 
-Options:
+OPTIONS:
   -t, --text TEXT           Text to display as preamble. If none generate a passphrase suggestion.
   -D, --dict DICTIONARY     Dictionary for passphrase suggestion (default: ${dict:=en})
   -n, --num NUMBER          Number of words for passphrase suggestion (default: $nw)
@@ -324,7 +324,7 @@ This function XOR sucessive 64bits words of raw input (or given FILE), and apply
 Then Maximum SIZE is 2^64-1. (And avoid to get close to this limit if you need a good number dispatching).
 About encodings: check basenc manual from GNU coreutils.
 
-Options:
+OPTIONS:
   -i, --input-encoding ENCODING  Eg: raw(default), base64, base64url, base32, base32hex, base16, base2msbf or base2lsbf.
   -g, --ignore-garbage           When decoding (a 'baseXXX' input), ignore non-alphabet characters.
   -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
@@ -402,7 +402,7 @@ if ((BL_SECURITY_isprogram)) ; then
 Actions:
 $(for f in "${BL_SECURITY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_SECURITY_FUNCTIONS:3} --help
 
 $BL_SECURITY_NAME is also bash library, see:

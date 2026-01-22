@@ -406,7 +406,7 @@ _bl_icao9303_mrz_analyse() {
 Analyse a Machine Readable Zone and fill the associative array named AANAME
 If MRZ is not passed as argument, it will we read from STDIN.
 
-Options:
+OPTIONS:
   -u, --uncheck                Change some MRZ errors to warnings (size and digitchecks)
   -d, --declare                Output content of AANAME as a 'declare -A ...' statement
 "
@@ -479,7 +479,7 @@ _bl_pgp_get_seckeyid() {
 Call 'gpg --with-colon' and ouput exportable secret keys (all if no argument), one by line:
 KeyID     Creation_Date    Public_Key_Algorithm
 
-Options:
+OPTIONS:
   -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -e, --exportable          Ouput only exportable secret keys (ie. present localy, excluding those on security token)
 "
@@ -524,7 +524,7 @@ Output keyid choosen from available (main) secrets keys.
 If there is only one available, output its keyid whithout asking.
 Argument NAME|U4|U5|EMAIL allow to make an (almost totaly useless) input filter.
 
-Options:
+OPTIONS:
   -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -t, --text QUESTION       Text to introduce selection's radiolist (default: '$qtxt')
   -e, --exportable          Only exportable secret keys (ie. present localy, excluding those on security token)
@@ -634,15 +634,15 @@ bl_pgpid_gen_u4() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
-Generate OpenPGP ID u4 string. Missing inputs are asked interactively.
-You may pass the Machine Readable Zone of an international passport as argument, but there are ~20% chances that generated *u4* is incorrect.
+"$"Generate OpenPGP ID u4 string"". "$"Missing inputs are asked interactively"".
+"$"You may pass the Machine Readable Zone of an international passport as argument, but there are ~20% chances that generated *u4* is incorrect.""
 
-Options:
-  -s, --surname SURNAME            Surname/family name at birth
-  -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
-  -d, --birth-date YYYY-MM-DD      Birth date, expected format : Year-Month-Day.
-  -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
-  -v, --verify                     Ask for verification
+OPTIONS:
+  -s, --surname SURNAME            "$"Surname/family name at birth"".
+  -g, --given-names GIVEN_NAMES    "$"Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.""
+  -d, --birth-date YYYY-MM-DD      "$"Birth date, expected format : Year-Month-Day"".
+  -c, --birth-country COUNTRY_CODE "$"3 letters country code of birth place: GBR, NGA, FRA, ...""
+  -v, --verify                     "$"Ask for verification"".
 "
 	local sname gname translit bdate bcountry errlvl="Error"
 	for ((;$#;)) ; do
@@ -669,7 +669,7 @@ Options:
 	if [[ "$1" ]] ; then
 		local -A mrza=()
 		if ! _bl_icao9303_mrz_analyse mrza "$@" ; then
-			printf "%s: %s: Invalid Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" "$errlvl" >&2
+			printf "$FUNCNAME: %s: "$"Invalid Machine Readable Zone"" (ICAO9303)\n" "$errlvl" >&2
 			# If not --verify, errexit.
 			[[ "$errlvl" == Warning ]] || return 1
 		fi
@@ -679,10 +679,10 @@ Options:
 		[[ "$bcountry" ]] || bcountry="${mrza[country]}"
 	fi
 
-	[[ "$sname" ]] || sname=$(bl_input "Birth surname (family name)")
-	[[ "$gname" ]] || gname=$(bl_input "Birth names (given names)")
-	[[ "$bdate" ]] || bdate=$(bl_input --iso-8601 "Birth date (YYYY-MM-DD)")
-	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "Birth country (3 letter code)")
+	[[ "$sname" ]] || sname=$(bl_input $"Birth surname (family name)")
+	[[ "$gname" ]] || gname=$(bl_input $"Birth names (given names)")
+	[[ "$bdate" ]] || bdate=$(bl_input --iso-8601 $"Birth date (YYYY-MM-DD)")
+	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" $"Birth country (3 letter code)")
 
 	# --verify
 	while [[ "$errlvl" == Warning ]] ; do
@@ -761,7 +761,7 @@ bl_pgpid_gen_uid() {
 Generate a 32bit Unix User ID, from 2^18 to (2^31)-2 ([$BL_PGPID_XUID_MIN,$BL_PGPID_XUID_MAX]).
 If UDID4 is not given, it will ask for surname, names and date of birth.
 
-Options:
+OPTIONS:
   -f, --free-input            Accept any input, not only valid OpenPGP ID string.
   -F, --from FILE             Get input from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
 "
@@ -819,7 +819,7 @@ Output 3 lines for each fingerprints :
 * decryption key (Encrypt)
 * authentication key (Auth)
 
-Options:
+OPTIONS:
   -N, --name PSEUDONYM             Common name or pseudonym (default: first part of email)
   -c, --comment U4|U5              First part of comment field MUST be a OpenPGP ID string. Confer \$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
   -C, --extra-comment COMMENT      Comment (second part of comment field, free to use).
@@ -1029,7 +1029,7 @@ Display and add or revoke emails inside OpenPGP certificate.
 Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.
 Output usable emails (non-revoked and non-expired).
 
-Options:
+OPTIONS:
   -R, --revoke EMAIL          Revoke existing EMAIL (may be used more than once).
   -A, --add EMAIL             Add EMAIL. Enable --name and --extra-comment options.
   -N, --name PSEUDONYM        Common name or pseudonym beside new EMAIL (default: first part of email).
@@ -1133,7 +1133,7 @@ Return:
  - then 107 if all required data are missing (OpenPGP card is probably empty).
  - Other non-zero on other erros.
 
-Options:
+OPTIONS:
   -f, --no-fetch          Don't try to fetch public certificate (from URL indicated in token metadata).
   -i, --info              Output content of the associative array containing relevant metadata (may be evaluted with eval)
   -q, --quiet             Don't errput 'Info' or 'Notice' messages.
@@ -1316,7 +1316,7 @@ if ((BL_PGPID_isprogram)) ; then
 Actions:
 $(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s %s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_PGPID_FUNCTIONS:9} --help
 
 $BL_PGPID_NAME is also bash library, see:

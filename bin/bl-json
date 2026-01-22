@@ -133,7 +133,7 @@ bl_json_from_var() {
 	local helpmsg="
 Output content of VARNAME in a JSON object.
 
-Options:
+OPTIONS:
     -n, --nested        Assume any value beginning with \"declare -[aA]\" are nested data to be translate to JSON format
     -s, --shift NUMBER  Number of tabs shifting of each line (default $shft)
 
@@ -244,7 +244,7 @@ bl_json_to_var() {
 Output string to be put into bash variable or array.
 If JSON_TEXT is not given, read JSON from sdtdin.
 
-Options:
+OPTIONS:
     -d, --declare VARNAME  output \"declare -[aA-] VARNAME=...\" statement to be use with 'eval ...'.
     -r, --recurse          also parse JSON arrays or objects nested in JSON_TEXT.
 
@@ -343,7 +343,7 @@ if ((BL_JSON_isprogram)) ; then
 Actions:
 $(for f in "${BL_JSON_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:8}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_JSON_FUNCTIONS:8} --help
 
 $BL_JSON_NAME is also bash library, see:

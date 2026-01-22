@@ -130,7 +130,7 @@ If PRIORITY's level is under BL_LOGLEVEL=$BL_LOGLEVEL, don't log anything.
 If PRIORITY's level name is more serious than BL_LOGEXITLNAME=$BL_LOGEXITLNAME, exit(8+'PRIORITY's level')
 If there is no MESSAGE in command line, read it from stdin.
 
-Options:
+OPTIONS:
   -l, --log-level LEVEL    log level: emerg<1=alert<crit<3=err<warning<5=notice<info<7=debug (current: $BL_LOGLEVEL)
   -L, --log-exit LEVELNAME exit level: emerg|alert|crit|err|warning|... (current: $BL_LOGEXITLNAME )
   -q, --quiet              do not output message to standard error

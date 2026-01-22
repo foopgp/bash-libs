@@ -140,7 +140,7 @@ bl_qif_tobash() {
 	local usage="Usage: $name [OPTIONS] FILES.qif ..."
 	local helpmsg="
 Convert each qif entry to a  \"declare -A ...\" statement to be loaded with eval.
-Options:
+OPTIONS:
   -d, --declare VARNAME Set name in declare -A VARNAME=(... statement (default: \"entry\")
   -s, --sort            Sort by date.
   -u, --uniq            Remove duplicate entries. Imply --sort.
@@ -231,7 +231,7 @@ bl_qif_tojournal() {
 Reorganize qif entries to maintain coherent monthly journal
 in files 'journal/by-month/{YEAR}/{MONTH}/{CODE}/{JOURNAL_NAME}.qif'
 By default remove all duplicate entries.
-Options:
+OPTIONS:
   -p, --path PATH      Set the path to the account dir (default: assume 'journal/by-month/' is in current dir)
   -c, --currency CODE  Set currency (defaut: EUR)
   -d, --allow-dupes    Prompt before removing any duplicate entry
@@ -407,7 +407,7 @@ bl_qif_tofecp4() {
 	local usage="Usage: $name [OPTIONS] FILE.qif ..."
 	local helpmsg="
 Parse qif file, and ask some questions for each entries to manage foopgp tokens, expenses, inventory....
-Options:
+OPTIONS:
   -p, --path PATH      Set the path to the account dir (default: assume input files are in current dir)
 "
 	local path=${PWD}
@@ -570,7 +570,7 @@ if ((BL_QIF_isprogram)) ; then
 Actions:
 $(for f in "${BL_QIF_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_QIF_FUNCTIONS:7} --help
 
 $BL_QIF_NAME is also bash library, see:

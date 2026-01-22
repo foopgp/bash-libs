@@ -229,7 +229,7 @@ bl_qrkey_change_passphrase() {
 Change GnuPG passphrase protecting secret parts of an OpenPGP key.
 Missing inputs are asked interactively.
 
-Options:
+OPTIONS:
   -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -p, --passphrase PASSPHRASE    Current passphrase protecting secret parts of OpenPGP key (empty \"\" for none)
   -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
@@ -307,7 +307,7 @@ Return: - 194 (OxC2) if only 2 remaining attempt.
         - 192 (OxC0) if code is blocked.
         - other non-zero value on other errors.
 
-Options:
+OPTIONS:
   -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -p, --code CURRENTCODE    Current PIN (or Admin) code protecting use of security token (empty \"\" for none)
   -P, --codefrom FILE       Get current PIN (or Admin) code from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
@@ -432,7 +432,7 @@ bl_qrkey_print() (
 Export and print OpenPGP secrets on multiple QRcode using Shamir's secret sharing.
 Missing inputs are asked interactively.
 
-Options:
+OPTIONS:
   -p, --passphrase PASSPHRASE    Passphrase to access secret parts of OpenPGP key
   -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
   -t, --printer PRINTER          Name of printer to use
@@ -593,7 +593,7 @@ Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or webcam.
 Missing inputs are asked interactively.
 Output OpenPGP certification key fingerprint.
 
-Options:
+OPTIONS:
   -c, --camera V4LDEVICE        Video device to scan for QR code (/dev/v4l/by-id/...)
   -W, --workdir DIRECTORY       Use given working directory instead of a temporary directory (don't forget to shred its content).
   -p, --passphrase PASSPHRASE   This extra passphrase is related to QR VERSIONS:
@@ -774,7 +774,7 @@ Missing inputs are asked interactively.
 Security token (OpenPGP smartcard) must be connected.
 Output ASCII armored OpenPGP certificate, PIN code and admin code.
 
-Options:
+OPTIONS:
   -H, --homedir GNUPGHOME      GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -p, --passphrase PASSPHRASE  Passphrase to access secret parts of OpenPGP key
   -P, --passfrom FILE          Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
@@ -921,7 +921,7 @@ if ((BL_QRKEY_isprogram)) ; then
 Actions:
 $(for f in "${BL_QRKEY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_QRKEY_FUNCTIONS:9} --help
 
 $BL_QRKEY_NAME is also bash library, see:

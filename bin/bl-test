@@ -86,7 +86,7 @@ if ((BL_TEST_isprogram)) ; then
 Actions:
 $(for f in "${BL_TEST_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ACTION --help
 
 $BL_TEST_NAME is also bash library, see:

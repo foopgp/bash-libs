@@ -126,7 +126,7 @@ Given VALUES may be suffixed by symbol or name of the International System of Un
   * 'c' for centi.
   * 'm' for milli
   * 'µ' for micro (VALUE will just be rounded or truncated in this case).
-Options:
+OPTIONS:
   -t, --truncate       Values with too much decimals will be truncated instead of rounded.
 "
 	for ((;$#;)) ; do
@@ -244,7 +244,7 @@ Given VALUES may be suffixed by:
   * 'c' for centi.
   * 'm' for milli
   * 'µ' for micro (VALUE will just be rounded or truncated in this case).
-Options:
+OPTIONS:
   -r, --reverse        Switch to little-endian, from Least Significant Bit to Most Significant Bit.
   -d, --delim DELIM    Use DELIM to separate 0-1 digits (default: '').
 "
@@ -289,7 +289,7 @@ bl_dji_2powersoftwo()
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
 Translate given VALUES v to their microVALUES µv (10^-6), then decompose this (µv) in powers of 2.
-Options:
+OPTIONS:
   -f, --format FORMAT  Output format, eg \"%02X\" for hexadecimal.
   -d, --delim DELIM    Use DELIM to separate powers of 2 (default: ' ').
   -x, --hex            Output using base16 (aka hexadecimal).
@@ -430,7 +430,7 @@ bl_dji_stripwallet()
 	local usage="Usage: $name [OPTIONS] VALUE FILE"
 	local helpmsg="
 Select and output grains from wallet FILE to be removed to extract VALUE.
-Options:
+OPTIONS:
   -u, --up             Don't exit with error if the exact VALUE can't be extracted, but remove grains > VALUE.
   -n, --no-act         Don't remove any grain from wallet FILE, but output grains to be removed.
 "
@@ -526,7 +526,7 @@ if ((BL_DJI_isprogram)) ; then
 Actions:
 $(for f in "${BL_DJI_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_DJI_FUNCTIONS:7} --help
 
 $BL_DJI_NAME is also bash library, see:
