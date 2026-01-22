@@ -923,20 +923,20 @@ bl_pgpid_avatar() {
 	local tmpdir="/tmp/$FUNCNAME.$USER"
 	local usage=$"Usage:"" $name [OPTIONS]... [NAME|KEYID|U4|U5]"
 	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
-	local helpmsg='
-'$"Extract or add image inside OpenPGP certificate."'
-'$"Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively."'
-'$"New IMAGE should be 180x180 pixels, or it will be resized."'
-'$"Output path(s) of extracted image(s)."'
+	local helpmsg="
+"$"Extract or add image inside OpenPGP certificate.""
+"$"Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.""
+"$"New IMAGE should be 180x180 pixels, or it will be resized.""
+"$"Output path(s) of extracted image(s).""
 
-'$"Options:"'
-  -E, --extract-all           '$"Extract also all revoked or expired existing images from OpenPGP certificate."'
-  -A, --addfrom IMAGE         '$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image)."'
-  -R, --revoke                '$"Just revoke all existing images inside OpenPGP certificate."'
-  -W, --workdir DIRECTORY     '$"Working directory. Will contain previous and new resized images (default:"" $tmpdir)."'
-  -k, --keyserver KEYSERVER   '$"If non-empty, send updated certificate to this keyserver (default:"" $keyserv)."'
-  -H, --homedir GNUPGHOME     '$"GnuPG home directory (default: ~/.gnupg). Environnement variable:"' $GNUPGHOME.
-'
+OPTIONS:
+  -E, --extract-all           "$"Extract also all revoked or expired existing images from OpenPGP certificate.""
+  -A, --addfrom IMAGE         "$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image).""
+  -R, --revoke                "$"Just revoke all existing images inside OpenPGP certificate.""
+  -W, --workdir DIRECTORY     "$"Working directory. Will contain previous and new resized images. "$"Default:"" $tmpdir.
+  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default:"" $keyserv.
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable:"" $GNUPGHOME.
+"
 	local image revoke
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local listopts="show-photos"
@@ -949,8 +949,7 @@ bl_pgpid_avatar() {
 			-R|--revoke)
 				revoke="." ;;
 			-W|--tmpdir|--workdir)
-				shift
-				tmpdir=$1 ;;
+				shift ; tmpdir=$1 ;;
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
@@ -1261,6 +1260,49 @@ Options:
 
 	((quiet)) || printf "$FUNCNAME: Info: "$"Valid OpenPGP ID token"", pgpid_id='${aaname[pgpid_id]}'.\n" >&2
 	return 0
+}
+
+bl_pgpid_certify() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage=$"Usage:"" $name [OPTIONS]... [KEYID|U4|U5]..."
+	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
+
+	local helpmsg="
+"$"Certify somebody else, according to OpenPGP ID standards.""
+"$"Certification means : I know this other certificate belongs to this real person""
+"$"This implies verifying its civil status and the fingerprint of its public key.""
+"$"This allows you to expand and strengthen your web of trust and those of your close ones.""
+
+OPTIONS:
+  -u, --use-privkey KEYID     "$"Select private key to use (If you have several and none configured by default)"" 
+  -R, --revoke                "$"Revoke your previous certifications on someone else's certificate.""
+  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default:"" $keyserv.
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable:"" $GNUPGHOME.
+"
+	local revoke=0 keyid
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	for ((;$#;)) ; do
+		case "$1" in
+			-u|--use-privkey)
+				shift ; keyid=$1 ;;
+			-R|--revoke)
+				revoke=1 ;;
+			-k|--keyserver)
+				shift ; keyserv=$1 ;;
+			-H|--homedir)
+				shift ; gpghome=$1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	printf "$FUNCNAME: Error: "$"Not implemented yet"".\n" >&2
+	return 2
 }
 
 ### Init ###
