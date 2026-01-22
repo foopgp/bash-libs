@@ -4,28 +4,9 @@ msgstr "Content-Type: text/plain; charset=UTF-8\n"
 #: ../bin/bl-dji:138 ../bin/bl-dji:185 ../bin/bl-dji:216 ../bin/bl-dji:259
 #: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-djibian:173
 #: ../bin/bl-djibian:295 ../bin/bl-foopgp:194 ../bin/bl-foopgp:254
-#: ../bin/bl-foopgp:314 ../bin/bl-foopgp:361 ../bin/bl-interactive:206
-#: ../bin/bl-interactive:262 ../bin/bl-interactive:349
-#: ../bin/bl-interactive:419 ../bin/bl-json:119 ../bin/bl-json:156
-#: ../bin/bl-json:209 ../bin/bl-json:267 ../bin/bl-markdown:130
-#: ../bin/bl-markdown:212 ../bin/bl-pgpid:360 ../bin/bl-pgpid:496
-#: ../bin/bl-pgpid:543 ../bin/bl-pgpid:662 ../bin/bl-pgpid:777
-#: ../bin/bl-pgpid:858 ../bin/bl-pgpid:961 ../bin/bl-pgpid:1066
-#: ../bin/bl-pgpid:1170 ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325
-#: ../bin/bl-qif:420 ../bin/bl-qrkey:144 ../bin/bl-qrkey:256
-#: ../bin/bl-qrkey:344 ../bin/bl-qrkey:475 ../bin/bl-qrkey:623
-#: ../bin/bl-qrkey:817 ../bin/bl-security:142 ../bin/bl-security:176
-#: ../bin/bl-security:230 ../bin/bl-security:295 ../bin/bl-security:344
-#: ../bin/bl-test:144
-msgid "Unrecognized option"
-msgstr "Option non reconnue"
-
-#: ../bin/bl-dji:138 ../bin/bl-dji:185 ../bin/bl-dji:216 ../bin/bl-dji:259
-#: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-djibian:173
-#: ../bin/bl-djibian:295 ../bin/bl-foopgp:194 ../bin/bl-foopgp:254
-#: ../bin/bl-foopgp:314 ../bin/bl-foopgp:361 ../bin/bl-interactive:206
-#: ../bin/bl-interactive:262 ../bin/bl-interactive:349
-#: ../bin/bl-interactive:419 ../bin/bl-interactive:425 ../bin/bl-json:119
+#: ../bin/bl-foopgp:314 ../bin/bl-foopgp:361 ../bin/bl-interactive:109
+#: ../bin/bl-interactive:203 ../bin/bl-interactive:259
+#: ../bin/bl-interactive:346 ../bin/bl-interactive:416 ../bin/bl-json:119
 #: ../bin/bl-json:156 ../bin/bl-json:209 ../bin/bl-json:267
 #: ../bin/bl-markdown:130 ../bin/bl-markdown:212 ../bin/bl-pgpid:360
 #: ../bin/bl-pgpid:496 ../bin/bl-pgpid:543 ../bin/bl-pgpid:662
@@ -36,6 +17,26 @@ msgstr "Option non reconnue"
 #: ../bin/bl-qrkey:623 ../bin/bl-qrkey:817 ../bin/bl-security:142
 #: ../bin/bl-security:176 ../bin/bl-security:230 ../bin/bl-security:295
 #: ../bin/bl-security:344 ../bin/bl-test:144
+msgid "Unrecognized option"
+msgstr "Option non reconnue"
+
+#: ../bin/bl-dji:138 ../bin/bl-dji:185 ../bin/bl-dji:216 ../bin/bl-dji:259
+#: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-djibian:173
+#: ../bin/bl-djibian:295 ../bin/bl-foopgp:194 ../bin/bl-foopgp:254
+#: ../bin/bl-foopgp:314 ../bin/bl-foopgp:361 ../bin/bl-interactive:109
+#: ../bin/bl-interactive:203 ../bin/bl-interactive:259
+#: ../bin/bl-interactive:346 ../bin/bl-interactive:416
+#: ../bin/bl-interactive:422 ../bin/bl-json:119 ../bin/bl-json:156
+#: ../bin/bl-json:209 ../bin/bl-json:267 ../bin/bl-markdown:130
+#: ../bin/bl-markdown:212 ../bin/bl-pgpid:360 ../bin/bl-pgpid:496
+#: ../bin/bl-pgpid:543 ../bin/bl-pgpid:662 ../bin/bl-pgpid:777
+#: ../bin/bl-pgpid:858 ../bin/bl-pgpid:961 ../bin/bl-pgpid:1066
+#: ../bin/bl-pgpid:1170 ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325
+#: ../bin/bl-qif:420 ../bin/bl-qrkey:144 ../bin/bl-qrkey:256
+#: ../bin/bl-qrkey:344 ../bin/bl-qrkey:475 ../bin/bl-qrkey:623
+#: ../bin/bl-qrkey:817 ../bin/bl-security:142 ../bin/bl-security:176
+#: ../bin/bl-security:230 ../bin/bl-security:295 ../bin/bl-security:344
+#: ../bin/bl-test:144
 msgid "Try '%s --help' for more information"
 msgstr "Essayez '%s --help' pour plus d'informations"
 
@@ -45,173 +46,191 @@ msgstr "Utilisation :"
 
 #: ../bin/bl-foopgp:183
 msgid "Update symlinks in the foopgp tree."
-msgstr ""
+msgstr "Mettre à jour les liens symboliques dans l’arborescence foopgp."
 
 #: ../bin/bl-foopgp:184 ../bin/bl-pgpid:932
 msgid "Options:"
-msgstr ""
+msgstr "Options :"
 
 #: ../bin/bl-foopgp:185
 msgid "Just remove existing symlinks (without recreating them)."
 msgstr ""
+"Supprimer uniquement les liens symboliques existants (sans les recréer)."
 
 #: ../bin/bl-foopgp:201
 msgid "Unexpected foopgp index directory"
-msgstr ""
+msgstr "Répertoire d’index foopgp inattendu."
 
 #: ../bin/bl-foopgp:205
 msgid "Deleting existing symlinks in"
-msgstr ""
+msgstr "Suppression des liens symboliques existants dans"
 
 #: ../bin/bl-foopgp:211
 msgid "Creating symlinks from"
-msgstr ""
+msgstr "Création des liens symboliques depuis"
 
 #: ../bin/bl-foopgp:215
 msgid "Invalid email"
-msgstr ""
+msgstr "Adresse e-mail invalide."
 
-#: ../bin/bl-interactive:425
+#: ../bin/bl-interactive:422
 msgid "need arguments (items)"
-msgstr ""
+msgstr "Arguments requis (éléments)."
 
 #: ../bin/bl-json:300 ../bin/bl-json:325
 msgid "Invalid JSON"
-msgstr ""
+msgstr "JSON invalide."
 
 #: ../bin/bl-pgpid:437
 msgid "Unsupported MRZ"
-msgstr ""
+msgstr "MRZ non pris en charge."
 
 #: ../bin/bl-pgpid:441
 msgid "Invalid MRZ lenght:"
-msgstr ""
+msgstr "Longueur de MRZ invalide :"
 
 #: ../bin/bl-pgpid:468
 msgid "Should be"
-msgstr ""
+msgstr "Devrait être"
 
 #: ../bin/bl-pgpid:511
 msgid "Unexpected field 4 (Public Key Algorithm)"
-msgstr ""
+msgstr "Champ 4 inattendu (algorithme de clé publique)."
 
 #: ../bin/bl-pgpid:593
 msgid "Unrecognized option/parameters"
-msgstr ""
+msgstr "Option ou paramètres non reconnus."
 
 #: ../bin/bl-pgpid:601
 msgid "Invalid Machine Readable Zone (ICAO9303)"
-msgstr ""
+msgstr "Zone lisible par machine invalide (ICAO 9303)."
 
 #: ../bin/bl-pgpid:608
 msgid "No valid and complete surname and given names extracted from"
 msgstr ""
+"Aucun nom de famille et prénom valides et complets n’ont pu être extraits "
+"depuis"
 
 #: ../bin/bl-pgpid:707
 msgid "has been transliterated to"
-msgstr ""
+msgstr "a été translittéré en"
 
 #: ../bin/bl-pgpid:707
 msgid "It may be WRONG !"
-msgstr ""
+msgstr "Cela peut être ERRONÉ !"
 
 #: ../bin/bl-pgpid:927
 msgid "Extract or add image inside OpenPGP certificate."
-msgstr ""
+msgstr "Extraire ou ajouter une image dans le certificat OpenPGP."
 
 #: ../bin/bl-pgpid:928
 msgid ""
 "Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively."
 msgstr ""
+"NAME|KEYID|U4|U5 manquant ⇒ l’identifiant (KEYID) de la clé secrète peut "
+"être demandé de manière interactive."
 
 #: ../bin/bl-pgpid:929
-msgid "New IMAGE should be 180 pixel height, or it will be resized."
+msgid "New IMAGE should be 180x180 pixels, or it will be resized."
 msgstr ""
+"La nouvelle IMAGE doit être en 180×180 pixels, sinon elle sera "
+"redimensionnée."
 
 #: ../bin/bl-pgpid:930
-msgid "Ouput extracted *.jpg files inside working directory."
-msgstr ""
+msgid "Output path(s) of extracted image(s)."
+msgstr "Chemin(s) de sortie des images extraites."
 
 #: ../bin/bl-pgpid:933
 msgid ""
 "Extract also all revoked or expired existing images from OpenPGP certificate."
 msgstr ""
+"Extraire également toutes les images existantes révoquées ou expirées du "
+"certificat OpenPGP."
 
 #: ../bin/bl-pgpid:934
 msgid ""
 "Resize and add new IMAGE inside OpenPGP certificate (revoking any previous "
 "image)."
 msgstr ""
+"Redimensionner et ajouter une nouvelle IMAGE dans le certificat OpenPGP (en "
+"révoquant toute image précédente)."
 
 #: ../bin/bl-pgpid:935
 msgid "Just revoke all existing images inside OpenPGP certificate."
 msgstr ""
+"Révoquer uniquement toutes les images existantes dans le certificat OpenPGP."
 
 #: ../bin/bl-pgpid:936
 msgid ""
 "Working directory. Will contain previous and new resized images (default:"
 msgstr ""
+"Répertoire de travail. Contiendra les images précédentes et les nouvelles "
+"images redimensionnées (par défaut :"
 
 #: ../bin/bl-pgpid:937
 msgid "If non-empty, send updated certificate to this keyserver (default:"
 msgstr ""
+"Si non vide, envoyer le certificat mis à jour vers ce serveur de clés (par "
+"défaut :"
 
 #: ../bin/bl-pgpid:938
 msgid "GnuPG home directory (default: ~/.gnupg). Environnement variable:"
 msgstr ""
+"Répertoire personnel de GnuPG (par défaut : ~/.gnupg). Variable "
+"d’environnement :"
 
 #: ../bin/bl-pgpid:976
 msgid "No certificate for %s"
-msgstr ""
+msgstr "Aucun certificat pour %s."
 
 #: ../bin/bl-pgpid:982
 msgid "Unable to identify image"
-msgstr ""
+msgstr "Impossible d’identifier l’image."
 
 #: ../bin/bl-pgpid:988
 msgid "Unable to resize image"
-msgstr ""
+msgstr "Impossible de redimensionner l’image."
 
 #: ../bin/bl-pgpid:994
 msgid "User '%s' match many certificates (%s)"
-msgstr ""
+msgstr "L’utilisateur « %s » correspond à plusieurs certificats (%s)."
 
 #: ../bin/bl-pgpid:1104 ../bin/bl-pgpid:1234
 msgid "supernumerary OpenPGP ID string"
-msgstr ""
+msgstr "Chaîne d’identifiant OpenPGP surnuméraire."
 
 #: ../bin/bl-pgpid:1230
 msgid "supernumerary emails, skipping"
-msgstr ""
+msgstr "Adresses e-mail surnuméraires, ignorées."
 
 #: ../bin/bl-pgpid:1256
 msgid "Invalid OpenPGP ID token, missing:"
-msgstr ""
+msgstr "Jeton d’identifiant OpenPGP invalide, élément manquant :"
 
 #: ../bin/bl-pgpid:1262
 msgid "Valid OpenPGP ID token"
-msgstr ""
+msgstr "Jeton d’identifiant OpenPGP valide."
 
 #: ../bin/bl-qrkey:812
 msgid "Deprecated option"
-msgstr ""
+msgstr "Option obsolète."
 
 #: ../bin/bl-qrkey:851
 msgid "supernumerary pgpid string"
-msgstr ""
+msgstr "Chaîne pgpid surnuméraire."
 
 #: ../bin/bl-qrkey:858
 msgid "Detected OpenPGP security token:"
-msgstr ""
+msgstr "Jeton de sécurité OpenPGP détecté :"
 
 #: ../bin/bl-qrkey:858
 msgid "Cardholder:"
-msgstr ""
+msgstr "Titulaire de la carte :"
 
 #: ../bin/bl-qrkey:871
 msgid "Factory reset OpenPGP security token"
-msgstr "Réinitialiser aux paramètres d'usine la clé de scurité OpenPGP"
+msgstr "Réinitialiser le jeton de sécurité OpenPGP aux paramètres d’usine."
 
 #: ../bin/bl-qrkey:871
 msgid "(This will wipe all the OpenPGP data stored there!)"
-msgstr "(Cela va effacer toutes les données OpenPGP qui y sont enregistrées !)"
+msgstr "(Cela effacera toutes les données OpenPGP qui y sont stockées !)"
