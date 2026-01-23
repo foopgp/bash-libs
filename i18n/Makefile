@@ -32,7 +32,7 @@ update:
 		msgmerge --update $$file bashlibs.pot ;\
 	done
 
-build: $(MO_FILES)
+build: clean $(MO_FILES)
 
 check: build
 

@@ -2,74 +2,191 @@ msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8\n"
 
 #: ../bin/bl-dji:138 ../bin/bl-dji:185 ../bin/bl-dji:216 ../bin/bl-dji:259
-#: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-djibian:173
-#: ../bin/bl-djibian:295 ../bin/bl-foopgp:194 ../bin/bl-foopgp:254
-#: ../bin/bl-foopgp:314 ../bin/bl-foopgp:361 ../bin/bl-interactive:109
+#: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-djibian:174
+#: ../bin/bl-djibian:296 ../bin/bl-foopgp:195 ../bin/bl-foopgp:256
+#: ../bin/bl-foopgp:317 ../bin/bl-foopgp:365 ../bin/bl-interactive:109
 #: ../bin/bl-interactive:203 ../bin/bl-interactive:259
 #: ../bin/bl-interactive:346 ../bin/bl-interactive:416 ../bin/bl-json:119
 #: ../bin/bl-json:156 ../bin/bl-json:209 ../bin/bl-json:267
 #: ../bin/bl-markdown:130 ../bin/bl-markdown:212 ../bin/bl-pgpid:360
 #: ../bin/bl-pgpid:496 ../bin/bl-pgpid:543 ../bin/bl-pgpid:662
-#: ../bin/bl-pgpid:777 ../bin/bl-pgpid:858 ../bin/bl-pgpid:961
-#: ../bin/bl-pgpid:1066 ../bin/bl-pgpid:1170 ../bin/bl-qif:162
-#: ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420 ../bin/bl-qrkey:144
-#: ../bin/bl-qrkey:256 ../bin/bl-qrkey:344 ../bin/bl-qrkey:475
-#: ../bin/bl-qrkey:623 ../bin/bl-qrkey:817 ../bin/bl-security:142
-#: ../bin/bl-security:176 ../bin/bl-security:230 ../bin/bl-security:295
-#: ../bin/bl-security:344 ../bin/bl-test:144
+#: ../bin/bl-pgpid:777 ../bin/bl-pgpid:858 ../bin/bl-pgpid:960
+#: ../bin/bl-pgpid:1065 ../bin/bl-pgpid:1169 ../bin/bl-pgpid:1298
+#: ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420
+#: ../bin/bl-qrkey:144 ../bin/bl-qrkey:256 ../bin/bl-qrkey:344
+#: ../bin/bl-qrkey:475 ../bin/bl-qrkey:623 ../bin/bl-qrkey:817
+#: ../bin/bl-security:142 ../bin/bl-security:176 ../bin/bl-security:230
+#: ../bin/bl-security:295 ../bin/bl-security:344 ../bin/bl-test:144
 msgid "Unrecognized option"
 msgstr "Option non reconnue"
 
 #: ../bin/bl-dji:138 ../bin/bl-dji:185 ../bin/bl-dji:216 ../bin/bl-dji:259
-#: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-djibian:173
-#: ../bin/bl-djibian:295 ../bin/bl-foopgp:194 ../bin/bl-foopgp:254
-#: ../bin/bl-foopgp:314 ../bin/bl-foopgp:361 ../bin/bl-interactive:109
+#: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-dji:565
+#: ../bin/bl-djibian:174 ../bin/bl-djibian:296 ../bin/bl-djibian:375
+#: ../bin/bl-foopgp:195 ../bin/bl-foopgp:256 ../bin/bl-foopgp:317
+#: ../bin/bl-foopgp:365 ../bin/bl-foopgp:434 ../bin/bl-interactive:109
 #: ../bin/bl-interactive:203 ../bin/bl-interactive:259
 #: ../bin/bl-interactive:346 ../bin/bl-interactive:416
-#: ../bin/bl-interactive:422 ../bin/bl-json:119 ../bin/bl-json:156
-#: ../bin/bl-json:209 ../bin/bl-json:267 ../bin/bl-markdown:130
-#: ../bin/bl-markdown:212 ../bin/bl-pgpid:360 ../bin/bl-pgpid:496
-#: ../bin/bl-pgpid:543 ../bin/bl-pgpid:662 ../bin/bl-pgpid:777
-#: ../bin/bl-pgpid:858 ../bin/bl-pgpid:961 ../bin/bl-pgpid:1066
-#: ../bin/bl-pgpid:1170 ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325
-#: ../bin/bl-qif:420 ../bin/bl-qrkey:144 ../bin/bl-qrkey:256
-#: ../bin/bl-qrkey:344 ../bin/bl-qrkey:475 ../bin/bl-qrkey:623
-#: ../bin/bl-qrkey:817 ../bin/bl-security:142 ../bin/bl-security:176
+#: ../bin/bl-interactive:422 ../bin/bl-interactive:535 ../bin/bl-json:119
+#: ../bin/bl-json:156 ../bin/bl-json:209 ../bin/bl-json:267 ../bin/bl-json:380
+#: ../bin/bl-markdown:130 ../bin/bl-markdown:212 ../bin/bl-markdown:315
+#: ../bin/bl-pgpid:360 ../bin/bl-pgpid:496 ../bin/bl-pgpid:543
+#: ../bin/bl-pgpid:662 ../bin/bl-pgpid:777 ../bin/bl-pgpid:858
+#: ../bin/bl-pgpid:960 ../bin/bl-pgpid:1065 ../bin/bl-pgpid:1169
+#: ../bin/bl-pgpid:1298 ../bin/bl-pgpid:1355 ../bin/bl-qif:162
+#: ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420 ../bin/bl-qif:609
+#: ../bin/bl-qrkey:144 ../bin/bl-qrkey:256 ../bin/bl-qrkey:344
+#: ../bin/bl-qrkey:475 ../bin/bl-qrkey:623 ../bin/bl-qrkey:817
+#: ../bin/bl-qrkey:960 ../bin/bl-security:142 ../bin/bl-security:176
 #: ../bin/bl-security:230 ../bin/bl-security:295 ../bin/bl-security:344
-#: ../bin/bl-test:144
+#: ../bin/bl-security:439 ../bin/bl-test:144 ../bin/bl-test:198
 msgid "Try '%s --help' for more information"
 msgstr "Essayez '%s --help' pour plus d'informations"
 
-#: ../bin/bl-foopgp:181 ../bin/bl-pgpid:924
+#: ../bin/bl-dji:565 ../bin/bl-djibian:375 ../bin/bl-foopgp:434
+#: ../bin/bl-interactive:535 ../bin/bl-json:380 ../bin/bl-markdown:315
+#: ../bin/bl-pgpid:1355 ../bin/bl-qif:609 ../bin/bl-qrkey:960
+#: ../bin/bl-security:439 ../bin/bl-test:198
+msgid "Unrecognized action"
+msgstr "Action non reconnue"
+
+#: ../bin/bl-djibian:90
+msgid "System tools for Djibian GNU/Linux. Mainly to manage users."
+msgstr ""
+
+#: ../bin/bl-djibian:132
+msgid "Add user to this djibian system"
+msgstr ""
+
+#: ../bin/bl-djibian:132
+msgid "Need root permissions"
+msgstr ""
+
+#: ../bin/bl-djibian:133
+msgid "Missing input will be asked interactively."
+msgstr ""
+
+#: ../bin/bl-djibian:205
+msgid "User surname (family name) at birth"
+msgstr ""
+
+#: ../bin/bl-djibian:206
+msgid "User forenames (given names) at birth"
+msgstr ""
+
+#: ../bin/bl-djibian:207
+msgid "User birth date (YYYY-MM-DD)"
+msgstr ""
+
+#: ../bin/bl-djibian:208
+msgid "User birth country (3 letter code)"
+msgstr ""
+
+#: ../bin/bl-djibian:215
+msgid ""
+" As defined by IEEE Std 1003.1-2001, the username should consist only of\n"
+" letters, digits, underscores, periods, at signs and dashes, then it has\n"
+" been changed to: "
+msgstr ""
+
+#: ../bin/bl-djibian:225
+msgid "Surname at birth:"
+msgstr ""
+
+#: ../bin/bl-djibian:226
+msgid "Given names at birth:"
+msgstr ""
+
+#: ../bin/bl-djibian:227
+msgid "Date of birth:"
+msgstr ""
+
+#: ../bin/bl-djibian:228
+msgid "Country of birth:"
+msgstr ""
+
+#: ../bin/bl-djibian:229
+msgid "Email:"
+msgstr ""
+
+#: ../bin/bl-djibian:230
+msgid "Phone number:"
+msgstr ""
+
+#: ../bin/bl-djibian:231
+msgid "User name:"
+msgstr ""
+
+#: ../bin/bl-djibian:232
+msgid "User Password:"
+msgstr ""
+
+#: ../bin/bl-djibian:234
+msgid "Is that correct"
+msgstr ""
+
+#: ../bin/bl-djibian:236 ../bin/bl-pgpid:682
+msgid "Birth surname (family name)"
+msgstr ""
+
+#: ../bin/bl-djibian:237 ../bin/bl-pgpid:683
+msgid "Birth names (given names)"
+msgstr ""
+
+#: ../bin/bl-djibian:238 ../bin/bl-pgpid:684
+msgid "Birth date (YYYY-MM-DD)"
+msgstr ""
+
+#: ../bin/bl-djibian:239 ../bin/bl-pgpid:685
+msgid "Birth country (3 letter code)"
+msgstr ""
+
+#: ../bin/bl-djibian:240
+msgid "Email"
+msgstr ""
+
+#: ../bin/bl-djibian:241
+msgid "Phone number"
+msgstr ""
+
+#: ../bin/bl-djibian:243
+msgid "User name (only letters [a-zA-Z], digits [0-9], and [_-])"
+msgstr ""
+
+#: ../bin/bl-djibian:245
+msgid "User password (for this system)"
+msgstr ""
+
+#: ../bin/bl-djibian:267
+msgid "user %s (%s) successfully added to current system"
+msgstr ""
+
+#: ../bin/bl-foopgp:181 ../bin/bl-pgpid:924 ../bin/bl-pgpid:1268
 msgid "Usage:"
 msgstr "Utilisation :"
 
 #: ../bin/bl-foopgp:183
-msgid "Update symlinks in the foopgp tree."
-msgstr "Mettre à jour les liens symboliques dans l’arborescence foopgp."
+msgid "Update symlinks in the foopgp tree"
+msgstr "Mettre à jour les liens symboliques dans l’arborescence foopgp"
 
-#: ../bin/bl-foopgp:184 ../bin/bl-pgpid:932
-msgid "Options:"
-msgstr "Options :"
-
-#: ../bin/bl-foopgp:185
-msgid "Just remove existing symlinks (without recreating them)."
+#: ../bin/bl-foopgp:186
+msgid "Just remove existing symlinks (without recreating them)"
 msgstr ""
-"Supprimer uniquement les liens symboliques existants (sans les recréer)."
+"Supprimer uniquement les liens symboliques existants (sans les recréer)"
 
-#: ../bin/bl-foopgp:201
+#: ../bin/bl-foopgp:202
 msgid "Unexpected foopgp index directory"
 msgstr "Répertoire d’index foopgp inattendu."
 
-#: ../bin/bl-foopgp:205
+#: ../bin/bl-foopgp:206
 msgid "Deleting existing symlinks in"
 msgstr "Suppression des liens symboliques existants dans"
 
-#: ../bin/bl-foopgp:211
+#: ../bin/bl-foopgp:212
 msgid "Creating symlinks from"
 msgstr "Création des liens symboliques depuis"
 
-#: ../bin/bl-foopgp:215
+#: ../bin/bl-foopgp:216
 msgid "Invalid email"
 msgstr "Adresse e-mail invalide."
 
@@ -111,6 +228,45 @@ msgstr ""
 "Aucun nom de famille et prénom valides et complets n’ont pu être extraits "
 "depuis"
 
+#: ../bin/bl-pgpid:637
+msgid "Generate OpenPGP ID u4 string"
+msgstr "Générer une chaine OpenPGP ID u4"
+
+#: ../bin/bl-pgpid:637
+msgid "Missing inputs are asked interactively"
+msgstr ""
+
+#: ../bin/bl-pgpid:638
+msgid ""
+"You may pass the Machine Readable Zone of an international passport as "
+"argument, but there are ~20% chances that generated *u4* is incorrect."
+msgstr ""
+
+#: ../bin/bl-pgpid:641
+msgid "Surname/family name at birth"
+msgstr ""
+
+#: ../bin/bl-pgpid:642
+msgid ""
+"Given names at birth, separated by space ' ' or comma ',' or hyphen '-'."
+msgstr ""
+
+#: ../bin/bl-pgpid:643
+msgid "Birth date, expected format : Year-Month-Day"
+msgstr ""
+
+#: ../bin/bl-pgpid:644
+msgid "3 letters country code of birth place: GBR, NGA, FRA, ..."
+msgstr ""
+
+#: ../bin/bl-pgpid:645
+msgid "Ask for verification"
+msgstr ""
+
+#: ../bin/bl-pgpid:672
+msgid "Invalid Machine Readable Zone"
+msgstr "Zone lisible par machine (MRZ) invalide"
+
 #: ../bin/bl-pgpid:707
 msgid "has been transliterated to"
 msgstr "a été translittéré en"
@@ -138,7 +294,7 @@ msgstr ""
 
 #: ../bin/bl-pgpid:930
 msgid "Output path(s) of extracted image(s)."
-msgstr "Chemin(s) de sortie des images extraites."
+msgstr "Affiche les chemins des images extraites."
 
 #: ../bin/bl-pgpid:933
 msgid ""
@@ -161,55 +317,96 @@ msgstr ""
 "Révoquer uniquement toutes les images existantes dans le certificat OpenPGP."
 
 #: ../bin/bl-pgpid:936
-msgid ""
-"Working directory. Will contain previous and new resized images (default:"
+msgid "Working directory. Will contain previous and new resized images. "
 msgstr ""
 "Répertoire de travail. Contiendra les images précédentes et les nouvelles "
-"images redimensionnées (par défaut :"
+"images redimensionnées. "
 
-#: ../bin/bl-pgpid:937
-msgid "If non-empty, send updated certificate to this keyserver (default:"
+#: ../bin/bl-pgpid:936 ../bin/bl-pgpid:937 ../bin/bl-pgpid:1280
+msgid "Default:"
+msgstr "Par défaut :"
+
+#: ../bin/bl-pgpid:937 ../bin/bl-pgpid:1280
+msgid "If non-empty, send updated certificate to this keyserver. "
 msgstr ""
-"Si non vide, envoyer le certificat mis à jour vers ce serveur de clés (par "
-"défaut :"
+"Si non vide, envoyer le certificat mis à jour vers ce serveur de clés. "
 
-#: ../bin/bl-pgpid:938
-msgid "GnuPG home directory (default: ~/.gnupg). Environnement variable:"
+#: ../bin/bl-pgpid:938 ../bin/bl-pgpid:1281
+msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr ""
-"Répertoire personnel de GnuPG (par défaut : ~/.gnupg). Variable "
-"d’environnement :"
+"Répertoire personnel de GnuPG (par défaut : ~/.gnupg). "
 
-#: ../bin/bl-pgpid:976
+#: ../bin/bl-pgpid:938 ../bin/bl-pgpid:1281
+msgid "Environnement variable:"
+msgstr "Variable d’environnement :"
+
+#: ../bin/bl-pgpid:975
 msgid "No certificate for %s"
 msgstr "Aucun certificat pour %s."
 
-#: ../bin/bl-pgpid:982
+#: ../bin/bl-pgpid:981
 msgid "Unable to identify image"
 msgstr "Impossible d’identifier l’image."
 
-#: ../bin/bl-pgpid:988
+#: ../bin/bl-pgpid:987
 msgid "Unable to resize image"
 msgstr "Impossible de redimensionner l’image."
 
-#: ../bin/bl-pgpid:994
+#: ../bin/bl-pgpid:993
 msgid "User '%s' match many certificates (%s)"
 msgstr "L’utilisateur « %s » correspond à plusieurs certificats (%s)."
 
-#: ../bin/bl-pgpid:1104 ../bin/bl-pgpid:1234
+#: ../bin/bl-pgpid:1103 ../bin/bl-pgpid:1233
 msgid "supernumerary OpenPGP ID string"
 msgstr "Chaîne d’identifiant OpenPGP surnuméraire."
 
-#: ../bin/bl-pgpid:1230
+#: ../bin/bl-pgpid:1229
 msgid "supernumerary emails, skipping"
 msgstr "Adresses e-mail surnuméraires, ignorées."
 
-#: ../bin/bl-pgpid:1256
+#: ../bin/bl-pgpid:1255
 msgid "Invalid OpenPGP ID token, missing:"
 msgstr "Jeton d’identifiant OpenPGP invalide, élément manquant :"
 
-#: ../bin/bl-pgpid:1262
+#: ../bin/bl-pgpid:1261
 msgid "Valid OpenPGP ID token"
 msgstr "Jeton d’identifiant OpenPGP valide."
+
+#: ../bin/bl-pgpid:1272
+msgid "Certify somebody else, according to OpenPGP ID standards."
+msgstr ""
+
+#: ../bin/bl-pgpid:1273
+msgid ""
+"Certification means : I know this other certificate belongs to this real "
+"person"
+msgstr ""
+
+#: ../bin/bl-pgpid:1274
+msgid ""
+"This implies verifying its civil status and the fingerprint of its public "
+"key."
+msgstr ""
+
+#: ../bin/bl-pgpid:1275
+msgid ""
+"This allows you to expand and strengthen your web of trust and those of your "
+"close ones."
+msgstr ""
+
+#: ../bin/bl-pgpid:1278
+msgid ""
+"Select private key to use (If you have several and none configured by "
+"default)"
+msgstr ""
+
+#: ../bin/bl-pgpid:1279
+msgid "Revoke your previous certifications on someone else's certificate."
+msgstr ""
+
+#: ../bin/bl-pgpid:1304
+msgid "Not implemented yet"
+msgstr ""
 
 #: ../bin/bl-qrkey:812
 msgid "Deprecated option"
@@ -217,7 +414,7 @@ msgstr "Option obsolète."
 
 #: ../bin/bl-qrkey:851
 msgid "supernumerary pgpid string"
-msgstr "Chaîne pgpid surnuméraire."
+msgstr "Chaîne OpenPGP ID surnuméraire."
 
 #: ../bin/bl-qrkey:858
 msgid "Detected OpenPGP security token:"
@@ -234,3 +431,4 @@ msgstr "Réinitialiser le jeton de sécurité OpenPGP aux paramètres d’usine.
 #: ../bin/bl-qrkey:871
 msgid "(This will wipe all the OpenPGP data stored there!)"
 msgstr "(Cela effacera toutes les données OpenPGP qui y sont stockées !)"
+
