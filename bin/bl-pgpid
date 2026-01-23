@@ -425,7 +425,7 @@ OPTIONS:
 		shift
 	done
 
-	local -n doc=$1
+	local -n doc=${1:?}
 	shift
 	local mrz
 	[[ "$*" ]] && mrz=$* || mrz=$(< /dev/stdin)
@@ -488,7 +488,7 @@ OPTIONS:
 	for ((;$#;)) ; do
 		case "$1" in
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-e|--exportable) filtertest='[[ "${record[TockenSN]}" == \+ ]]' ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
@@ -533,7 +533,7 @@ OPTIONS:
 	for ((;$#;)) ; do
 		case "$1" in
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-t|--text)
 				shift ; qtxt=$1 ;;
 			-e|--exportable) getargs+="$1 " ;;
@@ -850,7 +850,7 @@ OPTIONS:
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-v|--verify) verify=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
@@ -953,7 +953,7 @@ OPTIONS:
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -1057,7 +1057,7 @@ OPTIONS:
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-v|--verbose) gpgfilter="cat" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
@@ -1150,10 +1150,10 @@ OPTIONS:
 			-i|--info) info=1 ;;
 			-q|--quiet) quiet=1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-A|--aaname)
 				shift
-				varname=$1
+				varname=${1:?}
 				if ! ((BL_PGPID_isprogram)) ; then
 					if [[ "$(eval echo \${$varname@a})" =~ A ]] ; then
 						local -n aaname=$varname
@@ -1291,7 +1291,7 @@ OPTIONS:
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;

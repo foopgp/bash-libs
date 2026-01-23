@@ -249,7 +249,7 @@ OPTIONS:
 			-N|--newpassfrom|--newpass-from)
 				shift ; newgiven=true ; newpass=$( sed 1q < "$1" ) || return 1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -323,7 +323,7 @@ OPTIONS:
 	for ((;$#;)) ; do
 		case "$1" in
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-p|--code)
 				shift ; ccodegiven=true ; ccode=$1 ;;
 			-P|--codefrom|--code-from)
@@ -468,7 +468,7 @@ Note: Split number should be greater than threshold number.
 			-T|--thres*)
 				shift ; thresn=$(($1)) ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -616,7 +616,7 @@ OPTIONS:
 				[[ -d "$1" ]] || { printf "%s: Error: nonexistent or unattainable directory (%s)\n" "$FUNCNAME" "$1" >&2 ; return 2 ; }
 				tmpdir=$1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -793,7 +793,7 @@ OPTIONS:
 	for ((;$#;)) ; do
 		case "$1" in
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-p|--passphrase)
 				shift ; passphrase=$1 ;;
 			-P|--passfrom|--pass-from)
