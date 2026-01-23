@@ -1265,22 +1265,26 @@ OPTIONS:
 bl_pgpid_certify() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage=$"Usage:"" $name [OPTIONS]... [KEYID|U4|U5]..."
+	local usage=$"Usage:"" $name [OPTIONS]... [TARGET_U4|TARGET_U5] [TARGET_KEYID]"
 	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
 
 	local helpmsg="
-"$"Certify somebody else, according to OpenPGP ID standards.""
-"$"Certification means : I know this other certificate belongs to this real person""
-"$"This implies verifying its civil status and the fingerprint of its public key.""
-"$"This allows you to expand and strengthen your web of trust and those of your close ones.""
+"$"Certify somebody else, identified by its OpenPGP ID TARGET_U4"".
+"$"If TARGET_U4 or TARGET_U5 is not given, ask for civil status to calculate TARGET_U4"".
+
+"$"Certification means : I know this other certificate belongs to this real person"".
+"$"This implies verifying the civil status and the public key fingerprint of the TARGET"".
+"$"This allows you to expand and strengthen your web of trust and those of your close ones"".
 
 OPTIONS:
-  -u, --use-privkey KEYID     "$"Select private key to use (If you have several and none configured by default)"" 
-  -R, --revoke                "$"Revoke your previous certifications on someone else's certificate.""
+  -u, --use-privkey KEYID     "$"Select private key to use (If you have several and none configured by default)"".
+  -R, --revoke                "$"Revoke your previous certifications on someone else's certificate"".
+  -G, --vouch                 "$"Take responsability for any illegal actions by the target"". "$"Same as"" '--vouch-for ALL'.
+  -g, --vouch-for DOMAIN      "$"Assume additional legal responsibilities on the target"".
   -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default:"" $keyserv.
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable:"" $GNUPGHOME.
 "
-	local revoke=0 keyid
+	local revoke=0 keyid vouchfor
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -1288,6 +1292,11 @@ OPTIONS:
 				shift ; keyid=$1 ;;
 			-R|--revoke)
 				revoke=1 ;;
+			-G|--vouch)
+				vouchfor="ALL" ;;
+			-g|--vouch-for)
+				[[ "$2" == ALL ]] || { printf -- "$FUNCNAME: Error:" $"Only %s is yet a known domain for vouching"".\n" "'ALL'" >&2 ; return 1 ;}
+				shift ; vouchfor=${1:?} ;;
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
