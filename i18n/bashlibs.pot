@@ -365,8 +365,8 @@ msgstr ""
 
 #: ../bin/bl-foopgp:137
 msgid ""
-"Calculate how many foopgp token (Ɉ) may be created for each cotisations to "
-"the the foopgp association."
+"Calculate how many djis (Ɉ) may be created for each contribution in euros "
+"(€) to the the foopgp association."
 msgstr ""
 
 #: ../bin/bl-foopgp:140
@@ -410,15 +410,17 @@ msgid "Invalid email"
 msgstr ""
 
 #: ../bin/bl-foopgp:232
-msgid "Calculate how many foopgp tokens would be created from a gift."
+msgid ""
+"Calculate how many djis (Ɉ) would be created from a contribution in euros "
+"(€)."
 msgstr ""
 
-#: ../bin/bl-foopgp:235 ../bin/bl-foopgp:299 ../bin/bl-foopgp:338
-msgid "Set the base of tokens Ɉ already created (default: 0)"
+#: ../bin/bl-foopgp:235
+msgid "Set the base of djis (Ɉ) already created (default: 0)"
 msgstr ""
 
-#: ../bin/bl-foopgp:236 ../bin/bl-foopgp:300 ../bin/bl-foopgp:339
-msgid "Set the base of values in EUR € already given (default: 0)"
+#: ../bin/bl-foopgp:236
+msgid "Set the base of values in EUR (€) already contributed (default: 0)"
 msgstr ""
 
 #: ../bin/bl-foopgp:237
@@ -433,16 +435,30 @@ msgstr ""
 
 #: ../bin/bl-foopgp:296
 msgid ""
-"Calculate how much should be given to create a targeted number of tokens."
+"Calculate how much euros (€) should be given to create a targeted number of "
+"djis (Ɉ)."
+msgstr ""
+
+#: ../bin/bl-foopgp:299 ../bin/bl-foopgp:338
+msgid "Set the base of djis Ɉ already created (default: 0)"
+msgstr ""
+
+#: ../bin/bl-foopgp:300
+msgid "Set the base of values in euros € already contributed (default: 0)"
 msgstr ""
 
 #: ../bin/bl-foopgp:335
 msgid ""
-"Display an array to indicate how many token gonna be created from a gift."
+"Display an array to indicate how many djis (Ɉ) gonna be created from a "
+"contribution in euros (€)."
+msgstr ""
+
+#: ../bin/bl-foopgp:339
+msgid "Set the base of values in EUR € already contributed (default: 0)"
 msgstr ""
 
 #: ../bin/bl-foopgp:340
-msgid "Set a limit in term of targeted token (defaut: 12)"
+msgid "Set a limit in term of targeted djis (defaut: 12)"
 msgstr ""
 
 #: ../bin/bl-foopgp:341

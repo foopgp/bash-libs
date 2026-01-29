@@ -5,13 +5,20 @@ msgstr "Content-Type: text/plain; charset=UTF-8\n"
 msgid "Manage djis (Ɉ), also known as foopgp tokens."
 msgstr "Gérer les djis (Ɉ), également appelés jetons foopgp."
 
+#: ../bin/bl-dji:90 ../bin/bl-qrkey:99
+msgid "Main options:"
+msgstr ""
+
 #: ../bin/bl-dji:121
 msgid "Translate given VALUES to their microVALUES, aka µVALUES (10^-6)."
-msgstr "Convertir les VALEURS données en microVALEURS, aussi appelées µVALEURS (10^-6)."
+msgstr ""
+"Convertir les VALEURS données en microVALEURS, aussi notées µVALEURS (10^-6)."
 
 #: ../bin/bl-dji:122 ../bin/bl-dji:240
 msgid "Values with too much decimals will be rounded half-to-even,"
-msgstr "Les valeurs avec trop de décimales seront arrondies selon la règle du « moitié pair »."
+msgstr ""
+"Les valeurs avec trop de décimales seront arrondies selon la règle « half-to-"
+"even »."
 
 #: ../bin/bl-dji:123 ../bin/bl-dji:241
 msgid "confer"
@@ -21,11 +28,14 @@ msgstr "voir"
 msgid ""
 "Given VALUES may be suffixed by symbol or name of the International System "
 "of Units (ISO/IEC 80000):"
-msgstr "Les VALEURS données peuvent être suivies d’un symbole ou nom du Système international d’unités (ISO/IEC 80000) :"
+msgstr ""
+"Les VALEURS données peuvent être suivies d’un symbole ou nom du Système "
+"international d’unités (ISO/IEC 80000) :"
 
 #: ../bin/bl-dji:130
 msgid "Values with too much decimals will be truncated instead of rounded."
-msgstr "Les valeurs avec trop de décimales seront tronquées au lieu d’être arrondies."
+msgstr ""
+"Les valeurs avec trop de décimales seront tronquées au lieu d’être arrondies."
 
 #: ../bin/bl-dji:138 ../bin/bl-dji:185 ../bin/bl-dji:216 ../bin/bl-dji:259
 #: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-djibian:174
@@ -72,7 +82,9 @@ msgstr "Essayez '%s --help' pour plus d'informations"
 #: ../bin/bl-dji:239
 msgid ""
 "Translate given VALUES to their µVALUES: round(VALUE*10^6), then to binary."
-msgstr "Convertir les VALEURS données en µVALEURS : arrondir(VALEUR*10^6), puis en binaire."
+msgstr ""
+"Convertir les VALEURS données en µVALEURS : arrondir(VALEUR*10^6), puis en "
+"binaire."
 
 #: ../bin/bl-dji:242
 msgid "Given VALUES may be suffixed by:"
@@ -91,7 +103,9 @@ msgstr "Utiliser DELIM pour séparer les chiffres 0-1 (par défaut : '')."
 msgid ""
 "Translate given VALUES v to their microVALUES µv (10^-6), then decompose "
 "this (µv) in powers of 2."
-msgstr "Convertir les VALEURS données v en microVALEURS µv (10^-6), puis décomposer celles-ci en puissances de 2."
+msgstr ""
+"Convertir les VALEURS données v en microVALEURS µv (10^-6), puis décomposer "
+"celles-ci en puissances de 2."
 
 #: ../bin/bl-dji:293
 msgid "Output format, eg \\\"%02X\\\" for hexadecimal."
@@ -116,7 +130,9 @@ msgstr "Trier la sortie du plus grand au plus petit."
 #: ../bin/bl-dji:355
 msgid ""
 "Read dji wallet FILE(s), or from /dev/stdin if no FILE passed as argument."
-msgstr "Lire le(s) fichier(s) de portefeuille dji, ou depuis /dev/stdin si aucun fichier n’est fourni."
+msgstr ""
+"Lire le(s) fichier(s) de portefeuille dji, ou depuis /dev/stdin si aucun "
+"fichier n’est fourni."
 
 #: ../bin/bl-dji:357
 msgid "Output only the total value of the wallet(s), in µɈ."
@@ -125,7 +141,9 @@ msgstr "Afficher uniquement la valeur totale du(des) portefeuille(s), en µɈ."
 #: ../bin/bl-dji:358
 msgid ""
 "Output only the number of each grains of value 2^0 ... 2^n, line by line."
-msgstr "Afficher uniquement le nombre de chaque grain de valeur 2^0 ... 2^n, ligne par ligne."
+msgstr ""
+"Afficher uniquement le nombre de chaque grain de valeur 2^0 ... 2^n, ligne "
+"par ligne."
 
 #: ../bin/bl-dji:359
 msgid "Output only declare -a grains=(... statement."
@@ -134,18 +152,24 @@ msgstr "Afficher uniquement l’instruction declare -a grains=(...)."
 #: ../bin/bl-dji:432
 msgid ""
 "Select and output grains from wallet FILE to be removed to extract VALUE."
-msgstr "Sélectionner et afficher les grains du fichier de portefeuille à retirer pour extraire la VALEUR."
+msgstr ""
+"Sélectionner et afficher les grains du fichier de portefeuille à retirer "
+"pour extraire la VALEUR."
 
 #: ../bin/bl-dji:434
 msgid ""
 "Don't exit with error if the exact VALUE can't be extracted, but remove "
 "grains > VALUE."
-msgstr "Ne pas quitter avec une erreur si la VALEUR exacte ne peut être extraite, mais retirer les grains > VALEUR."
+msgstr ""
+"Ne pas quitter avec une erreur si la VALEUR exacte ne peut être extraite, "
+"mais retirer les grains > VALEUR."
 
 #: ../bin/bl-dji:435
 msgid ""
 "Don't remove any grain from wallet FILE, but output grains to be removed."
-msgstr "Ne retirer aucun grain du fichier de portefeuille, mais afficher les grains à retirer."
+msgstr ""
+"Ne retirer aucun grain du fichier de portefeuille, mais afficher les grains "
+"à retirer."
 
 #: ../bin/bl-dji:543 ../bin/bl-djibian:353 ../bin/bl-foopgp:412
 #: ../bin/bl-interactive:514 ../bin/bl-json:359 ../bin/bl-qrkey:938
@@ -195,14 +219,12 @@ msgstr ""
 "tiret « - »."
 
 #: ../bin/bl-djibian:138
-#, fuzzy
 msgid "Birth date, expected format : YYYY-MM-DD."
-msgstr "Date de naissance, format attendu : année-mois-jour"
+msgstr "Date de naissance, format attendu : AAAA-MM-JJ"
 
 #: ../bin/bl-djibian:139
-#, fuzzy
 msgid "3 letters country code of birth place: FRA, GBR, ..."
-msgstr "Code pays à 3 lettres du lieu de naissance : GBR, NGA, FRA, …"
+msgstr "Code pays à 3 lettres du lieu de naissance : FRA, NGA, GBR, …"
 
 #: ../bin/bl-djibian:140
 msgid "User email (optional)"
@@ -213,26 +235,23 @@ msgid "User phone number (optional)"
 msgstr "Numéro de téléphone de l’utilisateur (facultatif)"
 
 #: ../bin/bl-djibian:142
-#, fuzzy
 msgid "User password (for current djibian Operating System)"
-msgstr "Mot de passe utilisateur (pour ce système)"
+msgstr "Mot de passe utilisateur (pour cet ordinateur)"
 
 #: ../bin/bl-djibian:143
-#, fuzzy
 msgid ""
 "Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)"
 msgstr ""
-"Lire la phrase de passe supplémentaire depuis la première ligne du FICHIER "
+"Lire le mot de passe utilisateur depuis la première ligne du FICHIER "
 "(ex. : fifo, tmpfs, /dev/stdin, …)"
 
 #: ../bin/bl-djibian:144
 msgid "Get user data from OpenPGP smartcard (eg: yubikey, nitrokey, ...)"
 msgstr ""
-"Récupérer les données utilisateur depuis une carte OpenPGP (ex. : YubiKey, "
+"Récupérer les données utilisateur depuis une carte à puce OpenPGP (ex. : YubiKey, "
 "Nitrokey, …)"
 
 #: ../bin/bl-djibian:145
-#, fuzzy
 msgid "Resume input data for verification"
 msgstr "Demander une confirmation"
 
@@ -246,7 +265,7 @@ msgstr "Nom de famille de naissance de l’utilisateur"
 
 #: ../bin/bl-djibian:206
 msgid "User forenames (given names) at birth"
-msgstr "Prénoms de naissance de l’utilisateur"
+msgstr "Prénoms de naissance de l’utilisateur (tous)"
 
 #: ../bin/bl-djibian:207
 msgid "User birth date (YYYY-MM-DD)"
@@ -392,10 +411,10 @@ msgstr "Afficher la version et quitter"
 
 #: ../bin/bl-foopgp:137
 msgid ""
-"Calculate how many foopgp token (Ɉ) may be created for each cotisations to "
-"the the foopgp association."
+"Calculate how many djis (Ɉ) may be created for each contribution in euros "
+"(€) to the the foopgp association."
 msgstr ""
-"Calculer le nombre de jetons foopgp (Ɉ) pouvant être créés pour chaque "
+"Calculer le nombre de djis (Ɉ) pouvant être créés pour chaque "
 "cotisation à l’association foopgp."
 
 #: ../bin/bl-foopgp:140
@@ -442,17 +461,20 @@ msgid "Invalid email"
 msgstr "Adresse e-mail invalide."
 
 #: ../bin/bl-foopgp:232
-msgid "Calculate how many foopgp tokens would be created from a gift."
+msgid ""
+"Calculate how many djis (Ɉ) would be created from a contribution in euros "
+"(€)."
 msgstr ""
-"Calculer le nombre de jetons foopgp qui seraient créés à partir d’un don."
+"Calculer le nombre de djis (Ɉ) qui seraient créés à partir d’une "
+"cotisation en euros (€)."
 
-#: ../bin/bl-foopgp:235 ../bin/bl-foopgp:299 ../bin/bl-foopgp:338
-msgid "Set the base of tokens Ɉ already created (default: 0)"
-msgstr "Définir la base de jetons Ɉ déjà créés (par défaut : 0)"
+#: ../bin/bl-foopgp:235
+msgid "Set the base of djis (Ɉ) already created (default: 0)"
+msgstr "Définir la base de djis (Ɉ) déjà créés (par défaut : 0)"
 
-#: ../bin/bl-foopgp:236 ../bin/bl-foopgp:300 ../bin/bl-foopgp:339
-msgid "Set the base of values in EUR € already given (default: 0)"
-msgstr "Définir la base des montants déjà donnés en euros € (par défaut : 0)"
+#: ../bin/bl-foopgp:236
+msgid "Set the base of values in EUR (€) already contributed (default: 0)"
+msgstr "Définir la base des montants déjà cotisés en euros (€) (par défaut : 0)"
 
 #: ../bin/bl-foopgp:237
 msgid ""
@@ -468,19 +490,33 @@ msgstr "Afficher également le symbole, par ex. : « µɈ »."
 
 #: ../bin/bl-foopgp:296
 msgid ""
-"Calculate how much should be given to create a targeted number of tokens."
-msgstr "Calculer le montant à donner pour créer un nombre cible de jetons."
+"Calculate how much euros (€) should be given to create a targeted number of "
+"djis (Ɉ)."
+msgstr "Calculer le montant en euros (€) à cotiser pour créer un nombre cible de djis (Ɉ)."
+
+#: ../bin/bl-foopgp:299 ../bin/bl-foopgp:338
+msgid "Set the base of djis Ɉ already created (default: 0)"
+msgstr "Définir la base de djis (Ɉ) déjà créés (par défaut : 0)"
+
+#: ../bin/bl-foopgp:300
+msgid "Set the base of values in euros € already contributed (default: 0)"
+msgstr "Définir la base des montants déjà cotisés en euros (€) (par défaut : 0)"
 
 #: ../bin/bl-foopgp:335
 msgid ""
-"Display an array to indicate how many token gonna be created from a gift."
+"Display an array to indicate how many djis (Ɉ) gonna be created from a "
+"contribution in euros (€)."
 msgstr ""
-"Afficher un tableau indiquant combien de jetons seront créés à partir d’un "
-"don."
+"Afficher un tableau indiquant combien de djis (Ɉ) seront créés à partir d’une "
+"cotisation en euros (€)."
+
+#: ../bin/bl-foopgp:339
+msgid "Set the base of values in EUR € already contributed (default: 0)"
+msgstr "Définir la base des montants déjà cotisés en euros (€) (par défaut : 0)"
 
 #: ../bin/bl-foopgp:340
-msgid "Set a limit in term of targeted token (defaut: 12)"
-msgstr "Définir une limite en nombre de jetons ciblés (par défaut : 12)"
+msgid "Set a limit in term of targeted djis (defaut: 12)"
+msgstr "Définir une limite en nombre de djis ciblés (par défaut : 12)"
 
 #: ../bin/bl-foopgp:341
 msgid "Limit number of lines (defaut: 24)"
@@ -631,9 +667,8 @@ msgid "Text/Question to display before the list"
 msgstr "Texte / question à afficher avant la liste"
 
 #: ../bin/bl-interactive:401
-#, fuzzy
 msgid "Number of items per line"
-msgstr "Nombre de parts à générer"
+msgstr "Nombre d'entrées par ligne"
 
 #: ../bin/bl-interactive:422
 msgid "need arguments (items)"
@@ -1214,7 +1249,6 @@ msgstr ""
 
 #: ../bin/bl-qrkey:230 ../bin/bl-qrkey:304 ../bin/bl-qrkey:433
 #: ../bin/bl-qrkey:593 ../bin/bl-qrkey:773
-#, fuzzy
 msgid "Missing inputs are asked interactively."
 msgstr "Les informations manquantes sont demandées de manière interactive."
 

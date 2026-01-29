@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
+# Bash library and executable that calculate how many djis (Ɉ) may be created for each contribution in euros (€) to the the foopgp association.""
 #
 # Copyright © 2024 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
@@ -134,7 +134,7 @@ if ((BL_FOOPGP_isprogram)) ; then
 fi
 
 BL_FOOPGP_chelpmsg="
-"$"Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.""
+"$"Calculate how many djis (Ɉ) may be created for each contribution in euros (€) to the the foopgp association.""
 
 Main options:
   -v, --verbose            "$"output important infos on stderr, like stingynalty value""
@@ -229,11 +229,11 @@ bl_foopgp_g2t() {
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
-"$"Calculate how many foopgp tokens would be created from a gift.""
+"$"Calculate how many djis (Ɉ) would be created from a contribution in euros (€).""
 
 OPTIONS:
-  -t, --tokens DJISUM   "$"Set the base of tokens Ɉ already created (default: 0)""
-  -g, --gifts EURSUM    "$"Set the base of values in EUR € already given (default: 0)""
+  -t, --tokens DJISUM   "$"Set the base of djis (Ɉ) already created (default: 0)""
+  -g, --gifts EURSUM    "$"Set the base of values in EUR (€) already contributed (default: 0)""
   -s, --siprefix SYMBOL "$"Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. International System of Units).""
   -p, --printsym        "$"Also print symbol, eg: ' µɈ'.""
 "
@@ -293,11 +293,11 @@ bl_foopgp_t2g() {
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
-"$"Calculate how much should be given to create a targeted number of tokens.""
+"$"Calculate how much euros (€) should be given to create a targeted number of djis (Ɉ).""
 
 OPTIONS:
-  -t, --tokens DJISUM  "$"Set the base of tokens Ɉ already created (default: 0)""
-  -g, --gifts EURSUM   "$"Set the base of values in EUR € already given (default: 0)""
+  -t, --tokens DJISUM  "$"Set the base of djis Ɉ already created (default: 0)""
+  -g, --gifts EURSUM   "$"Set the base of values in euros € already contributed (default: 0)""
 "
 	local i udid ccode="€"
 	local t=0 g=0
@@ -332,12 +332,12 @@ bl_foopgp_giftarray() {
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
-"$"Display an array to indicate how many token gonna be created from a gift.""
+"$"Display an array to indicate how many djis (Ɉ) gonna be created from a contribution in euros (€).""
 
 OPTIONS:
-  -t, --tokens DJISUM  "$"Set the base of tokens Ɉ already created (default: 0)""
-  -g, --gifts EURSUM   "$"Set the base of values in EUR € already given (default: 0)""
-  -m, --max VALUE      "$"Set a limit in term of targeted token (defaut: 12)""
+  -t, --tokens DJISUM  "$"Set the base of djis Ɉ already created (default: 0)""
+  -g, --gifts EURSUM   "$"Set the base of values in EUR € already contributed (default: 0)""
+  -m, --max VALUE      "$"Set a limit in term of targeted djis (defaut: 12)""
   -M, --max-line NUM   "$"Limit number of lines (defaut: 24)""
   -H, --header-only    "$"Only display header line, and return.""
   -F, --with-header    "$"Also display header line and separation line at the beginning of array.""
