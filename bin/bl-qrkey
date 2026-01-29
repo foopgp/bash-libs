@@ -91,13 +91,13 @@ if ((BL_QRKEY_isprogram)) ; then
 fi
 
 BL_QRKEY_chelpmsg="
-Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
-Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, ...).
+"$"Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.""
+"$"Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, ...).""
 
-Note: OpenPGP keys should have been generated with bl-pgpid. Unexpected keys may cause unexpected issues.
+"$"Note: OpenPGP keys should have been generated with bl-pgpid. Unexpected keys may cause unexpected issues.""
 
-Main options:
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"
+"$"Main options:""
+  -f, --frontend PROGRAM   "$"select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"""
 
 ### external functions ###
 
@@ -129,12 +129,12 @@ _bl_qrkey_parseoptions() {
 _bl_iso7816_sw_analyse() {
 	local helpmsg="Usage: $FUNCNAME SW
 
-Status word (SW) is four hexa digits, as defined by ISO 7816-4.
-Return: - 0 if SW means Success (SW == 0x9000)
-        - 194 (OxC2) if only 2 remaining attempt.
-        - 193 (OxC1) if only 1 remaining attempt.
-        - 192 (OxC0) if code is blocked.
-        - other non-zero (usually SW1) with an error message in other cases.
+"$"Status word (SW) is four hexa digits, as defined by ISO 7816-4.""
+"$"Return: - 0 if SW means Success (SW == 0x9000)""
+        - "$"194 (OxC2) if only 2 remaining attempt.""
+        - "$"193 (OxC1) if only 1 remaining attempt.""
+        - "$"192 (OxC0) if code is blocked.""
+        - "$"other non-zero (usually SW1) with an error message in other cases.""
 "
 	for ((;$#;)) ; do
 		case "$1" in
@@ -226,15 +226,15 @@ bl_qrkey_change_passphrase() {
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR|EMAIL|NAME]"
 
 	local helpmsg="
-Change GnuPG passphrase protecting secret parts of an OpenPGP key.
-Missing inputs are asked interactively.
+"$"Change GnuPG passphrase protecting secret parts of an OpenPGP key.""
+"$"Missing inputs are asked interactively.""
 
-OPTIONS:
-  -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
-  -p, --passphrase PASSPHRASE    Current passphrase protecting secret parts of OpenPGP key (empty \"\" for none)
-  -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -n, --newpassphrase PASSPHRASE New passphrase to protect secret parts of OpenPGP key (empty \"\" for none)
-  -N, --newpassfrom FILE         Get new passphrase from the first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+"$"OPTIONS:""
+  -H, --homedir GNUPGHOME        "$"GnuPG home directory (default: ~/.gnupg). Environment variable:"" \$GNUPGHOME
+  -p, --passphrase PASSPHRASE    "$"Current passphrase protecting secret parts of OpenPGP key"" (empty \"\" for none)
+  -P, --passfrom FILE            "$"Get passphrase from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
+  -n, --newpassphrase PASSPHRASE "$"New passphrase to protect secret parts of OpenPGP key"" (empty \"\" for none)
+  -N, --newpassfrom FILE         "$"Get new passphrase from the first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
 "
 	local passphrase passgiven newpass newgiven
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -300,22 +300,22 @@ bl_qrkey_change_token_code() {
 	local usage="Usage: $name [OPTIONS]..."
 
 	local helpmsg="
-Check and change PIN (or Admin) code protecting use of a security token (OpenPGP smartcard).
-Missing inputs are asked interactively.
-Return: - 194 (OxC2) if only 2 remaining attempt.
-        - 193 (OxC1) if only 1 remaining attempt.
-        - 192 (OxC0) if code is blocked.
-        - other non-zero value on other errors.
+"$"Check and change PIN (or Admin) code protecting use of a security token (OpenPGP smartcard).""
+"$"Missing inputs are asked interactively.""
+"$"Return:"" - "$"194 (OxC2) if only 2 remaining attempt.""
+        - "$"193 (OxC1) if only 1 remaining attempt.""
+        - "$"192 (OxC0) if code is blocked.""
+        - "$"other non-zero value on other errors.""
 
-OPTIONS:
-  -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
-  -p, --code CURRENTCODE    Current PIN (or Admin) code protecting use of security token (empty \"\" for none)
-  -P, --codefrom FILE       Get current PIN (or Admin) code from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -n, --newcode NEWCODE     New PIN (or Admin) code to protect use of security token
-  -N, --newcodefrom FILE    Get new PIN (or Admin) code from the first line of FILE (eg: fifo, tmpfs ...)
-  -C, --onlycheck           Only check current PIN (or Admin) code, don't change it
-  -A, --admin               Change (or check) Admin code instead of PIN code
-  -U, --unblock             Unblock PIN. Need Admin code to be passed to --code, and new PIN code to be passed to --newcode
+"$"OPTIONS:""
+  -H, --homedir GNUPGHOME   "$"GnuPG home directory (default: ~/.gnupg). Environment variable:"" \$GNUPGHOME
+  -p, --code CURRENTCODE    "$"Current PIN (or Admin) code protecting use of security token"" (empty \"\" for none)
+  -P, --codefrom FILE       "$"Get current PIN (or Admin) code from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
+  -n, --newcode NEWCODE     "$"New PIN (or Admin) code to protect use of security token""
+  -N, --newcodefrom FILE    "$"Get new PIN (or Admin) code from the first line of FILE (eg: fifo, tmpfs ...)""
+  -C, --onlycheck           "$"Only check current PIN (or Admin) code, don't change it""
+  -A, --admin               "$"Change (or check) Admin code instead of PIN code""
+  -U, --unblock             "$"Unblock PIN. Need Admin code to be passed to --code, and new PIN code to be passed to --newcode""
 "
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local ccode ccodegiven newcode newgiven onlycheck unblock
@@ -429,23 +429,23 @@ bl_qrkey_print() (
 #
 	local splitn=5 thresn=3 qrversion=5
 	local helpmsg="
-Export and print OpenPGP secrets on multiple QRcode using Shamir's secret sharing.
-Missing inputs are asked interactively.
+"$"Export and print OpenPGP secrets on multiple QRcode using Shamir's secret sharing.""
+"$"Missing inputs are asked interactively.""
 
-OPTIONS:
-  -p, --passphrase PASSPHRASE    Passphrase to access secret parts of OpenPGP key
-  -P, --passfrom FILE            Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -t, --printer PRINTER          Name of printer to use
-  -w, --with-passphrase          Also print passphrase beside QR codes (INCREASE UX, DECREASE SECURITY).
-  -W, --workdir DIRECTORY        Use given working directory instead of a temporary directory (don't forget to shred its content).
-  -S, --split NUM                Number of shares to be generated (default: $splitn)
-  -T, --threshold NUM            Number of shares necessary to reconstruct the secret (default: $thresn)
-  -H, --homedir GNUPGHOME        GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
+"$"OPTIONS:""
+  -p, --passphrase PASSPHRASE    "$"Passphrase to access secret parts of OpenPGP key""
+  -P, --passfrom FILE            "$"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
+  -t, --printer PRINTER          "$"Name of printer to use""
+  -w, --with-passphrase          "$"Also print passphrase beside QR codes (INCREASE UX, DECREASE SECURITY).""
+  -W, --workdir DIRECTORY        "$"Use given working directory instead of a temporary directory (don't forget to shred its content).""
+  -S, --split NUM                "$"Number of shares to be generated"" (default: $splitn)
+  -T, --threshold NUM            "$"Number of shares necessary to reconstruct the secret (default: $thresn)""
+  -H, --homedir GNUPGHOME        "$"GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME""
 
-Note: Split number should be greater than threshold number.
-      If they are equal, a simple split is used instead of Shamir's secret sharing,
-      and all secret protection relies on the passphrase.
-      In other terms: if (split_NUM == threshold_NUM), then no passphrase or printing passphrase is VERY UNSECURE.
+"$"Note: Split number should be greater than threshold number.""
+      "$"If they are equal, a simple split is used instead of Shamir's secret sharing,""
+      "$"and all secret protection relies on the passphrase.""
+      "$"In other terms: if (split_NUM == threshold_NUM), then no passphrase or printing passphrase is VERY UNSECURE.""
 "
 	local passphrase passgiven printer tmpdir withpass
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -589,18 +589,18 @@ bl_qrkey_scan() (
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [IMAGES]..."
 	local helpmsg="
-Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or webcam.
-Missing inputs are asked interactively.
-Output OpenPGP certification key fingerprint.
+"$"Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or webcam.""
+"$"Missing inputs are asked interactively.""
+"$"Output OpenPGP certification key fingerprint.""
 
 OPTIONS:
-  -c, --camera V4LDEVICE        Video device to scan for QR code (/dev/v4l/by-id/...)
-  -W, --workdir DIRECTORY       Use given working directory instead of a temporary directory (don't forget to shred its content).
-  -p, --passphrase PASSPHRASE   This extra passphrase is related to QR VERSIONS:
-                                  * 1 to 3: Only numbers, use to be a date: YYYYMMDD.
-                                  * 4 to 5: $FUNCNAME don't need an extra passphrase (in addition to the ones defined in RFC9580).
-  -P, --passfrom FILE           Get extra passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -H, --homedir GNUPGHOME       GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
+  -c, --camera V4LDEVICE        "$"Video device to scan for QR code (/dev/v4l/by-id/...)""
+  -W, --workdir DIRECTORY       "$"Use given working directory instead of a temporary directory (don't forget to shred its content).""
+  -p, --passphrase PASSPHRASE   "$"This extra passphrase is related to QR VERSIONS:""
+                                  * "$"1 to 3: Only numbers, use to be a date: YYYYMMDD.""
+                                  * "$"4 to 5: $FUNCNAME don't need an extra passphrase (in addition to the ones defined in RFC9580).""
+  -P, --passfrom FILE           "$"Get extra passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
+  -H, --homedir GNUPGHOME       "$"GnuPG home directory (default: ~/.gnupg). Environment variable:"" \$GNUPGHOME
 "
 
 	local -a passphrase
@@ -769,22 +769,22 @@ bl_qrkey_totoken() {
 	local lang="${LANG:: 2}"
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 	local helpmsg="
-Move OpenPGP secrets to security token (OpenPGP smartcard).
-Missing inputs are asked interactively.
-Security token (OpenPGP smartcard) must be connected.
-Output ASCII armored OpenPGP certificate, PIN code and admin code.
+"$"Move OpenPGP secrets to security token (OpenPGP smartcard).""
+"$"Missing inputs are asked interactively.""
+"$"Security token (OpenPGP smartcard) must be connected.""
+"$"Output ASCII armored OpenPGP certificate, PIN code and admin code.""
 
 OPTIONS:
-  -H, --homedir GNUPGHOME      GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
-  -p, --passphrase PASSPHRASE  Passphrase to access secret parts of OpenPGP key
-  -P, --passfrom FILE          Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -U, --certurl URL            URL to retrieve your OpenPGP certificate (default: https://{KEYSERVER}/pks/lookup?op=get&search=0x{KEYFPR} )
-  -L, --lang LANG              Security token (OpenPGP smartcard) prefered language (default: $lang)
-  -N, --name NAME              Customize name of security token's cardholder
-  -k, --keyserver KEYSERVER    Send OpenPGP certificate to this public keys server. Also modify default URL (see --certurl, default: $hkpsserv)
-  -K, --pubkey FILE            Also write armored OpenPGP certificate to given FILE.
-  -v, --verbose                Increase verbosity
-      --force                  Don't ask before resetting unempty security token (OpenPGP smartcard)
+  -H, --homedir GNUPGHOME      "$"GnuPG home directory (default: ~/.gnupg). Environment variable:"" \$GNUPGHOME
+  -p, --passphrase PASSPHRASE  "$"Passphrase to access secret parts of OpenPGP key""
+  -P, --passfrom FILE          "$"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
+  -U, --certurl URL            "$"URL to retrieve your OpenPGP certificate (default: https://{KEYSERVER}/pks/lookup?op=get&search=0x{KEYFPR} )""
+  -L, --lang LANG              "$"Security token (OpenPGP smartcard) prefered language (default: $lang)""
+  -N, --name NAME              "$"Customize name of security token's cardholder""
+  -k, --keyserver KEYSERVER    "$"Send OpenPGP certificate to this public keys server. Also modify default URL (see --certurl, default: $hkpsserv)""
+  -K, --pubkey FILE            "$"Also write armored OpenPGP certificate to given FILE.""
+  -v, --verbose                "$"Increase verbosity""
+      --force                  "$"Don't ask before resetting unempty security token (OpenPGP smartcard)""
 "
 
 	local passphrase certurl username force=0 pubkeyfile
@@ -915,8 +915,8 @@ OPTIONS:
 if ((BL_QRKEY_isprogram)) ; then
 	BL_QRKEY_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_QRKEY_shelpmsg="
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -h, --help               "$"show help and exit""
+  -V, --version            "$"show version and exit""
 
 Actions:
 $(for f in "${BL_QRKEY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
@@ -935,7 +935,7 @@ else
 Functions:
 $(for f in "${BL_QRKEY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"$"Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.""
 "
 fi
 

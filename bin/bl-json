@@ -76,7 +76,7 @@ if ((BL_JSON_isprogram)) ; then
 fi
 
 BL_JSON_chelpmsg="
-Use jq (Command-line JSON processor) to convert json data to bash variables or arrays, and vice-versa.
+"$"Use jq (Command-line JSON processor) to convert json data to bash variables or arrays, and vice-versa.""
 
 Main options:"
 
@@ -108,7 +108,7 @@ bl_json_from_str() {
 	local helpmsg='
 Escape "\" and [/"\b\f\n\r\t] characters as required by JSON format.
 
-If there is no STRING in command line, read it from stdin.
+"$"If there is no STRING in command line, read it from stdin.""
 '
 
 	for ((;$#;)) ; do
@@ -131,16 +131,16 @@ bl_json_from_var() {
 	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:8}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VARNAME"
 	local helpmsg="
-Output content of VARNAME in a JSON object.
+"$"Output content of VARNAME in a JSON object.""
 
 OPTIONS:
-    -n, --nested        Assume any value beginning with \"declare -[aA]\" are nested data to be translate to JSON format
-    -s, --shift NUMBER  Number of tabs shifting of each line (default $shft)
+    -n, --nested        "$"Assume any value beginning with \"declare -[aA]\" are nested data to be translate to JSON format""
+    -s, --shift NUMBER  "$"Number of tabs shifting of each line (default $shft)""
 
-Warnings: --nested option may introduce security issues (because it uses eval on unsanitized inputs).
+"$"Warnings: --nested option may introduce security issues (because it uses eval on unsanitized inputs).""
 
-Reminder: bash arrays are not exportable to sub shells (cf. https://www.mail-archive.com/bug-bash@gnu.org/msg01774.html).
-          Then to use this function as an action, you should use the (dangerous) --nested option with \"declare -p\"
+"$"Reminder: bash arrays are not exportable to sub shells (cf. https://www.mail-archive.com/bug-bash@gnu.org/msg01774.html).""
+          "$"Then to use this function as an action, you should use the (dangerous)"" --nested option with \"declare -p\"
 	  eg: bl-json json_from_var --nested "'"$(declare -p VARNAME)"'
 
 	local nested=false shft=0
@@ -191,14 +191,14 @@ bl_json_type() {
 	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:8}" || name="$FUNCNAME"
 	local usage="Usage: $name [JSON_TEXT]"
 	local helpmsg="
-Expect JSON type regarding the begining of JSONTEXT.
+"$"Expect JSON type regarding the begining of JSONTEXT.""
 
-Like jq 'type' filter whithout needing a full valid JSON input,
-as it only check the begining to determine expected json type between:
-number, string, boolean, array, object, null.
+"$"Like jq 'type' filter whithout needing a full valid JSON input,""
+"$"as it only check the begining to determine expected json type between:""
+"$"number, string, boolean, array, object, null.""
 
-If there is no JSON_TEXT in command line, read it from stdin.
-If no type can be determined, output nothing and return non-zero value.
+"$"If there is no JSON_TEXT in command line, read it from stdin.""
+"$"If no type can be determined, output nothing and return non-zero value.""
 "
 
 	for ((;$#;)) ; do
@@ -241,17 +241,17 @@ bl_json_to_var() {
 	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:8}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [JSON_TEXT]"
 	local helpmsg="
-Output string to be put into bash variable or array.
-If JSON_TEXT is not given, read JSON from sdtdin.
+"$"Output string to be put into bash variable or array.""
+"$"If JSON_TEXT is not given, read JSON from sdtdin.""
 
 OPTIONS:
     -d, --declare VARNAME  output \"declare -[aA-] VARNAME=...\" statement to be use with 'eval ...'.
-    -r, --recurse          also parse JSON arrays or objects nested in JSON_TEXT.
+    -r, --recurse          "$"also parse JSON arrays or objects nested in JSON_TEXT.""
 
-Examples:
-* if JSON_TEXT refer to JSON boolean, string or number: bash_var=\$($name [JSON_TEXT])
-* if JSON_TEXT refer to JSON array or object: bash_array=( \$($name [JSON_TEXT]) )
-* if you just have a json file to be put in a bash variable: eval \$($name --declare bash_variable < file.json)
+"$"Examples:""
+* "$"if JSON_TEXT refer to JSON boolean, string or number:"" bash_var=\$($name [JSON_TEXT])
+* "$"if JSON_TEXT refer to JSON array or object:"" bash_array=( \$($name [JSON_TEXT]) )""
+* "$"if you just have a json file to be put in a bash variable:"" eval \$($name --declare bash_variable < file.json)
 "
 
 	local recurse=false varname
@@ -356,7 +356,7 @@ else
 Functions:
 $(for f in "${BL_JSON_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
+"$"Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."""
 fi
 
 # Parse Options

@@ -134,12 +134,12 @@ if ((BL_FOOPGP_isprogram)) ; then
 fi
 
 BL_FOOPGP_chelpmsg="
-Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
+"$"Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.""
 
 Main options:
-  -v, --verbose            output important infos on stderr, like stingynalty value
-  -s, --stingynalty VALUE  set STINGYNALTY ($(date --iso-8601 | head -c 7): $BL_FOOPGP_STINGYNALTY)
-  -d, --date STRING        set STINGYNALTY according to given date (cf. <https://www.gnu.org/software/coreutils/date>)"
+  -v, --verbose            "$"output important infos on stderr, like stingynalty value""
+  -s, --stingynalty VALUE  "$"set STINGYNALTY"" ($(date --iso-8601 | head -c 7): $BL_FOOPGP_STINGYNALTY)
+  -d, --date STRING        "$"set STINGYNALTY according to given date"" (cf. <https://www.gnu.org/software/coreutils/date>)"
 
 ### external functions ###
 
@@ -229,13 +229,13 @@ bl_foopgp_g2t() {
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
-Calculate how many foopgp tokens would be created from a gift.
+"$"Calculate how many foopgp tokens would be created from a gift.""
 
 OPTIONS:
-  -t, --tokens DJISUM   Set the base of tokens Ɉ already created (default: 0)
-  -g, --gifts EURSUM    Set the base of values in EUR € already given (default: 0)
-  -s, --siprefix SYMBOL Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. International System of Units).
-  -p, --printsym        Also print symbol, eg: ' µɈ'.
+  -t, --tokens DJISUM   "$"Set the base of tokens Ɉ already created (default: 0)""
+  -g, --gifts EURSUM    "$"Set the base of values in EUR € already given (default: 0)""
+  -s, --siprefix SYMBOL "$"Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. International System of Units).""
+  -p, --printsym        "$"Also print symbol, eg: ' µɈ'.""
 "
 	local i t=0 g=0 symbol printsym outsym
 	for ((;$#;)) ; do
@@ -293,11 +293,11 @@ bl_foopgp_t2g() {
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
-Calculate how much should be given to create a targeted number of tokens.
+"$"Calculate how much should be given to create a targeted number of tokens.""
 
 OPTIONS:
-  -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
-  -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
+  -t, --tokens DJISUM  "$"Set the base of tokens Ɉ already created (default: 0)""
+  -g, --gifts EURSUM   "$"Set the base of values in EUR € already given (default: 0)""
 "
 	local i udid ccode="€"
 	local t=0 g=0
@@ -332,15 +332,15 @@ bl_foopgp_giftarray() {
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
-Display an array to indicate how many token gonna be created from a gift.
+"$"Display an array to indicate how many token gonna be created from a gift.""
 
 OPTIONS:
-  -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
-  -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
-  -m, --max VALUE      Set a limit in term of targeted token (defaut: 12)
-  -M, --max-line NUM   Limit number of lines (defaut: 24)
-  -H, --header-only    Only display header line, and return.
-  -F, --with-header    Also display header line and separation line at the beginning of array.
+  -t, --tokens DJISUM  "$"Set the base of tokens Ɉ already created (default: 0)""
+  -g, --gifts EURSUM   "$"Set the base of values in EUR € already given (default: 0)""
+  -m, --max VALUE      "$"Set a limit in term of targeted token (defaut: 12)""
+  -M, --max-line NUM   "$"Limit number of lines (defaut: 24)""
+  -H, --header-only    "$"Only display header line, and return.""
+  -F, --with-header    "$"Also display header line and separation line at the beginning of array.""
 "
 	local max=12 maxl=24 udid header=0 onlyheader=0 ccode=EUR
 	local t g i j k tg=0 gg=0
@@ -389,8 +389,8 @@ OPTIONS:
 if ((BL_FOOPGP_isprogram)) ; then
 	BL_FOOPGP_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_FOOPGP_shelpmsg="
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -h, --help               "$"show help and exit""
+  -V, --version            "$"show version and exit""
 
 Actions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:10}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
@@ -409,7 +409,7 @@ else
 Functions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"$"Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.""
 "
 fi
 

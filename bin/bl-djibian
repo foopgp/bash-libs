@@ -133,17 +133,17 @@ bl_djibian_adduser()
 "$"Missing input will be asked interactively.""
 
 OPTIONS:
-  -s, --surname SURNAME            Surname/family name at birth
-  -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
-  -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
-  -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
-  -e, --email EMAIL                User email (optional)
-  -t, --phone NUMBER               User phone number (optional)
-  -p, --password PASSWORD          User password (for current djibian Operating System)
-  -P, --passfrom FILE              Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -F, --from-pgp-card              Get user data from OpenPGP smartcard (eg: yubikey, nitrokey, ...)
-  -v, --verify                     Resume input data for verification
-  -a, --admin                      Enable admin rights (root power through sudo group)
+  -s, --surname SURNAME            "$"Surname/family name at birth""
+  -g, --given-names GIVEN_NAMES    "$"Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.""
+  -d, --birth-date BIRTH_DATE      "$"Birth date, expected format : YYYY-MM-DD.""
+  -c, --birth-country COUNTRY_CODE "$"3 letters country code of birth place: FRA, GBR, ...""
+  -e, --email EMAIL                "$"User email (optional)""
+  -t, --phone NUMBER               "$"User phone number (optional)""
+  -p, --password PASSWORD          "$"User password (for current djibian Operating System)""
+  -P, --passfrom FILE              "$"Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
+  -F, --from-pgp-card              "$"Get user data from OpenPGP smartcard (eg: yubikey, nitrokey, ...)""
+  -v, --verify                     "$"Resume input data for verification""
+  -a, --admin                      "$"Enable admin rights (root power through sudo group)""
 "
 	local username sname gname bdate bcountry email phone passwd verify="" extragroups fromcard=""
 	extragroups=$BL_DJIBIAN_EXTRA_GROUPS
@@ -273,13 +273,13 @@ bl_djibian_admins()
 	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
-List, add or remove local admins (root power through sudo group). Add or remove need admin rights.
-SUDO_USER is not allowed to remove himself (from sudo group).
+"$"List, add or remove local admins (root power through sudo group). Add or remove need admin rights.""
+"$"SUDO_USER is not allowed to remove himself (from sudo group).""
 
 OPTIONS:
-  -a, --add USER        Add user to admin group (sudo). May be passed multiple time.
-  -r, --remove USER     Remove user to admin group (sudo). May be passed multiple time.
-  -l, --list            Do nothing, as $name always output users with admin rights (after eventual add or remove).
+  -a, --add USER        "$"Add user to admin group (sudo). May be passed multiple time.""
+  -r, --remove USER     "$"Remove user to admin group (sudo). May be passed multiple time.""
+  -l, --list            "$"Do nothing, as $name always output users with admin rights (after eventual add or remove).""
 "
 	local toadd toremove ret=0
 	for ((;$#;)) ; do
@@ -329,9 +329,9 @@ OPTIONS:
 if ((BL_DJIBIAN_isprogram)) ; then
 	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -f, --frontend PROGRAM   "$"select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)""
+  -h, --help               "$"show help and exit""
+  -V, --version            "$"show version and exit""
 
 Actions:
 $(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:11}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
@@ -350,7 +350,7 @@ else
 Functions:
 $(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"$"Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.""
 "
 fi
 

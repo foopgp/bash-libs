@@ -25,9 +25,10 @@ INSTALL_DATA      := $(INSTALL) --mode 644
 all: update build
 
 update:
-	@set -x ; for file in ../bin/bl-* ; do\
+	@set -x ; ( printf 'msgid ""\nmsgstr ""\n"Content-Type: text/plain; charset=UTF-8\\n"\n' ;\
+		for file in ../bin/bl-* ; do\
 		bash --dump-po-strings $$file ;\
-	done | msguniq > bashlibs.pot ;\
+	done ) | msguniq > bashlibs.pot ;\
 	for file in $(PO_FILES) ; do\
 		msgmerge --update $$file bashlibs.pot ;\
 	done

@@ -81,11 +81,11 @@ if ((BL_INTERACTIVE_isprogram)) ; then
 fi
 
 BL_INTERACTIVE_chelpmsg="
-Help managing interactive choices, while supporting multiple frontends: NONE, whiptail, dialog or zenity.
+"$"Help managing interactive choices, while supporting multiple frontends: NONE, whiptail, dialog or zenity.""
 
 Main options:
-  -f, --frontend PROGRAM   Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND, default: $BL_INTERACTIVE_FRONTEND)
-  -z, --zenity-extra ARGS  Extra args for zenity (if used), cf: zenity --help-general (environment var: BL_INTERACTIVE_ZENITY_EXTRA, default: $BL_INTERACTIVE_ZENITY_EXTRA)"
+  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND, default:"" $BL_INTERACTIVE_FRONTEND)
+  -z, --zenity-extra ARGS  "$"Extra args for zenity (if used), cf: zenity --help-general (environment var: BL_INTERACTIVE_ZENITY_EXTRA, default:"" $BL_INTERACTIVE_ZENITY_EXTRA)"
 
 ### internal functions ###
 
@@ -186,11 +186,11 @@ bl_msgstop() {
 	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] MESSAGE..."
 	local helpmsg="
-Display a MESSAGE and wait for user to press [Enter].
+"$"Display a MESSAGE and wait for user to press [Enter].""
 
 OPTIONS:
-  -T, --title TITLE        Title to display before the PREAMBLE
-  -t, --text PREAMBLE      Text to display before the MESSAGE
+  -T, --title TITLE        "$"Title to display before the PREAMBLE""
+  -t, --text PREAMBLE      "$"Text to display before the MESSAGE""
 "
 	local ttle pr
 	for ((;$#;)) ; do
@@ -227,16 +227,16 @@ bl_input() {
 	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] QUESTION"
 	local helpmsg="
-Helper to ask for a string.
+"$"Helper to ask for a string.""
 
 OPTIONS:
-  -d, --default STRING     Default initialized string
-  -T, --title TITLE        Title to display before the PREAMBLE
-  -t, --text PREAMBLE      Text to display before the QUESTION
-  -e, --email              Expect an email address
-  -I, --iso-8601[=FMT]     Input should describe time, output date/time in ISO 8601 format (\$ man date).
-      --utc-iso-8601[=FMT] Same as --iso-8601 but using Coordinated Universal Time (UTC).
-  -P, --password           Hide input chars with '*'
+  -d, --default STRING     "$"Default initialized string""
+  -T, --title TITLE        "$"Title to display before the PREAMBLE""
+  -t, --text PREAMBLE      "$"Text to display before the QUESTION""
+  -e, --email              "$"Expect an email address""
+  -I, --iso-8601[=FMT]     "$"Input should describe time, output date/time in ISO 8601 format"" (\$ man date).
+      --utc-iso-8601[=FMT] "$"Same as --iso-8601 but using Coordinated Universal Time (UTC).""
+  -P, --password           "$"Hide input chars with '*'""
 "
 	local def ttle pr emailaddr=false iso8601 boxt="inputbox" zenityopts
 	for ((;$#;)) ; do
@@ -323,15 +323,15 @@ bl_yesno() {
 	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] QUESTION"
 	local helpmsg="
-Helper for a yes/no QUESTION (binary choice).
-If REPLY == 'yes', return 0
-If REPLY == 'no', return 1
-Else loop asking the question.
+"$"Helper for a yes/no QUESTION (binary choice).""
+"$"If REPLY == 'yes', return 0""
+"$"If REPLY == 'no', return 1""
+"$"Else loop asking the question.""
 
 OPTIONS:
-      --default=<yes|no>   Set a default answer
-  -T, --title TITLE        Title to display before the PREAMBLE
-  -t, --text PREAMBLE      Text to display before the QUESTION
+      --default=<yes|no>   "$"Set a default answer""
+  -T, --title TITLE        "$"Title to display before the PREAMBLE""
+  -t, --text PREAMBLE      "$"Text to display before the QUESTION""
 "
 	local def ttle pr
 	for ((;$#;)) ; do
@@ -386,19 +386,19 @@ bl_radiolist() {
 	local usage="Usage: $name [OPTIONS] [--] ITEMS..."
 	local output def ttle pr nperline=3 n i ret=0 rv=0 inarray
 	local helpmsg="
-Helper for a single choice in a list (like radiobutton).
-Display (stderr) numbered list of item and loop asking for a number in this list
-Then echo (stdout) selected number (1-n).
+"$"Helper for a single choice in a list (like radiobutton).""
+"$"Display (stderr) numbered list of item and loop asking for a number in this list""
+"$"Then echo (stdout) selected number (1-n).""
 
 OPTIONS:
-  -i, --output-index         Output index (= number - 1) instead of number
-  -v, --output-value         Output value instead of number
-  -d, --default NUMBER       Set given number as a default answer, negative count from the end (BL_INTERACTIVE_FRONTEND!=zenity)
-  -I, --default-index INDEX  Set given index as a default answer, negative count from the end (BL_INTERACTIVE_FRONTEND!=zenity)
-  -D, --default-value STRING Set first occurence of value as a default answer (BL_INTERACTIVE_FRONTEND!=zenity)
-  -T, --title TITLE          Title to display before the Text/Question
-  -t, --text TEXT            Text/Question to display before the list
-  -n, --num-per-line NUMBER  Number of items per line (BL_INTERACTIVE_FRONTEND==NONE, default: $nperline)
+  -i, --output-index         "$"Output index (= number - 1) instead of number""
+  -v, --output-value         "$"Output value instead of number""
+  -d, --default NUMBER       "$"Set given number as a default answer, negative count from the end"" (BL_INTERACTIVE_FRONTEND!=zenity)
+  -I, --default-index INDEX  "$"Set given index as a default answer, negative count from the end"" (BL_INTERACTIVE_FRONTEND!=zenity)
+  -D, --default-value STRING "$"Set first occurence of value as a default answer"" (BL_INTERACTIVE_FRONTEND!=zenity)
+  -T, --title TITLE          "$"Title to display before the Text/Question""
+  -t, --text TEXT            "$"Text/Question to display before the list""
+  -n, --num-per-line NUMBER  "$"Number of items per line""(BL_INTERACTIVE_FRONTEND==NONE, default: $nperline)
 "
 	for ((;$#;)) ; do
 		case "$1" in
@@ -492,8 +492,8 @@ OPTIONS:
 if ((BL_INTERACTIVE_isprogram)) ; then
 	BL_INTERACTIVE_usage="Usage: $(basename "$BASH_SOURCE") [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_INTERACTIVE_shelpmsg="
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -h, --help               "$"show help and exit""
+  -V, --version            "$"show version and exit""
 
 Actions:
 $(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
@@ -511,7 +511,7 @@ else
 Functions:
 $(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
+"$"Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."""
 fi
 
 # Parse Options

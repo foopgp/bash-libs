@@ -1,3 +1,36 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+#: ../bin/bl-dji:88
+msgid "Manage djis (Ɉ), also known as foopgp tokens."
+msgstr ""
+
+#: ../bin/bl-dji:90 ../bin/bl-qrkey:99
+msgid "Main options:"
+msgstr ""
+
+#: ../bin/bl-dji:121
+msgid "Translate given VALUES to their microVALUES, aka µVALUES (10^-6)."
+msgstr ""
+
+#: ../bin/bl-dji:122 ../bin/bl-dji:240
+msgid "Values with too much decimals will be rounded half-to-even,"
+msgstr ""
+
+#: ../bin/bl-dji:123 ../bin/bl-dji:241
+msgid "confer"
+msgstr ""
+
+#: ../bin/bl-dji:124
+msgid ""
+"Given VALUES may be suffixed by symbol or name of the International System "
+"of Units (ISO/IEC 80000):"
+msgstr ""
+
+#: ../bin/bl-dji:130
+msgid "Values with too much decimals will be truncated instead of rounded."
+msgstr ""
+
 #: ../bin/bl-dji:138 ../bin/bl-dji:185 ../bin/bl-dji:216 ../bin/bl-dji:259
 #: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-djibian:174
 #: ../bin/bl-djibian:296 ../bin/bl-foopgp:195 ../bin/bl-foopgp:256
@@ -8,7 +41,7 @@
 #: ../bin/bl-markdown:130 ../bin/bl-markdown:212 ../bin/bl-pgpid:360
 #: ../bin/bl-pgpid:496 ../bin/bl-pgpid:543 ../bin/bl-pgpid:662
 #: ../bin/bl-pgpid:777 ../bin/bl-pgpid:858 ../bin/bl-pgpid:960
-#: ../bin/bl-pgpid:1065 ../bin/bl-pgpid:1169 ../bin/bl-pgpid:1298
+#: ../bin/bl-pgpid:1065 ../bin/bl-pgpid:1169 ../bin/bl-pgpid:1307
 #: ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420
 #: ../bin/bl-qrkey:144 ../bin/bl-qrkey:256 ../bin/bl-qrkey:344
 #: ../bin/bl-qrkey:475 ../bin/bl-qrkey:623 ../bin/bl-qrkey:817
@@ -30,7 +63,7 @@ msgstr ""
 #: ../bin/bl-pgpid:360 ../bin/bl-pgpid:496 ../bin/bl-pgpid:543
 #: ../bin/bl-pgpid:662 ../bin/bl-pgpid:777 ../bin/bl-pgpid:858
 #: ../bin/bl-pgpid:960 ../bin/bl-pgpid:1065 ../bin/bl-pgpid:1169
-#: ../bin/bl-pgpid:1298 ../bin/bl-pgpid:1355 ../bin/bl-qif:162
+#: ../bin/bl-pgpid:1307 ../bin/bl-pgpid:1364 ../bin/bl-qif:162
 #: ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420 ../bin/bl-qif:609
 #: ../bin/bl-qrkey:144 ../bin/bl-qrkey:256 ../bin/bl-qrkey:344
 #: ../bin/bl-qrkey:475 ../bin/bl-qrkey:623 ../bin/bl-qrkey:817
@@ -40,9 +73,95 @@ msgstr ""
 msgid "Try '%s --help' for more information"
 msgstr ""
 
+#: ../bin/bl-dji:239
+msgid ""
+"Translate given VALUES to their µVALUES: round(VALUE*10^6), then to binary."
+msgstr ""
+
+#: ../bin/bl-dji:242
+msgid "Given VALUES may be suffixed by:"
+msgstr ""
+
+#: ../bin/bl-dji:248
+msgid ""
+"Switch to little-endian, from Least Significant Bit to Most Significant Bit."
+msgstr ""
+
+#: ../bin/bl-dji:249
+msgid "Use DELIM to separate 0-1 digits (default: '')."
+msgstr ""
+
+#: ../bin/bl-dji:291
+msgid ""
+"Translate given VALUES v to their microVALUES µv (10^-6), then decompose "
+"this (µv) in powers of 2."
+msgstr ""
+
+#: ../bin/bl-dji:293
+msgid "Output format, eg \\\"%02X\\\" for hexadecimal."
+msgstr ""
+
+#: ../bin/bl-dji:294
+msgid "Use DELIM to separate powers of 2 (default: ' ')."
+msgstr ""
+
+#: ../bin/bl-dji:295
+msgid "Output using base16 (aka hexadecimal)."
+msgstr ""
+
+#: ../bin/bl-dji:296
+msgid "Output the exponent n instead of 2^n."
+msgstr ""
+
+#: ../bin/bl-dji:297
+msgid "Order output from the greatest to the lowest"
+msgstr ""
+
+#: ../bin/bl-dji:355
+msgid ""
+"Read dji wallet FILE(s), or from /dev/stdin if no FILE passed as argument."
+msgstr ""
+
+#: ../bin/bl-dji:357
+msgid "Output only the total value of the wallet(s), in µɈ."
+msgstr ""
+
+#: ../bin/bl-dji:358
+msgid ""
+"Output only the number of each grains of value 2^0 ... 2^n, line by line."
+msgstr ""
+
+#: ../bin/bl-dji:359
+msgid "Output only declare -a grains=(... statement."
+msgstr ""
+
+#: ../bin/bl-dji:432
+msgid ""
+"Select and output grains from wallet FILE to be removed to extract VALUE."
+msgstr ""
+
+#: ../bin/bl-dji:434
+msgid ""
+"Don't exit with error if the exact VALUE can't be extracted, but remove "
+"grains > VALUE."
+msgstr ""
+
+#: ../bin/bl-dji:435
+msgid ""
+"Don't remove any grain from wallet FILE, but output grains to be removed."
+msgstr ""
+
+#: ../bin/bl-dji:543 ../bin/bl-djibian:353 ../bin/bl-foopgp:412
+#: ../bin/bl-interactive:514 ../bin/bl-json:359 ../bin/bl-qrkey:938
+#: ../bin/bl-security:418
+msgid ""
+"Reminder: when used as a library, all functions calls share the same "
+"environment variables, i.e. the same global options."
+msgstr ""
+
 #: ../bin/bl-dji:565 ../bin/bl-djibian:375 ../bin/bl-foopgp:434
 #: ../bin/bl-interactive:535 ../bin/bl-json:380 ../bin/bl-markdown:315
-#: ../bin/bl-pgpid:1355 ../bin/bl-qif:609 ../bin/bl-qrkey:960
+#: ../bin/bl-pgpid:1364 ../bin/bl-qif:609 ../bin/bl-qrkey:960
 #: ../bin/bl-security:439 ../bin/bl-test:198
 msgid "Unrecognized action"
 msgstr ""
@@ -61,6 +180,52 @@ msgstr ""
 
 #: ../bin/bl-djibian:133
 msgid "Missing input will be asked interactively."
+msgstr ""
+
+#: ../bin/bl-djibian:136 ../bin/bl-pgpid:641
+msgid "Surname/family name at birth"
+msgstr ""
+
+#: ../bin/bl-djibian:137 ../bin/bl-pgpid:642
+msgid ""
+"Given names at birth, separated by space ' ' or comma ',' or hyphen '-'."
+msgstr ""
+
+#: ../bin/bl-djibian:138
+msgid "Birth date, expected format : YYYY-MM-DD."
+msgstr ""
+
+#: ../bin/bl-djibian:139
+msgid "3 letters country code of birth place: FRA, GBR, ..."
+msgstr ""
+
+#: ../bin/bl-djibian:140
+msgid "User email (optional)"
+msgstr ""
+
+#: ../bin/bl-djibian:141
+msgid "User phone number (optional)"
+msgstr ""
+
+#: ../bin/bl-djibian:142
+msgid "User password (for current djibian Operating System)"
+msgstr ""
+
+#: ../bin/bl-djibian:143
+msgid ""
+"Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)"
+msgstr ""
+
+#: ../bin/bl-djibian:144
+msgid "Get user data from OpenPGP smartcard (eg: yubikey, nitrokey, ...)"
+msgstr ""
+
+#: ../bin/bl-djibian:145
+msgid "Resume input data for verification"
+msgstr ""
+
+#: ../bin/bl-djibian:146
+msgid "Enable admin rights (root power through sudo group)"
 msgstr ""
 
 #: ../bin/bl-djibian:205
@@ -158,6 +323,64 @@ msgstr ""
 msgid "user %s (%s) successfully added to current system"
 msgstr ""
 
+#: ../bin/bl-djibian:276
+msgid ""
+"List, add or remove local admins (root power through sudo group). Add or "
+"remove need admin rights."
+msgstr ""
+
+#: ../bin/bl-djibian:277
+msgid "SUDO_USER is not allowed to remove himself (from sudo group)."
+msgstr ""
+
+#: ../bin/bl-djibian:280
+msgid "Add user to admin group (sudo). May be passed multiple time."
+msgstr ""
+
+#: ../bin/bl-djibian:281
+msgid "Remove user to admin group (sudo). May be passed multiple time."
+msgstr ""
+
+#: ../bin/bl-djibian:282
+msgid ""
+"Do nothing, as $name always output users with admin rights (after eventual "
+"add or remove)."
+msgstr ""
+
+#: ../bin/bl-djibian:332 ../bin/bl-qrkey:100 ../bin/bl-security:93
+msgid ""
+"select a frontend program {NONE,whiptail,dialog,zenity} (environment var: "
+"BL_INTERACTIVE_FRONTEND)"
+msgstr ""
+
+#: ../bin/bl-djibian:333 ../bin/bl-foopgp:392 ../bin/bl-interactive:495
+#: ../bin/bl-qrkey:918 ../bin/bl-security:399
+msgid "show help and exit"
+msgstr ""
+
+#: ../bin/bl-djibian:334 ../bin/bl-foopgp:393 ../bin/bl-interactive:496
+#: ../bin/bl-qrkey:919 ../bin/bl-security:400
+msgid "show version and exit"
+msgstr ""
+
+#: ../bin/bl-foopgp:137
+msgid ""
+"Calculate how many foopgp token (Ɉ) may be created for each cotisations to "
+"the the foopgp association."
+msgstr ""
+
+#: ../bin/bl-foopgp:140
+msgid "output important infos on stderr, like stingynalty value"
+msgstr ""
+
+#: ../bin/bl-foopgp:141
+msgid "set STINGYNALTY"
+msgstr ""
+
+#: ../bin/bl-foopgp:142
+msgid "set STINGYNALTY according to given date"
+msgstr ""
+
 #: ../bin/bl-foopgp:181 ../bin/bl-pgpid:924 ../bin/bl-pgpid:1268
 msgid "Usage:"
 msgstr ""
@@ -186,12 +409,421 @@ msgstr ""
 msgid "Invalid email"
 msgstr ""
 
+#: ../bin/bl-foopgp:232
+msgid "Calculate how many foopgp tokens would be created from a gift."
+msgstr ""
+
+#: ../bin/bl-foopgp:235 ../bin/bl-foopgp:299 ../bin/bl-foopgp:338
+msgid "Set the base of tokens Ɉ already created (default: 0)"
+msgstr ""
+
+#: ../bin/bl-foopgp:236 ../bin/bl-foopgp:300 ../bin/bl-foopgp:339
+msgid "Set the base of values in EUR € already given (default: 0)"
+msgstr ""
+
+#: ../bin/bl-foopgp:237
+msgid ""
+"Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. "
+"International System of Units)."
+msgstr ""
+
+#: ../bin/bl-foopgp:238
+msgid "Also print symbol, eg: ' µɈ'."
+msgstr ""
+
+#: ../bin/bl-foopgp:296
+msgid ""
+"Calculate how much should be given to create a targeted number of tokens."
+msgstr ""
+
+#: ../bin/bl-foopgp:335
+msgid ""
+"Display an array to indicate how many token gonna be created from a gift."
+msgstr ""
+
+#: ../bin/bl-foopgp:340
+msgid "Set a limit in term of targeted token (defaut: 12)"
+msgstr ""
+
+#: ../bin/bl-foopgp:341
+msgid "Limit number of lines (defaut: 24)"
+msgstr ""
+
+#: ../bin/bl-foopgp:342
+msgid "Only display header line, and return."
+msgstr ""
+
+#: ../bin/bl-foopgp:343
+msgid "Also display header line and separation line at the beginning of array."
+msgstr ""
+
+#: ../bin/bl-interactive:84
+msgid ""
+"Help managing interactive choices, while supporting multiple frontends: "
+"NONE, whiptail, dialog or zenity."
+msgstr ""
+
+#: ../bin/bl-interactive:87
+msgid ""
+"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: "
+"BL_INTERACTIVE_FRONTEND, default:"
+msgstr ""
+
+#: ../bin/bl-interactive:88
+msgid ""
+"Extra args for zenity (if used), cf: zenity --help-general (environment var: "
+"BL_INTERACTIVE_ZENITY_EXTRA, default:"
+msgstr ""
+
+#: ../bin/bl-interactive:189
+msgid "Display a MESSAGE and wait for user to press [Enter]."
+msgstr ""
+
+#: ../bin/bl-interactive:192 ../bin/bl-interactive:234
+#: ../bin/bl-interactive:333
+msgid "Title to display before the PREAMBLE"
+msgstr ""
+
+#: ../bin/bl-interactive:193
+msgid "Text to display before the MESSAGE"
+msgstr ""
+
+#: ../bin/bl-interactive:230
+msgid "Helper to ask for a string."
+msgstr ""
+
+#: ../bin/bl-interactive:233
+msgid "Default initialized string"
+msgstr ""
+
+#: ../bin/bl-interactive:235 ../bin/bl-interactive:334
+msgid "Text to display before the QUESTION"
+msgstr ""
+
+#: ../bin/bl-interactive:236
+msgid "Expect an email address"
+msgstr ""
+
+#: ../bin/bl-interactive:237
+msgid "Input should describe time, output date/time in ISO 8601 format"
+msgstr ""
+
+#: ../bin/bl-interactive:238
+msgid "Same as --iso-8601 but using Coordinated Universal Time (UTC)."
+msgstr ""
+
+#: ../bin/bl-interactive:239
+msgid "Hide input chars with '*'"
+msgstr ""
+
+#: ../bin/bl-interactive:326
+msgid "Helper for a yes/no QUESTION (binary choice)."
+msgstr ""
+
+#: ../bin/bl-interactive:327
+msgid "If REPLY == 'yes', return 0"
+msgstr ""
+
+#: ../bin/bl-interactive:328
+msgid "If REPLY == 'no', return 1"
+msgstr ""
+
+#: ../bin/bl-interactive:329
+msgid "Else loop asking the question."
+msgstr ""
+
+#: ../bin/bl-interactive:332
+msgid "Set a default answer"
+msgstr ""
+
+#: ../bin/bl-interactive:389
+msgid "Helper for a single choice in a list (like radiobutton)."
+msgstr ""
+
+#: ../bin/bl-interactive:390
+msgid ""
+"Display (stderr) numbered list of item and loop asking for a number in this "
+"list"
+msgstr ""
+
+#: ../bin/bl-interactive:391
+msgid "Then echo (stdout) selected number (1-n)."
+msgstr ""
+
+#: ../bin/bl-interactive:394
+msgid "Output index (= number - 1) instead of number"
+msgstr ""
+
+#: ../bin/bl-interactive:395
+msgid "Output value instead of number"
+msgstr ""
+
+#: ../bin/bl-interactive:396
+msgid "Set given number as a default answer, negative count from the end"
+msgstr ""
+
+#: ../bin/bl-interactive:397
+msgid "Set given index as a default answer, negative count from the end"
+msgstr ""
+
+#: ../bin/bl-interactive:398
+msgid "Set first occurence of value as a default answer"
+msgstr ""
+
+#: ../bin/bl-interactive:399
+msgid "Title to display before the Text/Question"
+msgstr ""
+
+#: ../bin/bl-interactive:400
+msgid "Text/Question to display before the list"
+msgstr ""
+
+#: ../bin/bl-interactive:401
+msgid "Number of items per line"
+msgstr ""
+
 #: ../bin/bl-interactive:422
 msgid "need arguments (items)"
 msgstr ""
 
+#: ../bin/bl-json:79
+msgid ""
+"Use jq (Command-line JSON processor) to convert json data to bash variables "
+"or arrays, and vice-versa."
+msgstr ""
+
+#: ../bin/bl-json:134
+msgid "Output content of VARNAME in a JSON object."
+msgstr ""
+
+#: ../bin/bl-json:137
+msgid ""
+"Assume any value beginning with \\\"declare -[aA]\\\" are nested data to be "
+"translate to JSON format"
+msgstr ""
+
+#: ../bin/bl-json:138
+msgid "Number of tabs shifting of each line (default $shft)"
+msgstr ""
+
+#: ../bin/bl-json:140
+msgid ""
+"Warnings: --nested option may introduce security issues (because it uses "
+"eval on unsanitized inputs)."
+msgstr ""
+
+#: ../bin/bl-json:142
+msgid ""
+"Reminder: bash arrays are not exportable to sub shells (cf. https://www.mail-"
+"archive.com/bug-bash@gnu.org/msg01774.html)."
+msgstr ""
+
+#: ../bin/bl-json:143
+msgid "Then to use this function as an action, you should use the (dangerous)"
+msgstr ""
+
+#: ../bin/bl-json:194
+msgid "Expect JSON type regarding the begining of JSONTEXT."
+msgstr ""
+
+#: ../bin/bl-json:196
+msgid "Like jq 'type' filter whithout needing a full valid JSON input,"
+msgstr ""
+
+#: ../bin/bl-json:197
+msgid "as it only check the begining to determine expected json type between:"
+msgstr ""
+
+#: ../bin/bl-json:198
+msgid "number, string, boolean, array, object, null."
+msgstr ""
+
+#: ../bin/bl-json:200
+msgid "If there is no JSON_TEXT in command line, read it from stdin."
+msgstr ""
+
+#: ../bin/bl-json:201
+msgid "If no type can be determined, output nothing and return non-zero value."
+msgstr ""
+
+#: ../bin/bl-json:244
+msgid "Output string to be put into bash variable or array."
+msgstr ""
+
+#: ../bin/bl-json:245
+msgid "If JSON_TEXT is not given, read JSON from sdtdin."
+msgstr ""
+
+#: ../bin/bl-json:249
+msgid "also parse JSON arrays or objects nested in JSON_TEXT."
+msgstr ""
+
+#: ../bin/bl-json:251
+msgid "Examples:"
+msgstr ""
+
+#: ../bin/bl-json:252
+msgid "if JSON_TEXT refer to JSON boolean, string or number:"
+msgstr ""
+
+#: ../bin/bl-json:253
+msgid "if JSON_TEXT refer to JSON array or object:"
+msgstr ""
+
+#: ../bin/bl-json:254
+msgid "if you just have a json file to be put in a bash variable:"
+msgstr ""
+
 #: ../bin/bl-json:300 ../bin/bl-json:325
 msgid "Invalid JSON"
+msgstr ""
+
+#: ../bin/bl-log:126
+msgid "Wrapper for logger command, which also print pretty logs on stderr."
+msgstr ""
+
+#: ../bin/bl-log:127
+msgid "PRIORITY is a"
+msgstr ""
+
+#: ../bin/bl-log:127
+msgid "The default facility is [user]=1."
+msgstr ""
+
+#: ../bin/bl-log:128
+msgid "Levels:"
+msgstr ""
+
+#: ../bin/bl-log:129
+msgid "If PRIORITY's level is under"
+msgstr ""
+
+#: ../bin/bl-log:129
+msgid "don't log anything."
+msgstr ""
+
+#: ../bin/bl-log:130
+msgid "If PRIORITY's level name is more serious than"
+msgstr ""
+
+#: ../bin/bl-log:131
+msgid "If there is no MESSAGE in command line, read it from stdin."
+msgstr ""
+
+#: ../bin/bl-log:134
+msgid "log level:"
+msgstr ""
+
+#: ../bin/bl-log:135
+msgid "exit level:"
+msgstr ""
+
+#: ../bin/bl-log:136
+msgid "do not output message to standard error"
+msgstr ""
+
+#: ../bin/bl-log:137
+msgid "do not send message to the logs system (syslog)"
+msgstr ""
+
+#: ../bin/bl-log:139
+msgid "colorize messages sent to standard error (default: auto)"
+msgstr ""
+
+#: ../bin/bl-log:140
+msgid "show help and exit/return"
+msgstr ""
+
+#: ../bin/bl-log:141
+msgid "show version and exit/return"
+msgstr ""
+
+#: ../bin/bl-log:143
+msgid "Options forwarded to 'logger':"
+msgstr ""
+
+#: ../bin/bl-log:144
+msgid "log the logger command's PID"
+msgstr ""
+
+#: ../bin/bl-log:145
+msgid "log the given <id>, or otherwise the PID"
+msgstr ""
+
+#: ../bin/bl-log:146
+msgid "log the contents of this file"
+msgstr ""
+
+#: ../bin/bl-log:147
+msgid "do not log empty lines when processing files"
+msgstr ""
+
+#: ../bin/bl-log:148
+msgid "use rfc6587 octet counting"
+msgstr ""
+
+#: ../bin/bl-log:149
+msgid "look for a prefix on every line read from stdin"
+msgstr ""
+
+#: ../bin/bl-log:150
+msgid "maximum size for a single message"
+msgstr ""
+
+#: ../bin/bl-log:151
+msgid "mark every line with this tag"
+msgstr ""
+
+#: ../bin/bl-log:152
+msgid "write to this remote syslog server"
+msgstr ""
+
+#: ../bin/bl-log:153
+msgid "use this port for UDP or TCP connection"
+msgstr ""
+
+#: ../bin/bl-log:154
+msgid "use TCP only"
+msgstr ""
+
+#: ../bin/bl-log:155
+msgid "use UDP only"
+msgstr ""
+
+#: ../bin/bl-log:156
+msgid "use the obsolete BSD syslog protocol"
+msgstr ""
+
+#: ../bin/bl-log:157
+msgid "use the syslog protocol (the default for remote);"
+msgstr ""
+
+#: ../bin/bl-log:158
+msgid "can be notime, or notq, and/or nohost"
+msgstr ""
+
+#: ../bin/bl-log:159
+msgid "rfc5424 structured data ID"
+msgstr ""
+
+#: ../bin/bl-log:160
+msgid "rfc5424 structured data name=value"
+msgstr ""
+
+#: ../bin/bl-log:161
+msgid "set rfc5424 message id field"
+msgstr ""
+
+#: ../bin/bl-log:162
+msgid "write to this Unix socket"
+msgstr ""
+
+#: ../bin/bl-log:164
+msgid "print connection errors when using Unix sockets"
+msgstr ""
+
+#: ../bin/bl-log:165
+msgid "write journald entry"
 msgstr ""
 
 #: ../bin/bl-pgpid:437
@@ -234,15 +866,6 @@ msgstr ""
 msgid ""
 "You may pass the Machine Readable Zone of an international passport as "
 "argument, but there are ~20% chances that generated *u4* is incorrect."
-msgstr ""
-
-#: ../bin/bl-pgpid:641
-msgid "Surname/family name at birth"
-msgstr ""
-
-#: ../bin/bl-pgpid:642
-msgid ""
-"Given names at birth, separated by space ' ' or comma ',' or hyphen '-'."
 msgstr ""
 
 #: ../bin/bl-pgpid:643
@@ -305,19 +928,19 @@ msgstr ""
 msgid "Working directory. Will contain previous and new resized images. "
 msgstr ""
 
-#: ../bin/bl-pgpid:936 ../bin/bl-pgpid:937 ../bin/bl-pgpid:1280
+#: ../bin/bl-pgpid:936 ../bin/bl-pgpid:937 ../bin/bl-pgpid:1284
 msgid "Default:"
 msgstr ""
 
-#: ../bin/bl-pgpid:937 ../bin/bl-pgpid:1280
+#: ../bin/bl-pgpid:937 ../bin/bl-pgpid:1284
 msgid "If non-empty, send updated certificate to this keyserver. "
 msgstr ""
 
-#: ../bin/bl-pgpid:938 ../bin/bl-pgpid:1281
+#: ../bin/bl-pgpid:938 ../bin/bl-pgpid:1285
 msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr ""
 
-#: ../bin/bl-pgpid:938 ../bin/bl-pgpid:1281
+#: ../bin/bl-pgpid:938 ../bin/bl-pgpid:1285
 msgid "Environnement variable:"
 msgstr ""
 
@@ -354,39 +977,320 @@ msgid "Valid OpenPGP ID token"
 msgstr ""
 
 #: ../bin/bl-pgpid:1272
-msgid "Certify somebody else, according to OpenPGP ID standards."
+msgid "Certify somebody else, identified by its OpenPGP ID TARGET_U4"
 msgstr ""
 
 #: ../bin/bl-pgpid:1273
+msgid ""
+"If TARGET_U4 or TARGET_U5 is not given, ask for civil status to calculate "
+"TARGET_U4"
+msgstr ""
+
+#: ../bin/bl-pgpid:1275
 msgid ""
 "Certification means : I know this other certificate belongs to this real "
 "person"
 msgstr ""
 
-#: ../bin/bl-pgpid:1274
+#: ../bin/bl-pgpid:1276
 msgid ""
-"This implies verifying its civil status and the fingerprint of its public "
-"key."
+"This implies verifying the civil status and the public key fingerprint of "
+"the TARGET"
 msgstr ""
 
-#: ../bin/bl-pgpid:1275
+#: ../bin/bl-pgpid:1277
 msgid ""
 "This allows you to expand and strengthen your web of trust and those of your "
-"close ones."
+"close ones"
 msgstr ""
 
-#: ../bin/bl-pgpid:1278
+#: ../bin/bl-pgpid:1280
 msgid ""
 "Select private key to use (If you have several and none configured by "
 "default)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1279
-msgid "Revoke your previous certifications on someone else's certificate."
+#: ../bin/bl-pgpid:1281
+msgid "Revoke your previous certifications on someone else's certificate"
 msgstr ""
 
-#: ../bin/bl-pgpid:1304
+#: ../bin/bl-pgpid:1282
+msgid "Take responsability for any illegal actions by the target"
+msgstr ""
+
+#: ../bin/bl-pgpid:1282
+msgid "Same as"
+msgstr ""
+
+#: ../bin/bl-pgpid:1283
+msgid "Assume additional legal responsibilities on the target"
+msgstr ""
+
+#: ../bin/bl-pgpid:1298
+msgid "Only %s is yet a known domain for vouching"
+msgstr ""
+
+#: ../bin/bl-pgpid:1313
 msgid "Not implemented yet"
+msgstr ""
+
+#: ../bin/bl-qrkey:94
+msgid ""
+"Backup or restore OpenPGP keys using printed QR codes and Shamir's secret "
+"sharing."
+msgstr ""
+
+#: ../bin/bl-qrkey:95
+msgid ""
+"Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or "
+"Admin) codes of OpenPGP security tokens (YubiKey, ...)."
+msgstr ""
+
+#: ../bin/bl-qrkey:97
+msgid ""
+"Note: OpenPGP keys should have been generated with bl-pgpid. Unexpected keys "
+"may cause unexpected issues."
+msgstr ""
+
+#: ../bin/bl-qrkey:132
+msgid "Status word (SW) is four hexa digits, as defined by ISO 7816-4."
+msgstr ""
+
+#: ../bin/bl-qrkey:133
+msgid "Return: - 0 if SW means Success (SW == 0x9000)"
+msgstr ""
+
+#: ../bin/bl-qrkey:134 ../bin/bl-qrkey:305
+msgid "194 (OxC2) if only 2 remaining attempt."
+msgstr ""
+
+#: ../bin/bl-qrkey:135 ../bin/bl-qrkey:306
+msgid "193 (OxC1) if only 1 remaining attempt."
+msgstr ""
+
+#: ../bin/bl-qrkey:136 ../bin/bl-qrkey:307
+msgid "192 (OxC0) if code is blocked."
+msgstr ""
+
+#: ../bin/bl-qrkey:137
+msgid "other non-zero (usually SW1) with an error message in other cases."
+msgstr ""
+
+#: ../bin/bl-qrkey:229
+msgid "Change GnuPG passphrase protecting secret parts of an OpenPGP key."
+msgstr ""
+
+#: ../bin/bl-qrkey:230 ../bin/bl-qrkey:304 ../bin/bl-qrkey:433
+#: ../bin/bl-qrkey:593 ../bin/bl-qrkey:773
+msgid "Missing inputs are asked interactively."
+msgstr ""
+
+#: ../bin/bl-qrkey:232 ../bin/bl-qrkey:310 ../bin/bl-qrkey:435
+msgid "OPTIONS:"
+msgstr ""
+
+#: ../bin/bl-qrkey:233 ../bin/bl-qrkey:311 ../bin/bl-qrkey:603
+#: ../bin/bl-qrkey:778
+msgid "GnuPG home directory (default: ~/.gnupg). Environment variable:"
+msgstr ""
+
+#: ../bin/bl-qrkey:234
+msgid "Current passphrase protecting secret parts of OpenPGP key"
+msgstr ""
+
+#: ../bin/bl-qrkey:235
+msgid "Get passphrase from first line of FILE"
+msgstr ""
+
+#: ../bin/bl-qrkey:236
+msgid "New passphrase to protect secret parts of OpenPGP key"
+msgstr ""
+
+#: ../bin/bl-qrkey:237
+msgid "Get new passphrase from the first line of FILE"
+msgstr ""
+
+#: ../bin/bl-qrkey:303
+msgid ""
+"Check and change PIN (or Admin) code protecting use of a security token "
+"(OpenPGP smartcard)."
+msgstr ""
+
+#: ../bin/bl-qrkey:305
+msgid "Return:"
+msgstr ""
+
+#: ../bin/bl-qrkey:308
+msgid "other non-zero value on other errors."
+msgstr ""
+
+#: ../bin/bl-qrkey:312
+msgid "Current PIN (or Admin) code protecting use of security token"
+msgstr ""
+
+#: ../bin/bl-qrkey:313
+msgid "Get current PIN (or Admin) code from first line of FILE"
+msgstr ""
+
+#: ../bin/bl-qrkey:314
+msgid "New PIN (or Admin) code to protect use of security token"
+msgstr ""
+
+#: ../bin/bl-qrkey:315
+msgid ""
+"Get new PIN (or Admin) code from the first line of FILE (eg: fifo, tmpfs ...)"
+msgstr ""
+
+#: ../bin/bl-qrkey:316
+msgid "Only check current PIN (or Admin) code, don't change it"
+msgstr ""
+
+#: ../bin/bl-qrkey:317
+msgid "Change (or check) Admin code instead of PIN code"
+msgstr ""
+
+#: ../bin/bl-qrkey:318
+msgid ""
+"Unblock PIN. Need Admin code to be passed to --code, and new PIN code to be "
+"passed to --newcode"
+msgstr ""
+
+#: ../bin/bl-qrkey:432
+msgid ""
+"Export and print OpenPGP secrets on multiple QRcode using Shamir's secret "
+"sharing."
+msgstr ""
+
+#: ../bin/bl-qrkey:436 ../bin/bl-qrkey:779
+msgid "Passphrase to access secret parts of OpenPGP key"
+msgstr ""
+
+#: ../bin/bl-qrkey:437 ../bin/bl-qrkey:780
+msgid ""
+"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)"
+msgstr ""
+
+#: ../bin/bl-qrkey:438
+msgid "Name of printer to use"
+msgstr ""
+
+#: ../bin/bl-qrkey:439
+msgid "Also print passphrase beside QR codes (INCREASE UX, DECREASE SECURITY)."
+msgstr ""
+
+#: ../bin/bl-qrkey:440 ../bin/bl-qrkey:598
+msgid ""
+"Use given working directory instead of a temporary directory (don't forget "
+"to shred its content)."
+msgstr ""
+
+#: ../bin/bl-qrkey:441
+msgid "Number of shares to be generated"
+msgstr ""
+
+#: ../bin/bl-qrkey:442
+msgid "Number of shares necessary to reconstruct the secret (default: $thresn)"
+msgstr ""
+
+#: ../bin/bl-qrkey:443
+msgid ""
+"GnuPG home directory (default: ~/.gnupg). Environment variable: \\$GNUPGHOME"
+msgstr ""
+
+#: ../bin/bl-qrkey:445
+msgid "Note: Split number should be greater than threshold number."
+msgstr ""
+
+#: ../bin/bl-qrkey:446
+msgid ""
+"If they are equal, a simple split is used instead of Shamir's secret sharing,"
+msgstr ""
+
+#: ../bin/bl-qrkey:447
+msgid "and all secret protection relies on the passphrase."
+msgstr ""
+
+#: ../bin/bl-qrkey:448
+msgid ""
+"In other terms: if (split_NUM == threshold_NUM), then no passphrase or "
+"printing passphrase is VERY UNSECURE."
+msgstr ""
+
+#: ../bin/bl-qrkey:592
+msgid ""
+"Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or webcam."
+msgstr ""
+
+#: ../bin/bl-qrkey:594
+msgid "Output OpenPGP certification key fingerprint."
+msgstr ""
+
+#: ../bin/bl-qrkey:597
+msgid "Video device to scan for QR code (/dev/v4l/by-id/...)"
+msgstr ""
+
+#: ../bin/bl-qrkey:599
+msgid "This extra passphrase is related to QR VERSIONS:"
+msgstr ""
+
+#: ../bin/bl-qrkey:600
+msgid "1 to 3: Only numbers, use to be a date: YYYYMMDD."
+msgstr ""
+
+#: ../bin/bl-qrkey:601
+msgid ""
+"4 to 5: $FUNCNAME don't need an extra passphrase (in addition to the ones "
+"defined in RFC9580)."
+msgstr ""
+
+#: ../bin/bl-qrkey:602
+msgid ""
+"Get extra passphrase from first line of FILE (eg: fifo, tmpfs, /dev/"
+"stdin ...)"
+msgstr ""
+
+#: ../bin/bl-qrkey:772
+msgid "Move OpenPGP secrets to security token (OpenPGP smartcard)."
+msgstr ""
+
+#: ../bin/bl-qrkey:774
+msgid "Security token (OpenPGP smartcard) must be connected."
+msgstr ""
+
+#: ../bin/bl-qrkey:775
+msgid "Output ASCII armored OpenPGP certificate, PIN code and admin code."
+msgstr ""
+
+#: ../bin/bl-qrkey:781
+msgid ""
+"URL to retrieve your OpenPGP certificate (default: https://{KEYSERVER}/pks/"
+"lookup?op=get&search=0x{KEYFPR} )"
+msgstr ""
+
+#: ../bin/bl-qrkey:782
+msgid "Security token (OpenPGP smartcard) prefered language (default: $lang)"
+msgstr ""
+
+#: ../bin/bl-qrkey:783
+msgid "Customize name of security token's cardholder"
+msgstr ""
+
+#: ../bin/bl-qrkey:784
+msgid ""
+"Send OpenPGP certificate to this public keys server. Also modify default URL "
+"(see --certurl, default: $hkpsserv)"
+msgstr ""
+
+#: ../bin/bl-qrkey:785
+msgid "Also write armored OpenPGP certificate to given FILE."
+msgstr ""
+
+#: ../bin/bl-qrkey:786
+msgid "Increase verbosity"
+msgstr ""
+
+#: ../bin/bl-qrkey:787
+msgid "Don't ask before resetting unempty security token (OpenPGP smartcard)"
 msgstr ""
 
 #: ../bin/bl-qrkey:812
@@ -411,4 +1315,122 @@ msgstr ""
 
 #: ../bin/bl-qrkey:871
 msgid "(This will wipe all the OpenPGP data stored there!)"
+msgstr ""
+
+#: ../bin/bl-security:90
+msgid "Provide some cybersecurity features."
+msgstr ""
+
+#: ../bin/bl-security:129
+msgid "Output a good random number between 0 and 1<<32 (4294967296)."
+msgstr ""
+
+#: ../bin/bl-security:134
+msgid "NOTE: Since GNU bash version 5.1.0 introduce SRANDOM variable,"
+msgstr ""
+
+#: ../bin/bl-security:135
+msgid "this function became useless and will be deprecated."
+msgstr ""
+
+#: ../bin/bl-security:157
+msgid "Recursively shred all files in given path(|s)."
+msgstr ""
+
+#: ../bin/bl-security:159
+msgid "Change file permissions if necessary, never prompt"
+msgstr ""
+
+#: ../bin/bl-security:160
+msgid "Explain what is being done (stdout)"
+msgstr ""
+
+#: ../bin/bl-security:161
+msgid "Also recursively remove given path(|s)"
+msgstr ""
+
+#: ../bin/bl-security:162
+msgid "Overwrite N times instead of the shred's default"
+msgstr ""
+
+#: ../bin/bl-security:163
+msgid "Add a final overwrite with zeros to hide shredding"
+msgstr ""
+
+#: ../bin/bl-security:210
+msgid "Generate a good random passphrase."
+msgstr ""
+
+#: ../bin/bl-security:212
+msgid "Ask language and passphrase agreement"
+msgstr ""
+
+#: ../bin/bl-security:213
+msgid "List available dictionaries (aspell) and return"
+msgstr ""
+
+#: ../bin/bl-security:214
+msgid "Dictionary to use"
+msgstr ""
+
+#: ../bin/bl-security:215
+msgid "Number of words in passphrase"
+msgstr ""
+
+#: ../bin/bl-security:216
+msgid "Separate words by this STRING"
+msgstr ""
+
+#: ../bin/bl-security:217
+msgid "Also output size of dictionary"
+msgstr ""
+
+#: ../bin/bl-security:278
+msgid "Ask to enter a new password and force retyping it."
+msgstr ""
+
+#: ../bin/bl-security:279
+msgid "Output the new password."
+msgstr ""
+
+#: ../bin/bl-security:283
+msgid "Text to display as preamble. If none generate a passphrase suggestion."
+msgstr ""
+
+#: ../bin/bl-security:284
+msgid "Dictionary for passphrase suggestion (default: ${dict:=en})"
+msgstr ""
+
+#: ../bin/bl-security:285
+msgid "Number of words for passphrase suggestion (default: $nw)"
+msgstr ""
+
+#: ../bin/bl-security:321
+msgid "Shrink input data to a number limited by SIZE."
+msgstr ""
+
+#: ../bin/bl-security:322
+msgid ""
+"Usefull to make hash distributed into a lesser space whith (uncommon) SIZE "
+"not matching 2^n."
+msgstr ""
+
+#: ../bin/bl-security:323
+msgid ""
+"This function XOR sucessive 64bits words of raw input (or given FILE), and "
+"apply 'modulo SIZE' at the end."
+msgstr ""
+
+#: ../bin/bl-security:324
+msgid ""
+"Then Maximum SIZE is 2^64-1. (And avoid to get close to this limit if you "
+"need a good number dispatching)."
+msgstr ""
+
+#: ../bin/bl-security:325
+msgid "About encodings: check basenc manual from GNU coreutils."
+msgstr ""
+
+#: ../bin/bl-security:405
+msgid "All actions support a --help option, eg:"
 msgstr ""
