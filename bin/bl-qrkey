@@ -529,7 +529,7 @@ bl_qrkey_print() (
 	elif (( qrversion==4 || qrversion==5 )) ; then
 		mv "$tmpdir/priv.gpg" "$tmpdir/s.gpg"
 	else
-		printf "%s: Error: Unexpected QR Version (%s)\n" "$FUNCNAME" "$qrversion" >&2
+		printf "$FUNCNAME: Error: "$"Unexpected QR Version (%s).""\n" "$qrversion" >&2
 		return 1
 	fi
 	
@@ -547,11 +547,11 @@ bl_qrkey_print() (
 		done
 		cd -
 	else
-		printf "%s: Error: Unexpected QR Version (%s)\n" "$FUNCNAME" "$qrversion" >&2
+		printf "$FUNCNAME: Error: "$"Unexpected QR Version (%s).""\n" "$qrversion" >&2
 		return 1
 	fi
 
-	printf "%s: Notice: Printing secret splitted into %s fragments on %s ...\n" "$FUNCNAME" "$splitn" "$printer" >&2
+	printf "$FUNCNAME: Notice: "$"Printing secret splitted into %s fragments on printer %s"" ...\n" "$splitn" "$printer" >&2
 	i=0
 	for f in "$tmpdir/SECRET-"* ; do
 

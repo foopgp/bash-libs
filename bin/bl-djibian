@@ -141,7 +141,7 @@ OPTIONS:
   -t, --phone NUMBER               "$"User phone number (optional)""
   -p, --password PASSWORD          "$"User password (for current djibian Operating System)""
   -P, --passfrom FILE              "$"Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
-  -F, --from-pgp-card              "$"Get user data from OpenPGP smartcard (eg: yubikey, nitrokey, ...)""
+  -F, --from-pgpid-card            "$"Get user data from OpenPGP ID smartcard (eg: yubikey, nitrokey, ...)""
   -v, --verify                     "$"Resume input data for verification""
   -a, --admin                      "$"Enable admin rights (root power through sudo group)""
 "
@@ -165,7 +165,7 @@ OPTIONS:
 				shift ; passwd=$1 ;;
 			-P|--passfrom|--pass-from)
 				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
-			-F|--from-pgp-card|--frompgpcard|--from-gpg-card|--fromgpgcard) fromcard=1 ;;
+			-F|--from-pgp-card|--frompgpcard|--from-gpg-card|--fromgpgcard|--from-pgpid-card|--frompgpidcard) fromcard=1 ;;
 			-v|--verify) verify=1 ;;
 			-a|--admin) extragroups+=",sudo" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
