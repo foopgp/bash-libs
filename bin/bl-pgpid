@@ -925,7 +925,7 @@ bl_pgpid_avatar() {
 	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
 "$"Extract or add image inside OpenPGP certificate.""
-"$"Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.""
+"$"Missing NAME|KEYID|U4|U5 => Guess it using token, or interactively ask KEYID of secret key.""
 "$"New IMAGE should be 180x180 pixels, or it will be resized.""
 "$"Output path(s) of extracted image(s).""
 
@@ -965,7 +965,13 @@ OPTIONS:
 
 	local user fprs
 
-	[[ "$1" ]] && user=$1 || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	if [[ "$1" ]] ; then
+		user=$1
+	else
+		local -A cardinfo
+		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
+		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	fi
 
 	mkdir -p "$tmpdir" || return $?
 
@@ -1025,18 +1031,18 @@ bl_pgpid_email() {
 	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
 	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
-Display and add or revoke emails inside OpenPGP certificate.
-Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.
-Output usable emails (non-revoked and non-expired).
+"$"Display and add or revoke emails inside OpenPGP certificate.""
+"$"Missing NAME|KEYID|U4|U5 => Guess it using token, or interactively ask KEYID of secret key.""
+"$"Output usable emails (non-revoked and non-expired).""
 
 OPTIONS:
-  -R, --revoke EMAIL          Revoke existing EMAIL (may be used more than once).
-  -A, --add EMAIL             Add EMAIL. Enable --name and --extra-comment options.
-  -N, --name PSEUDONYM        Common name or pseudonym beside new EMAIL (default: first part of email).
-  -C, --extra-comment COMMENT (Free to use part of) comment beside new EMAIL (default: \"\").
-  -k, --keyserver KEYSERVER   If non-empty, send updated certificate to this keyserver (default: $keyserv).
-  -H, --homedir GNUPGHOME     GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME.
-  -v, --verbose               Increase verbosity.
+  -R, --revoke EMAIL          "$"Revoke existing EMAIL (may be used more than once).""
+  -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options.""
+  -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL (default: first part of email).""
+  -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL (default: \"\").""
+  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default:"" $keyserv.
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable:"" $GNUPGHOME.
+  -v, --verbose               "$"Increase verbosity.""
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
 	local toadd torev pseudo extracomment
@@ -1070,7 +1076,13 @@ OPTIONS:
 
 	local user fprs
 
-	[[ "$1" ]] && user=$1 || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	if [[ "$1" ]] ; then
+		user=$1
+	else
+		local -A cardinfo
+		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
+		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	fi
 
 	# Check that $user match only one certificate
 	local fprs
@@ -1138,11 +1150,10 @@ OPTIONS:
   -i, --info              Output content of the associative array containing relevant metadata (may be evaluted with eval)
   -q, --quiet             Don't errput 'Info' or 'Notice' messages.
   -H, --homedir GNUPGHOME GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
-  -A, --aaname VARNAME    Depend if used as a bash library or as a program. If \$BL_PGPID_isprogram ($((BL_PGPID_isprogram))) is
-                               1: Output 'declare -A ...'
-                            else: Name of associative array to be filled with relevant metadata
+  -A, --aaname VARNAME    If VARNAME is a reacheable associative array: fill it (confer --info)
+							else: Output 'declare -A VARNAME=...'
 "
-	local varname fetch=1 info=0 quiet=0
+	local varname fetch=1 info=0 quiet=0 isaa=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -1154,13 +1165,9 @@ OPTIONS:
 			-A|--aaname)
 				shift
 				varname=${1:?}
-				if ! ((BL_PGPID_isprogram)) ; then
-					if [[ "$(eval echo \${$varname@a})" =~ A ]] ; then
-						local -n aaname=$varname
-					else
-						printf "%s: Error: '%s' must be an associative array.\n" "$FUNCNAME" "$varname" >&2
-						return 2
-					fi
+				if [[ "$(eval echo \${$varname@a})" =~ A ]] ; then
+					local -n aaname=$varname
+					isaa=1
 				fi
 				;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -1245,7 +1252,7 @@ OPTIONS:
 		echo >&2
 	fi
 
-	if ((BL_PGPID_isprogram)) && [[ "$varname" ]] ; then
+	if ((!isaa)) && [[ "$varname" ]] ; then
 	   declare -p aaname | sed "s, aaname=, $varname=,"
 	fi
 
@@ -1265,7 +1272,7 @@ OPTIONS:
 bl_pgpid_certify() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage=$"Usage:"" $name [OPTIONS]... [TARGET_U4|TARGET_U5] [TARGET_KEYID]"
+	local usage=$"Usage:"" $name [OPTIONS]... [TARGET_U4|TARGET_U5] [TARGET_KEYFPR]"
 	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
 
 	local helpmsg="
@@ -1281,10 +1288,11 @@ OPTIONS:
   -R, --revoke                "$"Revoke your previous certifications on someone else's certificate"".
   -G, --vouch                 "$"Take responsability for any illegal actions by the target"". "$"Same as"" '--vouch-for ALL'.
   -g, --vouch-for DOMAIN      "$"Assume additional legal responsibilities on the target"".
-  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default:"" $keyserv.
+  -k, --keyserver KEYSERVER   "$"If non-empty, receive and send updated certificate to this keyserver. "$"Default:"" $keyserv.
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable:"" $GNUPGHOME.
 "
 	local revoke=0 keyid vouchfor
+	local targetid targetfpr
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -1309,6 +1317,22 @@ OPTIONS:
 		esac
 		shift
 	done
+
+	for ((;$#;)) ; do
+		if [[ "$1" =~ (${BL_PGPID_U4_REGEX}|${BL_PGPID_U5_REGEX}) ]] ; then
+			targetid=${BASH_REMATCH[0]}
+		elif [[ "${1^^}" == ^[ABCDEF0-9]{40}$ ]] ; then
+			targetfpr=${BASH_REMATCH[0]}
+		else
+			printf "$FUNCNAME: Error: "$"Unrecognized argument"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2
+			return 2
+		fi
+		shift
+	done
+
+	[[ "$targetid" ]] || targetid=$(bl_pgpid_gen_u4)
+
+
 
 	printf "$FUNCNAME: Error: "$"Not implemented yet"".\n" >&2
 	return 2
