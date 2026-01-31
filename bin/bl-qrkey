@@ -506,7 +506,16 @@ bl_qrkey_print() (
 	# If number of shares equal number of threshold, don't use shamir's secret sharing
 	((splitn!=thresn)) || qrversion=4
 
-	[[ -z "$1" ]] || keyid="$1"
+	local keyfpr secstatus
+
+	if [[ "$1" ]] ; then
+		keyfpr="$1"
+	else
+		keyfpr=$(_bl_pgp_choose_seckeyid --homedir "$gpghome" --exportable --text "Select KeyID of secrets to print (on ${splitn} fragments)") || return $?
+	fi
+
+	# Check and get metadata
+	secstatus=$(gpg --quiet --homedir "$gpghome" --list-secret-keys "$keyfpr") || { printf "$FUNCNAME: Error: "$"No secret for '%s' (in %s)"".\n" "$keyfpr" "$gpghome" >&2 ; return 1 ; }
 
 	if [[ -z "$printer" ]] ; then
 		local -a printers
@@ -514,15 +523,15 @@ bl_qrkey_print() (
 		[[ "${printers[0]}" ]] || { printf "%s: Error: No printer detected.\n" "$FUNCNAME" >&2 ; return 1 ; }
 		printer="$(bl_radiolist --output-value --default-value "$(lpstat -d | sed 's,.* ,,')" --num-per-line 1 --text "Where to print the ${splitn} secret fragments ?" "${printers[@]}")"
 	fi
-	if [[ -z "$keyid" ]] ; then
-		keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome" --exportable --text "Select KeyID of secrets to print (on ${splitn} fragments)") || return $?
-	fi
+
+	# Replace eventual keyID (short) by its keyFPR (longest)
+	keyfpr=$(grep -o -m1 "\<[0-9ABCDEF]\{40\}\>" <<<"${secstatus}") || { printf "$FUNCNAME: Error: "$"Can't get fingerprint (maybe due to incompatible gpg's version)"".\n" "$keyfpr" "$gpghome" >&2 ; return 1 ; }
 
 	[[ "$passgiven" ]] || passphrase=$(bl_input --password --text "(protecting your secret key)" "Passphrase")
 
 	# TODO: Remove Photos and extras uid from exported data (containing not only secrets, but also public data)
 
-	echo "${passphrase}" | gpg --homedir "$gpghome" --batch --passphrase-fd 0 --pinentry-mode loopback --export-options export-minimal,export-clean --export-secret-key "${keyid}" > "$tmpdir/priv.gpg" || return $?
+	echo "${passphrase}" | gpg --homedir "$gpghome" --batch --passphrase-fd 0 --pinentry-mode loopback --export-options export-minimal,export-clean --export-secret-key "${keyfpr}" > "$tmpdir/priv.gpg" || return $?
 
 	if (( qrversion==1 || qrversion==3 )) ; then
 		gpg --batch --symmetric --passphrase "${passphrase//[^0-9]/}" --pinentry-mode loopback < "$tmpdir/priv.gpg" > "$tmpdir/s.gpg" || return $?
@@ -573,8 +582,10 @@ bl_qrkey_print() (
 
 ## PGPID SECRET (/${thresn}) - FRAGMENT ${i}/${splitn}
 
-$(gpg --homedir "$gpghome" --with-colons --list-keys "$keyid" | awk -F: '$1=="uid" { print $10"\n" }')
-
+$(gpg --homedir "$gpghome" --with-colons --list-keys "$keyfpr" | awk -F: '$1=="uid" { print $10"\n" }')
+\`\`\`
+    ${keyfpr: 0:4} ${keyfpr: 4:4} ${keyfpr: 8:4} ${keyfpr: 12:4} ${keyfpr: 16:4} ${keyfpr: 20:4} ${keyfpr: 24:4} ${keyfpr: 28:4} ${keyfpr: 32:4} ${keyfpr: 36:4}
+\`\`\`
 ![qrcode $i]($f.png)
 
 $( [[ -z "$withpass" ]] || echo "Passphrase: ${passphrase}" )
@@ -820,22 +831,23 @@ OPTIONS:
 		shift
 	done
 
-	[[ "$lang" =~ ^[abcdefghijklmnopqrstuvwxyz]{2}$ ]] || { printf "%s: Warning: only 2 lower case ASCII letters can define prefered language, fallback to 'en'.\n" "$FUNCNAME" >&2 ; lang=en ;}
+	[[ "$lang" =~ ^[abcdefghijklmnopqrstuvwxyz]{2}$ ]] || { printf "$FUNCNAME: Warning: "$"Only 2 lower case ASCII letters can define prefered language, fallback to: ""'en'.\n" "$FUNCNAME" >&2 ; lang=en ;}
 
 	local keyid secstatus tcheck_rvalue=0
 	local -a emails ids
 	local -A tcheck_info
 
-	[[ -z "$1" ]] || keyid="$1"
-	if [[ -z "$keyid" ]] ; then
-		keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome" --exportable --text "Select KeyID of OpenPGP secrets to move on security token") || return $?
+	if [[ "$1" ]] ; then
+		keyid="$1"
+	else
+		keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome" --exportable --text $"Select KeyID of OpenPGP secrets to move on security token") || return $?
 	fi
 
 	# Check and get metadata
-	secstatus=$(gpg --quiet --homedir "$gpghome" --list-secret-keys "$keyid") || { printf "%s: Error: No secret for '%s' (in %s).\n" "$FUNCNAME" "$keyid" "$gpghome" >&2 ; return 1 ; }
+	secstatus=$(gpg --quiet --homedir "$gpghome" --list-secret-keys "$keyid") || { printf "$FUNCNAME: Error: "$"No secret for '%s' (in %s)"".\n" "$keyid" "$gpghome" >&2 ; return 1 ; }
 
 	# Replace eventual keyID (short) by its keyFPR (longest)
-	keyid=$(grep -o -m1 "\<[0-9ABCDEF]\{40\}\>" <<<"${secstatus}") || { printf "%s: Error: Can't get fingerprint (maybe due to incompatible gpg's version).\n" "$FUNCNAME" >&2 ; return 1 ; }
+	keyid=$(grep -o -m1 "\<[0-9ABCDEF]\{40\}\>" <<<"${secstatus}") || { printf "$FUNCNAME: Error: "$"Can't get fingerprint (maybe due to incompatible gpg's version)"".\n" "$keyid" "$gpghome" >&2 ; return 1 ; }
 
 	# If no URL to get certificate, set one, assuming HKPS protocol.
 	[[ "$certurl" ]] || certurl="https://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}"
@@ -844,7 +856,7 @@ OPTIONS:
 	[[ -z "$pubkeyfile" ]] || gpg --homedir "$gpghome" --export --armor "$keyid" > "$pubkeyfile" || return $?
 
 	emails=($(sed --silent --regexp-extended "s,^uid.*[<[:space:]](${BL_INTERACTIVE_EMAIL_REGEX}).*,\1,p" <<<"${secstatus}"))
-	[[ "$emails" ]] || { printf "%s: Error: No email for OpenPGP key '%s'.\n" "$FUNCNAME" "$keyid" >&2 ; return 1 ; }
+	[[ "$emails" ]] || { printf "$FUNCNAME: Error: "$"No email for OpenPGP key '%s'"".\n" "$keyid" >&2 ; return 1 ; }
 
 	# Don't error if there is no pgp_id
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${secstatus}" | sort -u))
