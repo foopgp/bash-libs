@@ -548,10 +548,10 @@ OPTIONS:
 
 	local -a seckeyids
 	mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome" $getargs $1)
-	((${#seckeyids[@]}>0)) || { printf "%s: Error: No editable OpenPGP certificate (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
+	((${#seckeyids[@]}>0)) || { printf "$FUNCNAME: Error: "$"No editable OpenPGP certificate (in %s)"".\n" "$gpghome" >&2 ; return 1 ; }
 	if ((${#seckeyids[@]}==1)) ; then
 		keyid=${seckeyids[0]}
-		printf "%s: Notice: Choosing the only one editable OpenPGP certificate (%s).\n" "$FUNCNAME" "$keyid" >&2
+		printf "$FUNCNAME: Notice: "$"Choosing the only one editable OpenPGP certificate (%s)"".\n" "$keyid" >&2
 	else
 		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "$qtxt" "${seckeyids[@]}")"
 	fi
@@ -612,17 +612,17 @@ People have to check, and fix when NOK.
 	countrycode="${mrza[country]}"
 	coordinates="${BL_PGPID_COORDINATES[$countrycode]: 0:14}"
 	if ! [[ "$coordinates" =~ ^${BL_PGPID_CO_REGEX}$ ]] ; then
-		printf "%s: Error: Invalid coordinates (%s) for country '%s'\n" "$FUNCNAME" "$coordinates" "$countrycode" >&2
+		printf "$FUNCNAME: Error: "$"Invalid coordinates (%s) for country '%s'.""\n" "$coordinates" "$countrycode" >&2
 		return 1
 	fi
 
 	if [[ "$gdate" ]] ; then
-		((${#gdate}==8)) || printf "%s: Notice: Invalid lenght for birth date '%s'\n" "$FUNCNAME" "$gdate" >&2
+		((${#gdate}==8)) || printf "$FUNCNAME: Notice: "$"Invalid lenght for birth date '%s'.""\n" "$gdate" >&2
 	else
 		gdate="${mrza[date_of_birth]}"
 	fi
 	if ! bdate=$(date --date "${gdate}" +"%Y-%m-%d" ) ; then
-		printf "%s: Error: Can't reformat birthdate '%s'\n" "$FUNCNAME" "$gdate" >&2
+		printf "$FUNCNAME: Error: "$"Can't reformat birthdate '%s'.""\n" "$gdate" >&2
 		return 1
 	fi
 
@@ -680,7 +680,7 @@ OPTIONS:
 	fi
 
 	[[ "$sname" ]] || sname=$(bl_input $"Birth surname (family name)")
-	[[ "$gname" ]] || gname=$(bl_input $"Birth names (given names)")
+	[[ "$gname" ]] || gname=$(bl_input $"Birth names (all given names)")
 	[[ "$bdate" ]] || bdate=$(bl_input --iso-8601 $"Birth date (YYYY-MM-DD)")
 	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" $"Birth country (3 letter code)")
 
@@ -696,7 +696,7 @@ OPTIONS:
 			"Is that correct" || break
 
 		sname=$(bl_input --default "${sname^^}" "Birth surname (family name)")
-		gname=$(bl_input --default "${gname}" "Birth names (given names)")
+		gname=$(bl_input --default "${gname}" "Birth names (all given names)")
 		bdate=$(bl_input --iso-8601 --default "${bdate}" "Birth date (YYYY-MM-DD)")
 		bcountry=$(bl_input --default "${bcountry}" "Birth country (3 letter code)")
 	done
@@ -925,7 +925,7 @@ bl_pgpid_avatar() {
 	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
 "$"Extract or add image inside OpenPGP certificate.""
-"$"Missing NAME|KEYID|U4|U5 => Guess it using token, or interactively ask KEYID of secret key.""
+"$"Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
 "$"New IMAGE should be 180x180 pixels, or it will be resized.""
 "$"Output path(s) of extracted image(s).""
 
@@ -933,9 +933,9 @@ OPTIONS:
   -E, --extract-all           "$"Extract also all revoked or expired existing images from OpenPGP certificate.""
   -A, --addfrom IMAGE         "$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image).""
   -R, --revoke                "$"Just revoke all existing images inside OpenPGP certificate.""
-  -W, --workdir DIRECTORY     "$"Working directory. Will contain previous and new resized images. "$"Default:"" $tmpdir.
-  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default:"" $keyserv.
-  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable:"" $GNUPGHOME.
+  -W, --workdir DIRECTORY     "$"Working directory. Will contain previous and new resized images. "$"Default: ""$tmpdir .
+  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default: ""$keyserv .
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""$GNUPGHOME .
 "
 	local image revoke
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -1032,16 +1032,16 @@ bl_pgpid_email() {
 	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
 "$"Display and add or revoke emails inside OpenPGP certificate.""
-"$"Missing NAME|KEYID|U4|U5 => Guess it using token, or interactively ask KEYID of secret key.""
+"$"Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
 "$"Output usable emails (non-revoked and non-expired).""
 
 OPTIONS:
   -R, --revoke EMAIL          "$"Revoke existing EMAIL (may be used more than once).""
   -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options.""
-  -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL (default: first part of email).""
-  -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL (default: \"\").""
-  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default:"" $keyserv.
-  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable:"" $GNUPGHOME.
+  -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL. "$"Default: "$"first part of email.""
+  -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL.""
+  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default: ""$keyserv .
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""$GNUPGHOME .
   -v, --verbose               "$"Increase verbosity.""
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
@@ -1288,8 +1288,8 @@ OPTIONS:
   -R, --revoke                "$"Revoke your previous certifications on someone else's certificate"".
   -G, --vouch                 "$"Take responsability for any illegal actions by the target"". "$"Same as"" '--vouch-for ALL'.
   -g, --vouch-for DOMAIN      "$"Assume additional legal responsibilities on the target"".
-  -k, --keyserver KEYSERVER   "$"If non-empty, receive and send updated certificate to this keyserver. "$"Default:"" $keyserv.
-  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable:"" $GNUPGHOME.
+  -k, --keyserver KEYSERVER   "$"If non-empty, receive and send updated certificate to this keyserver. "$"Default: ""$keyserv.
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""$GNUPGHOME.
 "
 	local revoke=0 keyid vouchfor
 	local targetid targetfpr
@@ -1330,9 +1330,13 @@ OPTIONS:
 		shift
 	done
 
-	[[ "$targetid" ]] || targetid=$(bl_pgpid_gen_u4)
+	if [[ -z "$keyid" ]] ; then
+		local -A cardinfo
+		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
+		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && keyid=${cardinfo[pgpid_Skeyfpr]} || keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	fi
 
-
+	[[ "$targetid" ]] || targetid=$(bl_pgpid_gen_u4)
 
 	printf "$FUNCNAME: Error: "$"Not implemented yet"".\n" >&2
 	return 2

@@ -203,7 +203,7 @@ OPTIONS:
 	[[ -z "$1" ]] || username="$1"
 
 	[[ "$sname" ]] || sname=$(bl_input $"User surname (family name) at birth")
-	[[ "$gname" ]] || gname=$(bl_input $"User forenames (given names) at birth")
+	[[ "$gname" ]] || gname=$(bl_input $"User forenames (all given names) at birth")
 	[[ "$bdate" ]] || bdate=$(bl_input $"User birth date (YYYY-MM-DD)")
 	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" $"User birth country (3 letter code)")
 	# If there is still no username, generate one from given names and surname.
@@ -234,7 +234,7 @@ OPTIONS:
 			$"Is that correct" || break
 
 		sname=$(bl_input --default "${sname^^}" $"Birth surname (family name)")
-		gname=$(bl_input --default "${gname}" $"Birth names (given names)")
+		gname=$(bl_input --default "${gname}" $"Birth names (all given names)")
 		bdate=$(bl_input --default "${bdate}" $"Birth date (YYYY-MM-DD)")
 		bcountry=$(bl_input --default "${bcountry}" $"Birth country (3 letter code)")
 		email=$(bl_input --email --default "${email}" $"Email")
