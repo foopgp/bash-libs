@@ -935,7 +935,7 @@ OPTIONS:
   -R, --revoke                "$"Just revoke all existing images inside OpenPGP certificate.""
   -W, --workdir DIRECTORY     "$"Working directory. Will contain previous and new resized images. "$"Default: ""$tmpdir .
   -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default: ""$keyserv .
-  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""$GNUPGHOME .
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
 "
 	local image revoke
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -945,11 +945,11 @@ OPTIONS:
 			-E|--extract-all)
 				listopts+=",show-unusable-uids" ;;
 			-A|--add|--addfrom|--add-from)
-				shift ; image=$1 ;&
+				shift ; image=${1:?} ;&
 			-R|--revoke)
 				revoke="." ;;
 			-W|--tmpdir|--workdir)
-				shift ; tmpdir=$1 ;;
+				shift ; tmpdir=${1:?} ;;
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
@@ -977,7 +977,7 @@ OPTIONS:
 
 	# Backup existing photos and get fingerprints
 	echo -n > "$tmpdir/imglist" || return $?
-	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "img=\$(md5sum %i | head -c 32).%t && cp -v %i ${tmpdir@Q}/\$img > /proc/$$/fd/2 2>&1 && echo ${tmpdir@Q}/\$img >> ${tmpdir@Q}/imglist" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
+	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "img=\$(md5sum %i | head -c 32).%t && cp -v %i ${tmpdir@Q}/\$img > /proc/$$/fd/2 2>&1 && echo ${tmpdir@Q}/\$img >> ${tmpdir@Q}/imglist" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p' | sort -u ))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for %s"".\n" "'$user'" >&2 ; return 1 ;}
 
 	if [[ "$image" ]] ; then
@@ -999,8 +999,8 @@ OPTIONS:
 		(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many certificates (%s)"".\n" "$user" "${fprs[*]}" >&2 ; return 1 ;}
 
 		local commands
-		# Revoke non-revoked photos
-		commands=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "${fprs[0]}" | awk ' /^(uid|uat):/ { i+=1 }  /^uat:[^r]/ { printf "uid "i"\nrevuid\ny\n4\n\ny\nuid "i"\n" } END { if (i) printf "save\n" }')
+		# Revoke non-revoked photos (in first keyring only))
+		commands=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "${fprs[0]}" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 }  /^uat:[^r]/ { printf "uid "i"\nrevuid\ny\n4\n\ny\nuid "i"\n" } END { if (i) printf "save\n" }')
 		[[ "$commands" ]] || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "'$user'" "$gpghome" >&2 ; return 1 ; }
 
 		if [[ "$commands" =~ ^uid ]] ; then
@@ -1041,7 +1041,7 @@ OPTIONS:
   -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL. "$"Default: "$"first part of email.""
   -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL.""
   -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default: ""$keyserv .
-  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""$GNUPGHOME .
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
   -v, --verbose               "$"Increase verbosity.""
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
@@ -1086,15 +1086,15 @@ OPTIONS:
 
 	# Check that $user match only one certificate
 	local fprs
-	fprs=($(gpg --homedir "$gpghome" --list-key "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
+	fprs=($(gpg --homedir "$gpghome" --list-key "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p' | sort -u))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "$user" >&2 ; return 1 ;}
 	(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many certificates (%s).""\n" "$user" "${fprs[*]}" >&2 ; return 1 ;}
 	user=${fprs[0]}
 
 	if [[ "$torev" || "$toadd" ]] ; then
 		local uids email commands
-		# Get all uid/uat
-		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | grep -E "^(uid|uat):") || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "$user" "$gpghome" >&2 ; return 1 ; }
+		# Get all uid/uat (from first keyring only)
+		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 ; print }') || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "$user" "$gpghome" >&2 ; return 1 ; }
 	fi
 
 	if [[ "$torev" ]] ; then
@@ -1289,7 +1289,7 @@ OPTIONS:
   -G, --vouch                 "$"Take responsability for any illegal actions by the target"". "$"Same as"" '--vouch-for ALL'.
   -g, --vouch-for DOMAIN      "$"Assume additional legal responsibilities on the target"".
   -k, --keyserver KEYSERVER   "$"If non-empty, receive and send updated certificate to this keyserver. "$"Default: ""$keyserv.
-  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""$GNUPGHOME.
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME.
 "
 	local revoke=0 keyid vouchfor
 	local targetid targetfpr
