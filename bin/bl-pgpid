@@ -529,9 +529,10 @@ OPTIONS:
   -t, --text QUESTION       Text to introduce selection's radiolist (default: '$qtxt')
   -e, --exportable          Only exportable secret keys (ie. present localy, excluding those on security token)
 "
-	local keyid gpghome=${GNUPGHOME:-~/.gnupg} getargs
+	local keyid gpghome=${GNUPGHOME:-~/.gnupg} getargs outfpr=0
 	for ((;$#;)) ; do
 		case "$1" in
+			-F|--fingerprint) outfpr=1 ;;
 			-H|--homedir)
 				shift ; gpghome=${1:?} ;;
 			-t|--text)
@@ -812,22 +813,22 @@ bl_pgpid_gen_key() {
 	local usage="Usage: $name [OPTIONS]... EMAIL"
 	local keyserv=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
-Generate an OpenPGP key pair (public and secret) according to OpenPGP ID standards.
-Missing inputs are asked interactively.
-Output 3 lines for each fingerprints :
-* main key (Sign Certify)
-* decryption key (Encrypt)
-* authentication key (Auth)
+"$"Generate an OpenPGP key pair (public and secret) according to OpenPGP ID standards.""
+"$"Missing input will be asked interactively.""
+"$"Output 3 lines for each fingerprints:""
+* "$"main key"" (Sign Certify)
+* "$"decryption key"" (Encrypt)
+* "$"authentication key"" (Auth)
 
 OPTIONS:
-  -N, --name PSEUDONYM             Common name or pseudonym (default: first part of email)
-  -c, --comment U4|U5              First part of comment field MUST be a OpenPGP ID string. Confer \$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
-  -C, --extra-comment COMMENT      Comment (second part of comment field, free to use).
-  -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage).
-  -P, --passfrom FILE              Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -e, --expiration YEARS           Number of years before certificate expiration (default: 11 -> $(date -I -d "+11 years"))
-  -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: $keyserv)
-  -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+  -N, --name PSEUDONYM             "$"Common name or pseudonym. "$"Default: "$"first part of email"".
+  -c, --comment U4|U5              "$"First part of comment field MUST be a OpenPGP ID string."" Confer \$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
+  -C, --extra-comment COMMENT      "$"Comment (second part of comment field, free to use).""
+  -p, --passphrase PASSPHRASE      "$"Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage).""
+  -P, --passfrom FILE              "$"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
+  -e, --expiration YEARS           "$"Number of years before certificate expiration. "$"Default: ""11 -> $(date -I -d "+11 years"))
+  -k, --keyserver KEYSERVER        "$"Prefered OpenPGP certificate server. "$"Default: ""$keyserv
+  -H, --homedir GNUPGHOME          "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
 	local email passphrase pseudo pgpidu pgpidugiven extracomment
@@ -922,7 +923,7 @@ bl_pgpid_avatar() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local tmpdir="/tmp/$FUNCNAME.$USER"
 	local usage=$"Usage:"" $name [OPTIONS]... [NAME|KEYID|U4|U5]"
-	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
+	local keyserv=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
 "$"Extract or add image inside OpenPGP certificate.""
 "$"Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
@@ -1029,7 +1030,7 @@ bl_pgpid_email() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
-	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
+	local keyserv=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
 "$"Display and add or revoke emails inside OpenPGP certificate.""
 "$"Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
@@ -1086,7 +1087,7 @@ OPTIONS:
 
 	# Check that $user match only one certificate
 	local fprs
-	fprs=($(gpg --homedir "$gpghome" --list-key "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p' | sort -u))
+	fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user" | cut -d ' ' -f 1 | sort -u))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "$user" >&2 ; return 1 ;}
 	(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many certificates (%s).""\n" "$user" "${fprs[*]}" >&2 ; return 1 ;}
 	user=${fprs[0]}
@@ -1094,7 +1095,8 @@ OPTIONS:
 	if [[ "$torev" || "$toadd" ]] ; then
 		local uids email commands
 		# Get all uid/uat (from first keyring only)
-		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 ; print }') || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "$user" "$gpghome" >&2 ; return 1 ; }
+		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 ; print }')
+		[[ "$uids" ]] || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "$user" "$gpghome" >&2 ; return 1 ; }
 	fi
 
 	if [[ "$torev" ]] ; then
@@ -1128,7 +1130,7 @@ OPTIONS:
 		gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "$user" || return 1
 	fi
 
-	gpg --list-key "$user"  | grep -o "<[^>]\+>" | grep -oE "${BL_INTERACTIVE_EMAIL_REGEX}"
+	gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | cut -d ' ' -f 2
 }
 
 bl_pgpid_token_check()
@@ -1273,26 +1275,28 @@ bl_pgpid_certify() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage=$"Usage:"" $name [OPTIONS]... [TARGET_U4|TARGET_U5] [TARGET_KEYFPR]"
-	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
+	local keyserv=${BL_PGPID_KEYSERVERS[0]}
 
 	local helpmsg="
-"$"Certify somebody else, identified by its OpenPGP ID TARGET_U4"".
-"$"If TARGET_U4 or TARGET_U5 is not given, ask for civil status to calculate TARGET_U4"".
+"$"Certify somebody else, identified by its OpenPGP ID TARGET_U4.""
+"$"Missing input will be asked interactively."" E.g.: "$"Civil status to calculate TARGET_U4.""
 
-"$"Certification means : I know this other certificate belongs to this real person"".
-"$"This implies verifying the civil status and the public key fingerprint of the TARGET"".
-"$"This allows you to expand and strengthen your web of trust and those of your close ones"".
+"$"Certification means : I know this other certificate belongs to this real person.""
+"$"This implies verifying the civil status and the public key fingerprint of the TARGET.""
+"$"This allows you to expand and strengthen your web of trust and those of your close ones.""
+"$"This is a commitment: the more you certify, the more you increase your reputation, but if you do it wrong, you will ruin your credibility.""
 
 OPTIONS:
-  -u, --use-privkey KEYID     "$"Select private key to use (If you have several and none configured by default)"".
-  -R, --revoke                "$"Revoke your previous certifications on someone else's certificate"".
-  -G, --vouch                 "$"Take responsability for any illegal actions by the target"". "$"Same as"" '--vouch-for ALL'.
-  -g, --vouch-for DOMAIN      "$"Assume additional legal responsibilities on the target"".
-  -k, --keyserver KEYSERVER   "$"If non-empty, receive and send updated certificate to this keyserver. "$"Default: ""$keyserv.
-  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME.
+  -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask.""
+  -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate.""
+  -G, --vouch                  "$"Take responsability for any (illegal) actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
+  -g, --vouch-for DOMAIN       "$"Assume additional legal responsibilities on the target."" (Not implemented yet)
+  -l, --local                  "$"« Non-exportable » certification. Pretty useless. Allow to less affect credibility.""
+  -f, --force-sign-key         "$"Allow to unrevoke or to change vouching.""
+  -k, --keyserver KEYSERVER    "$"If non-empty, receive and send updated certificate to this keyserver. "$"Default: ""$keyserv.
+  -H, --homedir GNUPGHOME      "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME.
 "
-	local revoke=0 keyid vouchfor
-	local targetid targetfpr
+	local revoke=0 keyid vouchfor signcmd="sign" oforce
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -1301,10 +1305,16 @@ OPTIONS:
 			-R|--revoke)
 				revoke=1 ;;
 			-G|--vouch)
+				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
 				vouchfor="ALL" ;;
 			-g|--vouch-for)
 				[[ "$2" == ALL ]] || { printf -- "$FUNCNAME: Error:" $"Only %s is yet a known domain for vouching"".\n" "'ALL'" >&2 ; return 1 ;}
+				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
 				shift ; vouchfor=${1:?} ;;
+			-l|--local)
+				signcmd="lsign" ;;
+			-f|--force-sign-key|--force)
+				oforce="--force-sign-key" ;;
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
@@ -1318,6 +1328,7 @@ OPTIONS:
 		shift
 	done
 
+	local targetid targetfpr keyfpr
 	for ((;$#;)) ; do
 		if [[ "$1" =~ (${BL_PGPID_U4_REGEX}|${BL_PGPID_U5_REGEX}) ]] ; then
 			targetid=${BASH_REMATCH[0]}
@@ -1336,10 +1347,58 @@ OPTIONS:
 		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && keyid=${cardinfo[pgpid_Skeyfpr]} || keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
 	fi
 
+	# Get fpr for private key to use
+	keyfpr=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-secret-keys "$keyid" | cut -d ' '  -f 1 | sort -u)
+
+	[[ "$keyfpr" =~ ^[0-9ABCDEF]{40}$ ]] || { printf -- "$FUNCNAME: Error: "$"Invalid or ambiguous private key to use '%s'.""\n" "$keyid" >&2 ; return 2 ;}
+
 	[[ "$targetid" ]] || targetid=$(bl_pgpid_gen_u4)
 
-	printf "$FUNCNAME: Error: "$"Not implemented yet"".\n" >&2
-	return 2
+	if [[ "$keyserv" ]] ; then
+		# Retrieve at most 16 certificates from keyserver (there should be only one active, keyserver has to make sure each id does not match more than 16 active + revoked certificates)
+		seq -s ' ' 16 | gpg --homedir "$gpghome" --keyserver "${keyserv}" --command-fd 0 --batch --search-keys "$targetid" > /dev/null || return $?
+	fi
+
+	# get fingerprints for certificate to certify
+	local fprs ifpr=0 uids
+	fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$targetid" | cut -d ' '  -f 1 | sort -u))
+	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "$targetid" >&2 ; return 1 ;}
+	if (( ${#fprs[@]} >= 2 )) ; then
+		printf "$FUNCNAME: Info: "$"User '%s' match many certificates (%s).""\n" "$targetid" "${#fprs[@]}" >&2
+		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text "Please select fingerprint" -- "${fprs[@]/%????????????????????/...}") || return $?
+	fi
+
+	if [[ -z "$targetfpr" ]] ; then
+		local txt=$"Please verify and complete target's fingerprint:"
+		local question=$(sed -E 's,(....),\1 ,g' <<<${fprs[$ifpr]::32})
+		local rep=".... ...."
+		for ((;;)) ; do
+			rep=$(bl_input --default "$rep" --text "$txt" "$question") || return $?
+			targetfpr=${fprs[$ifpr]::32}$(sed "s,[^ABCDEF0-9],,g" <<<${rep^^} )
+			[[ ${#targetfpr} != 40 ]] || break
+			txt=$"Enter the last 8 hexadecimal characters of target's fingerprint:"
+		done
+	fi
+
+	[[ "$targetfpr" != "$keyfpr" ]] || { echo "$FUNCNAME: Warning: "$"Self-certification is not innovative! ;-)" >&2 ; return 42 ;}
+	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 1 ;}
+
+	# Get full uids containing $targetid (cf. /usr/share/doc/gnupg/DETAILS.gz ; from first keyring only)
+	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:.*'"$targetid"'/ { i+=1 ; print $10 }')
+	[[ "$uids" ]] || { echo "$FUNCNAME: Crit: "$"No uid. Certificate is probably corrupted." >&2 ; return 1 ;}
+
+	if ((revoke)) ; then
+		if [[ "$oforce" ]] || [[ "$vouchfor" ]] ; then
+			echo "$FUNCNAME: Info: "$"Vouching or forcing are non-sense, then ignored, when revoking." >&2
+		fi
+		gpg --homedir "$gpghome" --quick-revoke-sig "$targetfpr" "$keyfpr" "${uids[@]/#/=}" || return $?
+		printf "$FUNCNAME: Notice: "$"The sub-layer (%s) return no error, but it may have found nothing to revoke.""\n" "gpg --quick-revoke-sig" >&2
+	else
+		gpg --homedir "$gpghome" --local-user "$keyfpr" $oforce --quick-$signcmd-key "$targetfpr" "${uids[@]/#/=}" || return $?
+		printf "$FUNCNAME: Notice: "$"Successfully sign %d '%s' inside certificate %s.""\n" ${#uids[@]} "$targetid" "$targetfpr" >&2
+	fi
+
+	[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "$keyserv" --send-keys "$targetfpr" || return $?
 }
 
 ### Init ###
