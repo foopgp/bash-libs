@@ -179,7 +179,9 @@ msgstr ""
 msgid "Need root permissions"
 msgstr ""
 
-#: ../bin/bl-djibian:133
+#: ../bin/bl-djibian:133 ../bin/bl-pgpid:637 ../bin/bl-qrkey:230
+#: ../bin/bl-qrkey:304 ../bin/bl-qrkey:433 ../bin/bl-qrkey:604
+#: ../bin/bl-qrkey:784
 msgid "Missing input will be asked interactively."
 msgstr ""
 
@@ -895,10 +897,6 @@ msgstr ""
 msgid "Generate OpenPGP ID u4 string"
 msgstr ""
 
-#: ../bin/bl-pgpid:637
-msgid "Missing inputs are asked interactively"
-msgstr ""
-
 #: ../bin/bl-pgpid:638
 msgid ""
 "You may pass the Machine Readable Zone of an international passport as "
@@ -1157,15 +1155,6 @@ msgstr ""
 
 #: ../bin/bl-qrkey:229
 msgid "Change GnuPG passphrase protecting secret parts of an OpenPGP key."
-msgstr ""
-
-#: ../bin/bl-qrkey:230 ../bin/bl-qrkey:304 ../bin/bl-qrkey:433
-#: ../bin/bl-qrkey:604 ../bin/bl-qrkey:784
-msgid "Missing inputs are asked interactively."
-msgstr ""
-
-#: ../bin/bl-qrkey:232 ../bin/bl-qrkey:310 ../bin/bl-qrkey:435
-msgid "OPTIONS:"
 msgstr ""
 
 #: ../bin/bl-qrkey:233 ../bin/bl-qrkey:311 ../bin/bl-qrkey:614

@@ -204,7 +204,9 @@ msgstr "Ajouter un utilisateur à ce système Djibian"
 msgid "Need root permissions"
 msgstr "Droits administrateur requis"
 
-#: ../bin/bl-djibian:133
+#: ../bin/bl-djibian:133 ../bin/bl-pgpid:637 ../bin/bl-qrkey:230
+#: ../bin/bl-qrkey:304 ../bin/bl-qrkey:433 ../bin/bl-qrkey:604
+#: ../bin/bl-qrkey:784
 msgid "Missing input will be asked interactively."
 msgstr "Les informations manquantes seront demandées de manière interactive."
 
@@ -1005,10 +1007,6 @@ msgstr ""
 msgid "Generate OpenPGP ID u4 string"
 msgstr "Générer une chaine OpenPGP ID u4"
 
-#: ../bin/bl-pgpid:637
-msgid "Missing inputs are asked interactively"
-msgstr "Les informations manquantes sont demandées de manière interactive."
-
 #: ../bin/bl-pgpid:638
 msgid ""
 "You may pass the Machine Readable Zone of an international passport as "
@@ -1318,15 +1316,6 @@ msgstr ""
 "Modifier la phrase de passe GnuPG protégeant les parties secrètes d’une clé "
 "OpenPGP."
 
-#: ../bin/bl-qrkey:230 ../bin/bl-qrkey:304 ../bin/bl-qrkey:433
-#: ../bin/bl-qrkey:604 ../bin/bl-qrkey:784
-msgid "Missing inputs are asked interactively."
-msgstr "Les informations manquantes sont demandées de manière interactive."
-
-#: ../bin/bl-qrkey:232 ../bin/bl-qrkey:310 ../bin/bl-qrkey:435
-msgid "OPTIONS:"
-msgstr "OPTIONS :"
-
 #: ../bin/bl-qrkey:233 ../bin/bl-qrkey:311 ../bin/bl-qrkey:614
 #: ../bin/bl-qrkey:789
 msgid "GnuPG home directory (default: ~/.gnupg). Environment variable:"
@@ -1441,7 +1430,7 @@ msgid ""
 "to shred its content)."
 msgstr ""
 "Utiliser le répertoire de travail fourni au lieu d’un répertoire temporaire "
-"(n’oubliez pas d’en effacer le contenu de manière sécurisée)."
+"(n’oubliez pas de broyer son contenu après)."
 
 #: ../bin/bl-qrkey:441
 msgid "Number of shares to be generated"
@@ -1657,8 +1646,8 @@ msgstr "cette fonction est devenue inutile et sera dépréciée."
 #: ../bin/bl-security:157
 msgid "Recursively shred all files in given path(|s)."
 msgstr ""
-"Efface de manière sécurisée et récursive tous les fichiers des chemins "
-"indiqués."
+"Broie (efface de manière sécurisée) récursivement tous les fichiers des "
+"chemins indiqués."
 
 #: ../bin/bl-security:159
 msgid "Change file permissions if necessary, never prompt"
@@ -1774,3 +1763,4 @@ msgstr ""
 #: ../bin/bl-security:405
 msgid "All actions support a --help option, eg:"
 msgstr "Toutes les actions prennent en charge l’option --help, par exemple :"
+

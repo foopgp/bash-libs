@@ -227,9 +227,9 @@ bl_qrkey_change_passphrase() {
 
 	local helpmsg="
 "$"Change GnuPG passphrase protecting secret parts of an OpenPGP key.""
-"$"Missing inputs are asked interactively.""
+"$"Missing input will be asked interactively.""
 
-"$"OPTIONS:""
+OPTIONS:
   -H, --homedir GNUPGHOME        "$"GnuPG home directory (default: ~/.gnupg). Environment variable:"" \$GNUPGHOME
   -p, --passphrase PASSPHRASE    "$"Current passphrase protecting secret parts of OpenPGP key"" (empty \"\" for none)
   -P, --passfrom FILE            "$"Get passphrase from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
@@ -301,13 +301,13 @@ bl_qrkey_change_token_code() {
 
 	local helpmsg="
 "$"Check and change PIN (or Admin) code protecting use of a security token (OpenPGP smartcard).""
-"$"Missing inputs are asked interactively.""
+"$"Missing input will be asked interactively.""
 "$"Return:"" - "$"194 (OxC2) if only 2 remaining attempt.""
         - "$"193 (OxC1) if only 1 remaining attempt.""
         - "$"192 (OxC0) if code is blocked.""
         - "$"other non-zero value on other errors.""
 
-"$"OPTIONS:""
+OPTIONS:
   -H, --homedir GNUPGHOME   "$"GnuPG home directory (default: ~/.gnupg). Environment variable:"" \$GNUPGHOME
   -p, --code CURRENTCODE    "$"Current PIN (or Admin) code protecting use of security token"" (empty \"\" for none)
   -P, --codefrom FILE       "$"Get current PIN (or Admin) code from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
@@ -430,9 +430,9 @@ bl_qrkey_print() (
 	local splitn=5 thresn=3 qrversion=5
 	local helpmsg="
 "$"Export and print OpenPGP secrets on multiple QRcode using Shamir's secret sharing.""
-"$"Missing inputs are asked interactively.""
+"$"Missing input will be asked interactively.""
 
-"$"OPTIONS:""
+OPTIONS:
   -p, --passphrase PASSPHRASE    "$"Passphrase to access secret parts of OpenPGP key""
   -P, --passfrom FILE            "$"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
   -t, --printer PRINTER          "$"Name of printer to use""
@@ -601,7 +601,7 @@ bl_qrkey_scan() (
 	local usage="Usage: $name [OPTIONS]... [IMAGES]..."
 	local helpmsg="
 "$"Reconstitute OpenPGP secrets from QRcodes scanned from IMAGES or webcam.""
-"$"Missing inputs are asked interactively.""
+"$"Missing input will be asked interactively.""
 "$"Output OpenPGP certification key fingerprint.""
 
 OPTIONS:
@@ -781,7 +781,7 @@ bl_qrkey_totoken() {
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 	local helpmsg="
 "$"Move OpenPGP secrets to security token (OpenPGP smartcard).""
-"$"Missing inputs are asked interactively.""
+"$"Missing input will be asked interactively.""
 "$"Security token (OpenPGP smartcard) must be connected.""
 "$"Output ASCII armored OpenPGP certificate, PIN code and admin code.""
 
