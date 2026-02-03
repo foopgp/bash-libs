@@ -73,7 +73,21 @@ declare -r BL_DJI_U4_REGEX="[a-zA-Z0-9_-]{22}e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9
 
 declare -r BL_DJI_GRAIN_REGEX="(dji)([0-9]{2})([dc])([0-9]{8})(u4${BL_DJI_U4_REGEX})([0-9A-F])"
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_DJI_isprogram=1 || declare -r BL_DJI_isprogram=0
+
+### Others Globals ###
+
+if ((BL_DJI_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_DJI_chelpmsg="
+"$"Manage djis (Ɉ), also known as foopgp tokens.""
+
+"$"Main options:"""
 
 ### external functions ###
 
@@ -104,16 +118,16 @@ bl_dji_2micro()
 	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
-Translate given VALUES to their microVALUES, aka µVALUES (10^-6).
-Values with too much decimals will be rounded half-to-even,
-confer https://www.exploringbinary.com/inconsistent-rounding-of-printed-floating-point-numbers/
-Given VALUES may be suffixed by symbol or name of the International System of Units (ISO/IEC 80000):
+"$"Translate given VALUES to their microVALUES, aka µVALUES (10^-6).""
+"$"Values with too much decimals will be rounded half-to-even,""
+"$"confer"" https://www.exploringbinary.com/inconsistent-rounding-of-printed-floating-point-numbers/
+"$"Given VALUES may be suffixed by symbol or name of the International System of Units (ISO/IEC 80000):""
   * 'd' for deci.
   * 'c' for centi.
   * 'm' for milli
   * 'µ' for micro (VALUE will just be rounded or truncated in this case).
-Options:
-  -t, --truncate       Values with too much decimals will be truncated instead of rounded.
+OPTIONS:
+  -t, --truncate       "$"Values with too much decimals will be truncated instead of rounded.""
 "
 	for ((;$#;)) ; do
 		case "$1" in
@@ -121,7 +135,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -168,7 +182,7 @@ bl_dji_2deci()
 				return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -199,7 +213,7 @@ bl_dji_2milli()
 				return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -222,17 +236,17 @@ bl_dji_2bin()
 	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
-Translate given VALUES to their µVALUES: round(VALUE*10^6), then to binary.
-Values with too much decimals will be rounded half-to-even,
-confer https://www.exploringbinary.com/inconsistent-rounding-of-printed-floating-point-numbers/
-Given VALUES may be suffixed by:
+"$"Translate given VALUES to their µVALUES: round(VALUE*10^6), then to binary.""
+"$"Values with too much decimals will be rounded half-to-even,""
+"$"confer"" https://www.exploringbinary.com/inconsistent-rounding-of-printed-floating-point-numbers/
+"$"Given VALUES may be suffixed by:""
   * 'd' for deci.
   * 'c' for centi.
   * 'm' for milli
   * 'µ' for micro (VALUE will just be rounded or truncated in this case).
-Options:
-  -r, --reverse        Switch to little-endian, from Least Significant Bit to Most Significant Bit.
-  -d, --delim DELIM    Use DELIM to separate 0-1 digits (default: '').
+OPTIONS:
+  -r, --reverse        "$"Switch to little-endian, from Least Significant Bit to Most Significant Bit.""
+  -d, --delim DELIM    "$"Use DELIM to separate 0-1 digits (default: '').""
 "
 	local reverse="cat" delim=''
 	for ((;$#;)) ; do
@@ -242,7 +256,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -274,13 +288,13 @@ bl_dji_2powersoftwo()
 	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
-Translate given VALUES v to their microVALUES µv (10^-6), then decompose this (µv) in powers of 2.
-Options:
-  -f, --format FORMAT  Output format, eg \"%02X\" for hexadecimal.
-  -d, --delim DELIM    Use DELIM to separate powers of 2 (default: ' ').
-  -x, --hex            Output using base16 (aka hexadecimal).
-  -e, --exponent       Output the exponent n instead of 2^n.
-  -r, --reverse        Order output from the greatest to the lowest
+"$"Translate given VALUES v to their microVALUES µv (10^-6), then decompose this (µv) in powers of 2.""
+OPTIONS:
+  -f, --format FORMAT  "$"Output format, eg \"%02X\" for hexadecimal.""
+  -d, --delim DELIM    "$"Use DELIM to separate powers of 2 (default: ' ').""
+  -x, --hex            "$"Output using base16 (aka hexadecimal).""
+  -e, --exponent       "$"Output the exponent n instead of 2^n.""
+  -r, --reverse        "$"Order output from the greatest to the lowest""
 "
 	local hexa=0 expnt=0 reverse=0 format="" delim=' '
 	for ((;$#;)) ; do
@@ -293,7 +307,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -338,11 +352,11 @@ bl_dji_readwallet()
 	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTION] [FILE...]"
 	local helpmsg="
-Read dji wallet FILE(s), or from /dev/stdin if no FILE passed as argument.
+"$"Read dji wallet FILE(s), or from /dev/stdin if no FILE passed as argument.""
 Option:
-  -c, --count           Output only the total value of the wallet(s), in µɈ.
-  -g, --grains          Output only the number of each grains of value 2^0 ... 2^n, line by line.
-  -d, --declare         Output only declare -a grains=(... statement.
+  -c, --count           "$"Output only the total value of the wallet(s), in µɈ.""
+  -g, --grains          "$"Output only the number of each grains of value 2^0 ... 2^n, line by line.""
+  -d, --declare         "$"Output only declare -a grains=(... statement.""
 "
 	local ocount=0 ograins=0 dec=0
 	for ((;$#;)) ; do
@@ -353,7 +367,7 @@ Option:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -415,10 +429,10 @@ bl_dji_stripwallet()
 	((BL_DJI_isprogram)) && name="$BL_DJI_NAME ${FUNCNAME:7}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE FILE"
 	local helpmsg="
-Select and output grains from wallet FILE to be removed to extract VALUE.
-Options:
-  -u, --up             Don't exit with error if the exact VALUE can't be extracted, but remove grains > VALUE.
-  -n, --no-act         Don't remove any grain from wallet FILE, but output grains to be removed.
+"$"Select and output grains from wallet FILE to be removed to extract VALUE.""
+OPTIONS:
+  -u, --up             "$"Don't exit with error if the exact VALUE can't be extracted, but remove grains > VALUE.""
+  -n, --no-act         "$"Don't remove any grain from wallet FILE, but output grains to be removed.""
 "
 	local up=0 act=1
 	for ((;$#;)) ; do
@@ -428,7 +442,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJI_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -501,12 +515,9 @@ Options:
 	fi
 }
 
-### General Help Messages ###
+### Init ###
 
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_DJI_isprogram=1
-
+if ((BL_DJI_isprogram)) ; then
 	BL_DJI_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_DJI_shelpmsg="
   -h, --help               show help and exit
@@ -515,34 +526,23 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 Actions:
 $(for f in "${BL_DJI_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_DJI_FUNCTIONS:7} --help
 
 $BL_DJI_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
 else
-	# run as a library (source $0)
-
 	BL_DJI_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_DJI_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
 $(for f in "${BL_DJI_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"$"Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.""
 "
 fi
-
-BL_DJI_chelpmsg="
-Manage djis (Ɉ), also known as foopgp tokens.
-
-Main options:
-"
-
-### Init ###
 
 # Parse Options
 _BL_DJI_RETVAL=0
@@ -562,7 +562,7 @@ if function=$(grep -o "\<bl_dji_$1\>" <<< "${BL_DJI_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_DJI_NAME" "$1" "$BASH_SOURCE" >&2
+	printf "$BL_DJI_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

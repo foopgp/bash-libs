@@ -35,7 +35,7 @@ cd "$(dirname "$0")"
 PATH="../bin:$PATH"
 
 for bl in ../bin/$bashlibs ; do
-	namedesc=$($bl --help | sed -n '/^$/ {n;p;q}')
+	namedesc=$(LANG=C.UTF-8 $bl --help | sed -n '/^$/ {n;p;q}')
 	blname=$(basename "$bl")
 	cat <<EOF > "${blname}.1.md.draft"
 <!--

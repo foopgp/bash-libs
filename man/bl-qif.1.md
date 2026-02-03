@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-QIF
 section: 1
 header: User Commands
-footer: bash-libs 0.2.5
+footer: bash-libs 0.2.7
 ---
 
 # NAME
@@ -53,7 +53,7 @@ tofecp4
     foopgp tokens, expenses, inventory\....
 
  
-All actions support a **\--help** options, eg: \$ bl-qif tobash
+All actions support a **\--help** option, eg: \$ bl-qif tobash
 **\--help**
 
 bl-qif is also bash library, see: \$ source bl-qif **\--help**

@@ -87,7 +87,7 @@ declare -Ar BL_LOGLEVELS=(
 [info]=6
 [debug]=7)
 
-### Default option values ###
+### Others Globals ###
 
 BL_LOGCOLORS=(47 45 41 31 35 33 36 37)
 BL_LOGLEVEL="${BL_LOGLEVEL:-7}"
@@ -98,6 +98,11 @@ BL_LOGEXITLNAME="${BL_LOGEXITLNAME:-emerg}"
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
 	# run as a program
+
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
 
 	BL_LOG_usage="Usage: $(basename "${BASH_SOURCE[0]}") [OPTIONS]... PRIORITY [MESSAGE]..."
 	BL_LOG_shelpmsg="
@@ -115,50 +120,49 @@ Reminder: when used as a library, all functions calls share the same environment
 i.e. the same options passed when loading the library."
 fi
 
-
 ### Help messages ###
 
 BL_LOG_chelpmsg="
-Wrapper for logger command, which also print pretty logs on stderr.
-PRIORITY is a \"facility.level\" pair. The default facility is [user]=1.
-Levels: $(declare -p BL_LOGLEVELS)
-If PRIORITY's level is under BL_LOGLEVEL=$BL_LOGLEVEL, don't log anything.
-If PRIORITY's level name is more serious than BL_LOGEXITLNAME=$BL_LOGEXITLNAME, exit(8+'PRIORITY's level')
-If there is no MESSAGE in command line, read it from stdin.
+"$"Wrapper for logger command, which also print pretty logs on stderr.""
+"$"PRIORITY is a"" \"facility.level\" pair. "$"The default facility is [user]=1.""
+"$"Levels:"" $(declare -p BL_LOGLEVELS)
+"$"If PRIORITY's level is under"" BL_LOGLEVEL=$BL_LOGLEVEL, "$"don't log anything.""
+"$"If PRIORITY's level name is more serious than"" BL_LOGEXITLNAME=$BL_LOGEXITLNAME, exit(8+'PRIORITY's level')
+"$"If there is no MESSAGE in command line, read it from stdin.""
 
-Options:
-  -l, --log-level LEVEL    log level: emerg<1=alert<crit<3=err<warning<5=notice<info<7=debug (current: $BL_LOGLEVEL)
-  -L, --log-exit LEVELNAME exit level: emerg|alert|crit|err|warning|... (current: $BL_LOGEXITLNAME )
-  -q, --quiet              do not output message to standard error
-  -Q, --no-act             do not send message to the logs system (syslog)
+OPTIONS:
+  -l, --log-level LEVEL    "$"log level:"" emerg<1=alert<crit<3=err<warning<5=notice<info<7=debug (current: $BL_LOGLEVEL)
+  -L, --log-exit LEVELNAME "$"exit level:"" emerg|alert|crit|err|warning|... (current: $BL_LOGEXITLNAME )
+  -q, --quiet              "$"do not output message to standard error""
+  -Q, --no-act             "$"do not send message to the logs system (syslog)""
       --color[=<on|off|auto>]
-                           colorize messages sent to standard error (default: auto)
-  -h, --help               show help and exit/return
-  -V, --version            show version and exit/return
+                           "$"colorize messages sent to standard error (default: auto)""
+  -h, --help               "$"show help and exit/return""
+  -V, --version            "$"show version and exit/return""
 
-Options forwarded to 'logger':
-  -i                       log the logger command's PID
-      --id[=<id>]          log the given <id>, or otherwise the PID (default \$\$ = logger's PPID)
-  -f, --file <file>        log the contents of this file
-  -e, --skip-empty         do not log empty lines when processing files
-      --octet-count        use rfc6587 octet counting
-      --prio-prefix        look for a prefix on every line read from stdin
-  -S, --size <size>        maximum size for a single message
-  -t, --tag <tag>          mark every line with this tag (default \${0##*/})
-  -n, --server <name>      write to this remote syslog server
-  -P, --port <port>        use this port for UDP or TCP connection
-  -T, --tcp                use TCP only
-  -d, --udp                use UDP only
-      --rfc3164            use the obsolete BSD syslog protocol
-      --rfc5424[=<snip>]   use the syslog protocol (the default for remote);
-                             <snip> can be notime, or notq, and/or nohost
-      --sd-id <id>         rfc5424 structured data ID
-      --sd-param <data>    rfc5424 structured data name=value
-      --msgid <msgid>      set rfc5424 message id field
-  -u, --socket <socket>    write to this Unix socket
+"$"Options forwarded to 'logger':""
+  -i                       "$"log the logger command's PID""
+      --id[=<id>]          "$"log the given <id>, or otherwise the PID"" (default \$\$ = logger's PPID)
+  -f, --file <file>        "$"log the contents of this file""
+  -e, --skip-empty         "$"do not log empty lines when processing files""
+      --octet-count        "$"use rfc6587 octet counting""
+      --prio-prefix        "$"look for a prefix on every line read from stdin""
+  -S, --size <size>        "$"maximum size for a single message""
+  -t, --tag <tag>          "$"mark every line with this tag"" (default \${0##*/})
+  -n, --server <name>      "$"write to this remote syslog server""
+  -P, --port <port>        "$"use this port for UDP or TCP connection""
+  -T, --tcp                "$"use TCP only""
+  -d, --udp                "$"use UDP only""
+      --rfc3164            "$"use the obsolete BSD syslog protocol""
+      --rfc5424[=<snip>]   "$"use the syslog protocol (the default for remote);""
+                             <snip> "$"can be notime, or notq, and/or nohost""
+      --sd-id <id>         "$"rfc5424 structured data ID""
+      --sd-param <data>    "$"rfc5424 structured data name=value""
+      --msgid <msgid>      "$"set rfc5424 message id field""
+  -u, --socket <socket>    "$"write to this Unix socket""
       --socket-errors[=<on|off|auto>]
-                           print connection errors when using Unix sockets
-      --journald[=<file>]  write journald entry"
+                           "$"print connection errors when using Unix sockets""
+      --journald[=<file>]  "$"write journald entry"""
 
 
 ### functions ###

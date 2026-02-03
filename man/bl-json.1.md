@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-JSON
 section: 1
 header: User Commands
-footer: bash-libs 0.2.5
+footer: bash-libs 0.2.7
 ---
 
 # NAME
@@ -56,8 +56,8 @@ to_var
 :   Output string to be put into bash variable or array.
 
  
-All actions support a **\--help** options, eg: \$ bl-json
-from_str **\--help**
+All actions support a **\--help** option, eg: \$ bl-json from_str
+**\--help**
 
 bl-json is also bash library, see: \$ source bl-json **\--help**
 

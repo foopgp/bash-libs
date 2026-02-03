@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-SECURITY
 section: 1
 header: User Commands
-footer: bash-libs 0.2.5
+footer: bash-libs 0.2.6
 ---
 
 # NAME
@@ -62,7 +62,7 @@ shrink_num
 :   Shrink input data to a number limited by SIZE.
 
  
-All actions support a **\--help** options, eg: \$ bl-security
+All actions support a **\--help** option, eg: \$ bl-security
 urandom **\--help**
 
 bl-security is also bash library, see: \$ source bl-security

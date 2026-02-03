@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that generate id compliant with foopgp.
+# Bash library and executable that generate id compliant with foopgp: OpenPGP ID.
 #
 # Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
@@ -321,16 +321,26 @@ declare -Ar BL_PGPID_COORDINATES=(
 [ZWE]="e-19.00_029.85 Zimbabwe"
 )
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_PGPID_isprogram=1 || declare -r BL_PGPID_isprogram=0
+
+### Others Globals ###
 
 BL_PGPID_KEYSERVERS=(
 "hkps://keys.foopgp.org"
 )
 
-TEXTDOMAIN="${TEXTDOMAIN:-bashlibs}"
-TEXTDOMAINDIR="${TEXTDOMAINDIR:-$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale}"
-# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
-shopt -s noexpand_translation
+if ((BL_PGPID_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_PGPID_chelpmsg="
+Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, OpenPGP certificate, etc.
+
+Main options:
+  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"
 
 ### external functions ###
 
@@ -347,7 +357,7 @@ _bl_pgpid_parseoptions() {
 			-h|--help) printf "%s\n%s%s" "$BL_PGPID_usage" "$BL_PGPID_chelpmsg" "$BL_PGPID_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_PGPID_NAME" "$BL_PGPID_VERSION" ; return 1 ;;
 			--) shift ; break ;;
-			-*) printf "%s: Unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
+			-*) printf -- "$BL_PGPID_NAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -392,11 +402,11 @@ else return non-zero if EXPECTED_RESULT differs from calculated check digit.
 }
 
 _bl_icao9303_mrz_analyse() {
-	local helpmsg="Usage: $FUNCNAME [Options] AANAME [MRZ]
+	local helpmsg="Usage: $FUNCNAME [Options] AANAME [MRZ]
 Analyse a Machine Readable Zone and fill the associative array named AANAME
 If MRZ is not passed as argument, it will we read from STDIN.
 
-Options:
+OPTIONS:
   -u, --uncheck                Change some MRZ errors to warnings (size and digitchecks)
   -d, --declare                Output content of AANAME as a 'declare -A ...' statement
 "
@@ -415,7 +425,7 @@ Options:
 		shift
 	done
 
-	local -n doc=$1
+	local -n doc=${1:?}
 	shift
 	local mrz
 	[[ "$*" ]] && mrz=$* || mrz=$(< /dev/stdin)
@@ -424,11 +434,11 @@ Options:
 	local ch ret=0
 	if [[ ${mrz:0:1} != P ]] ; then
 		# Only ICAO-9303 (ISO/IEC-7501-1) passport are yet supported.
-		printf "%s: Error: Unsupported MRZ '%s...'.\n" "$FUNCNAME" "${mrz:0:1}" >&2
+		printf "$FUNCNAME: Error: "$"Unsupported MRZ"" '%s...'.\n"  "${mrz:0:1}" >&2
 		return 1
 	fi
 	if [[ ${#mrz} != 88 ]] ; then
-		printf "%s: %s: Invalid MRZ lenght: %d/88.\n" "$FUNCNAME" "$errlvl" "${#mrz}" >&2
+		printf "$FUNCNAME: %s: "$"Invalid MRZ lenght:"" %d/88.\n" "$errlvl" "${#mrz}" >&2
 		[[ "$errlvl" == "Warning" ]] || ret=1
 	fi
 
@@ -455,7 +465,7 @@ Options:
 		doc[checked_$ch]=$(_bl_icao9303_mrz_checkdigit "${doc[$ch]}")
 		doc[valid_$ch]=$( [[ ${doc[checked_$ch]} == ${doc[check_$ch]} ]] && echo true || echo false )
 		if ! ${doc[valid_$ch]} ; then
-			printf "%s: %s: %s checksum -> %s. Should be %s.'\n" "$FUNCNAME" "$errlvl" "$ch" "${doc[check_$ch]}" "${doc[checked_$ch]}" >&2
+			printf "$FUNCNAME: %s: %s checksum -> %s. "$"Should be"" %s.'\n" "$errlvl" "$ch" "${doc[check_$ch]}" "${doc[checked_$ch]}" >&2
 			[[ "$errlvl" == "Warning" ]] || ret=1
 		fi
 	done
@@ -469,7 +479,7 @@ _bl_pgp_get_seckeyid() {
 Call 'gpg --with-colon' and ouput exportable secret keys (all if no argument), one by line:
 KeyID     Creation_Date    Public_Key_Algorithm
 
-Options:
+OPTIONS:
   -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -e, --exportable          Ouput only exportable secret keys (ie. present localy, excluding those on security token)
 "
@@ -478,12 +488,12 @@ Options:
 	for ((;$#;)) ; do
 		case "$1" in
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-e|--exportable) filtertest='[[ "${record[TockenSN]}" == \+ ]]' ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -498,7 +508,7 @@ Options:
 	gpg --homedir "$gpghome" --list-secret-keys --with-colons $1 | grep "^sec:" | while	IFS=':' read record[Type] record[Validity] record[KeyLenght] record[PubKeyAlgo] record[KeyID] record[CreationDate] record[ExpirationDate] record[Field8] record[Ownertrust] record[UserID] record[SignatureClass] record[KeyCapabilities] record[Field13] record[Flags] record[TockenSN] record[HashAlgo] record[CurveName] record[ComplianceFlags] record[LastUpdate] record[Origin] record[Comment] record[rfu] ; do
 		if eval "$filtertest" ; then
 			if ! pkaindex=$((${record[PubKeyAlgo]})) ; then
-				printf "%s: Error: Unexpected field 4 (Public Key Algorithm)\n" "$FUNCNAME"  >&2
+				printf "$FUNCNAME: Error: "$"Unexpected field 4 (Public Key Algorithm)"".\n" >&2
 				return 1
 			fi
 			echo "${record[KeyID]}  $(date --iso-8601=hours --date "@${record[CreationDate]}")  ${pka[${pkaindex}]:-unkown}"
@@ -514,23 +524,24 @@ Output keyid choosen from available (main) secrets keys.
 If there is only one available, output its keyid whithout asking.
 Argument NAME|U4|U5|EMAIL allow to make an (almost totaly useless) input filter.
 
-Options:
+OPTIONS:
   -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
   -t, --text QUESTION       Text to introduce selection's radiolist (default: '$qtxt')
   -e, --exportable          Only exportable secret keys (ie. present localy, excluding those on security token)
 "
-	local keyid gpghome=${GNUPGHOME:-~/.gnupg} getargs
+	local keyid gpghome=${GNUPGHOME:-~/.gnupg} getargs outfpr=0
 	for ((;$#;)) ; do
 		case "$1" in
+			-F|--fingerprint) outfpr=1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-t|--text)
 				shift ; qtxt=$1 ;;
 			-e|--exportable) getargs+="$1 " ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -538,10 +549,10 @@ Options:
 
 	local -a seckeyids
 	mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome" $getargs $1)
-	((${#seckeyids[@]}>0)) || { printf "%s: Error: No editable OpenPGP certificate (in %s).\n" "$FUNCNAME" "$gpghome" >&2 ; return 1 ; }
+	((${#seckeyids[@]}>0)) || { printf "$FUNCNAME: Error: "$"No editable OpenPGP certificate (in %s)"".\n" "$gpghome" >&2 ; return 1 ; }
 	if ((${#seckeyids[@]}==1)) ; then
 		keyid=${seckeyids[0]}
-		printf "%s: Notice: Choosing the only one editable OpenPGP certificate (%s).\n" "$FUNCNAME" "$keyid" >&2
+		printf "$FUNCNAME: Notice: "$"Choosing the only one editable OpenPGP certificate (%s)"".\n" "$keyid" >&2
 	else
 		keyid="$(bl_radiolist --output-value --num-per-line 1 --text "$qtxt" "${seckeyids[@]}")"
 	fi
@@ -555,20 +566,20 @@ bl_pgpid_mrz_to_u4() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
-Calculate and output a pgpid u4 identifier from the Machine Readable Zone of an icao9303 passport.
+Calculate and output a OpenPGP ID u4, from the Machine Readable Zone of an icao9303 passport.
 If MRZ is not passed as argument, it will we read from STDIN.
 
 Option:
   -d, --birth-date YYYY-MM-DD  Birth date, expected format : Year-Month-Day (for people born 100+ years ago)
   -u, --uncheck                Change some MRZ errors to warnings (only if you really know what you do !).
 
-WARNING: mrz data may be irrelevant to generate u4 identifier. eg:
+WARNING: mrz data may be irrelevant to generate u4 string. eg:
          * Surname or given names may be incomplete (cut bc exceed mrz size)
          * Surname or given names may differs from those given at birth (marriage, gender change, etc.)
          * Surname or given names transliteration may have change over time
          * Year of birth date is only written with 2 digits (and people may live longer than 100 years)
          * Humans may have done error on birth date, surname or given names.
-By the way, there are ~80% chance that an icao9303 MRZ allow to generate a correct u4 identifier.
+By the way, there are ~80% chance that an icao9303 MRZ allow to generate a correct u4 string.
 People have to check, and fix when NOK.
 "
 
@@ -602,17 +613,17 @@ People have to check, and fix when NOK.
 	countrycode="${mrza[country]}"
 	coordinates="${BL_PGPID_COORDINATES[$countrycode]: 0:14}"
 	if ! [[ "$coordinates" =~ ^${BL_PGPID_CO_REGEX}$ ]] ; then
-		printf "%s: Error: Invalid coordinates (%s) for country '%s'\n" "$FUNCNAME" "$coordinates" "$countrycode" >&2
+		printf "$FUNCNAME: Error: "$"Invalid coordinates (%s) for country '%s'.""\n" "$coordinates" "$countrycode" >&2
 		return 1
 	fi
 
 	if [[ "$gdate" ]] ; then
-		((${#gdate}==8)) || printf "%s: Notice: Invalid lenght for birth date '%s'\n" "$FUNCNAME" "$gdate" >&2
+		((${#gdate}==8)) || printf "$FUNCNAME: Notice: "$"Invalid lenght for birth date '%s'.""\n" "$gdate" >&2
 	else
 		gdate="${mrza[date_of_birth]}"
 	fi
 	if ! bdate=$(date --date "${gdate}" +"%Y-%m-%d" ) ; then
-		printf "%s: Error: Can't reformat birthdate '%s'\n" "$FUNCNAME" "$gdate" >&2
+		printf "$FUNCNAME: Error: "$"Can't reformat birthdate '%s'.""\n" "$gdate" >&2
 		return 1
 	fi
 
@@ -624,15 +635,15 @@ bl_pgpid_gen_u4() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
-Generate u4 identifier. Missing inputs are asked interactively.
-You may pass the Machine Readable Zone of an international passport as argument, but there are ~20% chances that generated *u4* is incorrect.
+"$"Generate OpenPGP ID u4 string"". "$"Missing input will be asked interactively.""
+"$"You may pass the Machine Readable Zone of an international passport as argument, but there are ~20% chances that generated *u4* is incorrect.""
 
-Options:
-  -s, --surname SURNAME            Surname/family name at birth
-  -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
-  -d, --birth-date YYYY-MM-DD      Birth date, expected format : Year-Month-Day.
-  -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
-  -v, --verify                     Ask for verification
+OPTIONS:
+  -s, --surname SURNAME            "$"Surname/family name at birth"".
+  -g, --given-names GIVEN_NAMES    "$"Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.""
+  -d, --birth-date YYYY-MM-DD      "$"Birth date, expected format : Year-Month-Day"".
+  -c, --birth-country COUNTRY_CODE "$"3 letters country code of birth place: GBR, NGA, FRA, ...""
+  -v, --verify                     "$"Ask for verification"".
 "
 	local sname gname translit bdate bcountry errlvl="Error"
 	for ((;$#;)) ; do
@@ -649,7 +660,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -659,7 +670,7 @@ Options:
 	if [[ "$1" ]] ; then
 		local -A mrza=()
 		if ! _bl_icao9303_mrz_analyse mrza "$@" ; then
-			printf "%s: %s: Invalid Machine Readable Zone (ICAO9303)\n" "$FUNCNAME" "$errlvl" >&2
+			printf "$FUNCNAME: %s: "$"Invalid Machine Readable Zone"" (ICAO9303)\n" "$errlvl" >&2
 			# If not --verify, errexit.
 			[[ "$errlvl" == Warning ]] || return 1
 		fi
@@ -669,10 +680,10 @@ Options:
 		[[ "$bcountry" ]] || bcountry="${mrza[country]}"
 	fi
 
-	[[ "$sname" ]] || sname=$(bl_input "Birth surname (family name)")
-	[[ "$gname" ]] || gname=$(bl_input "Birth names (given names)")
-	[[ "$bdate" ]] || bdate=$(bl_input --iso-8601 "Birth date (YYYY-MM-DD)")
-	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "Birth country (3 letter code)")
+	[[ "$sname" ]] || sname=$(bl_input $"Birth surname (family name)")
+	[[ "$gname" ]] || gname=$(bl_input $"Birth names (all given names)")
+	[[ "$bdate" ]] || bdate=$(bl_input --iso-8601 $"Birth date (YYYY-MM-DD)")
+	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" $"Birth country (3 letter code)")
 
 	# --verify
 	while [[ "$errlvl" == Warning ]] ; do
@@ -686,7 +697,7 @@ Options:
 			"Is that correct" || break
 
 		sname=$(bl_input --default "${sname^^}" "Birth surname (family name)")
-		gname=$(bl_input --default "${gname}" "Birth names (given names)")
+		gname=$(bl_input --default "${gname}" "Birth names (all given names)")
 		bdate=$(bl_input --iso-8601 --default "${bdate}" "Birth date (YYYY-MM-DD)")
 		bcountry=$(bl_input --default "${bcountry}" "Birth country (3 letter code)")
 	done
@@ -734,7 +745,7 @@ bl_pgpid_gen_uid() {
 #    Return value $?: 0 (OK)
 #
 #   If we let 4294967294, 4294967293 and id under 2^18 (< 262144), for some futur usage/convention,
-#   then we can use range 262144 to 4294967292, to get an almost unique Unix User ID from unique foopgp identifier (u4,...)
+#   then we can use range 262144 to 4294967292, to get an almost unique Unix User ID from unique OpenPGP ID string (u4,...)
 #
 #   Confer https://www.debian.org/doc/debian-policy/ch-opersys.html#users-and-groups
 #
@@ -751,8 +762,8 @@ bl_pgpid_gen_uid() {
 Generate a 32bit Unix User ID, from 2^18 to (2^31)-2 ([$BL_PGPID_XUID_MIN,$BL_PGPID_XUID_MAX]).
 If UDID4 is not given, it will ask for surname, names and date of birth.
 
-Options:
-  -f, --free-input            Accept any input, not only string containing a foopgp UDID4.
+OPTIONS:
+  -f, --free-input            Accept any input, not only valid OpenPGP ID string.
   -F, --from FILE             Get input from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
 "
 	local freeinput=0 str_in u4h num
@@ -764,7 +775,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -789,7 +800,7 @@ Options:
 	elif [[ "$str_in" =~ (${BL_PGPID_U4H_REGEX})${BL_PGPID_CO_REGEX} ]] ; then
 		u4h="${BASH_REMATCH[1]}=="
 	else
-		printf "%s: Error: No u4 identifier (hash) found in '%s'...\n" "$FUNCNAME" "${str_in: 0:50}" >&2
+		printf "%s: Error: No u4 string (hash) found in '%s'...\n" "$FUNCNAME" "${str_in: 0:50}" >&2
 		return 2
 	fi
 
@@ -802,22 +813,22 @@ bl_pgpid_gen_key() {
 	local usage="Usage: $name [OPTIONS]... EMAIL"
 	local keyserv=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
-Generate an OpenPGP key pair (public and secret) according to foopgp standards.
-Missing inputs are asked interactively.
-Output 3 lines for each fingerprints :
-* main key (Sign Certify)
-* decryption key (Encrypt)
-* authentication key (Auth)
+"$"Generate an OpenPGP key pair (public and secret) according to OpenPGP ID standards.""
+"$"Missing input will be asked interactively.""
+"$"Output 3 lines for each fingerprints:""
+* "$"main key"" (Sign Certify)
+* "$"decryption key"" (Encrypt)
+* "$"authentication key"" (Auth)
 
-Options:
-  -N, --name PSEUDONYM             Common name or pseudonym (default: first part of email)
-  -c, --comment U4|U5              First part of comment field MUST be a pgpid string. Confer \$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
-  -C, --extra-comment COMMENT      Comment (second part of comment field, free to use).
-  -p, --passphrase PASSPHRASE      Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage).
-  -P, --passfrom FILE              Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -e, --expiration YEARS           Number of years before certificate expiration (default: 11 -> $(date -I -d "+11 years"))
-  -k, --keyserver KEYSERVER        Prefered OpenPGP certificate server (default: $keyserv)
-  -H, --homedir GNUPGHOME          GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
+OPTIONS:
+  -N, --name PSEUDONYM             "$"Common name or pseudonym. "$"Default: "$"first part of email"".
+  -c, --comment U4|U5              "$"First part of comment field MUST be a OpenPGP ID string."" Confer \$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
+  -C, --extra-comment COMMENT      "$"Comment (second part of comment field, free to use).""
+  -p, --passphrase PASSPHRASE      "$"Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage).""
+  -P, --passfrom FILE              "$"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
+  -e, --expiration YEARS           "$"Number of years before certificate expiration. "$"Default: ""11 -> $(date -I -d "+11 years"))
+  -k, --keyserver KEYSERVER        "$"Prefered OpenPGP certificate server. "$"Default: ""$keyserv
+  -H, --homedir GNUPGHOME          "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
 	local email passphrase pseudo pgpidu pgpidugiven extracomment
@@ -840,12 +851,12 @@ Options:
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-v|--verify) verify=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -866,7 +877,7 @@ Options:
 	elif [[ "$pgpidu" =~ ${BL_PGPID_U5_REGEX} ]] ; then
 		pgpidu="u5=${BASH_REMATCH[0]}"
 	elif [[ "$pgpidugiven" ]] ; then
-		printf "%s: Error: No pgpid string in given '%s'.\n" "$FUNCNAME" "$pgpidu" >&2
+		printf "%s: Error: No OpenPGP ID string in given '%s'.\n" "$FUNCNAME" "$pgpidu" >&2
 		return 2
 	else
 		pgpidu="u4=$(bl_pgpid_gen_u4 --verify)"
@@ -911,22 +922,22 @@ bl_pgpid_avatar() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local tmpdir="/tmp/$FUNCNAME.$USER"
-	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
-	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
-	local helpmsg='
-'$"Extract or add image inside OpenPGP certificate."'
-'$"Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively."'
-'$"New IMAGE should be 180 pixel height, or it will be resized."'
-'$"Ouput extracted *.jpg files inside working directory."'
+	local usage=$"Usage:"" $name [OPTIONS]... [NAME|KEYID|U4|U5]"
+	local keyserv=${BL_PGPID_KEYSERVERS[0]}
+	local helpmsg="
+"$"Extract or add image inside OpenPGP certificate.""
+"$"Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
+"$"New IMAGE should be 180x180 pixels, or it will be resized.""
+"$"Output path(s) of extracted image(s).""
 
-'$"Options:"'
-  -E, --extract-all           '$"Extract also all revoked or expired existing images from OpenPGP certificate."'
-  -A, --addfrom IMAGE         '$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image)."'
-  -R, --revoke                '$"Just revoke all existing images inside OpenPGP certificate."'
-  -W, --workdir DIRECTORY     '$"Working directory. Will contain previous and new resized images (default:"" $tmpdir)."'
-  -k, --keyserver KEYSERVER   '$"If non-empty, send updated certificate to this keyserver (default:"" $keyserv)."'
-  -H, --homedir GNUPGHOME     '$"GnuPG home directory (default: ~/.gnupg). Environnement variable:"' $GNUPGHOME.
-'
+OPTIONS:
+  -E, --extract-all           "$"Extract also all revoked or expired existing images from OpenPGP certificate.""
+  -A, --addfrom IMAGE         "$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image).""
+  -R, --revoke                "$"Just revoke all existing images inside OpenPGP certificate.""
+  -W, --workdir DIRECTORY     "$"Working directory. Will contain previous and new resized images. "$"Default: ""$tmpdir .
+  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default: ""$keyserv .
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
+"
 	local image revoke
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local listopts="show-photos"
@@ -935,20 +946,19 @@ bl_pgpid_avatar() {
 			-E|--extract-all)
 				listopts+=",show-unusable-uids" ;;
 			-A|--add|--addfrom|--add-from)
-				shift ; image=$1 ;&
+				shift ; image=${1:?} ;&
 			-R|--revoke)
 				revoke="." ;;
 			-W|--tmpdir|--workdir)
-				shift
-				tmpdir=$1 ;;
+				shift ; tmpdir=${1:?} ;;
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -956,46 +966,52 @@ bl_pgpid_avatar() {
 
 	local user fprs
 
-	[[ "$1" ]] && user=$1 || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	if [[ "$1" ]] ; then
+		user=$1
+	else
+		local -A cardinfo
+		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
+		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	fi
 
 	mkdir -p "$tmpdir" || return $?
 
 	# Backup existing photos and get fingerprints
 	echo -n > "$tmpdir/imglist" || return $?
-	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "img=\$(md5sum %i | head -c 32).%t && cp -v %i ${tmpdir@Q}/\$img > /proc/$$/fd/2 2>&1 && echo ${tmpdir@Q}/\$img >> ${tmpdir@Q}/imglist" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
-	(( ${#fprs[@]} > 0 )) || { printf "%s: Error: No certificate for %s.\n" "$FUNCNAME" "'$user'" >&2 ; return 1 ;}
+	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "img=\$(md5sum %i | head -c 32).%t && cp -v %i ${tmpdir@Q}/\$img > /proc/$$/fd/2 2>&1 && echo ${tmpdir@Q}/\$img >> ${tmpdir@Q}/imglist" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p' | sort -u ))
+	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "'$user'" >&2 ; return 1 ;}
 
 	if [[ "$image" ]] ; then
-		local height
+		local -a size
 		# copy image to read it once if it was a fifo or /dev/stdin ...
 		cat "$image" > "$tmpdir/origin.image" || { printf "%s: Error: Can't retrieve image file %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
-		height=$(gm identify -format "%h" "$tmpdir/origin.image") || { printf "%s: Error: Unable to identify image %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
-		if ((height==180)) ; then
-			# Image has already the expected height, don't alter it.
+		size=($(gm identify -format "%w %h" "$tmpdir/origin.image")) || { printf "$FUNCNAME: Error: "$"Unable to identify image"" ${image@Q}.\n" >&2 ; return 1 ;}
+		if ((size[0]==180 && size[1]==180)) ; then
+			# Image has already the expected size, don't alter it.
 			mv "$tmpdir/origin.image" "$tmpdir/new.jpg" || return $?
 		else
 			# Resize
-			gm convert -geometry x180 "$tmpdir/origin.image" jpeg:"$tmpdir/new.jpg" || { printf "%s: Error: Unable to resize image %s.\n" "$FUNCNAME" "${image@Q}" >&2 ; return 1 ;}
+			gm convert -geometry "180^" -gravity center -extent 180 -strip "$tmpdir/origin.image" jpeg:"$tmpdir/new.jpg" || { printf "$FUNCNAME: Error: "$"Unable to resize image"" ${image@Q}.\n" >&2 ; return 1 ;}
 			rm "$tmpdir/origin.image" || return $?
 		fi
 	fi
 
 	if [[ "$revoke" ]] ; then
-		(( ${#fprs[@]} < 2 )) || { printf "%s: Error: user '%s' match many certificates (%s)\n" "$FUNCNAME" "$user" "${fprs[*]}" >&2 ; return 1 ;}
+		(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many certificates (%s)"".\n" "$user" "${fprs[*]}" >&2 ; return 1 ;}
 
 		local commands
-		# Revoke non-revoked photos
-		commands=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "${fprs[0]}" | awk ' /^(uid|uat):/ { i+=1 }  /^uat:[^r]/ { printf "uid "i"\nrevuid\ny\n4\n\ny\nuid "i"\n" } END { if (i) printf "save\n" }')
-		[[ "$commands" ]] || { printf "%s: Error: No editable certificate %s (in %s).\n" "$FUNCNAME" "'$user'" "$gpghome" >&2 ; return 1 ; }
+		# Revoke non-revoked photos (in first keyring only))
+		commands=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "${fprs[0]}" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 }  /^uat:[^r]/ { printf "uid "i"\nrevuid\ny\n4\n\ny\nuid "i"\n" } END { if (i) printf "save\n" }')
+		[[ "$commands" ]] || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "'$user'" "$gpghome" >&2 ; return 1 ; }
 
 		if [[ "$commands" =~ ^uid ]] ; then
-			printf "%s: Info: Revoking %s inside %s certificate...\n" "$FUNCNAME" "previous image(s)" "$user" >&2
+			printf "$FUNCNAME: Info: "$"Revoking previous image(s) inside %s certificate...""\n" "$user" >&2
 			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "${fprs[0]}" 2> >(grep "image of size" | sort -u >&2) <<<"$commands" || { printf "%s: Error: Can't revoke - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
 		fi
 
 		if [[ "$image" ]] ; then
 			commands=$(printf "addphoto\n${tmpdir}/new.jpg\ny\nsave\n")
-			printf "%s: Info: Adding %s into %s certificate...\n" "$FUNCNAME" "$image" "$user" >&2
+			printf "$FUNCNAME: Info: "$"Adding %s into %s certificate...""\n" "$image" "$user" >&2
 			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "${fprs[0]}" 2> >(grep "image of size" | sort -u >&2 ) <<<"$commands" || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "addphoto" >&2 ; return 1 ;}
 		fi
 
@@ -1014,20 +1030,20 @@ bl_pgpid_email() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
-	local keyserv #=${BL_PGPID_KEYSERVERS[0]}
+	local keyserv=${BL_PGPID_KEYSERVERS[0]}
 	local helpmsg="
-Display and add or revoke emails inside OpenPGP certificate.
-Missing NAME|KEYID|U4|U5 => KEYID of secret key may be asked interactively.
-Output usable emails (non-revoked and non-expired).
+"$"Display and add or revoke emails inside OpenPGP certificate.""
+"$"Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
+"$"Output usable emails (non-revoked and non-expired).""
 
-Options:
-  -R, --revoke EMAIL          Revoke existing EMAIL (may be used more than once).
-  -A, --add EMAIL             Add EMAIL. Enable --name and --extra-comment options.
-  -N, --name PSEUDONYM        Common name or pseudonym beside new EMAIL (default: first part of email).
-  -C, --extra-comment COMMENT (Free to use part of) comment beside new EMAIL (default: \"\").
-  -k, --keyserver KEYSERVER   If non-empty, send updated certificate to this keyserver (default: $keyserv).
-  -H, --homedir GNUPGHOME     GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME.
-  -v, --verbose               Increase verbosity.
+OPTIONS:
+  -R, --revoke EMAIL          "$"Revoke existing EMAIL (may be used more than once).""
+  -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options.""
+  -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL. "$"Default: "$"first part of email.""
+  -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL.""
+  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default: ""$keyserv .
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
+  -v, --verbose               "$"Increase verbosity.""
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
 	local toadd torev pseudo extracomment
@@ -1048,12 +1064,12 @@ Options:
 			-k|--keyserver)
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-v|--verbose) gpgfilter="cat" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -1061,28 +1077,35 @@ Options:
 
 	local user fprs
 
-	[[ "$1" ]] && user=$1 || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	if [[ "$1" ]] ; then
+		user=$1
+	else
+		local -A cardinfo
+		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
+		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	fi
 
 	# Check that $user match only one certificate
 	local fprs
-	fprs=($(gpg --homedir "$gpghome" --list-key "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p'))
-	(( ${#fprs[@]} > 0 )) || { printf "%s: Error: No certificate for user '%s'.\n" "$FUNCNAME" "$user" >&2 ; return 1 ;}
-	(( ${#fprs[@]} < 2 )) || { printf "%s: Error: user '%s' match many certificates (%s)\n" "$FUNCNAME" "$user" "${fprs[*]}" >&2 ; return 1 ;}
+	fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user" | cut -d ' ' -f 1 | sort -u))
+	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "$user" >&2 ; return 1 ;}
+	(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many certificates (%s).""\n" "$user" "${fprs[*]}" >&2 ; return 1 ;}
 	user=${fprs[0]}
 
 	if [[ "$torev" || "$toadd" ]] ; then
 		local uids email commands
-		# Get all uid/uat
-		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | grep -E "^(uid|uat):") || { printf "%s: Error: No editable certificate %s (in %s).\n" "$FUNCNAME" "$user" "$gpghome" >&2 ; return 1 ; }
+		# Get all uid/uat (from first keyring only)
+		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 ; print }')
+		[[ "$uids" ]] || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "$user" "$gpghome" >&2 ; return 1 ; }
 	fi
 
 	if [[ "$torev" ]] ; then
 		for email in "${torev[@]}" ; do
 			commands=$(awk "/^uid:[^r].*<$email>/ "'{ printf "uid "NR"\nrevuid\ny\n4\n\ny\nsave\n" }' <<<"$uids")
-			[[ "$commands" ]] || { printf "%s: Error: No revokable %s inside certificate %s (in %s).\n" "$FUNCNAME" "<$email>" "$user" "$gpghome" >&2 ; return 1 ; }
+			[[ "$commands" ]] || { printf "$FUNCNAME: Error: "$"No revokable %s inside certificate %s (in %s).""\n" "<$email>" "$user" "$gpghome" >&2 ; return 1 ; }
 
-			printf "%s: Notice: Revoking %s inside %s certificate...\n" "$FUNCNAME" "<$email>" "$user" >&2
-			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\[" | sort -u | sort -t'(' --key=2n ) <<<"$commands" || { printf "%s: Error: Can't revoke - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
+			printf "$FUNCNAME: Notice: "$"Revoking %s inside %s certificate...""\n" "<$email>" "$user" >&2
+			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\[" | sort -u | sort -t'(' --key=2n ) <<<"$commands" || { echo "$FUNCNAME: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
 		done
 	fi
 
@@ -1090,8 +1113,8 @@ Options:
 		local ids
 
 		ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4=\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5=\1,p" <<<"$uids" | sort -u))
-		(( ${#ids[@]} > 0 )) || { printf "%s: Error: No pgpid string (u4|u5) in %s certificate\n" "$FUNCNAME" "$user" >&2 ; return 1 ;}
-		(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary pgpid string" "(${ids[*]})" >&2 ; return 1 ;}
+		(( ${#ids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No OpenPGP ID string (u4|u5) in %s certificate.""\n" "$user" >&2 ; return 1 ;}
+		(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary OpenPGP ID string" "(${ids[*]})" >&2 ; return 1 ;}
 
 		# Add emails
 		for email in "${toadd[@]}" ; do
@@ -1107,7 +1130,7 @@ Options:
 		gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "$user" || return 1
 	fi
 
-	gpg --list-key "$user"  | grep -o "<[^>]\+>" | grep -oE "${BL_INTERACTIVE_EMAIL_REGEX}"
+	gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | cut -d ' ' -f 2
 }
 
 bl_pgpid_token_check()
@@ -1116,24 +1139,23 @@ bl_pgpid_token_check()
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]..."
 	local helpmsg="
-Check if OpenPGP token is correctly configured for pgpid ; may output informations.
+Check if OpenPGP token is correctly configured for OpenPGP ID ; may output informations.
 Will try to import cleaned certificate indicated in 'URL of public key' field.
 Return:
- - 0 if no error and OpenPGP token is correctly configured for pgpid.
- - 100 + number of missing pgpid data fields.
+ - 0 if no error and OpenPGP token is correctly configured for OpenPGP ID.
+ - 100 + number of missing OpenPGP ID data fields.
  - then 107 if all required data are missing (OpenPGP card is probably empty).
  - Other non-zero on other erros.
 
-Options:
+OPTIONS:
   -f, --no-fetch          Don't try to fetch public certificate (from URL indicated in token metadata).
   -i, --info              Output content of the associative array containing relevant metadata (may be evaluted with eval)
   -q, --quiet             Don't errput 'Info' or 'Notice' messages.
   -H, --homedir GNUPGHOME GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
-  -A, --aaname VARNAME    Depend if used as a bash library or as a program. If \$BL_PGPID_isprogram ($((BL_PGPID_isprogram))) is
-                               1: Output 'declare -A ...'
-                            else: Name of associative array to be filled with relevant metadata
+  -A, --aaname VARNAME    If VARNAME is a reacheable associative array: fill it (confer --info)
+							else: Output 'declare -A VARNAME=...'
 "
-	local varname fetch=1 info=0 quiet=0
+	local varname fetch=1 info=0 quiet=0 isaa=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -1141,29 +1163,25 @@ Options:
 			-i|--info) info=1 ;;
 			-q|--quiet) quiet=1 ;;
 			-H|--homedir)
-				shift ; gpghome=$1 ;;
+				shift ; gpghome=${1:?} ;;
 			-A|--aaname)
 				shift
-				varname=$1
-				if ! ((BL_PGPID_isprogram)) ; then
-					if [[ "$(eval echo \${$varname@a})" =~ A ]] ; then
-						local -n aaname=$varname
-					else
-						printf "%s: Error: '%s' must be an associative array.\n" "$FUNCNAME" "$varname" >&2
-						return 2
-					fi
+				varname=${1:?}
+				if [[ "$(eval echo \${$varname@a})" =~ A ]] ; then
+					local -n aaname=$varname
+					isaa=1
 				fi
 				;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
 
-	[[ -z "$1" ]] || printf "%s: Warning: Ignoring extra args '%s'...\n" "$FUNCNAME" "$1" >&2
+	[[ -z "$1" ]] || printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'...""\n" "$1" >&2
 
 	[[ "${aaname@a}" ]] || local -A aaname
 
@@ -1174,7 +1192,7 @@ Options:
 	aaname[pgpid_certurl]=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
 	[[ "${aaname[pgpid_certurl]}" != "[not set]" ]] || aaname[pgpid_certurl]=""
 	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
-		((quiet)) || printf "%s: Notice: Getting pubkey from %s ...\n" "$FUNCNAME" "${aaname[pgpid_certurl]}" >&2
+		((quiet)) || printf "$FUNCNAME: Notice: "$"Getting pubkey from %s ...""\n" "${aaname[pgpid_certurl]}" >&2
 		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import-options keep-ownertrust,import-clean --import ; then
 			cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 		fi
@@ -1221,7 +1239,7 @@ Options:
 
 	# Should be in 'Login data' field, but who knows ? (yet...) 
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}" | sort -u))
-	(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary pgpid string" "(${ids[*]})" >&2 ; return 1 ;}
+	(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary OpenPGP ID string" "(${ids[*]})" >&2 ; return 1 ;}
 	aaname[pgpid_id]="${ids[0]}"
 
 	aaname[token_AVersion]="${ttype} ${tversion}"
@@ -1236,29 +1254,156 @@ Options:
 		echo >&2
 	fi
 
-	if ((BL_PGPID_isprogram)) && [[ "$varname" ]] ; then
+	if ((!isaa)) && [[ "$varname" ]] ; then
 	   declare -p aaname | sed "s, aaname=, $varname=,"
 	fi
 
 	for key in pgpid_name pgpid_id pgpid_email pgpid_Skeyfpr pgpid_Ekeyfpr pgpid_Akeyfpr pgpid_certurl ; do
 		if [[ -z "${aaname[$key]}" ]] ; then
 			((ret = ret ? ret+1 : 101))
-			((quiet)) || printf "%s: Notice: Invalid pgpid token: missing '%s'.\n" "$FUNCNAME" "${key}" >&2
+			((quiet)) || printf "$FUNCNAME: Notice: "$"Invalid OpenPGP ID token, missing:"" '${key}'.\n" >&2
 		fi
 	done
 
 	! ((ret)) || return $ret
 
-	((quiet)) || printf "%s: Info: Valid token, pgpid_id='%s'.\n" "$FUNCNAME" "${aaname[pgpid_id]}" >&2
+	((quiet)) || printf "$FUNCNAME: Info: "$"Valid OpenPGP ID token"", pgpid_id='${aaname[pgpid_id]}'.\n" >&2
 	return 0
 }
 
-### General Help Messages ###
+bl_pgpid_certify() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage=$"Usage:"" $name [OPTIONS]... [TARGET_U4|TARGET_U5] [TARGET_KEYFPR]"
+	local keyserv=${BL_PGPID_KEYSERVERS[0]}
 
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_PGPID_isprogram=1
+	local helpmsg="
+"$"Certify somebody else, identified by its OpenPGP ID TARGET_U4.""
+"$"Missing input will be asked interactively."" E.g.: "$"Civil status to calculate TARGET_U4.""
 
+"$"Certification means : I know this other certificate belongs to this real person.""
+"$"This implies verifying the civil status and the public key fingerprint of the TARGET.""
+"$"This allows you to expand and strengthen your web of trust and those of your close ones.""
+"$"This is a commitment: the more you certify, the more you increase your reputation, but if you do it wrong, you will ruin your credibility.""
+
+OPTIONS:
+  -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask.""
+  -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate.""
+  -G, --vouch                  "$"Take responsability for any (illegal) actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
+  -g, --vouch-for DOMAIN       "$"Assume additional legal responsibilities on the target."" (Not implemented yet)
+  -l, --local                  "$"« Non-exportable » certification. Pretty useless. Allow to less affect credibility.""
+  -f, --force-sign-key         "$"Allow to unrevoke or to change vouching.""
+  -k, --keyserver KEYSERVER    "$"If non-empty, receive and send updated certificate to this keyserver. "$"Default: ""$keyserv.
+  -H, --homedir GNUPGHOME      "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME.
+"
+	local revoke=0 keyid vouchfor signcmd="sign" oforce
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	for ((;$#;)) ; do
+		case "$1" in
+			-u|--use-privkey)
+				shift ; keyid=$1 ;;
+			-R|--revoke)
+				revoke=1 ;;
+			-G|--vouch)
+				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
+				vouchfor="ALL" ;;
+			-g|--vouch-for)
+				[[ "$2" == ALL ]] || { printf -- "$FUNCNAME: Error:" $"Only %s is yet a known domain for vouching"".\n" "'ALL'" >&2 ; return 1 ;}
+				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
+				shift ; vouchfor=${1:?} ;;
+			-l|--local)
+				signcmd="lsign" ;;
+			-f|--force-sign-key|--force)
+				oforce="--force-sign-key" ;;
+			-k|--keyserver)
+				shift ; keyserv=$1 ;;
+			-H|--homedir)
+				shift ; gpghome=${1:?} ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local targetid targetfpr keyfpr
+	for ((;$#;)) ; do
+		if [[ "$1" =~ (${BL_PGPID_U4_REGEX}|${BL_PGPID_U5_REGEX}) ]] ; then
+			targetid=${BASH_REMATCH[0]}
+		elif [[ "${1^^}" == ^[ABCDEF0-9]{40}$ ]] ; then
+			targetfpr=${BASH_REMATCH[0]}
+		else
+			printf "$FUNCNAME: Error: "$"Unrecognized argument"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2
+			return 2
+		fi
+		shift
+	done
+
+	if [[ -z "$keyid" ]] ; then
+		local -A cardinfo
+		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
+		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && keyid=${cardinfo[pgpid_Skeyfpr]} || keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	fi
+
+	# Get fpr for private key to use
+	keyfpr=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-secret-keys "$keyid" | cut -d ' '  -f 1 | sort -u)
+
+	[[ "$keyfpr" =~ ^[0-9ABCDEF]{40}$ ]] || { printf -- "$FUNCNAME: Error: "$"Invalid or ambiguous private key to use '%s'.""\n" "$keyid" >&2 ; return 2 ;}
+
+	[[ "$targetid" ]] || targetid=$(bl_pgpid_gen_u4)
+
+	if [[ "$keyserv" ]] ; then
+		# Retrieve at most 16 certificates from keyserver (there should be only one active, keyserver has to make sure each id does not match more than 16 active + revoked certificates)
+		seq -s ' ' 16 | gpg --homedir "$gpghome" --keyserver "${keyserv}" --command-fd 0 --batch --search-keys "$targetid" > /dev/null || return $?
+	fi
+
+	# get fingerprints for certificate to certify
+	local fprs ifpr=0 uids
+	fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$targetid" | cut -d ' '  -f 1 | sort -u))
+	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "$targetid" >&2 ; return 1 ;}
+	if (( ${#fprs[@]} >= 2 )) ; then
+		printf "$FUNCNAME: Info: "$"User '%s' match many certificates (%s).""\n" "$targetid" "${#fprs[@]}" >&2
+		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text "Please select fingerprint" -- "${fprs[@]/%????????????????????/...}") || return $?
+	fi
+
+	if [[ -z "$targetfpr" ]] ; then
+		local txt=$"Please verify and complete target's fingerprint:"
+		local question=$(sed -E 's,(....),\1 ,g' <<<${fprs[$ifpr]::32})
+		local rep=".... ...."
+		for ((;;)) ; do
+			rep=$(bl_input --default "$rep" --text "$txt" "$question") || return $?
+			targetfpr=${fprs[$ifpr]::32}$(sed "s,[^ABCDEF0-9],,g" <<<${rep^^} )
+			[[ ${#targetfpr} != 40 ]] || break
+			txt=$"Enter the last 8 hexadecimal characters of target's fingerprint:"
+		done
+	fi
+
+	[[ "$targetfpr" != "$keyfpr" ]] || { echo "$FUNCNAME: Warning: "$"Self-certification is not innovative! ;-)" >&2 ; return 42 ;}
+	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 1 ;}
+
+	# Get full uids containing $targetid (cf. /usr/share/doc/gnupg/DETAILS.gz ; from first keyring only)
+	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:.*'"$targetid"'/ { i+=1 ; print $10 }')
+	[[ "$uids" ]] || { echo "$FUNCNAME: Crit: "$"No uid. Certificate is probably corrupted." >&2 ; return 1 ;}
+
+	if ((revoke)) ; then
+		if [[ "$oforce" ]] || [[ "$vouchfor" ]] ; then
+			echo "$FUNCNAME: Info: "$"Vouching or forcing are non-sense, then ignored, when revoking." >&2
+		fi
+		gpg --homedir "$gpghome" --quick-revoke-sig "$targetfpr" "$keyfpr" "${uids[@]/#/=}" || return $?
+		printf "$FUNCNAME: Notice: "$"The sub-layer (%s) return no error, but it may have found nothing to revoke.""\n" "gpg --quick-revoke-sig" >&2
+	else
+		gpg --homedir "$gpghome" --local-user "$keyfpr" $oforce --quick-$signcmd-key "$targetfpr" "${uids[@]/#/=}" || return $?
+		printf "$FUNCNAME: Notice: "$"Successfully sign %d '%s' inside certificate %s.""\n" ${#uids[@]} "$targetid" "$targetfpr" >&2
+	fi
+
+	[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "$keyserv" --send-keys "$targetfpr" || return $?
+}
+
+### Init ###
+
+if ((BL_PGPID_isprogram)) ; then
 	BL_PGPID_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_PGPID_shelpmsg="
   -h, --help               show help and exit
@@ -1267,17 +1412,14 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 Actions:
 $(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s %s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_PGPID_FUNCTIONS:9} --help
 
 $BL_PGPID_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
 else
-	# run as a library (source $0)
-
 	BL_PGPID_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_PGPID_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
@@ -1287,14 +1429,6 @@ $(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s %s\n" "$f" "$($f --h
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
 "
 fi
-
-BL_PGPID_chelpmsg="
-Generate and manage (foo)pgp id : u4 identifiers (for world-wide humans), fixed system *uid*, OpenPGP certificate, etc.
-
-Main options:
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"
-
-### Init ###
 
 # Parse Options
 _BL_PGPID_RETVAL=0
@@ -1314,7 +1448,7 @@ if function=$(grep -o "\<bl_pgpid_$1\>" <<< "${BL_PGPID_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "%s: Unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_PGPID_NAME" "$1" "$BASH_SOURCE" >&2
+	printf "$BL_PGPID_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

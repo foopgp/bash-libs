@@ -75,6 +75,23 @@ BL_SECURITY_VERSION=$(git describe --dirty --broken --always)
 BL_SECURITY_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 readonly BL_SECURITY_NAME BL_SECURITY_VERSION BL_SECURITY_FUNCTIONS
 
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_SECURITY_isprogram=1 || declare -r BL_SECURITY_isprogram=0
+
+### Others Globals ###
+
+if ((BL_SECURITY_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_SECURITY_chelpmsg="
+"$"Provide some cybersecurity features.""
+
+Main options:
+  -f, --frontend PROGRAM   "$"select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"""
+
 ### external functions ###
 
 # shellcheck source=bl-interactive
@@ -109,20 +126,20 @@ bl_urandom() {
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [MODULO]"
 	local helpmsg="
-Output a good random number between 0 and 1<<32 (4294967296).
+"$"Output a good random number between 0 and 1<<32 (4294967296).""
 .. or between 0 and (MODULO - 1) if MODULO is given.
 "
 	local r=$SRANDOM s=$SRANDOM
 	[[ "$r" == "$s"  ]] || helpmsg+="
-NOTE: Since GNU bash version 5.1.0 introduce SRANDOM variable,
-this function became useless and will be deprecated.
+"$"NOTE: Since GNU bash version 5.1.0 introduce SRANDOM variable,""
+"$"this function became useless and will be deprecated.""
 "
 	for ((;$#;)) ; do
 		case "$1" in
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -137,13 +154,13 @@ bl_shred_path() {
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] PATHS..."
 	local helpmsg="
-Recursively shred all files in given path(|s).
-Options:
-  -f, --force          Change file permissions if necessary, never prompt
-  -v, --verbose        Explain what is being done (stdout)
-  -r, --remove         Also recursively remove given path(|s)
-  -n, --iterations N   Overwrite N times instead of the shred's default
-  -z, --zero           Add a final overwrite with zeros to hide shredding
+"$"Recursively shred all files in given path(|s).""
+OPTIONS:
+  -f, --force          "$"Change file permissions if necessary, never prompt""
+  -v, --verbose        "$"Explain what is being done (stdout)""
+  -r, --remove         "$"Also recursively remove given path(|s)""
+  -n, --iterations N   "$"Overwrite N times instead of the shred's default""
+  -z, --zero           "$"Add a final overwrite with zeros to hide shredding""
 "
 	local farg varg extrasargs files file rmcmd=true
 	for ((;$#;)) ; do
@@ -156,7 +173,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -190,14 +207,14 @@ bl_gen_passphrase() {
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
-Generate a good random passphrase.
-Options:
-  -i, --interactive         Ask language and passphrase agreement
-  -l, --list-dicts          List available dictionaries (aspell) and return
-  -D, --dict DICTIONARY     Dictionary to use (ignored if --interactive, default: ${dict:=en})
-  -n, --num NUMBER          Number of words in passphrase (default: $nw)
-  -d, --delimiter STRING    Separate words by this STRING (default: '$delim')
-  -S, --show-size           Also output size of dictionary (number of usable words)
+"$"Generate a good random passphrase.""
+OPTIONS:
+  -i, --interactive         "$"Ask language and passphrase agreement""
+  -l, --list-dicts          "$"List available dictionaries (aspell) and return""
+  -D, --dict DICTIONARY     "$"Dictionary to use""(ignored if --interactive, default: ${dict:=en})
+  -n, --num NUMBER          "$"Number of words in passphrase""(default: $nw)
+  -d, --delimiter STRING    "$"Separate words by this STRING""(default: '$delim')
+  -S, --show-size           "$"Also output size of dictionary"" (number of usable words)
 "
 	for ((;$#;)) ; do
 		case "$1" in
@@ -210,7 +227,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -258,14 +275,14 @@ bl_new_password() {
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [QUESTION]..."
 	local helpmsg="
-Ask to enter a new password and force retyping it.
-Output the new password.
+"$"Ask to enter a new password and force retyping it.""
+"$"Output the new password.""
 (Default QUESTION: '$question')
 
-Options:
-  -t, --text TEXT           Text to display as preamble. If none generate a passphrase suggestion.
-  -D, --dict DICTIONARY     Dictionary for passphrase suggestion (default: ${dict:=en})
-  -n, --num NUMBER          Number of words for passphrase suggestion (default: $nw)
+OPTIONS:
+  -t, --text TEXT           "$"Text to display as preamble. If none generate a passphrase suggestion.""
+  -D, --dict DICTIONARY     "$"Dictionary for passphrase suggestion (default: ${dict:=en})""
+  -n, --num NUMBER          "$"Number of words for passphrase suggestion (default: $nw)""
 "
 	for ((;$#;)) ; do
 		case "$1" in
@@ -275,7 +292,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -301,13 +318,13 @@ bl_shrink_num() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... SIZE [FILE]"
 	local helpmsg="
-Shrink input data to a number limited by SIZE.
-Usefull to make hash distributed into a lesser space whith (uncommon) SIZE not matching 2^n.
-This function XOR sucessive 64bits words of raw input (or given FILE), and apply 'modulo SIZE' at the end.
-Then Maximum SIZE is 2^64-1. (And avoid to get close to this limit if you need a good number dispatching).
-About encodings: check basenc manual from GNU coreutils.
+"$"Shrink input data to a number limited by SIZE.""
+"$"Usefull to make hash distributed into a lesser space whith (uncommon) SIZE not matching 2^n.""
+"$"This function XOR sucessive 64bits words of raw input (or given FILE), and apply 'modulo SIZE' at the end.""
+"$"Then Maximum SIZE is 2^64-1. (And avoid to get close to this limit if you need a good number dispatching).""
+"$"About encodings: check basenc manual from GNU coreutils.""
 
-Options:
+OPTIONS:
   -i, --input-encoding ENCODING  Eg: raw(default), base64, base64url, base32, base32hex, base16, base2msbf or base2lsbf.
   -g, --ignore-garbage           When decoding (a 'baseXXX' input), ignore non-alphabet characters.
   -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
@@ -324,7 +341,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: Unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -374,46 +391,32 @@ Options:
 	esac
 }
 
-### General Help Messages ###
+### Init ###
 
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_SECURITY_isprogram=1
-
+if ((BL_SECURITY_isprogram)) ; then
 	BL_SECURITY_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_SECURITY_shelpmsg="
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -h, --help               "$"show help and exit""
+  -V, --version            "$"show version and exit""
 
 Actions:
 $(for f in "${BL_SECURITY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+"$"All actions support a --help option, eg:""
 $ $BASH_SOURCE ${BL_SECURITY_FUNCTIONS:3} --help
 
 $BL_SECURITY_NAME is also bash library, see:
 $ source $BASH_SOURCE --help"
 else
-	# run as a library (source $0)
-
 	BL_SECURITY_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_SECURITY_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
 $(for f in "${BL_SECURITY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
+"$"Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."""
 fi
-
-BL_SECURITY_chelpmsg="
-Provide some cybersecurity features.
-
-Main options:
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"
-
-### Init ###
 
 # Parse Options
 _BL_SECURITY_RETVAL=0
@@ -433,7 +436,7 @@ if function=$(grep -o "\<bl_$1\>" <<< "${BL_SECURITY_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_SECURITY_NAME" "$1" "$BASH_SOURCE" >&2
+	printf "$BL_SECURITY_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

@@ -11,7 +11,7 @@
 #   * Add a --timeout global option
 
 if [[ "$1" == --bash-completion ]] ; then
-	BL_tmp_a=$("${BASH_SOURCE[0]}" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
+	BL_tmp_a=$("$BASH_SOURCE" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
 	BL_tmp_o=$(for a in $BL_tmp_a ; do
 		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
 	done)
@@ -48,7 +48,7 @@ if [[ "$1" == --bash-completion ]] ; then
 		return 0
 	}'
 	unset BL_tmp_a BL_tmp_o
-	complete -F _bl_interactive_completion "$(basename "${BASH_SOURCE[0]}")" "${BASH_SOURCE[0]}"
+	complete -F _bl_interactive_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
 	return 0
 fi
 
@@ -60,16 +60,32 @@ fi
 
 ### Constants ###
 
-BL_INTERACTIVE_NAME="$(basename "$(readlink -f "${BASH_SOURCE[0]}" || true)" )"
+BL_INTERACTIVE_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
 BL_INTERACTIVE_VERSION=$(git describe --dirty --broken --always)
-BL_INTERACTIVE_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "${BASH_SOURCE[0]}") )
+BL_INTERACTIVE_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 readonly BL_INTERACTIVE_VERSION BL_INTERACTIVE_FUNCTIONS BL_INTERACTIVE_NAME
 
 declare -r BL_INTERACTIVE_EMAIL_REGEX="([a-zA-Z0-9_.%+-]+)@(([a-zA-Z0-9.-]+)\.([a-zA-Z]+))"
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_INTERACTIVE_isprogram=1 || declare -r BL_INTERACTIVE_isprogram=0
+
+### Others Globals ###
 
 : "${BL_INTERACTIVE_FRONTEND:=NONE}"
+
+if ((BL_INTERACTIVE_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_INTERACTIVE_chelpmsg="
+"$"Help managing interactive choices, while supporting multiple frontends: NONE, whiptail, dialog or zenity.""
+
+Main options:
+  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND, default:"" $BL_INTERACTIVE_FRONTEND)
+  -z, --zenity-extra ARGS  "$"Extra args for zenity (if used), cf: zenity --help-general (environment var: BL_INTERACTIVE_ZENITY_EXTRA, default:"" $BL_INTERACTIVE_ZENITY_EXTRA)"
 
 ### internal functions ###
 
@@ -90,9 +106,7 @@ _bl_interactive_parseoptions() {
 				return 1 ;;
 			--)
 				shift ; break ;;
-			-*)
-				printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_INTERACTIVE_NAME" "$1" "${BASH_SOURCE[0]}" >&2 ;
-				return 2 ;;
+			-*) printf -- "$BL_INTERACTIVE_NAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*)
 				break ;;
 		esac
@@ -122,7 +136,7 @@ _bl_interactive_frontend() (
 			--rtext) shift; rtext="$1";;
 			--last)  shift; last+=("$1");;
 			--)      shift; break;;
-			-*)      printf "%s: unrecognized option '%s'\n" "${FUNCNAME[0]}" "$1" >&2; return 2;;
+			-*)      printf "%s: unrecognized option '%s'\n" "$FUNCNAME" "$1" >&2; return 2;;
 			*)       break;;
 		esac
 		shift
@@ -149,7 +163,6 @@ _bl_interactive_indexof() {
 	for ((;$#;)) ; do
 		case "$1" in
 			--) shift ; break ;;
-			-*) printf "Usage: %s [--] VALUE ARRAY...\n" "${FUNCNAME[0]}" >&2 ; return;;
 			*)  break ;;
 		esac
 		shift
@@ -157,12 +170,12 @@ _bl_interactive_indexof() {
 	local asize value=$1
 	shift
 	asize=$#
-	((asize)) || { printf "Usage: %s [--] VALUE ARRAY...\n" "${FUNCNAME[0]}" >&2 ; return ;}
+	((asize)) || { printf "Usage: %s [--] VALUE ARRAY...\n" "$FUNCNAME" >&2 ; return 2 ;}
 	while (($#)) ; do
 		[[ "$1" != "${value}" ]] || break
 		shift
 	done
-	(($#)) || return
+	(($#)) || return 1
 	echo $((asize-$#))
 }
 
@@ -170,14 +183,14 @@ _bl_interactive_indexof() {
 
 bl_msgstop() {
 	local name
-	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="${FUNCNAME[0]}"
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] MESSAGE..."
 	local helpmsg="
-Display a MESSAGE and wait for user to press [Enter].
+"$"Display a MESSAGE and wait for user to press [Enter].""
 
-Options:
-  -T, --title TITLE        Title to display before the PREAMBLE
-  -t, --text PREAMBLE      Text to display before the MESSAGE
+OPTIONS:
+  -T, --title TITLE        "$"Title to display before the PREAMBLE""
+  -t, --text PREAMBLE      "$"Text to display before the MESSAGE""
 "
 	local ttle pr
 	for ((;$#;)) ; do
@@ -185,9 +198,9 @@ Options:
 			-T|--title) shift ; ttle="$1" ;;
 			-t|--text) shift ; pr="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "${FUNCNAME[0]} $BL_INTERACTIVE_VERSION" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "${FUNCNAME[0]}" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -211,19 +224,19 @@ Options:
 
 bl_input() {
 	local name
-	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="${FUNCNAME[0]}"
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] QUESTION"
 	local helpmsg="
-Helper to ask for a string.
+"$"Helper to ask for a string.""
 
-Options:
-  -d, --default STRING     Default initialized string
-  -T, --title TITLE        Title to display before the PREAMBLE
-  -t, --text PREAMBLE      Text to display before the QUESTION
-  -e, --email              Expect an email address
-  -I, --iso-8601[=FMT]     Input should describe time, output date/time in ISO 8601 format (\$ man date).
-      --utc-iso-8601[=FMT] Same as --iso-8601 but using Coordinated Universal Time (UTC).
-  -P, --password           Hide input chars with '*'
+OPTIONS:
+  -d, --default STRING     "$"Default initialized string""
+  -T, --title TITLE        "$"Title to display before the PREAMBLE""
+  -t, --text PREAMBLE      "$"Text to display before the QUESTION""
+  -e, --email              "$"Expect an email address""
+  -I, --iso-8601[=FMT]     "$"Input should describe time, output date/time in ISO 8601 format"" (\$ man date).
+      --utc-iso-8601[=FMT] "$"Same as --iso-8601 but using Coordinated Universal Time (UTC).""
+  -P, --password           "$"Hide input chars with '*'""
 "
 	local def ttle pr emailaddr=false iso8601 boxt="inputbox" zenityopts
 	for ((;$#;)) ; do
@@ -241,9 +254,9 @@ Options:
 			-T|--title) shift ; ttle="$1" ;;
 			--preamble|-t|--text) shift ; pr="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "${FUNCNAME[0]} $BL_INTERACTIVE_VERSION" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "${FUNCNAME[0]}" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -305,21 +318,20 @@ Options:
 	echo "${rep:-${def}}"
 }
 
-
 bl_yesno() {
 	local name
-	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="${FUNCNAME[0]}"
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] QUESTION"
 	local helpmsg="
-Helper for a yes/no QUESTION (binary choice).
-If REPLY == 'yes', return 0
-If REPLY == 'no', return 1
-Else loop asking the question.
+"$"Helper for a yes/no QUESTION (binary choice).""
+"$"If REPLY == 'yes', return 0""
+"$"If REPLY == 'no', return 1""
+"$"Else loop asking the question.""
 
-Options:
-      --default=<yes|no>   Set a default answer
-  -T, --title TITLE        Title to display before the PREAMBLE
-  -t, --text PREAMBLE      Text to display before the QUESTION
+OPTIONS:
+      --default=<yes|no>   "$"Set a default answer""
+  -T, --title TITLE        "$"Title to display before the PREAMBLE""
+  -t, --text PREAMBLE      "$"Text to display before the QUESTION""
 "
 	local def ttle pr
 	for ((;$#;)) ; do
@@ -329,9 +341,9 @@ Options:
 			-T|--title) shift ; ttle="$1" ;;
 			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "${FUNCNAME[0]} $BL_INTERACTIVE_VERSION" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "${FUNCNAME[0]}" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -370,23 +382,23 @@ Options:
 
 bl_radiolist() {
 	local name
-	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="${FUNCNAME[0]}"
+	((BL_INTERACTIVE_isprogram)) && name="$BL_INTERACTIVE_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [--] ITEMS..."
 	local output def ttle pr nperline=3 n i ret=0 rv=0 inarray
 	local helpmsg="
-Helper for a single choice in a list (like radiobutton).
-Display (stderr) numbered list of item and loop asking for a number in this list
-Then echo (stdout) selected number (1-n).
+"$"Helper for a single choice in a list (like radiobutton).""
+"$"Display (stderr) numbered list of item and loop asking for a number in this list""
+"$"Then echo (stdout) selected number (1-n).""
 
-Options:
-  -i, --output-index         Output index (= number - 1) instead of number
-  -v, --output-value         Output value instead of number
-  -d, --default NUMBER       Set given number as a default answer, negative count from the end (BL_INTERACTIVE_FRONTEND!=zenity)
-  -I, --default-index INDEX  Set given index as a default answer, negative count from the end (BL_INTERACTIVE_FRONTEND!=zenity)
-  -D, --default-value STRING Set first occurence of value as a default answer (BL_INTERACTIVE_FRONTEND!=zenity)
-  -T, --title TITLE          Title to display before the Text/Question
-  -t, --text TEXT            Text/Question to display before the list
-  -n, --num-per-line NUMBER  Number of items per line (BL_INTERACTIVE_FRONTEND==NONE, default: $nperline)
+OPTIONS:
+  -i, --output-index         "$"Output index (= number - 1) instead of number""
+  -v, --output-value         "$"Output value instead of number""
+  -d, --default NUMBER       "$"Set given number as a default answer, negative count from the end"" (BL_INTERACTIVE_FRONTEND!=zenity)
+  -I, --default-index INDEX  "$"Set given index as a default answer, negative count from the end"" (BL_INTERACTIVE_FRONTEND!=zenity)
+  -D, --default-value STRING "$"Set first occurence of value as a default answer"" (BL_INTERACTIVE_FRONTEND!=zenity)
+  -T, --title TITLE          "$"Title to display before the Text/Question""
+  -t, --text TEXT            "$"Text/Question to display before the list""
+  -n, --num-per-line NUMBER  "$"Number of items per line""(BL_INTERACTIVE_FRONTEND==NONE, default: $nperline)
 "
 	for ((;$#;)) ; do
 		case "$1" in
@@ -399,15 +411,15 @@ Options:
 			-p|--preamble|-t|--text) shift ; pr="$1" ;;
 			-n|--num*) shift ; nperline="$1" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "${FUNCNAME[0]} $BL_INTERACTIVE_VERSION" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "${FUNCNAME[0]}" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
 	done
 	n=$#
-	((n)) || { printf "%s: Error: need items\nTry '%s --help' for more information.\n" "${FUNCNAME[0]}" "$name" >&2 ; return 1 ; }
+	((n)) || { printf "$FUNCNAME: Error: "$"need arguments (items)""\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 1 ; }
 
 	if [[ "$BL_INTERACTIVE_FRONTEND" == zenity ]] ; then
 		ret=$(_bl_interactive_zenity --title "$ttle" --list --text " $pr" --column="" "$@")
@@ -475,55 +487,39 @@ Options:
 	return "$rv"
 }
 
+### Init ###
 
-### Help Messages ###
-
-if [[ "${BASH_SOURCE[0]}" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_INTERACTIVE_isprogram=1
-
-	BL_INTERACTIVE_usage="Usage: $(basename "${BASH_SOURCE[0]}") [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
+if ((BL_INTERACTIVE_isprogram)) ; then
+	BL_INTERACTIVE_usage="Usage: $(basename "$BASH_SOURCE") [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_INTERACTIVE_shelpmsg="
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -h, --help               "$"show help and exit""
+  -V, --version            "$"show version and exit""
 
 Actions:
 $(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_INTERACTIVE_FUNCTIONS:3} --help
 
 $BL_INTERACTIVE_NAME is also bash library, see:
-$ source ${BASH_SOURCE[0]} --help"
+$ source $BASH_SOURCE --help"
 else
-	# run as a library (source $0)
-
-	BL_INTERACTIVE_usage="Usage: source ${BASH_SOURCE[0]} [MAIN_OPTIONS]..."
-
+	BL_INTERACTIVE_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
 	BL_INTERACTIVE_shelpmsg="
-      --bash-completion    set completion for ${BASH_SOURCE[0]} program and return (without loading anything else)
+      --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
 $(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."
+"$"Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options."""
 fi
-
-BL_INTERACTIVE_chelpmsg="
-Help managing interactive choices, while supporting multiple frontends: NONE, whiptail, dialog or zenity.
-
-Main options:
-  -f, --frontend PROGRAM   Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND, default: $BL_INTERACTIVE_FRONTEND)
-  -z, --zenity-extra ARGS  Extra args for zenity (if used), cf: zenity --help-general (environment var: BL_INTERACTIVE_ZENITY_EXTRA, default: $BL_INTERACTIVE_ZENITY_EXTRA)"
-
-### Init ###
 
 # Parse Options
 _BL_INTERACTIVE_RETVAL=0
 _bl_interactive_parseoptions "$@" || _BL_INTERACTIVE_RETVAL="$?"
 
 # Do nothing else if sourced
-[[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
+[[ "$BASH_SOURCE" == "$0" ]] || return 0
 
 [[ "$_BL_INTERACTIVE_RETVAL" != "1"  ]] || exit 0
 [[ "$_BL_INTERACTIVE_RETVAL" < 2 ]] || exit $_BL_INTERACTIVE_RETVAL
@@ -536,7 +532,7 @@ if function=$(grep -o "\<bl_$1\>" <<< "${BL_INTERACTIVE_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_INTERACTIVE_NAME" "$1" "${BASH_SOURCE[0]}" >&2
+	printf "$BL_INTERACTIVE_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

@@ -75,7 +75,21 @@ readonly BL_DJIBIAN_NAME BL_DJIBIAN_VERSION BL_DJIBIAN_FUNCTIONS
 
 declare -r BL_DJIBIAN_EXTRA_GROUPS="cdrom,floppy,audio,dip,video,plugdev,netdev,scanner,bluetooth,lpadmin"
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_DJIBIAN_isprogram=1 || declare -r BL_DJIBIAN_isprogram=0
+
+### Others Globals ###
+
+if ((BL_DJIBIAN_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_DJIBIAN_chelpmsg="
+"$"System tools for Djibian GNU/Linux. Mainly to manage users.""
+
+Main options:"
 
 ### external functions ###
 
@@ -115,20 +129,21 @@ bl_djibian_adduser()
 	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [user]"
 	local helpmsg="
-Add user to this djibian system. Need root permissions (sudo). Missing input will be asked interactively.
+"$"Add user to this djibian system"". "$"Need root permissions"" (sudo).
+"$"Missing input will be asked interactively.""
 
-Options:
-  -s, --surname SURNAME            Surname/family name at birth
-  -g, --given-names GIVEN_NAMES    Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.
-  -d, --birth-date BIRTH_DATE      Birth date, expected format : YYYY-MM-DD.
-  -c, --birth-country COUNTRY_CODE 3 letters country code of birth place: FRA, GBR, ...
-  -e, --email EMAIL                User email (optional)
-  -t, --phone NUMBER               User phone number (optional)
-  -p, --password PASSWORD          User password (for current djibian Operating System)
-  -P, --passfrom FILE              Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
-  -F, --from-pgp-card              Get user data from OpenPGP smartcard (eg: yubikey, nitrokey, ...)
-  -v, --verify                     Resume input data for verification
-  -a, --admin                      Enable admin rights (root power through sudo group)
+OPTIONS:
+  -s, --surname SURNAME            "$"Surname/family name at birth""
+  -g, --given-names GIVEN_NAMES    "$"Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.""
+  -d, --birth-date BIRTH_DATE      "$"Birth date, expected format : YYYY-MM-DD.""
+  -c, --birth-country COUNTRY_CODE "$"3 letters country code of birth place: FRA, GBR, ...""
+  -e, --email EMAIL                "$"User email (optional)""
+  -t, --phone NUMBER               "$"User phone number (optional)""
+  -p, --password PASSWORD          "$"User password (for current djibian Operating System)""
+  -P, --passfrom FILE              "$"Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
+  -F, --from-pgpid-card            "$"Get user data from OpenPGP ID smartcard (eg: yubikey, nitrokey, ...)""
+  -v, --verify                     "$"Resume input data for verification""
+  -a, --admin                      "$"Enable admin rights (root power through sudo group)""
 "
 	local username sname gname bdate bcountry email phone passwd verify="" extragroups fromcard=""
 	extragroups=$BL_DJIBIAN_EXTRA_GROUPS
@@ -150,13 +165,13 @@ Options:
 				shift ; passwd=$1 ;;
 			-P|--passfrom|--pass-from)
 				shift ; passwd=$( sed 1q < "$1" ) || return 1 ;;
-			-F|--from-pgp-card|--frompgpcard|--from-gpg-card|--fromgpgcard) fromcard=1 ;;
+			-F|--from-pgp-card|--frompgpcard|--from-gpg-card|--fromgpgcard|--from-pgpid-card|--frompgpidcard) fromcard=1 ;;
 			-v|--verify) verify=1 ;;
 			-a|--admin) extragroups+=",sudo" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -187,19 +202,19 @@ Options:
 	# If username is given as first argument, override username extracted from smartcard
 	[[ -z "$1" ]] || username="$1"
 
-	[[ "$sname" ]] || sname=$(bl_input "User surname (family name) at birth")
-	[[ "$gname" ]] || gname=$(bl_input "User forenames (given names) at birth")
-	[[ "$bdate" ]] || bdate=$(bl_input "User birth date (YYYY-MM-DD)")
-	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" "User birth country (3 letter code)")
+	[[ "$sname" ]] || sname=$(bl_input $"User surname (family name) at birth")
+	[[ "$gname" ]] || gname=$(bl_input $"User forenames (all given names) at birth")
+	[[ "$bdate" ]] || bdate=$(bl_input $"User birth date (YYYY-MM-DD)")
+	[[ "$bcountry" ]] || bcountry=$(bl_input --default "FRA" $"User birth country (3 letter code)")
 	# If there is still no username, generate one from given names and surname.
 	[[ "$username" ]] || username="$(LANG= sed ' s,\b\([a-z]\)[^ ,;-]*,\1,g  ;  s,[^a-z],,g ' <<<"${gname,,}" )$(LANG= sed ' s,[^a-z],, ' <<<"${sname,,}" )"
 
 	if ! ( LANG=C.UTF-8 ; [[ "$username" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]] ) ; then
 		username="$(LANG= ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
-		printf "%s: Notice:
-As defined by IEEE Std 1003.1-2001, the username should consist only of
-letters, digits, underscores, periods, at signs and dashes, then it has
-been changed to %s\n" "$FUNCNAME" "$username" >&2
+		printf "$FUNCNAME: Notice:
+"$" As defined by IEEE Std 1003.1-2001, the username should consist only of
+ letters, digits, underscores, periods, at signs and dashes, then it has
+ been changed to: ""$username" >&2
 	fi
 
 	[[ "$passwd" ]] || passwd=$(bl_new_password)
@@ -207,27 +222,27 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 	while [[ "$verify" ]] ; do
 		! bl_yesno --default=no --text \
 	"
-	Surname at birth:     ${sname}
-	Given names at birth: ${gname}
-	Date of birth:        ${bdate}
-	Country of birth:     ${bcountry}
-	Email:                ${email}
-	Phone number:         ${phone}
-	User name:            ${username}
-	User Password:        ${passwd//?/*}
+	"$"Surname at birth:""     ${sname}
+	"$"Given names at birth:"" ${gname}
+	"$"Date of birth:""        ${bdate}
+	"$"Country of birth:""     ${bcountry}
+	"$"Email:""                ${email}
+	"$"Phone number:""         ${phone}
+	"$"User name:""            ${username}
+	"$"User Password:""        ${passwd//?/*}
 	" \
-			"Is that correct" || break
+			$"Is that correct" || break
 
-		sname=$(bl_input --default "${sname^^}" "Birth surname (family name)")
-		gname=$(bl_input --default "${gname}" "Birth names (given names)")
-		bdate=$(bl_input --default "${bdate}" "Birth date (YYYY-MM-DD)")
-		bcountry=$(bl_input --default "${bcountry}" "Birth country (3 letter code)")
-		email=$(bl_input --email --default "${email}" "Email")
-		phone=$(bl_input --default "${phone}" "Phone number")
+		sname=$(bl_input --default "${sname^^}" $"Birth surname (family name)")
+		gname=$(bl_input --default "${gname}" $"Birth names (all given names)")
+		bdate=$(bl_input --default "${bdate}" $"Birth date (YYYY-MM-DD)")
+		bcountry=$(bl_input --default "${bcountry}" $"Birth country (3 letter code)")
+		email=$(bl_input --email --default "${email}" $"Email")
+		phone=$(bl_input --default "${phone}" $"Phone number")
 		phone=${phone//[^0-9() .+-]/}
-		username=$(bl_input --default "${username}" "User name (only letters [a-zA-Z], digits [0-9], and [_-])")
+		username=$(bl_input --default "${username}" $"User name (only letters [a-zA-Z], digits [0-9], and [_-])")
 		username="$(LANG=C.UTF-8 ; sed 's,^[^a-zA-Z]*,, ; s,[^a-zA-Z0-9_-]*,,g ' <<<"$username" )"
-		passwd=$(bl_input --password --default "${passwd}" --text "User password (for this system)" "Password")
+		passwd=$(bl_input --password --default "${passwd}" --text $"User password (for this system)" "Password")
 	done
 	[[ "$identifier" ]] || identifier="u4$(bl_pgpid_gen_u4 --surname "$sname" --given-names "$gname" --birth-date "$bdate" --birth-country "$bcountry")" || return $?
 	uid=$(bl_pgpid_gen_uid -- "${identifier: 2}") || return $?
@@ -249,7 +264,7 @@ been changed to %s\n" "$FUNCNAME" "$username" >&2
 		su -l "$username" -c "gpg --quick-set-ownertrust ${cardinfo[pgpid_Skeyfpr]} ultimate" || true
 	fi
 
-	printf "%s: Notice: user %s (%s) successfully added to current system.\n" "$FUNCNAME" "$username" "$identifier" >&2
+	printf "$FUNCNAME: Notice: "$"user %s (%s) successfully added to current system"".\n" "$username" "$identifier" >&2
 }
 
 bl_djibian_admins()
@@ -258,13 +273,13 @@ bl_djibian_admins()
 	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
-List, add or remove local admins (root power through sudo group). Add or remove need admin rights.
-SUDO_USER is not allowed to remove himself (from sudo group).
+"$"List, add or remove local admins (root power through sudo group). Add or remove need admin rights.""
+"$"SUDO_USER is not allowed to remove himself (from sudo group).""
 
-Options:
-  -a, --add USER        Add user to admin group (sudo). May be passed multiple time.
-  -r, --remove USER     Remove user to admin group (sudo). May be passed multiple time.
-  -l, --list            Do nothing, as $name always output users with admin rights (after eventual add or remove).
+OPTIONS:
+  -a, --add USER        "$"Add user to admin group (sudo). May be passed multiple time.""
+  -r, --remove USER     "$"Remove user to admin group (sudo). May be passed multiple time.""
+  -l, --list            "$"Do nothing, as $name always output users with admin rights (after eventual add or remove).""
 "
 	local toadd toremove ret=0
 	for ((;$#;)) ; do
@@ -278,7 +293,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -309,49 +324,35 @@ Options:
 	return "$ret"
 }
 
-### General Help Messages ###
+### Init ###
 
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_DJIBIAN_isprogram=1
-
+if ((BL_DJIBIAN_isprogram)) ; then
 	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -f, --frontend PROGRAM   "$"select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)""
+  -h, --help               "$"show help and exit""
+  -V, --version            "$"show version and exit""
 
 Actions:
 $(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:11}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_DJIBIAN_FUNCTIONS:11} --help
 
 $BL_DJIBIAN_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
 else
-	# run as a library (source $0)
-
 	BL_DJIBIAN_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_DJIBIAN_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
 $(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"$"Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.""
 "
 fi
-
-BL_DJIBIAN_chelpmsg="
-System tools for Djibian GNU/Linux. Mainly to manage users.
-
-Main options:
-"
-
-### Init ###
 
 # Parse Options
 _BL_DJIBIAN_RETVAL=0
@@ -371,7 +372,7 @@ if function=$(grep -o "\<bl_djibian_$1\>" <<< "${BL_DJIBIAN_FUNCTIONS[@]}") ; th
 	$function "$@"
 	exit $?
 else
-	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_DJIBIAN_NAME" "$1" "$BASH_SOURCE" >&2
+	printf "$BL_DJIBIAN_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

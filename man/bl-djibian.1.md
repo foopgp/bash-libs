@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-DJIBIAN
 section: 1
 header: User Commands
-footer: bash-libs 0.2.5
+footer: bash-libs 0.2.7
 ---
 
 # NAME
@@ -44,7 +44,6 @@ System tools for Djibian GNU/Linux. Mainly to manage users.
 adduser
 
 :   Add user to this djibian system. Need root permissions (sudo).
-    Missing input will be asked interactively.
 
 admins
 
@@ -52,7 +51,7 @@ admins
     Add or remove need admin rights.
 
  
-All actions support a **\--help** options, eg: \$ bl-djibian
+All actions support a **\--help** option, eg: \$ bl-djibian
 adduser **\--help**
 
 bl-djibian is also bash library, see: \$ source bl-djibian

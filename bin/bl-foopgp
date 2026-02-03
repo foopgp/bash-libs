@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
+# Bash library and executable that calculate how many djis (Ɉ) may be created for each contribution in euros (€) to the the foopgp association.""
 #
 # Copyright © 2024 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
@@ -59,7 +59,6 @@ if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_foopgp_parseoptions)" == fu
 	_bl_foopgp_parseoptions "$@"
 	return $?
 fi
-
 
 ### Constants ###
 
@@ -121,14 +120,26 @@ declare -Ar BL_FOOPGP_STINGYNALTYS=(
 [2027-06]=1.19668052482341933067
 )
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_FOOPGP_isprogram=1 || declare -r BL_FOOPGP_isprogram=0
+
+### Others Globals ###
 
 BL_FOOPGP_STINGYNALTY="${BL_FOOPGP_STINGYNALTY:-${BL_FOOPGP_STINGYNALTYS[$(date --iso-8601 | head -c 7)]}}"
 
-TEXTDOMAIN="${TEXTDOMAIN:-bashlibs}"
-TEXTDOMAINDIR="${TEXTDOMAINDIR:-$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale}"
-# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
-shopt -u noexpand_translation
+if ((BL_FOOPGP_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_FOOPGP_chelpmsg="
+"$"Calculate how many djis (Ɉ) may be created for each contribution in euros (€) to the the foopgp association.""
+
+Main options:
+  -v, --verbose            "$"output important infos on stderr, like stingynalty value""
+  -s, --stingynalty VALUE  "$"set STINGYNALTY"" ($(date --iso-8601 | head -c 7): $BL_FOOPGP_STINGYNALTY)
+  -d, --date STRING        "$"set STINGYNALTY according to given date"" (cf. <https://www.gnu.org/software/coreutils/date>)"
 
 ### external functions ###
 
@@ -167,12 +178,13 @@ _bl_foopgp_parseoptions() {
 bl_foopgp_symlinks() (
 	local name
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
-	local usage=$"Usage:"" $name [OPTIONS] INDEX_DIR ..."
-	local helpmsg='
-'$"Update symlinks in the foopgp tree."'
-'$"Options:"'
-  -c, --clean         '$"Just remove existing symlinks (without recreating them)."'
-'
+	local usage=$"Usage:"" $name [OPTIONS] INDEX_DIR ..."
+	local helpmsg="
+"$"Update symlinks in the foopgp tree"".
+
+OPTIONS:
+  -c, --clean         "$"Just remove existing symlinks (without recreating them)"".
+"
 	local clean
 	for ((;$#;)) ; do
 		case "$1" in
@@ -180,9 +192,7 @@ bl_foopgp_symlinks() (
 			-h|--help) printf -- "$usage\n$helpmsg\n" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) echo "$FUNCNAME: Error: "$"Unrecognized option"" '$1'" >&2
-				printf -- $"Try"" '$name --help' "$"for more information.""\n" >&2
-				return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -219,12 +229,13 @@ bl_foopgp_g2t() {
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
-Calculate how many foopgp tokens would be created from a gift.
-Options:
-  -t, --tokens DJISUM   Set the base of tokens Ɉ already created (default: 0)
-  -g, --gifts EURSUM    Set the base of values in EUR € already given (default: 0)
-  -s, --siprefix SYMBOL Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. International System of Units).
-  -p, --printsym        Also print symbol, eg: ' µɈ'.
+"$"Calculate how many djis (Ɉ) would be created from a contribution in euros (€).""
+
+OPTIONS:
+  -t, --tokens DJISUM   "$"Set the base of djis (Ɉ) already created (default: 0)""
+  -g, --gifts EURSUM    "$"Set the base of values in EUR (€) already contributed (default: 0)""
+  -s, --siprefix SYMBOL "$"Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. International System of Units).""
+  -p, --printsym        "$"Also print symbol, eg: ' µɈ'.""
 "
 	local i t=0 g=0 symbol printsym outsym
 	for ((;$#;)) ; do
@@ -242,7 +253,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -282,10 +293,11 @@ bl_foopgp_t2g() {
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VALUE ..."
 	local helpmsg="
-Calculate how much should be given to create a targeted number of tokens.
-Options:
-  -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
-  -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
+"$"Calculate how much euros (€) should be given to create a targeted number of djis (Ɉ).""
+
+OPTIONS:
+  -t, --tokens DJISUM  "$"Set the base of djis Ɉ already created (default: 0)""
+  -g, --gifts EURSUM   "$"Set the base of values in euros € already contributed (default: 0)""
 "
 	local i udid ccode="€"
 	local t=0 g=0
@@ -302,7 +314,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -320,14 +332,15 @@ bl_foopgp_giftarray() {
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"
 	local helpmsg="
-Display an array to indicate how many token gonna be created from a gift.
-Options:
-  -t, --tokens DJISUM  Set the base of tokens Ɉ already created (default: 0)
-  -g, --gifts EURSUM   Set the base of values in EUR € already given (default: 0)
-  -m, --max VALUE      Set a limit in term of targeted token (defaut: 12)
-  -M, --max-line NUM   Limit number of lines (defaut: 24)
-  -H, --header-only    Only display header line, and return.
-  -F, --with-header    Also display header line and separation line at the beginning of array.
+"$"Display an array to indicate how many djis (Ɉ) gonna be created from a contribution in euros (€).""
+
+OPTIONS:
+  -t, --tokens DJISUM  "$"Set the base of djis Ɉ already created (default: 0)""
+  -g, --gifts EURSUM   "$"Set the base of values in EUR € already contributed (default: 0)""
+  -m, --max VALUE      "$"Set a limit in term of targeted djis (defaut: 12)""
+  -M, --max-line NUM   "$"Limit number of lines (defaut: 24)""
+  -H, --header-only    "$"Only display header line, and return.""
+  -F, --with-header    "$"Also display header line and separation line at the beginning of array.""
 "
 	local max=12 maxl=24 udid header=0 onlyheader=0 ccode=EUR
 	local t g i j k tg=0 gg=0
@@ -349,7 +362,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -371,52 +384,34 @@ Options:
 	done #| uniq
 }
 
+### Init ###
 
-### General Help Messages ###
-
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_FOOPGP_isprogram=1
-
+if ((BL_FOOPGP_isprogram)) ; then
 	BL_FOOPGP_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_FOOPGP_shelpmsg="
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -h, --help               "$"show help and exit""
+  -V, --version            "$"show version and exit""
 
 Actions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:10}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_FOOPGP_FUNCTIONS:10} --help
 
 $BL_FOOPGP_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
 else
-	# run as a library (source $0)
-
 	BL_FOOPGP_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_FOOPGP_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
 Functions:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"$"Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.""
 "
 fi
-
-BL_FOOPGP_chelpmsg="
-Calculate how many foopgp token (Ɉ) may be created for each cotisations to the the foopgp association.
-
-Main options:
-  -v, --verbose            output important infos on stderr, like stingynalty value
-  -s, --stingynalty VALUE  set STINGYNALTY ($(date --iso-8601 | head -c 7): $BL_FOOPGP_STINGYNALTY)
-  -d, --date STRING        set STINGYNALTY according to given date (cf. <https://www.gnu.org/software/coreutils/date>)
-"
-
-### Init ###
 
 # Parse Options
 _BL_FOOPGP_RETVAL=0
@@ -436,7 +431,7 @@ if function=$(grep -o "\<bl_foopgp_$1\>" <<< "${BL_FOOPGP_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_FOOPGP_NAME" "$1" "$BASH_SOURCE" >&2
+	printf "$BL_FOOPGP_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

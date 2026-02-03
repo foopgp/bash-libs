@@ -51,7 +51,6 @@ if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_md_parseoptions)" == functi
 	return $?
 fi
 
-
 ### Constants ###
 
 BL_MD_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
@@ -59,7 +58,21 @@ BL_MD_VERSION=$(git describe --dirty --broken --always)
 BL_MD_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 readonly BL_MD_NAME BL_MD_VERSION BL_MD_FUNCTIONS
 
-### Default option values ###
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_MD_isprogram=1 || declare -r BL_MD_isprogram=0
+
+### Others Globals ###
+
+if ((BL_MD_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_MD_chelpmsg="
+Manipulate [markdown](https://en.wikipedia.org/wiki/Markdown). Today, only converts: markdown arrays <> bash arrays.
+
+Main options:"
 
 ### external functions ###
 
@@ -100,7 +113,7 @@ bl_md_arraytobash() {
 	local helpmsg="
 Expect stdin to be a markdwon array (with or whithout header), and convert each line of this array to a  \"declare -A ...\" statement to be loaded with eval.
 If first line of input isn't an array header, use positional parameter to set (or overwrite) field names.
-Options:
+OPTIONS:
   -d, --declare VARNAME Set name in declare -A VARNAME=(... statement (default: \"entry\")
 "
 	local varname=entry
@@ -114,7 +127,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_MD_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -183,7 +196,7 @@ bl_md_arrayfrombash() {
 	local helpmsg="
 Expect stdin to be lines of \"declare -A ...\" statement with the identical indexes/fieldnames.
 Then eval and output markdown array ; using [FIELD_NAMES]... to order columns.
-Options:
+OPTIONS:
   -H, --header-only    Only display header line, and return.
   -F, --with-header    Also display header line and separation line at the beginning of array.
 "
@@ -196,7 +209,7 @@ Options:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_MD_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "%s: Error: unrecognized option '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$1" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -252,12 +265,9 @@ Options:
 	done
 }
 
-### General Help Messages ###
+### Init ###
 
-if [[ "$BASH_SOURCE" == "$0" ]] ; then
-	# run as a program
-	declare -r BL_MD_isprogram=1
-
+if ((BL_MD_isprogram)) ; then
 	BL_MD_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_MD_shelpmsg="
   -h, --help               show help and exit
@@ -266,17 +276,14 @@ if [[ "$BASH_SOURCE" == "$0" ]] ; then
 Actions:
 $(for f in "${BL_MD_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:6}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
-All actions support a --help options, eg:
+All actions support a --help option, eg:
 $ $BASH_SOURCE ${BL_MD_FUNCTIONS:6} --help
 
 $BL_MD_NAME is also bash library, see:
 $ source $BASH_SOURCE --help
 "
 else
-	# run as a library (source $0)
-
 	BL_MD_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
-
 	BL_MD_shelpmsg="
       --bash-completion    set completion for $BASH_SOURCE program and return (without loading anything else)
 
@@ -286,13 +293,6 @@ $(for f in "${BL_MD_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help 
 Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
 "
 fi
-
-BL_MD_chelpmsg="
-Manipulate [markdown](https://en.wikipedia.org/wiki/Markdown). Today, only converts: markdown arrays <> bash arrays.
-
-Main options:"
-
-### Init ###
 
 # Parse Options
 _BL_MD_RETVAL=0
@@ -312,7 +312,7 @@ if function=$(grep -o "\<bl_md_$1\>" <<< "${BL_MD_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "%s: unrecognized action '%s'\n\nTry '%s --help' for more information.\n" "$BL_MD_NAME" "$1" "$BASH_SOURCE" >&2
+	printf "$BL_MD_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 
