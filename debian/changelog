@@ -1,4 +1,4 @@
-bash-libs (0.2.7-1) UNRELEASED; urgency=medium
+bash-libs (0.2.7-1) unstable; urgency=medium
 
   [ mael ]
   * update translation
@@ -17,7 +17,7 @@ bash-libs (0.2.7-1) UNRELEASED; urgency=medium
   * bl_pgpid_certify() seems OK.
   * update manpages + translation
 
- -- jjbrucker <jjbrucker@foopgp.org>  Tue, 03 Feb 2026 13:26:04 +0100
+ -- piseb <piseb@mailo.com>  Tue, 03 Feb 2026 14:56:20 +0100
 
 bash-libs (0.2.6-1) UNRELEASED; urgency=medium
 
