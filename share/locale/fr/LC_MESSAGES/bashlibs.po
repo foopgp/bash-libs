@@ -1170,9 +1170,9 @@ msgid "If non-empty, send updated certificate to this keyserver. "
 msgstr ""
 "Si non vide, envoyer le certificat mis à jour vers ce serveur de clés. "
 
-#: ../bin/bl-pgpid:982
-msgid "No certificate for %s"
-msgstr "Aucun certificat pour %s."
+#: ../bin/bl-pgpid:982 ../bin/bl-pgpid:1091 ../bin/bl-pgpid:1365
+msgid "No certificate for user '%s'."
+msgstr "Aucun certificat pour « %s »."
 
 #: ../bin/bl-pgpid:988
 msgid "Unable to identify image"
@@ -1230,10 +1230,6 @@ msgstr ""
 #: ../bin/bl-pgpid:1046
 msgid "Increase verbosity."
 msgstr "Augmenter le niveau de verbosité"
-
-#: ../bin/bl-pgpid:1091 ../bin/bl-pgpid:1365
-msgid "No certificate for user '%s'."
-msgstr "Aucun certificat pour %s."
 
 #: ../bin/bl-pgpid:1092 ../bin/bl-pgpid:1367
 msgid "User '%s' match many certificates (%s)."
@@ -1911,6 +1907,9 @@ msgstr ""
 #: ../bin/bl-security:405
 msgid "All actions support a --help option, eg:"
 msgstr "Toutes les actions prennent en charge l’option --help, par exemple :"
+
+#~ msgid "No certificate for %s"
+#~ msgstr "Aucun certificat pour %s."
 
 #~ msgid ""
 #~ "If TARGET_U4 or TARGET_U5 is not given, ask for civil status to calculate "

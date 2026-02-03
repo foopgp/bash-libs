@@ -40,7 +40,7 @@ check: build
 clean:
 	$(RM) $(MO_FILES)
 
-install: build | $(DEST_TARGETS_DIRS) $(DEST_TARGETS)
+install: $(MO_FILES) $(DEST_TARGETS_DIRS) $(DEST_TARGETS)
 
 uninstall:
 	$(RM) $(DEST_TARGETS)

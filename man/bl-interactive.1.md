@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-INTERACTIVE
 section: 1
 header: User Commands
-footer: bash-libs 0.2.5
+footer: bash-libs 0.2.7
 ---
 
 # NAME
@@ -65,7 +65,7 @@ radiolist
 :   Helper for a single choice in a list (like radiobutton).
 
  
-All actions support a **\--help** options, eg: \$ bl-interactive
+All actions support a **\--help** option, eg: \$ bl-interactive
 msgstop **\--help**
 
 bl-interactive is also bash library, see: \$ source

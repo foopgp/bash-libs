@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-MARKDOWN
 section: 1
 header: User Commands
-footer: bash-libs 0.2.5
+footer: bash-libs 0.2.7
 ---
 
 # NAME
@@ -51,7 +51,7 @@ arrayfrombash
     the identical indexes/fieldnames.
 
  
-All actions support a **\--help** options, eg: \$ bl-markdown
+All actions support a **\--help** option, eg: \$ bl-markdown
 arraytobash **\--help**
 
 bl-markdown is also bash library, see: \$ source bl-markdown

@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-DJI
 section: 1
 header: User Commands
-footer: bash-libs 0.2.5
+footer: bash-libs 0.2.7
 ---
 
 # NAME
@@ -69,7 +69,7 @@ stripwallet
     VALUE.
 
  
-All actions support a **\--help** options, eg: \$ bl-dji 2micro
+All actions support a **\--help** option, eg: \$ bl-dji 2micro
 **\--help**
 
 bl-dji is also bash library, see: \$ source bl-dji **\--help**

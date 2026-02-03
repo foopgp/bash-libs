@@ -1041,8 +1041,8 @@ msgstr ""
 msgid "If non-empty, send updated certificate to this keyserver. "
 msgstr ""
 
-#: ../bin/bl-pgpid:982
-msgid "No certificate for %s"
+#: ../bin/bl-pgpid:982 ../bin/bl-pgpid:1091 ../bin/bl-pgpid:1365
+msgid "No certificate for user '%s'."
 msgstr ""
 
 #: ../bin/bl-pgpid:988
@@ -1099,10 +1099,6 @@ msgstr ""
 
 #: ../bin/bl-pgpid:1046
 msgid "Increase verbosity."
-msgstr ""
-
-#: ../bin/bl-pgpid:1091 ../bin/bl-pgpid:1365
-msgid "No certificate for user '%s'."
 msgstr ""
 
 #: ../bin/bl-pgpid:1092 ../bin/bl-pgpid:1367

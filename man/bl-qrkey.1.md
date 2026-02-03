@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-QRKEY
 section: 1
 header: User Commands
-footer: bash-libs 0.2.5
+footer: bash-libs 0.2.6
 ---
 
 # NAME
@@ -72,7 +72,7 @@ totoken
 :   Move OpenPGP secrets to security token (OpenPGP smartcard).
 
  
-All actions support a **\--help** options, eg: \$ bl-qrkey
+All actions support a **\--help** option, eg: \$ bl-qrkey
 change_passphrase **\--help**
 
 bl-qrkey is also bash library, see: \$ source bl-qrkey

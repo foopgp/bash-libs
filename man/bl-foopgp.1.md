@@ -8,13 +8,13 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-FOOPGP
 section: 1
 header: User Commands
-footer: bash-libs 0.2.5
+footer: bash-libs 0.2.7
 ---
 
 # NAME
 
-bl-foopgp - Calculate how many foopgp token (Ɉ) may be created for each
-cotisations to the the foopgp association.
+bl-foopgp - Calculate how many djis (Ɉ) may be created for each
+contribution in euros to the the foopgp association.
 
 # SYNOPSIS
 
@@ -23,8 +23,8 @@ cotisations to the the foopgp association.
 
 # DESCRIPTION
 
-Calculate how many foopgp token (Ɉ) may be created for each cotisations
-to the the foopgp association.
+Calculate how many djis (Ɉ) may be created for each contribution in
+euros (€) to the the foopgp association.
 
 ## Main options:
 
@@ -34,7 +34,7 @@ to the the foopgp association.
 
 **-s**, **\--stingynalty** VALUE
 
-:   set STINGYNALTY (2026-01: 1.09939858426540376799)
+:   set STINGYNALTY (2026-02: 1.10489557718673078682)
 
 **-d**, **\--date** STRING
 
@@ -57,20 +57,21 @@ symlinks
 
 g2t
 
-:   Calculate how many foopgp tokens would be created from a gift.
+:   Calculate how many djis (Ɉ) would be created from a contribution in
+    euros (€).
 
 t2g
 
-:   Calculate how much should be given to create a targeted number of
-    tokens.
+:   Calculate how much euros (€) should be given to create a targeted
+    number of djis (Ɉ).
 
 giftarray
 
-:   Display an array to indicate how many token gonna be created from a
-    gift.
+:   Display an array to indicate how many djis (Ɉ) gonna be created from
+    a contribution in euros (€).
 
  
-All actions support a **\--help** options, eg: \$ bl-foopgp
+All actions support a **\--help** option, eg: \$ bl-foopgp
 symlinks **\--help**
 
 bl-foopgp is also bash library, see: \$ source bl-foopgp

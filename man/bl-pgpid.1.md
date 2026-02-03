@@ -8,13 +8,13 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs 0.2.5
+footer: bash-libs 0.2.7
 ---
 
 # NAME
 
-bl-pgpid - Generate and manage (foo)pgp id : u4 identifiers (for
-world-wide humans), fixed system \*uid\*, OpenPGP certificate, etc.
+bl-pgpid - Generate and manage OpenPGP ID: u4 or u5 strings, fixed
+system \*uid\*, OpenPGP certificate, etc.
 
 # SYNOPSIS
 
@@ -23,8 +23,8 @@ world-wide humans), fixed system \*uid\*, OpenPGP certificate, etc.
 
 # DESCRIPTION
 
-Generate and manage (foo)pgp id : u4 identifiers (for world-wide
-humans), fixed system \*uid\*, OpenPGP certificate, etc.
+Generate and manage OpenPGP ID: u4 or u5 strings, fixed system \*uid\*,
+OpenPGP certificate, etc.
 
 ## Main options:
 
@@ -45,12 +45,13 @@ humans), fixed system \*uid\*, OpenPGP certificate, etc.
 
 mrz_to_u4
 
-:   Calculate and output a pgpid u4 identifier from the Machine Readable
-    Zone of an icao9303 passport.
+:   Calculate and output a OpenPGP ID u4, from the Machine Readable Zone
+    of an icao9303 passport.
 
 gen_u4
 
-:   Generate u4 identifier. Missing inputs are asked interactively.
+:   Generate OpenPGP ID u4 string. Missing input will be asked
+    interactively.
 
 gen_uid
 
@@ -59,12 +60,12 @@ gen_uid
 
 gen_key
 
-:   Generate an OpenPGP key pair (public and secret) according to foopgp
-    standards.
+:   Generate an OpenPGP key pair (public and secret) according to
+    OpenPGP ID standards.
 
 avatar
 
-:   Extract and/or add image from/to OpenPGP certificate.
+:   Extract or add image inside OpenPGP certificate.
 
 email
 
@@ -72,11 +73,15 @@ email
 
 token_check
 
-:   Check if OpenPGP token is correctly configured for pgpid ; may
+:   Check if OpenPGP token is correctly configured for OpenPGP ID ; may
     output informations.
 
+certify
+
+:   Certify somebody else, identified by its OpenPGP ID TARGET_U4.
+
  
-All actions support a **\--help** options, eg: \$ bl-pgpid
+All actions support a **\--help** option, eg: \$ bl-pgpid
 mrz_to_u4 **\--help**
 
 bl-pgpid is also bash library, see: \$ source bl-pgpid
