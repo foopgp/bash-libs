@@ -39,9 +39,9 @@ msgstr ""
 #: ../bin/bl-interactive:346 ../bin/bl-interactive:416 ../bin/bl-json:119
 #: ../bin/bl-json:156 ../bin/bl-json:209 ../bin/bl-json:267
 #: ../bin/bl-markdown:130 ../bin/bl-markdown:212 ../bin/bl-pgpid:360
-#: ../bin/bl-pgpid:496 ../bin/bl-pgpid:543 ../bin/bl-pgpid:662
-#: ../bin/bl-pgpid:777 ../bin/bl-pgpid:858 ../bin/bl-pgpid:960
-#: ../bin/bl-pgpid:1071 ../bin/bl-pgpid:1176 ../bin/bl-pgpid:1315
+#: ../bin/bl-pgpid:496 ../bin/bl-pgpid:544 ../bin/bl-pgpid:663
+#: ../bin/bl-pgpid:778 ../bin/bl-pgpid:859 ../bin/bl-pgpid:961
+#: ../bin/bl-pgpid:1072 ../bin/bl-pgpid:1178 ../bin/bl-pgpid:1325
 #: ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420
 #: ../bin/bl-qrkey:144 ../bin/bl-qrkey:256 ../bin/bl-qrkey:344
 #: ../bin/bl-qrkey:475 ../bin/bl-qrkey:634 ../bin/bl-qrkey:828
@@ -60,10 +60,10 @@ msgstr ""
 #: ../bin/bl-interactive:422 ../bin/bl-interactive:535 ../bin/bl-json:119
 #: ../bin/bl-json:156 ../bin/bl-json:209 ../bin/bl-json:267 ../bin/bl-json:380
 #: ../bin/bl-markdown:130 ../bin/bl-markdown:212 ../bin/bl-markdown:315
-#: ../bin/bl-pgpid:360 ../bin/bl-pgpid:496 ../bin/bl-pgpid:543
-#: ../bin/bl-pgpid:662 ../bin/bl-pgpid:777 ../bin/bl-pgpid:858
-#: ../bin/bl-pgpid:960 ../bin/bl-pgpid:1071 ../bin/bl-pgpid:1176
-#: ../bin/bl-pgpid:1315 ../bin/bl-pgpid:1327 ../bin/bl-pgpid:1392
+#: ../bin/bl-pgpid:360 ../bin/bl-pgpid:496 ../bin/bl-pgpid:544
+#: ../bin/bl-pgpid:663 ../bin/bl-pgpid:778 ../bin/bl-pgpid:859
+#: ../bin/bl-pgpid:961 ../bin/bl-pgpid:1072 ../bin/bl-pgpid:1178
+#: ../bin/bl-pgpid:1325 ../bin/bl-pgpid:1338 ../bin/bl-pgpid:1451
 #: ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420
 #: ../bin/bl-qif:609 ../bin/bl-qrkey:144 ../bin/bl-qrkey:256
 #: ../bin/bl-qrkey:344 ../bin/bl-qrkey:475 ../bin/bl-qrkey:634
@@ -162,7 +162,7 @@ msgstr ""
 
 #: ../bin/bl-dji:565 ../bin/bl-djibian:375 ../bin/bl-foopgp:434
 #: ../bin/bl-interactive:535 ../bin/bl-json:380 ../bin/bl-markdown:315
-#: ../bin/bl-pgpid:1392 ../bin/bl-qif:609 ../bin/bl-qrkey:972
+#: ../bin/bl-pgpid:1451 ../bin/bl-qif:609 ../bin/bl-qrkey:972
 #: ../bin/bl-security:439 ../bin/bl-test:198
 msgid "Unrecognized action"
 msgstr ""
@@ -179,17 +179,17 @@ msgstr ""
 msgid "Need root permissions"
 msgstr ""
 
-#: ../bin/bl-djibian:133 ../bin/bl-pgpid:637 ../bin/bl-qrkey:230
-#: ../bin/bl-qrkey:304 ../bin/bl-qrkey:433 ../bin/bl-qrkey:604
-#: ../bin/bl-qrkey:784
+#: ../bin/bl-djibian:133 ../bin/bl-pgpid:638 ../bin/bl-pgpid:817
+#: ../bin/bl-pgpid:1282 ../bin/bl-qrkey:230 ../bin/bl-qrkey:304
+#: ../bin/bl-qrkey:433 ../bin/bl-qrkey:604 ../bin/bl-qrkey:784
 msgid "Missing input will be asked interactively."
 msgstr ""
 
-#: ../bin/bl-djibian:136 ../bin/bl-pgpid:641
+#: ../bin/bl-djibian:136 ../bin/bl-pgpid:642
 msgid "Surname/family name at birth"
 msgstr ""
 
-#: ../bin/bl-djibian:137 ../bin/bl-pgpid:642
+#: ../bin/bl-djibian:137 ../bin/bl-pgpid:643
 msgid ""
 "Given names at birth, separated by space ' ' or comma ',' or hyphen '-'."
 msgstr ""
@@ -290,19 +290,19 @@ msgstr ""
 msgid "Is that correct"
 msgstr ""
 
-#: ../bin/bl-djibian:236 ../bin/bl-pgpid:682
+#: ../bin/bl-djibian:236 ../bin/bl-pgpid:683
 msgid "Birth surname (family name)"
 msgstr ""
 
-#: ../bin/bl-djibian:237 ../bin/bl-pgpid:683
+#: ../bin/bl-djibian:237 ../bin/bl-pgpid:684
 msgid "Birth names (all given names)"
 msgstr ""
 
-#: ../bin/bl-djibian:238 ../bin/bl-pgpid:684
+#: ../bin/bl-djibian:238 ../bin/bl-pgpid:685
 msgid "Birth date (YYYY-MM-DD)"
 msgstr ""
 
-#: ../bin/bl-djibian:239 ../bin/bl-pgpid:685
+#: ../bin/bl-djibian:239 ../bin/bl-pgpid:686
 msgid "Birth country (3 letter code)"
 msgstr ""
 
@@ -384,7 +384,7 @@ msgstr ""
 msgid "set STINGYNALTY according to given date"
 msgstr ""
 
-#: ../bin/bl-foopgp:181 ../bin/bl-pgpid:924 ../bin/bl-pgpid:1275
+#: ../bin/bl-foopgp:181 ../bin/bl-pgpid:925 ../bin/bl-pgpid:1277
 msgid "Usage:"
 msgstr ""
 
@@ -861,254 +861,411 @@ msgstr ""
 msgid "Unexpected field 4 (Public Key Algorithm)"
 msgstr ""
 
-#: ../bin/bl-pgpid:551
+#: ../bin/bl-pgpid:552
 msgid "No editable OpenPGP certificate (in %s)"
 msgstr ""
 
-#: ../bin/bl-pgpid:554
+#: ../bin/bl-pgpid:555
 msgid "Choosing the only one editable OpenPGP certificate (%s)"
 msgstr ""
 
-#: ../bin/bl-pgpid:593
+#: ../bin/bl-pgpid:594
 msgid "Unrecognized option/parameters"
 msgstr ""
 
-#: ../bin/bl-pgpid:601
+#: ../bin/bl-pgpid:602
 msgid "Invalid Machine Readable Zone (ICAO9303)"
 msgstr ""
 
-#: ../bin/bl-pgpid:608
+#: ../bin/bl-pgpid:609
 msgid "No valid and complete surname and given names extracted from"
 msgstr ""
 
-#: ../bin/bl-pgpid:615
+#: ../bin/bl-pgpid:616
 msgid "Invalid coordinates (%s) for country '%s'."
 msgstr ""
 
-#: ../bin/bl-pgpid:620
+#: ../bin/bl-pgpid:621
 msgid "Invalid lenght for birth date '%s'."
 msgstr ""
 
-#: ../bin/bl-pgpid:625
+#: ../bin/bl-pgpid:626
 msgid "Can't reformat birthdate '%s'."
 msgstr ""
 
-#: ../bin/bl-pgpid:637
+#: ../bin/bl-pgpid:638
 msgid "Generate OpenPGP ID u4 string"
 msgstr ""
 
-#: ../bin/bl-pgpid:638
+#: ../bin/bl-pgpid:639
 msgid ""
 "You may pass the Machine Readable Zone of an international passport as "
 "argument, but there are ~20% chances that generated *u4* is incorrect."
 msgstr ""
 
-#: ../bin/bl-pgpid:643
+#: ../bin/bl-pgpid:644
 msgid "Birth date, expected format : Year-Month-Day"
 msgstr ""
 
-#: ../bin/bl-pgpid:644
+#: ../bin/bl-pgpid:645
 msgid "3 letters country code of birth place: GBR, NGA, FRA, ..."
 msgstr ""
 
-#: ../bin/bl-pgpid:645
+#: ../bin/bl-pgpid:646
 msgid "Ask for verification"
 msgstr ""
 
-#: ../bin/bl-pgpid:672
+#: ../bin/bl-pgpid:673
 msgid "Invalid Machine Readable Zone"
 msgstr ""
 
-#: ../bin/bl-pgpid:707
+#: ../bin/bl-pgpid:708
 msgid "has been transliterated to"
 msgstr ""
 
-#: ../bin/bl-pgpid:707
+#: ../bin/bl-pgpid:708
 msgid "It may be WRONG !"
 msgstr ""
 
-#: ../bin/bl-pgpid:927
+#: ../bin/bl-pgpid:816
+msgid ""
+"Generate an OpenPGP key pair (public and secret) according to OpenPGP ID "
+"standards."
+msgstr ""
+
+#: ../bin/bl-pgpid:818
+msgid "Output 3 lines for each fingerprints:"
+msgstr ""
+
+#: ../bin/bl-pgpid:819
+msgid "main key"
+msgstr ""
+
+#: ../bin/bl-pgpid:820
+msgid "decryption key"
+msgstr ""
+
+#: ../bin/bl-pgpid:821
+msgid "authentication key"
+msgstr ""
+
+#: ../bin/bl-pgpid:824
+msgid "Common name or pseudonym. "
+msgstr ""
+
+#: ../bin/bl-pgpid:824 ../bin/bl-pgpid:829 ../bin/bl-pgpid:830
+#: ../bin/bl-pgpid:937 ../bin/bl-pgpid:938 ../bin/bl-pgpid:1042
+#: ../bin/bl-pgpid:1044 ../bin/bl-pgpid:1290 ../bin/bl-pgpid:1296
+msgid "Default: "
+msgstr ""
+
+#: ../bin/bl-pgpid:824
+msgid "first part of email"
+msgstr ""
+
+#: ../bin/bl-pgpid:825
+msgid "First part of comment field MUST be a OpenPGP ID string."
+msgstr ""
+
+#: ../bin/bl-pgpid:826
+msgid "Comment (second part of comment field, free to use)."
+msgstr ""
+
+#: ../bin/bl-pgpid:827
+msgid ""
+"Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY "
+"(at this stage)."
+msgstr ""
+
+#: ../bin/bl-pgpid:828 ../bin/bl-qrkey:437 ../bin/bl-qrkey:791
+msgid ""
+"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)"
+msgstr ""
+
+#: ../bin/bl-pgpid:829
+msgid "Number of years before certificate expiration. "
+msgstr ""
+
+#: ../bin/bl-pgpid:830
+msgid "Prefered OpenPGP certificate server. "
+msgstr ""
+
+#: ../bin/bl-pgpid:831 ../bin/bl-pgpid:939 ../bin/bl-pgpid:1045
+#: ../bin/bl-pgpid:1297
+msgid "GnuPG home directory (default: ~/.gnupg). "
+msgstr ""
+
+#: ../bin/bl-pgpid:831 ../bin/bl-pgpid:939 ../bin/bl-pgpid:1045
+#: ../bin/bl-pgpid:1297
+msgid "Environnement variable: "
+msgstr ""
+
+#: ../bin/bl-pgpid:928
 msgid "Extract or add image inside OpenPGP certificate."
 msgstr ""
 
-#: ../bin/bl-pgpid:928 ../bin/bl-pgpid:1035
+#: ../bin/bl-pgpid:929 ../bin/bl-pgpid:1036
 msgid ""
 "Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively "
 "ask KEYID of secret key."
 msgstr ""
 
-#: ../bin/bl-pgpid:929
+#: ../bin/bl-pgpid:930
 msgid "New IMAGE should be 180x180 pixels, or it will be resized."
 msgstr ""
 
-#: ../bin/bl-pgpid:930
+#: ../bin/bl-pgpid:931
 msgid "Output path(s) of extracted image(s)."
 msgstr ""
 
-#: ../bin/bl-pgpid:933
+#: ../bin/bl-pgpid:934
 msgid ""
 "Extract also all revoked or expired existing images from OpenPGP certificate."
 msgstr ""
 
-#: ../bin/bl-pgpid:934
+#: ../bin/bl-pgpid:935
 msgid ""
 "Resize and add new IMAGE inside OpenPGP certificate (revoking any previous "
 "image)."
 msgstr ""
 
-#: ../bin/bl-pgpid:935
+#: ../bin/bl-pgpid:936
 msgid "Just revoke all existing images inside OpenPGP certificate."
 msgstr ""
 
-#: ../bin/bl-pgpid:936
+#: ../bin/bl-pgpid:937
 msgid "Working directory. Will contain previous and new resized images. "
 msgstr ""
 
-#: ../bin/bl-pgpid:936 ../bin/bl-pgpid:937 ../bin/bl-pgpid:1041
-#: ../bin/bl-pgpid:1043 ../bin/bl-pgpid:1291
-msgid "Default: "
-msgstr ""
-
-#: ../bin/bl-pgpid:937 ../bin/bl-pgpid:1043
+#: ../bin/bl-pgpid:938 ../bin/bl-pgpid:1044
 msgid "If non-empty, send updated certificate to this keyserver. "
 msgstr ""
 
-#: ../bin/bl-pgpid:938 ../bin/bl-pgpid:1044 ../bin/bl-pgpid:1292
-msgid "GnuPG home directory (default: ~/.gnupg). "
-msgstr ""
-
-#: ../bin/bl-pgpid:938 ../bin/bl-pgpid:1044 ../bin/bl-pgpid:1292
-msgid "Environnement variable: "
-msgstr ""
-
-#: ../bin/bl-pgpid:981
+#: ../bin/bl-pgpid:982
 msgid "No certificate for %s"
 msgstr ""
 
-#: ../bin/bl-pgpid:987
+#: ../bin/bl-pgpid:988
 msgid "Unable to identify image"
 msgstr ""
 
-#: ../bin/bl-pgpid:993
+#: ../bin/bl-pgpid:994
 msgid "Unable to resize image"
 msgstr ""
 
-#: ../bin/bl-pgpid:999
+#: ../bin/bl-pgpid:1000
 msgid "User '%s' match many certificates (%s)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1034
+#: ../bin/bl-pgpid:1005 ../bin/bl-pgpid:1099
+msgid "No editable certificate %s (in %s)."
+msgstr ""
+
+#: ../bin/bl-pgpid:1008
+msgid "Revoking previous image(s) inside %s certificate..."
+msgstr ""
+
+#: ../bin/bl-pgpid:1014
+msgid "Adding %s into %s certificate..."
+msgstr ""
+
+#: ../bin/bl-pgpid:1035
 msgid "Display and add or revoke emails inside OpenPGP certificate."
 msgstr ""
 
-#: ../bin/bl-pgpid:1036
+#: ../bin/bl-pgpid:1037
 msgid "Output usable emails (non-revoked and non-expired)."
 msgstr ""
 
-#: ../bin/bl-pgpid:1039
+#: ../bin/bl-pgpid:1040
 msgid "Revoke existing EMAIL (may be used more than once)."
 msgstr ""
 
-#: ../bin/bl-pgpid:1040
+#: ../bin/bl-pgpid:1041
 msgid "Add EMAIL. Enable --name and --extra-comment options."
 msgstr ""
 
-#: ../bin/bl-pgpid:1041
+#: ../bin/bl-pgpid:1042
 msgid "Common name or pseudonym beside new EMAIL. "
 msgstr ""
 
-#: ../bin/bl-pgpid:1041
+#: ../bin/bl-pgpid:1042
 msgid "first part of email."
 msgstr ""
 
-#: ../bin/bl-pgpid:1042
+#: ../bin/bl-pgpid:1043
 msgid "(Free to use part of) comment beside new EMAIL."
 msgstr ""
 
-#: ../bin/bl-pgpid:1045
+#: ../bin/bl-pgpid:1046
 msgid "Increase verbosity."
 msgstr ""
 
-#: ../bin/bl-pgpid:1115 ../bin/bl-pgpid:1240
+#: ../bin/bl-pgpid:1091 ../bin/bl-pgpid:1365
+msgid "No certificate for user '%s'."
+msgstr ""
+
+#: ../bin/bl-pgpid:1092 ../bin/bl-pgpid:1367
+msgid "User '%s' match many certificates (%s)."
+msgstr ""
+
+#: ../bin/bl-pgpid:1105
+msgid "No revokable %s inside certificate %s (in %s)."
+msgstr ""
+
+#: ../bin/bl-pgpid:1107
+msgid "Revoking %s inside %s certificate..."
+msgstr ""
+
+#: ../bin/bl-pgpid:1108
+msgid "Can't revoke - good PIN ?."
+msgstr ""
+
+#: ../bin/bl-pgpid:1116
+msgid "No OpenPGP ID string (u4|u5) in %s certificate."
+msgstr ""
+
+#: ../bin/bl-pgpid:1117 ../bin/bl-pgpid:1242
 msgid "supernumerary OpenPGP ID string"
 msgstr ""
 
-#: ../bin/bl-pgpid:1236
+#: ../bin/bl-pgpid:1184
+msgid "Ignoring extra args '%s'..."
+msgstr ""
+
+#: ../bin/bl-pgpid:1195
+msgid "Getting pubkey from %s ..."
+msgstr ""
+
+#: ../bin/bl-pgpid:1238
 msgid "supernumerary emails, skipping"
 msgstr ""
 
-#: ../bin/bl-pgpid:1262
+#: ../bin/bl-pgpid:1264
 msgid "Invalid OpenPGP ID token, missing:"
 msgstr ""
 
-#: ../bin/bl-pgpid:1268
+#: ../bin/bl-pgpid:1270
 msgid "Valid OpenPGP ID token"
 msgstr ""
 
-#: ../bin/bl-pgpid:1279
-msgid "Certify somebody else, identified by its OpenPGP ID TARGET_U4"
-msgstr ""
-
-#: ../bin/bl-pgpid:1280
-msgid ""
-"If TARGET_U4 or TARGET_U5 is not given, ask for civil status to calculate "
-"TARGET_U4"
+#: ../bin/bl-pgpid:1281
+msgid "Certify somebody else, identified by its OpenPGP ID TARGET_U4."
 msgstr ""
 
 #: ../bin/bl-pgpid:1282
-msgid ""
-"Certification means : I know this other certificate belongs to this real "
-"person"
-msgstr ""
-
-#: ../bin/bl-pgpid:1283
-msgid ""
-"This implies verifying the civil status and the public key fingerprint of "
-"the TARGET"
+msgid "Civil status to calculate TARGET_U4."
 msgstr ""
 
 #: ../bin/bl-pgpid:1284
 msgid ""
+"Certification means : I know this other certificate belongs to this real "
+"person."
+msgstr ""
+
+#: ../bin/bl-pgpid:1285
+msgid ""
+"This implies verifying the civil status and the public key fingerprint of "
+"the TARGET."
+msgstr ""
+
+#: ../bin/bl-pgpid:1286
+msgid ""
 "This allows you to expand and strengthen your web of trust and those of your "
-"close ones"
+"close ones."
 msgstr ""
 
 #: ../bin/bl-pgpid:1287
 msgid ""
-"Select private key to use (If you have several and none configured by "
-"default)"
-msgstr ""
-
-#: ../bin/bl-pgpid:1288
-msgid "Revoke your previous certifications on someone else's certificate"
-msgstr ""
-
-#: ../bin/bl-pgpid:1289
-msgid "Take responsability for any illegal actions by the target"
-msgstr ""
-
-#: ../bin/bl-pgpid:1289
-msgid "Same as"
+"This is a commitment: the more you certify, the more you increase your "
+"reputation, but if you do it wrong, you will ruin your credibility."
 msgstr ""
 
 #: ../bin/bl-pgpid:1290
-msgid "Assume additional legal responsibilities on the target"
+msgid "Select private key to use. "
+msgstr ""
+
+#: ../bin/bl-pgpid:1290
+msgid "Guess it from connected token, else ask."
 msgstr ""
 
 #: ../bin/bl-pgpid:1291
+msgid "Revoke your previous certifications on someone else's certificate."
+msgstr ""
+
+#: ../bin/bl-pgpid:1292
+msgid "Take responsability for any (illegal) actions by the target. "
+msgstr ""
+
+#: ../bin/bl-pgpid:1292
+msgid "Same as"
+msgstr ""
+
+#: ../bin/bl-pgpid:1293
+msgid "Assume additional legal responsibilities on the target."
+msgstr ""
+
+#: ../bin/bl-pgpid:1294
+msgid ""
+"« Non-exportable » certification. Pretty useless. Allow to less affect "
+"credibility."
+msgstr ""
+
+#: ../bin/bl-pgpid:1295
+msgid "Allow to unrevoke or to change vouching."
+msgstr ""
+
+#: ../bin/bl-pgpid:1296
 msgid "If non-empty, receive and send updated certificate to this keyserver. "
 msgstr ""
 
-#: ../bin/bl-pgpid:1306
+#: ../bin/bl-pgpid:1308 ../bin/bl-pgpid:1312
+msgid "Not implemented yet."
+msgstr ""
+
+#: ../bin/bl-pgpid:1311
 msgid "Only %s is yet a known domain for vouching"
 msgstr ""
 
-#: ../bin/bl-pgpid:1327
+#: ../bin/bl-pgpid:1338
 msgid "Unrecognized argument"
 msgstr ""
 
-#: ../bin/bl-pgpid:1341
-msgid "Not implemented yet"
+#: ../bin/bl-pgpid:1353
+msgid "Invalid or ambiguous private key to use '%s'."
+msgstr ""
+
+#: ../bin/bl-pgpid:1372
+msgid "Please verify and complete target's fingerprint:"
+msgstr ""
+
+#: ../bin/bl-pgpid:1379
+msgid "Enter the last 8 hexadecimal characters of target's fingerprint:"
+msgstr ""
+
+#: ../bin/bl-pgpid:1383
+msgid "Self-certification is not innovative! ;-)"
+msgstr ""
+
+#: ../bin/bl-pgpid:1384
+msgid "Key fingerprint does not match."
+msgstr ""
+
+#: ../bin/bl-pgpid:1388
+msgid "No uid. Certificate is probably corrupted."
+msgstr ""
+
+#: ../bin/bl-pgpid:1392
+msgid "Vouching or forcing are non-sense, then ignored, when revoking."
+msgstr ""
+
+#: ../bin/bl-pgpid:1395
+msgid ""
+"The sub-layer (%s) return no error, but it may have found nothing to revoke."
+msgstr ""
+
+#: ../bin/bl-pgpid:1398
+msgid "Successfully sign %d '%s' inside certificate %s."
 msgstr ""
 
 #: ../bin/bl-qrkey:94
@@ -1231,11 +1388,6 @@ msgstr ""
 
 #: ../bin/bl-qrkey:436 ../bin/bl-qrkey:790
 msgid "Passphrase to access secret parts of OpenPGP key"
-msgstr ""
-
-#: ../bin/bl-qrkey:437 ../bin/bl-qrkey:791
-msgid ""
-"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)"
 msgstr ""
 
 #: ../bin/bl-qrkey:438
