@@ -1,3 +1,24 @@
+bash-libs (0.2.7-1) UNRELEASED; urgency=medium
+
+  [ mael ]
+  * update translation
+
+  [ jjbrucker ]
+  * internationalisation and localisation
+  * TEXTDOMAIN has to be set before any translation + improve code coherence for translations
+  * bl_pgpid_avatar(): also force avatar width to 180 pixel (180x180)
+  * bin/bl-interactive: minor bugfixes + improve coherence with other bashlibs
+  * start using ...'=${1:?}' instead of ...'=$1' when given parameter can't be empty
+  * bl_pgpid_certify() : introduce vouching concept - needed to manage legal entities (u5) or persons under guardianship.
+  * bin/bl-foopgp: wording: 'foopgp tokens' -> djis ; gifts -> contributions + update translations
+  * bl-djibian+bl-qrkey: minor wording fix
+  * bl-pgpid: 2 improvements + 4 bug fix + wip bl_pgpid_certify():
+  * bl_qrkey-print(): add fingerprint of main key to output + manage invalid input
+  * bl_pgpid_certify() seems OK.
+  * update manpages + translation
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Tue, 03 Feb 2026 13:26:04 +0100
+
 bash-libs (0.2.6-1) UNRELEASED; urgency=medium
 
   [ JJ ]
