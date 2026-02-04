@@ -1357,6 +1357,9 @@ OPTIONS:
 
 	[[ "$targetid" ]] || targetid=$(bl_pgpid_gen_u4)
 
+	# We have to focus on BL_PGPID_U4H_REGEX because BL_PGPID_CO_REGEX part of udid4 is fuzzy (and may be used to distinguish different persons with same BL_PGPID_U4H_REGEX). And we have to include ${BASH_REMATCH[2]::1} because search feature on key server use to search for whole words.
+	! [[ "$targetid" =~ (${BL_PGPID_U4H_REGEX})(${BL_PGPID_CO_REGEX}) ]] || targetid="${BASH_REMATCH[1]}${BASH_REMATCH[2]::1}"
+
 	if [[ "$keyserv" ]] ; then
 		# Retrieve at most 16 certificates from keyserver (there should be only one active, keyserver has to make sure each id does not match more than 16 active + revoked certificates)
 		seq -s ' ' 16 | gpg --homedir "$gpghome" --keyserver "${keyserv}" --command-fd 0 --batch --search-keys "$targetid" > /dev/null || return $?
@@ -1368,18 +1371,17 @@ OPTIONS:
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "$targetid" >&2 ; return 1 ;}
 	if (( ${#fprs[@]} >= 2 )) ; then
 		printf "$FUNCNAME: Info: "$"User '%s' match many (%d) certificates"".\n" "$targetid" "${#fprs[@]}" >&2
-		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text "Please select fingerprint" -- "${fprs[@]/%????????????????????/...}") || return $?
+		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return $?
 	fi
 
 	if [[ -z "$targetfpr" ]] ; then
-		local txt=$"Please verify and complete target's fingerprint:"
-		local question=$(sed -E 's,(....),\1 ,g' <<<${fprs[$ifpr]::32})
-		local rep=".... ...."
+		local rep txt=$"Please verify and complete target's fingerprint:"
+		local question=".... .... $(sed -E 's,(....),\1 ,g' <<<${fprs[$ifpr]:8:32})"
 		for ((;;)) ; do
 			rep=$(bl_input --default "$rep" --text "$txt" "$question") || return $?
-			targetfpr=${fprs[$ifpr]::32}$(sed "s,[^ABCDEF0-9],,g" <<<${rep^^} )
+			targetfpr=$(sed "s,[^ABCDEF0-9],,g" <<<${rep^^} )${fprs[$ifpr]:8:32}
 			[[ ${#targetfpr} != 40 ]] || break
-			txt=$"Enter the last 8 hexadecimal characters of target's fingerprint:"
+			txt=$"Enter the first 8 hexadecimal characters of target's fingerprint:"
 		done
 	fi
 
