@@ -1277,7 +1277,7 @@ msgstr "Jeton d’identifiant OpenPGP valide"
 
 #: ../bin/bl-pgpid:1281
 msgid "Certify somebody else, identified by its OpenPGP ID TARGET_U4."
-msgstr "Certifier une autre personne, identifiée par son OpenPGP IDTARGET_U4"
+msgstr "Certifier une autre personne, identifiée par son OpenPGP ID TARGET_U4"
 
 #: ../bin/bl-pgpid:1282
 msgid "Civil status to calculate TARGET_U4."
@@ -1330,8 +1330,7 @@ msgstr ""
 #: ../bin/bl-pgpid:1292
 msgid "Take responsability for any (illegal) actions by the target. "
 msgstr ""
-"Assumer la responsabilité des actions (éventuellement illégales) de la "
-"personne ciblée"
+"Assumer la responsabilité légale des actions de la personne ciblée. "
 
 #: ../bin/bl-pgpid:1292
 msgid "Same as"
@@ -1340,8 +1339,7 @@ msgstr "Identique à"
 #: ../bin/bl-pgpid:1293
 msgid "Assume additional legal responsibilities on the target."
 msgstr ""
-"Assumer des responsabilités légales supplémentaires concernant la personne "
-"ciblée"
+"Assumer quelques responsabilités légales concernant la personne ciblée."
 
 #: ../bin/bl-pgpid:1294
 msgid ""
