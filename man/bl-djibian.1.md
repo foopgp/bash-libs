@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-DJIBIAN
 section: 1
 header: User Commands
-footer: bash-libs 0.2.7
+footer: bash-libs 0.2.9
 ---
 
 # NAME
@@ -28,7 +28,7 @@ System tools for Djibian GNU/Linux. Mainly to manage users.
 
 **-f**, **\--frontend** PROGRAM
 
-:   select a frontend program {NONE,whiptail,dialog,zenity} (environment
+:   Select a frontend program {NONE,whiptail,dialog,zenity} (environment
     var: BL_INTERACTIVE_FRONTEND)
 
 **-h**, **\--help**
