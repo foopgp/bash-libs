@@ -329,7 +329,7 @@ OPTIONS:
 if ((BL_DJIBIAN_isprogram)) ; then
 	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
-  -f, --frontend PROGRAM   "$"select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)""
+  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND)
   -h, --help               "$"show help and exit""
   -V, --version            "$"show version and exit""
 

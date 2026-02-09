@@ -337,10 +337,10 @@ if ((BL_PGPID_isprogram)) ; then
 fi
 
 BL_PGPID_chelpmsg="
-Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, OpenPGP certificate, etc.
+"$"Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, OpenPGP certificate, etc.""
 
 Main options:
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"
+  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND)"
 
 ### external functions ###
 
@@ -1139,21 +1139,21 @@ bl_pgpid_token_check()
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]..."
 	local helpmsg="
-Check if OpenPGP token is correctly configured for OpenPGP ID ; may output informations.
-Will try to import cleaned certificate indicated in 'URL of public key' field.
-Return:
- - 0 if no error and OpenPGP token is correctly configured for OpenPGP ID.
- - 100 + number of missing OpenPGP ID data fields.
- - then 107 if all required data are missing (OpenPGP card is probably empty).
- - Other non-zero on other erros.
+"$"Check if OpenPGP token is correctly configured for OpenPGP ID ; may output informations.""
+"$"Will try to import cleaned certificate indicated in 'URL of public key' field.""
+"$"Return:""
+ - "$"0 if no error and OpenPGP token is correctly configured for OpenPGP ID.""
+ - "$"100 + number of missing OpenPGP ID data fields.""
+ - "$"then 107 if all required data are missing (OpenPGP card is probably empty).""
+ - "$"Other non-zero on other erros.""
 
 OPTIONS:
-  -f, --no-fetch          Don't try to fetch public certificate (from URL indicated in token metadata).
-  -i, --info              Output content of the associative array containing relevant metadata (may be evaluted with eval)
-  -q, --quiet             Don't errput 'Info' or 'Notice' messages.
-  -H, --homedir GNUPGHOME GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
-  -A, --aaname VARNAME    If VARNAME is a reacheable associative array: fill it (whithout cleaning known fields)
-							else: Output 'declare -A VARNAME=...'
+  -f, --no-fetch          "$"Don't try to fetch public certificate (from URL indicated in token metadata).""
+  -i, --info              "$"Output content of the associative array containing relevant metadata (may be evaluted with eval).""
+  -q, --quiet             "$"Don't errput 'Info' or 'Notice' messages.""
+  -H, --homedir GNUPGHOME "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
+  -A, --aaname VARNAME    "$"If VARNAME is a reacheable associative array: fill it (whithout cleaning known fields)""
+							"$"else: Output 'declare -A VARNAME=...'""
 "
 	local varname fetch=1 info=0 quiet=0 isaa=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}

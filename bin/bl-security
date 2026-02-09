@@ -90,7 +90,7 @@ BL_SECURITY_chelpmsg="
 "$"Provide some cybersecurity features.""
 
 Main options:
-  -f, --frontend PROGRAM   "$"select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"""
+  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND)"
 
 ### external functions ###
 

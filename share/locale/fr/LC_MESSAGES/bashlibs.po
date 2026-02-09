@@ -394,13 +394,13 @@ msgstr ""
 "Ne rien faire, car $name affiche toujours les utilisateurs disposant de "
 "droits d’administrateur (après un éventuel ajout ou retrait)."
 
-#: ../bin/bl-djibian:332 ../bin/bl-qrkey:100 ../bin/bl-security:93
+#: ../bin/bl-djibian:332 ../bin/bl-interactive:87 ../bin/bl-pgpid:343
+#: ../bin/bl-qrkey:100 ../bin/bl-security:93
 msgid ""
-"select a frontend program {NONE,whiptail,dialog,zenity} (environment var: "
-"BL_INTERACTIVE_FRONTEND)"
+"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: "
 msgstr ""
 "Sélectionner un programme d’interface {NONE, whiptail, dialog, zenity} "
-"(variable d’environnement : BL_INTERACTIVE_FRONTEND)"
+"(variable d’environnement : "
 
 #: ../bin/bl-djibian:333 ../bin/bl-foopgp:392 ../bin/bl-interactive:495
 #: ../bin/bl-qrkey:930 ../bin/bl-security:399
@@ -548,21 +548,16 @@ msgstr ""
 "Aide à la gestion des choix interactifs, tout en prenant en charge plusieurs "
 "interfaces : NONE, whiptail, dialog ou zenity."
 
-#: ../bin/bl-interactive:87
-msgid ""
-"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: "
-"BL_INTERACTIVE_FRONTEND, default:"
-msgstr ""
-"Sélectionner un programme d’interface {NONE, whiptail, dialog, zenity} "
-"(variable d’environnement : BL_INTERACTIVE_FRONTEND, par défaut :"
+#: ../bin/bl-interactive:87 ../bin/bl-interactive:88
+msgid "default: "
+msgstr "par défaut : "
 
 #: ../bin/bl-interactive:88
 msgid ""
 "Extra args for zenity (if used), cf: zenity --help-general (environment var: "
-"BL_INTERACTIVE_ZENITY_EXTRA, default:"
 msgstr ""
 "Arguments supplémentaires pour zenity (si utilisé), cf. : zenity --help-"
-"general (variable d’environnement : BL_INTERACTIVE_ZENITY_EXTRA, par défaut :"
+"general (variable d’environnement : "
 
 #: ../bin/bl-interactive:189
 msgid "Display a MESSAGE and wait for user to press [Enter]."
@@ -953,6 +948,12 @@ msgstr ""
 msgid "write journald entry"
 msgstr "écrire une entrée journald"
 
+#: ../bin/bl-pgpid:340
+msgid ""
+"Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, "
+"OpenPGP certificate, etc."
+msgstr ""
+
 #: ../bin/bl-pgpid:437
 msgid "Unsupported MRZ"
 msgstr "MRZ non pris en charge."
@@ -970,9 +971,8 @@ msgid "Unexpected field 4 (Public Key Algorithm)"
 msgstr "Champ 4 inattendu (algorithme de clé publique)."
 
 #: ../bin/bl-pgpid:521
-#, fuzzy
 msgid "Select KeyID (your OpenPGP certificate)"
-msgstr "Aucun certificat OpenPGP modifiable (dans %s)"
+msgstr "Choisir un KeyID (votre certificat OpenPGP)"
 
 #: ../bin/bl-pgpid:552
 msgid "No editable OpenPGP certificate (in %s)"
@@ -1050,17 +1050,21 @@ msgid "Generate a 32bit Unix User ID, from 2^18 to (2^31)-2"
 msgstr "Générer un identifiant utilisateur Unix 32 bits, de 2^18 à (2^31)-2"
 
 #: ../bin/bl-pgpid:763
-msgid "If UDID4 is not given, it will ask for surname, names and date of birth."
-msgstr "Si UDID4 n'est pas fourni, il demandera le nom, les prénoms et la date de naissance."
+msgid ""
+"If UDID4 is not given, it will ask for surname, names and date of birth."
+msgstr ""
+"Si UDID4 n'est pas fourni, il demandera le nom, les prénoms et la date de "
+"naissance."
 
 #: ../bin/bl-pgpid:766
 msgid "Accept any input, not only valid OpenPGP ID string."
 msgstr "Accepter toute entrée, pas seulement une chaîne OpenPGP valide."
 
 #: ../bin/bl-pgpid:767
-#, fuzzy
 msgid "Get input from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)"
-msgstr "Lire l'entrée depuis la première ligne du FICHIER (ex. : fifo, tmpfs, /dev/stdin, …)"
+msgstr ""
+"Lire l'entrée depuis la première ligne du FICHIER (ex. : fifo, tmpfs, /dev/"
+"stdin, …)"
 
 #: ../bin/bl-pgpid:794
 msgid "Option %s overide given argument '%s'"
@@ -1071,8 +1075,12 @@ msgid "No u4 string (hash) found in '%s'"
 msgstr "Aucune chaîne u4 (hachage) trouvée dans '%s'"
 
 #: ../bin/bl-pgpid:816
-msgid "Generate an OpenPGP key pair (public and secret) according to OpenPGP ID standards."
-msgstr "Générer une paire de clés OpenPGP (publique et secrète) selon les standards OpenPGP ID."
+msgid ""
+"Generate an OpenPGP key pair (public and secret) according to OpenPGP ID "
+"standards."
+msgstr ""
+"Générer une paire de clés OpenPGP (publique et secrète) selon les standards "
+"OpenPGP ID."
 
 #: ../bin/bl-pgpid:818
 msgid "Output 3 lines for each fingerprints:"
@@ -1106,11 +1114,13 @@ msgstr "première partie de l'email"
 
 #: ../bin/bl-pgpid:825
 msgid "First part of comment field MUST be a OpenPGP ID string."
-msgstr "La première partie du champ commentaire DOIT être une chaîne OpenPGP ID."
+msgstr ""
+"La première partie du champ commentaire DOIT être une chaîne OpenPGP ID."
 
 #: ../bin/bl-pgpid:826
 msgid "Comment (second part of comment field, free to use)."
-msgstr "Commentaire (deuxième partie du champ commentaire, libre d'utilisat
+msgstr ""
+"Commentaire (deuxième partie du champ commentaire, libre d'utilisation)."
 
 #: ../bin/bl-pgpid:827
 msgid ""
@@ -1136,12 +1146,12 @@ msgid "Prefered OpenPGP certificate server. "
 msgstr "Serveur de certificats OpenPGP préféré."
 
 #: ../bin/bl-pgpid:831 ../bin/bl-pgpid:939 ../bin/bl-pgpid:1045
-#: ../bin/bl-pgpid:1300
+#: ../bin/bl-pgpid:1154 ../bin/bl-pgpid:1300
 msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr "Répertoire personnel de GnuPG (par défaut : ~/.gnupg). "
 
 #: ../bin/bl-pgpid:831 ../bin/bl-pgpid:939 ../bin/bl-pgpid:1045
-#: ../bin/bl-pgpid:1300
+#: ../bin/bl-pgpid:1154 ../bin/bl-pgpid:1300
 msgid "Environnement variable: "
 msgstr "Variable d’environnement : "
 
@@ -1211,7 +1221,6 @@ msgid "Unable to resize image"
 msgstr "Impossible de redimensionner l’image."
 
 #: ../bin/bl-pgpid:1000 ../bin/bl-pgpid:1092 ../bin/bl-pgpid:1373
-#, fuzzy
 msgid "User '%s' match many (%d) certificates"
 msgstr "L’utilisateur « %s » correspond à plusieurs certificats (%s)."
 
@@ -1229,7 +1238,8 @@ msgstr "Ajout de %s dans le certificat %s..."
 
 #: ../bin/bl-pgpid:1035
 msgid "Display and add or revoke emails inside OpenPGP certificate."
-msgstr "Afficher et ajouter ou révoquer des courriels dans le certificat OpenPGP."
+msgstr ""
+"Afficher et ajouter ou révoquer des courriels dans le certificat OpenPGP."
 
 #: ../bin/bl-pgpid:1037
 msgid "Output usable emails (non-revoked and non-expired)."
@@ -1278,6 +1288,64 @@ msgstr "Aucune chaîne OpenPGP ID (u4|u5) dans le certificat %s."
 #: ../bin/bl-pgpid:1117 ../bin/bl-pgpid:1245
 msgid "supernumerary OpenPGP ID string"
 msgstr "Chaîne d’identifiant OpenPGP surnuméraire"
+
+#: ../bin/bl-pgpid:1142
+msgid ""
+"Check if OpenPGP token is correctly configured for OpenPGP ID ; may output "
+"informations."
+msgstr ""
+
+#: ../bin/bl-pgpid:1143
+msgid ""
+"Will try to import cleaned certificate indicated in 'URL of public key' "
+"field."
+msgstr ""
+
+#: ../bin/bl-pgpid:1144 ../bin/bl-qrkey:305
+msgid "Return:"
+msgstr "Retour :"
+
+#: ../bin/bl-pgpid:1145
+msgid "0 if no error and OpenPGP token is correctly configured for OpenPGP ID."
+msgstr ""
+
+#: ../bin/bl-pgpid:1146
+msgid "100 + number of missing OpenPGP ID data fields."
+msgstr ""
+
+#: ../bin/bl-pgpid:1147
+msgid ""
+"then 107 if all required data are missing (OpenPGP card is probably empty)."
+msgstr ""
+
+#: ../bin/bl-pgpid:1148
+msgid "Other non-zero on other erros."
+msgstr "Autre valeur non nulle en cas d’erreur."
+
+#: ../bin/bl-pgpid:1151
+msgid ""
+"Don't try to fetch public certificate (from URL indicated in token metadata)."
+msgstr ""
+
+#: ../bin/bl-pgpid:1152
+msgid ""
+"Output content of the associative array containing relevant metadata (may be "
+"evaluted with eval)."
+msgstr ""
+
+#: ../bin/bl-pgpid:1153
+msgid "Don't errput 'Info' or 'Notice' messages."
+msgstr ""
+
+#: ../bin/bl-pgpid:1155
+msgid ""
+"If VARNAME is a reacheable associative array: fill it (whithout cleaning "
+"known fields)"
+msgstr ""
+
+#: ../bin/bl-pgpid:1156
+msgid "else: Output 'declare -A VARNAME=...'"
+msgstr ""
 
 #: ../bin/bl-pgpid:1184
 msgid "Ignoring extra args '%s'..."
@@ -1332,8 +1400,12 @@ msgstr ""
 "celle de vos proches."
 
 #: ../bin/bl-pgpid:1290
-msgid "This is a commitment: the more you certify, the more you increase your reputation, but if you do it wrong, you will ruin your credibility."
-msgstr "Ceci est un engagement : plus vous certifiez, plus vous augmentez votre réputation, mais si vous vous trompez, vous ruinerez votre crédibilité."
+msgid ""
+"This is a commitment: the more you certify, the more you increase your "
+"reputation, but if you do it wrong, you will ruin your credibility."
+msgstr ""
+"Ceci est un engagement : plus vous certifiez, plus vous augmentez votre "
+"réputation, mais si vous vous trompez, vous ruinerez votre crédibilité."
 
 #: ../bin/bl-pgpid:1293
 msgid "Select private key to use. "
@@ -1350,7 +1422,6 @@ msgstr ""
 "personne."
 
 #: ../bin/bl-pgpid:1295
-#, fuzzy
 msgid "Take legal responsability for any actions by the target. "
 msgstr "Assumer la responsabilité légale des actions de la personne ciblée. "
 
@@ -1359,14 +1430,17 @@ msgid "Same as"
 msgstr "Identique à"
 
 #: ../bin/bl-pgpid:1296
-#, fuzzy
 msgid "Assume some legal responsibilities on the target."
 msgstr ""
 "Assumer quelques responsabilités légales concernant la personne ciblée."
 
 #: ../bin/bl-pgpid:1297
-msgid "« Non-exportable » certification. Pretty useless. Allow to less affect credibility."
-msgstr "Certification « non exportable ». Assez inutile. Permet d’affecter moins la crédibilité."
+msgid ""
+"« Non-exportable » certification. Pretty useless. Allow to less affect "
+"credibility."
+msgstr ""
+"Certification « non exportable ». Assez inutile. Permet d’affecter moins la "
+"crédibilité."
 
 #: ../bin/bl-pgpid:1298
 msgid "Allow to unrevoke or to change vouching."
@@ -1408,7 +1482,8 @@ msgstr "Veuillez vérifier et compléter l’empreinte de la cible :"
 
 #: ../bin/bl-pgpid:1384
 msgid "Enter the first 8 hexadecimal characters of target's fingerprint:"
-msgstr "Entrez les 8 premiers caractères hexadécimaux de l’empreinte de la cible :"
+msgstr ""
+"Entrez les 8 premiers caractères hexadécimaux de l’empreinte de la cible :"
 
 #: ../bin/bl-pgpid:1388
 msgid "Self-certification is not innovative! ;-)"
@@ -1424,11 +1499,16 @@ msgstr "Aucun uid. Le certificat est probablement corrompu."
 
 #: ../bin/bl-pgpid:1397
 msgid "Vouching or forcing are non-sense, then ignored, when revoking."
-msgstr "La certification ou la force sont inutiles et donc ignorées lors d’une révocation."
+msgstr ""
+"La certification ou la force sont inutiles et donc ignorées lors d’une "
+"révocation."
 
 #: ../bin/bl-pgpid:1400
-msgid "The sub-layer (%s) return no error, but it may have found nothing to revoke."
-msgstr "La sous-couche (%s) n’a renvoyé aucune erreur, mais elle n’a peut-être rien trouvé à révoquer."
+msgid ""
+"The sub-layer (%s) return no error, but it may have found nothing to revoke."
+msgstr ""
+"La sous-couche (%s) n’a renvoyé aucune erreur, mais elle n’a peut-être rien "
+"trouvé à révoquer."
 
 #: ../bin/bl-pgpid:1403
 msgid "Successfully sign %d '%s' inside certificate %s."
@@ -1525,10 +1605,6 @@ msgid ""
 msgstr ""
 "Vérifier et modifier le code PIN (ou Admin) protégeant l’utilisation d’un "
 "jeton de sécurité (carte OpenPGP)."
-
-#: ../bin/bl-qrkey:305
-msgid "Return:"
-msgstr "Retour :"
 
 #: ../bin/bl-qrkey:308
 msgid "other non-zero value on other errors."
@@ -1648,7 +1724,9 @@ msgstr "Aucun secret pour '%s' (dans %s)"
 
 #: ../bin/bl-qrkey:528 ../bin/bl-qrkey:850
 msgid "Can't get fingerprint (maybe due to incompatible gpg's version)"
-msgstr "Impossible d’obtenir l’empreinte (peut-être en raison d’une version de GPG incompatible)"
+msgstr ""
+"Impossible d’obtenir l’empreinte (peut-être en raison d’une version de GPG "
+"incompatible)"
 
 #: ../bin/bl-qrkey:541 ../bin/bl-qrkey:559
 msgid "Unexpected QR Version (%s)."
@@ -1759,8 +1837,11 @@ msgid "Deprecated option"
 msgstr "Option obsolète."
 
 #: ../bin/bl-qrkey:834
-msgid "Only 2 lower case ASCII letters can define prefered language, fallback to: "
-msgstr "Seules 2 lettres ASCII minuscules peuvent définir la langue préférée, retour à : "
+msgid ""
+"Only 2 lower case ASCII letters can define prefered language, fallback to: "
+msgstr ""
+"Seules 2 lettres ASCII minuscules peuvent définir la langue préférée, retour "
+"à : "
 
 #: ../bin/bl-qrkey:843
 msgid "Select KeyID of OpenPGP secrets to move on security token"

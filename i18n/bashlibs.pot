@@ -350,10 +350,10 @@ msgid ""
 "add or remove)."
 msgstr ""
 
-#: ../bin/bl-djibian:332 ../bin/bl-qrkey:100 ../bin/bl-security:93
+#: ../bin/bl-djibian:332 ../bin/bl-interactive:87 ../bin/bl-pgpid:343
+#: ../bin/bl-qrkey:100 ../bin/bl-security:93
 msgid ""
-"select a frontend program {NONE,whiptail,dialog,zenity} (environment var: "
-"BL_INTERACTIVE_FRONTEND)"
+"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: "
 msgstr ""
 
 #: ../bin/bl-djibian:333 ../bin/bl-foopgp:392 ../bin/bl-interactive:495
@@ -482,16 +482,13 @@ msgid ""
 "NONE, whiptail, dialog or zenity."
 msgstr ""
 
-#: ../bin/bl-interactive:87
-msgid ""
-"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: "
-"BL_INTERACTIVE_FRONTEND, default:"
+#: ../bin/bl-interactive:87 ../bin/bl-interactive:88
+msgid "default: "
 msgstr ""
 
 #: ../bin/bl-interactive:88
 msgid ""
 "Extra args for zenity (if used), cf: zenity --help-general (environment var: "
-"BL_INTERACTIVE_ZENITY_EXTRA, default:"
 msgstr ""
 
 #: ../bin/bl-interactive:189
@@ -845,6 +842,12 @@ msgstr ""
 msgid "write journald entry"
 msgstr ""
 
+#: ../bin/bl-pgpid:340
+msgid ""
+"Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, "
+"OpenPGP certificate, etc."
+msgstr ""
+
 #: ../bin/bl-pgpid:437
 msgid "Unsupported MRZ"
 msgstr ""
@@ -1020,12 +1023,12 @@ msgid "Prefered OpenPGP certificate server. "
 msgstr ""
 
 #: ../bin/bl-pgpid:831 ../bin/bl-pgpid:939 ../bin/bl-pgpid:1045
-#: ../bin/bl-pgpid:1300
+#: ../bin/bl-pgpid:1154 ../bin/bl-pgpid:1300
 msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr ""
 
 #: ../bin/bl-pgpid:831 ../bin/bl-pgpid:939 ../bin/bl-pgpid:1045
-#: ../bin/bl-pgpid:1300
+#: ../bin/bl-pgpid:1154 ../bin/bl-pgpid:1300
 msgid "Environnement variable: "
 msgstr ""
 
@@ -1148,6 +1151,64 @@ msgstr ""
 
 #: ../bin/bl-pgpid:1117 ../bin/bl-pgpid:1245
 msgid "supernumerary OpenPGP ID string"
+msgstr ""
+
+#: ../bin/bl-pgpid:1142
+msgid ""
+"Check if OpenPGP token is correctly configured for OpenPGP ID ; may output "
+"informations."
+msgstr ""
+
+#: ../bin/bl-pgpid:1143
+msgid ""
+"Will try to import cleaned certificate indicated in 'URL of public key' "
+"field."
+msgstr ""
+
+#: ../bin/bl-pgpid:1144 ../bin/bl-qrkey:305
+msgid "Return:"
+msgstr ""
+
+#: ../bin/bl-pgpid:1145
+msgid "0 if no error and OpenPGP token is correctly configured for OpenPGP ID."
+msgstr ""
+
+#: ../bin/bl-pgpid:1146
+msgid "100 + number of missing OpenPGP ID data fields."
+msgstr ""
+
+#: ../bin/bl-pgpid:1147
+msgid ""
+"then 107 if all required data are missing (OpenPGP card is probably empty)."
+msgstr ""
+
+#: ../bin/bl-pgpid:1148
+msgid "Other non-zero on other erros."
+msgstr ""
+
+#: ../bin/bl-pgpid:1151
+msgid ""
+"Don't try to fetch public certificate (from URL indicated in token metadata)."
+msgstr ""
+
+#: ../bin/bl-pgpid:1152
+msgid ""
+"Output content of the associative array containing relevant metadata (may be "
+"evaluted with eval)."
+msgstr ""
+
+#: ../bin/bl-pgpid:1153
+msgid "Don't errput 'Info' or 'Notice' messages."
+msgstr ""
+
+#: ../bin/bl-pgpid:1155
+msgid ""
+"If VARNAME is a reacheable associative array: fill it (whithout cleaning "
+"known fields)"
+msgstr ""
+
+#: ../bin/bl-pgpid:1156
+msgid "else: Output 'declare -A VARNAME=...'"
 msgstr ""
 
 #: ../bin/bl-pgpid:1184
@@ -1368,10 +1429,6 @@ msgstr ""
 msgid ""
 "Check and change PIN (or Admin) code protecting use of a security token "
 "(OpenPGP smartcard)."
-msgstr ""
-
-#: ../bin/bl-qrkey:305
-msgid "Return:"
 msgstr ""
 
 #: ../bin/bl-qrkey:308
