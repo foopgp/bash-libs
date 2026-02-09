@@ -50,7 +50,7 @@ if [[ "$1" == --bash-completion ]] ; then
 					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
 					return 0
 				fi
-				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				COMPREPLY=( $(compgen -W "$coptions --frontend" -- $cur ) )
 				return 0 ;;
 		esac
 		# complete actions if none in ${COMP_WORDS[@]}

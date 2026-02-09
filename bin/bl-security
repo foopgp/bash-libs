@@ -45,7 +45,7 @@ if [[ "$1" == --bash-completion ]] ; then
 					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
 					return 0
 				fi
-				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				COMPREPLY=( $(compgen -W "$coptions --frontend" -- $cur ) )
 				return 0 ;;
 		esac
 		if grep -q "\<shred_path\>" <<< "${COMP_WORDS[@]}" ; then
