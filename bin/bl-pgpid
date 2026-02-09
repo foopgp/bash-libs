@@ -337,10 +337,10 @@ if ((BL_PGPID_isprogram)) ; then
 fi
 
 BL_PGPID_chelpmsg="
-Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, OpenPGP certificate, etc.
+"$"Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, OpenPGP certificate, etc.""
 
 Main options:
-  -f, --frontend PROGRAM   select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"
+  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND)"
 
 ### external functions ###
 
@@ -518,7 +518,7 @@ OPTIONS:
 }
 
 _bl_pgp_choose_seckeyid() {
-	local qtxt="Select KeyID (your OpenPGP certificate)"
+	local qtxt=$"Select KeyID (your OpenPGP certificate)"
 	local helpmsg="Usage: $FUNCNAME [NAME|U4|U5|EMAIL]
 Output keyid choosen from available (main) secrets keys.
 If there is only one available, output its keyid whithout asking.
@@ -759,12 +759,12 @@ bl_pgpid_gen_uid() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [UDID4]"
 	local helpmsg="
-Generate a 32bit Unix User ID, from 2^18 to (2^31)-2 ([$BL_PGPID_XUID_MIN,$BL_PGPID_XUID_MAX]).
-If UDID4 is not given, it will ask for surname, names and date of birth.
+"$"Generate a 32bit Unix User ID, from 2^18 to (2^31)-2"" ([$BL_PGPID_XUID_MIN,$BL_PGPID_XUID_MAX]).
+"$"If UDID4 is not given, it will ask for surname, names and date of birth.""
 
 OPTIONS:
-  -f, --free-input            Accept any input, not only valid OpenPGP ID string.
-  -F, --from FILE             Get input from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)
+  -f, --free-input            "$"Accept any input, not only valid OpenPGP ID string.""
+  -F, --from FILE             "$"Get input from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
 "
 	local freeinput=0 str_in u4h num
 	for ((;$#;)) ; do
@@ -791,7 +791,7 @@ OPTIONS:
 			freeinput=0
 		fi
 	elif [[ "$1" ]] ; then
-			printf "%s: Warning: option --from overide given argument '%s'...\n" "$FUNCNAME" "${1: 0:44}" >&2
+			printf "$FUNCNAME: Warning: "$"Option %s overide given argument '%s'""...\n" "--from" "${1: 0:44}" >&2
 	fi
 
 	if ((freeinput)) ; then
@@ -800,7 +800,7 @@ OPTIONS:
 	elif [[ "$str_in" =~ (${BL_PGPID_U4H_REGEX})${BL_PGPID_CO_REGEX} ]] ; then
 		u4h="${BASH_REMATCH[1]}=="
 	else
-		printf "%s: Error: No u4 string (hash) found in '%s'...\n" "$FUNCNAME" "${str_in: 0:50}" >&2
+		printf "$FUNCNAME: Error: "$"No u4 string (hash) found in '%s'""...\n" "${str_in: 0:50}" >&2
 		return 2
 	fi
 
@@ -997,7 +997,7 @@ OPTIONS:
 	fi
 
 	if [[ "$revoke" ]] ; then
-		(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many certificates (%s)"".\n" "$user" "${fprs[*]}" >&2 ; return 1 ;}
+		(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many (%d) certificates"" (%s).\n" "$user" ${#fprs[@]} "${fprs[*]}" >&2 ; return 1 ;}
 
 		local commands
 		# Revoke non-revoked photos (in first keyring only))
@@ -1089,7 +1089,7 @@ OPTIONS:
 	local fprs
 	fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user" | cut -d ' ' -f 1 | sort -u))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "$user" >&2 ; return 1 ;}
-	(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many certificates (%s).""\n" "$user" "${fprs[*]}" >&2 ; return 1 ;}
+	(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many (%d) certificates"" (%s).\n" "$user" ${#fprs[@]} "${fprs[*]}" >&2 ; return 1 ;}
 	user=${fprs[0]}
 
 	if [[ "$torev" || "$toadd" ]] ; then
@@ -1139,21 +1139,21 @@ bl_pgpid_token_check()
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]..."
 	local helpmsg="
-Check if OpenPGP token is correctly configured for OpenPGP ID ; may output informations.
-Will try to import cleaned certificate indicated in 'URL of public key' field.
-Return:
- - 0 if no error and OpenPGP token is correctly configured for OpenPGP ID.
- - 100 + number of missing OpenPGP ID data fields.
- - then 107 if all required data are missing (OpenPGP card is probably empty).
- - Other non-zero on other erros.
+"$"Check if OpenPGP token is correctly configured for OpenPGP ID ; may output informations.""
+"$"Will try to import cleaned certificate indicated in 'URL of public key' field.""
+"$"Return:""
+ - "$"0 if no error and OpenPGP token is correctly configured for OpenPGP ID.""
+ - "$"100 + number of missing OpenPGP ID data fields.""
+ - "$"then 107 if all required data are missing (OpenPGP card is probably empty).""
+ - "$"Other non-zero on other erros.""
 
 OPTIONS:
-  -f, --no-fetch          Don't try to fetch public certificate (from URL indicated in token metadata).
-  -i, --info              Output content of the associative array containing relevant metadata (may be evaluted with eval)
-  -q, --quiet             Don't errput 'Info' or 'Notice' messages.
-  -H, --homedir GNUPGHOME GnuPG home directory (default: ~/.gnupg). Environnement variable: \$GNUPGHOME
-  -A, --aaname VARNAME    If VARNAME is a reacheable associative array: fill it (confer --info)
-							else: Output 'declare -A VARNAME=...'
+  -f, --no-fetch          "$"Don't try to fetch public certificate (from URL indicated in token metadata).""
+  -i, --info              "$"Output content of the associative array containing relevant metadata (may be evaluted with eval).""
+  -q, --quiet             "$"Don't errput 'Info' or 'Notice' messages.""
+  -H, --homedir GNUPGHOME "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
+  -A, --aaname VARNAME    "$"If VARNAME is a reacheable associative array: fill it (whithout cleaning known fields)""
+							"$"else: Output 'declare -A VARNAME=...'""
 "
 	local varname fetch=1 info=0 quiet=0 isaa=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -1234,6 +1234,9 @@ OPTIONS:
 		fi
 	done <<<"${cardstatus}"
 
+	# Signature key on token may differs from main key, aka Certification key.
+	aaname[pgpid_Ckeyfpr]=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "${aaname[pgpid_Skeyfpr]:- ${aaname[pgpid_Ekeyfpr]:- ${aaname[pgpid_Akeyfpr]}}}" | grep -o -m1 "\<[0-9ABCDEF]\{40\}\>") || true
+
 	aaname[pgpid_email]="${emails[0]}"
 	(( $(sort -u <<<"${emails[@]}" | wc -l) < 2 )) || ((quiet)) || echo "$FUNCNAME: Notice:" $"supernumerary emails, skipping" "$(sort -u <<<"${emails[@]}" | grep -v "${emails[0]}") ..." >&2
 
@@ -1267,7 +1270,7 @@ OPTIONS:
 
 	! ((ret)) || return $ret
 
-	((quiet)) || printf "$FUNCNAME: Info: "$"Valid OpenPGP ID token"", pgpid_id='${aaname[pgpid_id]}'.\n" >&2
+	((quiet)) || printf "$FUNCNAME: Info: "$"Valid OpenPGP ID token"", pgpid_Ckeyfpr='${aaname[pgpid_Ckeyfpr]}', pgpid_id='${aaname[pgpid_id]}'.\n" >&2
 	return 0
 }
 
@@ -1289,8 +1292,8 @@ bl_pgpid_certify() {
 OPTIONS:
   -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask.""
   -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate.""
-  -G, --vouch                  "$"Take responsability for any (illegal) actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
-  -g, --vouch-for DOMAIN       "$"Assume additional legal responsibilities on the target."" (Not implemented yet)
+  -G, --vouch                  "$"Take legal responsability for any actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
+  -g, --vouch-for DOMAIN       "$"Assume some legal responsibilities on the target."" (Not implemented yet)
   -l, --local                  "$"« Non-exportable » certification. Pretty useless. Allow to less affect credibility.""
   -f, --force-sign-key         "$"Allow to unrevoke or to change vouching.""
   -k, --keyserver KEYSERVER    "$"If non-empty, receive and send updated certificate to this keyserver. "$"Default: ""$keyserv.
@@ -1332,7 +1335,7 @@ OPTIONS:
 	for ((;$#;)) ; do
 		if [[ "$1" =~ (${BL_PGPID_U4_REGEX}|${BL_PGPID_U5_REGEX}) ]] ; then
 			targetid=${BASH_REMATCH[0]}
-		elif [[ "${1^^}" == ^[ABCDEF0-9]{40}$ ]] ; then
+		elif [[ "${1^^}" =~ ^[ABCDEF0-9]{40}$ ]] ; then
 			targetfpr=${BASH_REMATCH[0]}
 		else
 			printf "$FUNCNAME: Error: "$"Unrecognized argument"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2
@@ -1344,7 +1347,7 @@ OPTIONS:
 	if [[ -z "$keyid" ]] ; then
 		local -A cardinfo
 		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
-		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && keyid=${cardinfo[pgpid_Skeyfpr]} || keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+		[[ "${cardinfo[pgpid_Ckeyfpr]}" ]] && keyid=${cardinfo[pgpid_Ckeyfpr]} || keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome" --text $"Private key to use ? (KeyID of your Certification Key)")
 	fi
 
 	# Get fpr for private key to use
@@ -1353,6 +1356,9 @@ OPTIONS:
 	[[ "$keyfpr" =~ ^[0-9ABCDEF]{40}$ ]] || { printf -- "$FUNCNAME: Error: "$"Invalid or ambiguous private key to use '%s'.""\n" "$keyid" >&2 ; return 2 ;}
 
 	[[ "$targetid" ]] || targetid=$(bl_pgpid_gen_u4)
+
+	# We have to focus on BL_PGPID_U4H_REGEX because BL_PGPID_CO_REGEX part of udid4 is fuzzy (and may be used to distinguish different persons with same BL_PGPID_U4H_REGEX). And we have to include ${BASH_REMATCH[2]::1} because search feature on key server use to search for whole words.
+	! [[ "$targetid" =~ (${BL_PGPID_U4H_REGEX})(${BL_PGPID_CO_REGEX}) ]] || targetid="${BASH_REMATCH[1]}${BASH_REMATCH[2]::1}"
 
 	if [[ "$keyserv" ]] ; then
 		# Retrieve at most 16 certificates from keyserver (there should be only one active, keyserver has to make sure each id does not match more than 16 active + revoked certificates)
@@ -1364,19 +1370,18 @@ OPTIONS:
 	fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$targetid" | cut -d ' '  -f 1 | sort -u))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "$targetid" >&2 ; return 1 ;}
 	if (( ${#fprs[@]} >= 2 )) ; then
-		printf "$FUNCNAME: Info: "$"User '%s' match many certificates (%s).""\n" "$targetid" "${#fprs[@]}" >&2
-		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text "Please select fingerprint" -- "${fprs[@]/%????????????????????/...}") || return $?
+		printf "$FUNCNAME: Info: "$"User '%s' match many (%d) certificates"".\n" "$targetid" "${#fprs[@]}" >&2
+		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return $?
 	fi
 
 	if [[ -z "$targetfpr" ]] ; then
-		local txt=$"Please verify and complete target's fingerprint:"
-		local question=$(sed -E 's,(....),\1 ,g' <<<${fprs[$ifpr]::32})
-		local rep=".... ...."
+		local rep txt=$"Please verify and complete target's fingerprint:"
+		local question=".... .... $(sed -E 's,(....),\1 ,g' <<<${fprs[$ifpr]:8:32})"
 		for ((;;)) ; do
 			rep=$(bl_input --default "$rep" --text "$txt" "$question") || return $?
-			targetfpr=${fprs[$ifpr]::32}$(sed "s,[^ABCDEF0-9],,g" <<<${rep^^} )
+			targetfpr=$(sed "s,[^ABCDEF0-9],,g" <<<${rep^^} )${fprs[$ifpr]:8:32}
 			[[ ${#targetfpr} != 40 ]] || break
-			txt=$"Enter the last 8 hexadecimal characters of target's fingerprint:"
+			txt=$"Enter the first 8 hexadecimal characters of target's fingerprint:"
 		done
 	fi
 

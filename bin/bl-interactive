@@ -84,8 +84,8 @@ BL_INTERACTIVE_chelpmsg="
 "$"Help managing interactive choices, while supporting multiple frontends: NONE, whiptail, dialog or zenity.""
 
 Main options:
-  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND, default:"" $BL_INTERACTIVE_FRONTEND)
-  -z, --zenity-extra ARGS  "$"Extra args for zenity (if used), cf: zenity --help-general (environment var: BL_INTERACTIVE_ZENITY_EXTRA, default:"" $BL_INTERACTIVE_ZENITY_EXTRA)"
+  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND, "$"default: ""$BL_INTERACTIVE_FRONTEND)
+  -z, --zenity-extra ARGS  "$"Extra args for zenity (if used), cf: zenity --help-general (environment var: ""BL_INTERACTIVE_ZENITY_EXTRA, "$"default: ""$BL_INTERACTIVE_ZENITY_EXTRA)"
 
 ### internal functions ###
 

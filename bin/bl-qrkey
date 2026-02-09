@@ -97,7 +97,7 @@ BL_QRKEY_chelpmsg="
 "$"Note: OpenPGP keys should have been generated with bl-pgpid. Unexpected keys may cause unexpected issues.""
 
 "$"Main options:""
-  -f, --frontend PROGRAM   "$"select a frontend program {NONE,whiptail,dialog,zenity} (environment var: BL_INTERACTIVE_FRONTEND)"""
+  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND)"
 
 ### external functions ###
 

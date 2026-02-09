@@ -368,19 +368,19 @@ OPTIONS:
 		shift
 	done
 
-	((!header)) || printf "| %12s | %11s |\n" "EUR" "DJI"
+	((!header)) || printf "| %12s | %12s |\n" "EUR" "DJI"
 	((!onlyheader)) || return
-	((!header)) || echo "|--------------|-------------|"
+	((!header)) || echo "|--------------|--------------|"
 
 	for ((i=1,j=1,k=1; i<=max && k<=maxl; i++,k++)) ; do
 		g=$(bl_foopgp_t2g --tokens "$tg" --gifts "$gg" $i)
 		while (( $(echo "$j < $g" | bc -l) )) ; do
-			LC_NUMERIC=POSIX printf "| %7s.00 ${csymb[EUR]} | %13s |\n" "$j" "$(bl_foopgp_g2t --printsym --siprefix deci --tokens "$tg" --gifts "$gg" $j)"
+			LC_NUMERIC=POSIX printf "| %7s.00 ${csymb[EUR]} | %13s |\n" "$j" "$(bl_foopgp_g2t --printsym --siprefix centi --tokens "$tg" --gifts "$gg" $j)"
 			((j*=2))
 			j=$(tr '4' '5' <<<"$j") # To follow base 10 approximation : "1 2 5 10 20 50 100 ..." instead of "1 2 4 8 16 32 64 128 ..."
 			((++k<maxl)) || break
 		done
-		LC_NUMERIC=POSIX printf "| %10s ${csymb[EUR]} | %2s0.00000 dɈ |\n" "$g" "$i"
+		LC_NUMERIC=POSIX printf "| %10s ${csymb[EUR]} | %2s00.0000 cɈ |\n" "$g" "$i"
 	done #| uniq
 }
 
