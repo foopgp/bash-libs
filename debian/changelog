@@ -1,3 +1,15 @@
+bash-libs (0.2.9-1) UNRELEASED; urgency=medium
+
+  [ jjbrucker ]
+  * bl-foopgp: change giftarray default units of measurement prefix: deci dɈ -> centi cɈ
+  * 1 bugfix in bl_pgpid_certify() + many typofix in bl-pgpid
+  * bl_pgpid_certify(): manage fuzzy part of BL_PGPID_U4_REGEX + ask for first chars of fingerprint (because last ones are displayed in gpg's traces)
+  * bl_pgpid_certify(): improve wording + bugfix: pgpid_Skeyfpr -> pgpid_Ckeyfpr
+  * fix translations
+  * update manpages
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Mon, 09 Feb 2026 16:47:19 +0100
+
 bash-libs (0.2.7-1) unstable; urgency=medium
 
   [ mael ]
