@@ -1141,11 +1141,6 @@ bl_pgpid_token_check()
 	local helpmsg="
 "$"Check if OpenPGP token is correctly configured for OpenPGP ID ; may output informations.""
 "$"Will try to import cleaned certificate indicated in 'URL of public key' field.""
-"$"Return:""
- - "$"0 if no error and OpenPGP token is correctly configured for OpenPGP ID.""
- - "$"100 + number of missing OpenPGP ID data fields.""
- - "$"then 107 if all required data are missing (OpenPGP card is probably empty).""
- - "$"Other non-zero on other erros.""
 
 OPTIONS:
   -f, --no-fetch          "$"Don't try to fetch public certificate (from URL indicated in token metadata).""
@@ -1154,6 +1149,12 @@ OPTIONS:
   -H, --homedir GNUPGHOME "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
   -A, --aaname VARNAME    "$"If VARNAME is a reacheable associative array: fill it (whithout cleaning known fields)""
 							"$"else: Output 'declare -A VARNAME=...'""
+
+"$"Return value:""
+-   "$"0 if no error and OpenPGP token is correctly configured for OpenPGP ID.""
+- "$"100 + number of missing OpenPGP ID data fields.""
+- "$"then 107 if all required data are missing (OpenPGP card is probably empty).""
+- "$"Other non-zero on other errors.""
 "
 	local varname fetch=1 info=0 quiet=0 isaa=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -1292,14 +1293,22 @@ bl_pgpid_certify() {
 OPTIONS:
   -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask.""
   -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate.""
+  -o, --ownertrust VALUE       "$"Set owner trust level"" {undefined,marginal,full,ultimate,never}. "" - "$"Default: "" marginal.
   -G, --vouch                  "$"Take legal responsability for any actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
   -g, --vouch-for DOMAIN       "$"Assume some legal responsibilities on the target."" (Not implemented yet)
-  -l, --local                  "$"« Non-exportable » certification. Pretty useless. Allow to less affect credibility.""
+  -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing.""
   -f, --force-sign-key         "$"Allow to unrevoke or to change vouching.""
   -k, --keyserver KEYSERVER    "$"If non-empty, receive and send updated certificate to this keyserver. "$"Default: ""$keyserv.
-  -H, --homedir GNUPGHOME      "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME.
+  -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environnement variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'.
+
+"$"Return value:""
+-   0 "$"No error""
+-  41 "$"No certificate for user""
+-  42 "$"Self-certification is not innovative! ;-)""
+-  43 "$"Key fingerprint does not match.""
+- "$"Other non-zero on other errors.""
 "
-	local revoke=0 keyid vouchfor signcmd="sign" oforce
+	local revoke=0 keyid vouchfor signcmd="sign" oforce ownertrust
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -1307,6 +1316,9 @@ OPTIONS:
 				shift ; keyid=$1 ;;
 			-R|--revoke)
 				revoke=1 ;;
+			-o|--ownertrust)
+				[[ "$2" =~ ^(undefined|marginal|full|ultimate|never)$ ]] || { printf -- "$FUNCNAME: Error: "$"Unknown ownertrust value '%s'"".\n" "$2" >&2 ; return 2 ;}
+				shift ; ownertrust=$1 ;;
 			-G|--vouch)
 				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
 				vouchfor="ALL" ;;
@@ -1368,7 +1380,7 @@ OPTIONS:
 	# get fingerprints for certificate to certify
 	local fprs ifpr=0 uids
 	fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$targetid" | cut -d ' '  -f 1 | sort -u))
-	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "$targetid" >&2 ; return 1 ;}
+	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user"" '%s'.\n" "$targetid" >&2 ; return 41 ;}
 	if (( ${#fprs[@]} >= 2 )) ; then
 		printf "$FUNCNAME: Info: "$"User '%s' match many (%d) certificates"".\n" "$targetid" "${#fprs[@]}" >&2
 		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return $?
@@ -1386,21 +1398,22 @@ OPTIONS:
 	fi
 
 	[[ "$targetfpr" != "$keyfpr" ]] || { echo "$FUNCNAME: Warning: "$"Self-certification is not innovative! ;-)" >&2 ; return 42 ;}
-	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 1 ;}
+	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 43 ;}
 
 	# Get full uids containing $targetid (cf. /usr/share/doc/gnupg/DETAILS.gz ; from first keyring only)
 	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:.*'"$targetid"'/ { i+=1 ; print $10 }')
 	[[ "$uids" ]] || { echo "$FUNCNAME: Crit: "$"No uid. Certificate is probably corrupted." >&2 ; return 1 ;}
 
 	if ((revoke)) ; then
-		if [[ "$oforce" ]] || [[ "$vouchfor" ]] ; then
-			echo "$FUNCNAME: Info: "$"Vouching or forcing are non-sense, then ignored, when revoking." >&2
-		fi
+		[[ -z "$ownertrust" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--ownertrust" >&2
+		[[ -z "$oforce" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--force-sign-key" >&2
+		[[ -z "$vouchfor" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--vouch-for" >&2
 		gpg --homedir "$gpghome" --quick-revoke-sig "$targetfpr" "$keyfpr" "${uids[@]/#/=}" || return $?
 		printf "$FUNCNAME: Notice: "$"The sub-layer (%s) return no error, but it may have found nothing to revoke.""\n" "gpg --quick-revoke-sig" >&2
 	else
 		gpg --homedir "$gpghome" --local-user "$keyfpr" $oforce --quick-$signcmd-key "$targetfpr" "${uids[@]/#/=}" || return $?
 		printf "$FUNCNAME: Notice: "$"Successfully sign %d '%s' inside certificate %s.""\n" ${#uids[@]} "$targetid" "$targetfpr" >&2
+		gpg --homedir "$gpghome" --quick-set-ownertrust "$targetfpr" "${ownertrust:-marginal}" || return $?
 	fi
 
 	[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "$keyserv" --send-keys "$targetfpr" || return $?
