@@ -83,7 +83,7 @@ if ((BL_TEST_isprogram)) ; then
 
 	BL_TEST_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_TEST_shelpmsg="
-Actions:
+ACTIONS:
 $(for f in "${BL_TEST_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help option, eg:

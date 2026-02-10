@@ -523,7 +523,7 @@ if ((BL_DJI_isprogram)) ; then
   -h, --help               show help and exit
   -V, --version            show version and exit
 
-Actions:
+ACTIONS:
 $(for f in "${BL_DJI_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help option, eg:

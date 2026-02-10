@@ -392,7 +392,7 @@ if ((BL_FOOPGP_isprogram)) ; then
   -h, --help               "$"show help and exit""
   -V, --version            "$"show version and exit""
 
-Actions:
+ACTIONS:
 $(for f in "${BL_FOOPGP_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:10}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help option, eg:

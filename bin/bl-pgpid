@@ -1293,7 +1293,7 @@ bl_pgpid_certify() {
 OPTIONS:
   -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask.""
   -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate.""
-  -o, --ownertrust VALUE       "$"Set owner trust level"" {undefined,marginal,full,ultimate,never}. "" - "$"Default: "" marginal.
+  -o, --ownertrust VALUE       "$"Set owner trust level"" {undefined,marginal,full,ultimate,never} - "$"Default: ""marginal.
   -G, --vouch                  "$"Take legal responsability for any actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
   -g, --vouch-for DOMAIN       "$"Assume some legal responsibilities on the target."" (Not implemented yet)
   -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing.""
@@ -1427,7 +1427,7 @@ if ((BL_PGPID_isprogram)) ; then
   -h, --help               show help and exit
   -V, --version            show version and exit
 
-Actions:
+ACTIONS:
 $(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s %s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help option, eg:

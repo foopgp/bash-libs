@@ -333,7 +333,7 @@ if ((BL_DJIBIAN_isprogram)) ; then
   -h, --help               "$"show help and exit""
   -V, --version            "$"show version and exit""
 
-Actions:
+ACTIONS:
 $(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:11}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help option, eg:

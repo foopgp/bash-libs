@@ -567,7 +567,7 @@ OPTIONS:
 if ((BL_QIF_isprogram)) ; then
 	BL_QIF_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_QIF_shelpmsg="
-Actions:
+ACTIONS:
 $(for f in "${BL_QIF_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help option, eg:
