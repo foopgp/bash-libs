@@ -136,7 +136,7 @@ fi
 BL_FOOPGP_chelpmsg="
 "$"Calculate how many djis (Ɉ) may be created for each contribution in euros (€) to the the foopgp association.""
 
-Main options:
+MAIN OPTIONS:
   -v, --verbose            "$"output important infos on stderr, like stingynalty value""
   -s, --stingynalty VALUE  "$"set STINGYNALTY"" ($(date --iso-8601 | head -c 7): $BL_FOOPGP_STINGYNALTY)
   -d, --date STRING        "$"set STINGYNALTY according to given date"" (cf. <https://www.gnu.org/software/coreutils/date>)"

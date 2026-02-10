@@ -70,7 +70,7 @@ if ((BL_QIF_isprogram)) ; then
 fi
 
 BL_QIF_chelpmsg="
-Main options:
+MAIN OPTIONS:
   -h, --help               show help and exit/return
   -V, --version            show version and exit/return
 "

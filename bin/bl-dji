@@ -87,7 +87,7 @@ fi
 BL_DJI_chelpmsg="
 "$"Manage djis (Ɉ), also known as foopgp tokens.""
 
-"$"Main options:"""
+MAIN OPTIONS:"
 
 ### external functions ###
 

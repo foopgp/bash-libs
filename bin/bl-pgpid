@@ -339,8 +339,8 @@ fi
 BL_PGPID_chelpmsg="
 "$"Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, OpenPGP certificate, etc.""
 
-Main options:
-  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND)"
+MAIN OPTIONS:
+  -f, --frontend PROGRAM   "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND"
 
 ### external functions ###
 
@@ -480,7 +480,7 @@ Call 'gpg --with-colon' and ouput exportable secret keys (all if no argument), o
 KeyID     Creation_Date    Public_Key_Algorithm
 
 OPTIONS:
-  -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
+  -H, --homedir GNUPGHOME   GnuPG home directory - Environment variable: GNUPGHOME, default: '~/.gnupg'.
   -e, --exportable          Ouput only exportable secret keys (ie. present localy, excluding those on security token)
 "
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -569,9 +569,9 @@ bl_pgpid_mrz_to_u4() {
 Calculate and output a OpenPGP ID u4, from the Machine Readable Zone of an icao9303 passport.
 If MRZ is not passed as argument, it will we read from STDIN.
 
-Option:
-  -d, --birth-date YYYY-MM-DD  Birth date, expected format : Year-Month-Day (for people born 100+ years ago)
-  -u, --uncheck                Change some MRZ errors to warnings (only if you really know what you do !).
+OPTIONS:
+  -d, --birth-date YYYY-MM-DD  "$"Birth date, expected format : Year-Month-Day (for people born 100+ years ago).""
+  -u, --uncheck                "$"Change some MRZ errors to warnings (only if you really know what you do !).""
 
 WARNING: mrz data may be irrelevant to generate u4 string. eg:
          * Surname or given names may be incomplete (cut bc exceed mrz size)
@@ -689,23 +689,23 @@ OPTIONS:
 	while [[ "$errlvl" == Warning ]] ; do
 		! bl_yesno --default=no --text \
 	"
-	Surname at birth:     ${sname}
-	Given names at birth: ${gname}
-	Date of birth:        ${bdate}
-	Country of birth:     ${bcountry}
+	"$"Surname at birth:""     ${sname}
+	"$"Given names at birth:"" ${gname}
+	"$"Date of birth:""        ${bdate}
+	"$"Country of birth:""     ${bcountry}
 	" \
-			"Is that correct" || break
+			$"Is that correct" || break
 
-		sname=$(bl_input --default "${sname^^}" "Birth surname (family name)")
-		gname=$(bl_input --default "${gname}" "Birth names (all given names)")
-		bdate=$(bl_input --iso-8601 --default "${bdate}" "Birth date (YYYY-MM-DD)")
-		bcountry=$(bl_input --default "${bcountry}" "Birth country (3 letter code)")
+		sname=$(bl_input --default "${sname^^}" $"Birth surname (family name)")
+		gname=$(bl_input --default "${gname}" $"Birth names (all given names)")
+		bdate=$(bl_input --iso-8601 --default "${bdate}" $"Birth date (YYYY-MM-DD)")
+		bcountry=$(bl_input --default "${bcountry}" $"Birth country (3 letter code)")
 	done
 
 	sname=$(sed 's,[ ;,<-]\+,<,g'<<<"$sname" ) # replace and squeeze some word separators
 	translit=$(iconv -f utf-8 -t ascii//TRANSLIT <<<"$sname") # transliterate (according to iconv), may differ from Passport transliterations.
 	if [[ "$translit" != "$sname" ]] ; then
-		echo "$FUNCNAME: Warning: '$sname'" $"has been transliterated to" "'$translit'." $"It may be WRONG !" >&2
+		printf "$FUNCNAME: Warning: "$"'$%s' has been transliterated to '%s'. "$"It may be WRONG !""\n" "$sname" "$translit" >&2
 		sname="$translit"
 	fi
 	sname="${sname^^}" # uppercase
@@ -713,13 +713,13 @@ OPTIONS:
 	gname=$(sed 's,[ ;,<-]\+,<,g'<<<"$gname" )
 	translit=$(iconv -f utf-8 -t ascii//TRANSLIT <<<"$gname")
 	if [[ "$translit" != "$gname" ]] ; then
-		printf "%s: Warning: '%s' has been transliterated to '%s'. It may be WRONG !\n" "$FUNCNAME" "$gname" "$translit" >&2
+		printf "$FUNCNAME: Warning: "$"'$%s' has been transliterated to '%s'. "$"It may be WRONG !""\n" "$gname" "$translit" >&2
 		gname="$translit"
 	fi
 	gname="${gname^^}"
 
 	if ! fakemrz="P<${bcountry}$(LC_COLLATE="C.UTF-8" grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${sname}<<$gname<<" )" ; then
-		printf "%s: Error: only [A-Z] characters allowed in names.\n" "$FUNCNAME" >&2
+		echo "$FUNCNAME: Error: "$"Only [A-Z] characters allowed in names." >&2
 		return 1
 	fi
 	fakemrz+="000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"

@@ -89,8 +89,8 @@ fi
 BL_SECURITY_chelpmsg="
 "$"Provide some cybersecurity features.""
 
-Main options:
-  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND)"
+MAIN OPTIONS:
+  -f, --frontend PROGRAM   "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND"
 
 ### external functions ###
 
@@ -104,7 +104,7 @@ _bl_security_parseoptions() {
 	for ((;$#;)) ; do
 		case "$1" in
 			-f|--frontend) shift; frontend="$1";; # Will be passed to bl-interactive
-			-h|--help) printf "%s\n%s\n%s\n" "$BL_SECURITY_usage" "$BL_SECURITY_chelpmsg" "$BL_SECURITY_shelpmsg" ; return 1 ;;
+			-h|--help) printf "%s\n%s%s\n" "$BL_SECURITY_usage" "$BL_SECURITY_chelpmsg" "$BL_SECURITY_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_SECURITY_NAME" "$BL_SECURITY_VERSION" ; return 1 ;;
 			--) shift ; break ;;
 			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_SECURITY_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
@@ -254,14 +254,14 @@ OPTIONS:
 	if $interactive ; then
 		local aspell_dicts
 		mapfile -t aspell_dicts < <(aspell dump dicts | grep "^[a-z]\+$")
-		dict=$(bl_radiolist -n 5 -v -p "Prefered language to generate a good passphrase:" "${aspell_dicts[@]}") || return $?
+		dict=$(bl_radiolist -n 5 -v -p $"Prefered language to generate a good passphrase:" "${aspell_dicts[@]}") || return $?
 	fi
 	# We use multiple time aspell dump, to avoid a big variable (using some Mo of RAM)
 	sd=$(aspell -d "$dict" dump master | grep --count --invert-match "'" ; exit ${PIPESTATUS[0]}) || return $?
 	while true ; do
 		ret="$(aspell -d "$dict" dump master | grep -v "'" | eval sed -n \""$sedcmd"\" | sed ':a;N;$!ba;s/\n/'"$delim"'/g')"
 		$interactive || break
-		! bl_yesno --default=yes --text "random passphrase: $ret" "Agree" || break
+		! bl_yesno --default=yes --text $"Random passphrase: ""$ret" $"Agree" || break
 	done
 	! $showsize || echo -n "$sd "
 	echo "$ret"
@@ -271,7 +271,7 @@ OPTIONS:
 bl_new_password() {
 	local name
 	local preamble dict=${LANG::2} nw=3
-	local question="Password"
+	local question=$"Password"
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [QUESTION]..."
 	local helpmsg="

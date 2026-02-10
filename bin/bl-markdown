@@ -72,7 +72,7 @@ fi
 BL_MD_chelpmsg="
 Manipulate [markdown](https://en.wikipedia.org/wiki/Markdown). Today, only converts: markdown arrays <> bash arrays.
 
-Main options:"
+MAIN OPTIONS:"
 
 ### external functions ###
 
