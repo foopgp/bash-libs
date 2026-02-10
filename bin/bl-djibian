@@ -189,6 +189,7 @@ OPTIONS:
 		local -A cardinfo
 
 		umask 0002 # Because bl_pgpid_token_check may write into /var/share/djibian/keyrings (sticky bit, group 'users')
+		su -l "${SUDO_USER:-$USER}" -c "gpgconf --kill scdaemon" || true
 		bl_pgpid_token_check --no-fetch --aaname cardinfo || return $?
 
 		email=${cardinfo[pgpid_email]}
@@ -259,8 +260,12 @@ OPTIONS:
 
 	if [[ "$fromcard" ]] ; then
 		# Try configuring its ~/.gnupg/ with its ownertrust set to ultimate
+		mkdir /home/$identifier/.gnupg
+		chmod go-rwx /home/$identifier/.gnupg
+		touch /home/$identifier/.gnupg/pubring.kbx
 		gpgconf --kill scdaemon
 		bl_pgpid_token_check --homedir "/home/$identifier/.gnupg" || true
+		gpgconf --homedir "/home/$identifier/.gnupg" --kill scdaemon
 		chown -hR "$username:$username" "/home/$identifier"
 		su -l "$username" -c "gpg --quick-set-ownertrust ${cardinfo[pgpid_Skeyfpr]} ultimate" || true
 	fi
