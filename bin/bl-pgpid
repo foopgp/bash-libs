@@ -1304,9 +1304,11 @@ OPTIONS:
 
 "$"Return value:""
 -   0 "$"No error""
--  41 "$"No certificate for user""
--  42 "$"Self-certification is not innovative! ;-)""
--  43 "$"Key fingerprint does not match.""
+-   2 "$"Input/Usage error""
+- 140 "$"Interactivity error""
+- 141 "$"No certificate for user""
+- 142 "$"Self-certification is not innovative! ;-)""
+- 143 "$"Key fingerprint does not match.""
 - "$"Other non-zero on other errors.""
 "
 	local revoke=0 keyid vouchfor signcmd="sign" oforce ownertrust
@@ -1324,7 +1326,7 @@ OPTIONS:
 				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
 				vouchfor="ALL" ;;
 			-g|--vouch-for)
-				[[ "$2" == ALL ]] || { printf -- "$FUNCNAME: Error:" $"Only %s is yet a known domain for vouching"".\n" "'ALL'" >&2 ; return 1 ;}
+				[[ "$2" == ALL ]] || { printf -- "$FUNCNAME: Error:" $"Only %s is yet a known domain for vouching"".\n" "'ALL'" >&2 ; return 2 ;}
 				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
 				shift ; vouchfor=${1:?} ;;
 			-l|--local)
@@ -1381,25 +1383,25 @@ OPTIONS:
 	# get fingerprints for certificate to certify
 	local fprs ifpr=0 uids
 	fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$targetid" | cut -d ' '  -f 1 | sort -u))
-	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user"" '%s'.\n" "$targetid" >&2 ; return 41 ;}
+	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user"" '%s'.\n" "$targetid" >&2 ; return 141 ;}
 	if (( ${#fprs[@]} >= 2 )) ; then
 		printf "$FUNCNAME: Info: "$"User '%s' match many (%d) certificates"".\n" "$targetid" "${#fprs[@]}" >&2
-		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return $?
+		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return 140
 	fi
 
 	if [[ -z "$targetfpr" ]] ; then
 		local rep txt=$"Please verify and complete target's fingerprint:"
 		local question=".... .... $(sed -E 's,(....),\1 ,g' <<<${fprs[$ifpr]:8:32})"
 		for ((;;)) ; do
-			rep=$(bl_input --default "$rep" --text "$txt" "$question") || return $?
+			rep=$(bl_input --default "$rep" --text "$txt" "$question") || return 140
 			targetfpr=$(sed "s,[^ABCDEF0-9],,g" <<<${rep^^} )${fprs[$ifpr]:8:32}
 			[[ ${#targetfpr} != 40 ]] || break
 			txt=$"Enter the first 8 hexadecimal characters of target's fingerprint:"
 		done
 	fi
 
-	[[ "$targetfpr" != "$keyfpr" ]] || { echo "$FUNCNAME: Warning: "$"Self-certification is not innovative! ;-)" >&2 ; return 42 ;}
-	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 43 ;}
+	[[ "$targetfpr" != "$keyfpr" ]] || { echo "$FUNCNAME: Warning: "$"Self-certification is not innovative! ;-)" >&2 ; return 142 ;}
+	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 143 ;}
 
 	# Get full uids containing $targetid (cf. /usr/share/doc/gnupg/DETAILS.gz ; from first keyring only)
 	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:.*'"$targetid"'/ { i+=1 ; print $10 }')
