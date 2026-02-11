@@ -29,7 +29,7 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  bl-log: Wrapper for logger command, which also print pretty logs on stderr.
  .
  bl-interactive: Help managing interactive choices,
- while supporting multiple frontends: NONE, whiptail or dialog.
+ while supporting multiple frontends: NONE, zenity, whiptail or dialog.
  .
  bl-security: Provide some security features, notably a passphrase generator.
 
@@ -57,12 +57,14 @@ Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
  This package contains:
  .
- bl-pgpid: Generate foopgp identifiers, like *udid4* to identify world-wide humans,
- or a fixed Unix User ID for each of them.
+ bl-pgpid: Generate and manage OpenPGP ID, an OpenPGP configuration providing
+ universal and decentralized civil status to secure your digital life
+ (emails, git, ssh, avatar, sso, etc.).
  .
  bl-djibian: System tools for the Debian blend « Djibian ».
  .
- bl-qrkey: Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
+ bl-qrkey: Backup or restore OpenPGP ID using printed QR codes and Shamir's secret
+ sharing. Configure Yubikeys or Nitrokeys for OpenPGP ID.
 
 Package: bashlibs-dji
 Architecture: all
