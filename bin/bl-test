@@ -141,7 +141,7 @@ Cf: https://www.gnu.org/prep/standards/standards.html#g_t_002d_002dversion
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return 0 ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME ($BL_TEST_NAME)" "$BL_TEST_VERSION" ; return 0 ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -195,7 +195,7 @@ if function=$(grep -o "\<bl_$1\>" <<< "${BL_TEST_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "$BL_TEST_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
+	printf "$BL_TEST_NAME: Error: "$"Unrecognized action"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

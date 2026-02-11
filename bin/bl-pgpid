@@ -358,7 +358,7 @@ _bl_pgpid_parseoptions() {
 			-h|--help) printf "%s\n%s%s" "$BL_PGPID_usage" "$BL_PGPID_chelpmsg" "$BL_PGPID_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_PGPID_NAME" "$BL_PGPID_VERSION" ; return 1 ;;
 			--) shift ; break ;;
-			-*) printf -- "$BL_PGPID_NAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2 ; return 2 ;;
+			-*) printf -- "$BL_PGPID_NAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -494,7 +494,7 @@ OPTIONS:
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -542,7 +542,7 @@ OPTIONS:
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -661,7 +661,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -776,7 +776,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -857,7 +857,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -959,7 +959,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -1070,7 +1070,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -1177,7 +1177,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -1338,7 +1338,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -1351,7 +1351,7 @@ OPTIONS:
 		elif [[ "${1^^}" =~ ^[ABCDEF0-9]{40}$ ]] ; then
 			targetfpr=${BASH_REMATCH[0]}
 		else
-			printf "$FUNCNAME: Error: "$"Unrecognized argument"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2
+			printf "$FUNCNAME: Error: "$"Unrecognized argument"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2
 			return 2
 		fi
 		shift
@@ -1467,7 +1467,7 @@ if function=$(grep -o "\<bl_pgpid_$1\>" <<< "${BL_PGPID_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "$BL_PGPID_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
+	printf "$BL_PGPID_NAME: Error: "$"Unrecognized action"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 
