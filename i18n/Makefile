@@ -30,7 +30,7 @@ update:
 		bash --dump-po-strings $$file ;\
 	done ) | msguniq > bashlibs.pot ;\
 	for file in $(PO_FILES) ; do\
-		msgmerge --update $$file bashlibs.pot ;\
+		msgmerge --update --no-location $$file bashlibs.pot ;\
 	done
 
 build: clean $(MO_FILES)

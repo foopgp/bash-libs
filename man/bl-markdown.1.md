@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-MARKDOWN
 section: 1
 header: User Commands
-footer: bash-libs 0.2.9
+footer: bash-libs 0.3.0
 ---
 
 # NAME
@@ -27,17 +27,17 @@ converts: markdown arrays \<\> bash arrays.
 Manipulate \[markdown\](https://en.wikipedia.org/wiki/Markdown). Today,
 only converts: markdown arrays \<\> bash arrays.
 
-## Main options:
+## MAIN OPTIONS:
 
 **-h**, **\--help**
 
-:   show help and exit
+:   Show help and exit.
 
 **-V**, **\--version**
 
-:   show version and exit
+:   Show version and exit.
 
-## Actions:
+## ACTIONS:
 
 arraytobash
 

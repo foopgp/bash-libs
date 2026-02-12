@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Bash library and executable that generate id compliant with foopgp: OpenPGP ID.
+# Bash library and executable that manage id compliant with foopgp: OpenPGP ID.
 #
-# Copyright © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+# Copyright © 2025-2026 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 #
@@ -50,7 +50,7 @@ if [[ "$1" == --bash-completion ]] ; then
 					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
 					return 0
 				fi
-				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				COMPREPLY=( $(compgen -W "$coptions --frontend" -- $cur ) )
 				return 0 ;;
 		esac
 		# complete actions if none in ${COMP_WORDS[@]}
@@ -337,10 +337,11 @@ if ((BL_PGPID_isprogram)) ; then
 fi
 
 BL_PGPID_chelpmsg="
-"$"Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, OpenPGP certificate, etc.""
+"$"Generate and manage OpenPGP ID, an OpenPGP configuration providing universal and decentralized civil status to secure your digital life (emails, git, ssh, avatar, sso, etc.).""
+"$"It combines the power of OpenPGP (RFC 9580) with those of others open international standards: POSIX, ICAO 9303, ISO/IEC 7816, many others RFC.""
 
-Main options:
-  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND)"
+MAIN OPTIONS:
+  -f, --frontend PROGRAM   "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND"
 
 ### external functions ###
 
@@ -357,7 +358,7 @@ _bl_pgpid_parseoptions() {
 			-h|--help) printf "%s\n%s%s" "$BL_PGPID_usage" "$BL_PGPID_chelpmsg" "$BL_PGPID_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_PGPID_NAME" "$BL_PGPID_VERSION" ; return 1 ;;
 			--) shift ; break ;;
-			-*) printf -- "$BL_PGPID_NAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2 ; return 2 ;;
+			-*) printf -- "$BL_PGPID_NAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -480,7 +481,7 @@ Call 'gpg --with-colon' and ouput exportable secret keys (all if no argument), o
 KeyID     Creation_Date    Public_Key_Algorithm
 
 OPTIONS:
-  -H, --homedir GNUPGHOME   GnuPG home directory (default: ~/.gnupg). Environment variable: \$GNUPGHOME
+  -H, --homedir GNUPGHOME   GnuPG home directory - Environment variable: GNUPGHOME, default: '~/.gnupg'.
   -e, --exportable          Ouput only exportable secret keys (ie. present localy, excluding those on security token)
 "
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -493,7 +494,7 @@ OPTIONS:
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -541,7 +542,7 @@ OPTIONS:
 			-h|--h*) echo "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -569,9 +570,9 @@ bl_pgpid_mrz_to_u4() {
 Calculate and output a OpenPGP ID u4, from the Machine Readable Zone of an icao9303 passport.
 If MRZ is not passed as argument, it will we read from STDIN.
 
-Option:
-  -d, --birth-date YYYY-MM-DD  Birth date, expected format : Year-Month-Day (for people born 100+ years ago)
-  -u, --uncheck                Change some MRZ errors to warnings (only if you really know what you do !).
+OPTIONS:
+  -d, --birth-date YYYY-MM-DD  "$"Birth date, expected format : Year-Month-Day (for people born 100+ years ago).""
+  -u, --uncheck                "$"Change some MRZ errors to warnings (only if you really know what you do !).""
 
 WARNING: mrz data may be irrelevant to generate u4 string. eg:
          * Surname or given names may be incomplete (cut bc exceed mrz size)
@@ -660,7 +661,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -689,23 +690,23 @@ OPTIONS:
 	while [[ "$errlvl" == Warning ]] ; do
 		! bl_yesno --default=no --text \
 	"
-	Surname at birth:     ${sname}
-	Given names at birth: ${gname}
-	Date of birth:        ${bdate}
-	Country of birth:     ${bcountry}
+	"$"Surname at birth:""     ${sname}
+	"$"Given names at birth:"" ${gname}
+	"$"Date of birth:""        ${bdate}
+	"$"Country of birth:""     ${bcountry}
 	" \
-			"Is that correct" || break
+			$"Is that correct" || break
 
-		sname=$(bl_input --default "${sname^^}" "Birth surname (family name)")
-		gname=$(bl_input --default "${gname}" "Birth names (all given names)")
-		bdate=$(bl_input --iso-8601 --default "${bdate}" "Birth date (YYYY-MM-DD)")
-		bcountry=$(bl_input --default "${bcountry}" "Birth country (3 letter code)")
+		sname=$(bl_input --default "${sname^^}" $"Birth surname (family name)")
+		gname=$(bl_input --default "${gname}" $"Birth names (all given names)")
+		bdate=$(bl_input --iso-8601 --default "${bdate}" $"Birth date (YYYY-MM-DD)")
+		bcountry=$(bl_input --default "${bcountry}" $"Birth country (3 letter code)")
 	done
 
 	sname=$(sed 's,[ ;,<-]\+,<,g'<<<"$sname" ) # replace and squeeze some word separators
 	translit=$(iconv -f utf-8 -t ascii//TRANSLIT <<<"$sname") # transliterate (according to iconv), may differ from Passport transliterations.
 	if [[ "$translit" != "$sname" ]] ; then
-		echo "$FUNCNAME: Warning: '$sname'" $"has been transliterated to" "'$translit'." $"It may be WRONG !" >&2
+		printf "$FUNCNAME: Warning: "$"'%s' has been transliterated to '%s'. "$"It may be WRONG !""\n" "$sname" "$translit" >&2
 		sname="$translit"
 	fi
 	sname="${sname^^}" # uppercase
@@ -713,13 +714,13 @@ OPTIONS:
 	gname=$(sed 's,[ ;,<-]\+,<,g'<<<"$gname" )
 	translit=$(iconv -f utf-8 -t ascii//TRANSLIT <<<"$gname")
 	if [[ "$translit" != "$gname" ]] ; then
-		printf "%s: Warning: '%s' has been transliterated to '%s'. It may be WRONG !\n" "$FUNCNAME" "$gname" "$translit" >&2
+		printf "$FUNCNAME: Warning: "$"'%s' has been transliterated to '%s'. "$"It may be WRONG !""\n" "$gname" "$translit" >&2
 		gname="$translit"
 	fi
 	gname="${gname^^}"
 
 	if ! fakemrz="P<${bcountry}$(LC_COLLATE="C.UTF-8" grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${sname}<<$gname<<" )" ; then
-		printf "%s: Error: only [A-Z] characters allowed in names.\n" "$FUNCNAME" >&2
+		echo "$FUNCNAME: Error: "$"Only [A-Z] characters allowed in names." >&2
 		return 1
 	fi
 	fakemrz+="000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
@@ -775,7 +776,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -856,7 +857,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -958,7 +959,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -1069,7 +1070,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -1141,11 +1142,6 @@ bl_pgpid_token_check()
 	local helpmsg="
 "$"Check if OpenPGP token is correctly configured for OpenPGP ID ; may output informations.""
 "$"Will try to import cleaned certificate indicated in 'URL of public key' field.""
-"$"Return:""
- - "$"0 if no error and OpenPGP token is correctly configured for OpenPGP ID.""
- - "$"100 + number of missing OpenPGP ID data fields.""
- - "$"then 107 if all required data are missing (OpenPGP card is probably empty).""
- - "$"Other non-zero on other erros.""
 
 OPTIONS:
   -f, --no-fetch          "$"Don't try to fetch public certificate (from URL indicated in token metadata).""
@@ -1154,6 +1150,12 @@ OPTIONS:
   -H, --homedir GNUPGHOME "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
   -A, --aaname VARNAME    "$"If VARNAME is a reacheable associative array: fill it (whithout cleaning known fields)""
 							"$"else: Output 'declare -A VARNAME=...'""
+
+"$"Return value:""
+-   "$"0 if no error and OpenPGP token is correctly configured for OpenPGP ID.""
+- "$"100 + number of missing OpenPGP ID data fields.""
+- "$"then 107 if all required data are missing (OpenPGP card is probably empty).""
+- "$"Other non-zero on other errors.""
 "
 	local varname fetch=1 info=0 quiet=0 isaa=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -1175,7 +1177,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -1292,14 +1294,24 @@ bl_pgpid_certify() {
 OPTIONS:
   -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask.""
   -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate.""
+  -o, --ownertrust VALUE       "$"Set owner trust level"" {undefined,marginal,full,ultimate,never} - "$"Default: ""marginal.
   -G, --vouch                  "$"Take legal responsability for any actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
   -g, --vouch-for DOMAIN       "$"Assume some legal responsibilities on the target."" (Not implemented yet)
-  -l, --local                  "$"« Non-exportable » certification. Pretty useless. Allow to less affect credibility.""
+  -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing.""
   -f, --force-sign-key         "$"Allow to unrevoke or to change vouching.""
   -k, --keyserver KEYSERVER    "$"If non-empty, receive and send updated certificate to this keyserver. "$"Default: ""$keyserv.
-  -H, --homedir GNUPGHOME      "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME.
+  -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environnement variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'.
+
+"$"Return value:""
+-   0 "$"No error""
+-   2 "$"Input/Usage error""
+- 140 "$"Interactivity error""
+- 141 "$"No certificate for user""
+- 142 "$"Self-certification is not innovative! ;-)""
+- 143 "$"Key fingerprint does not match.""
+- "$"Other non-zero on other errors.""
 "
-	local revoke=0 keyid vouchfor signcmd="sign" oforce
+	local revoke=0 keyid vouchfor signcmd="sign" oforce ownertrust
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -1307,11 +1319,14 @@ OPTIONS:
 				shift ; keyid=$1 ;;
 			-R|--revoke)
 				revoke=1 ;;
+			-o|--ownertrust)
+				[[ "$2" =~ ^(undefined|marginal|full|ultimate|never)$ ]] || { printf -- "$FUNCNAME: Error: "$"Unknown ownertrust value '%s'"".\n" "$2" >&2 ; return 2 ;}
+				shift ; ownertrust=$1 ;;
 			-G|--vouch)
 				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
 				vouchfor="ALL" ;;
 			-g|--vouch-for)
-				[[ "$2" == ALL ]] || { printf -- "$FUNCNAME: Error:" $"Only %s is yet a known domain for vouching"".\n" "'ALL'" >&2 ; return 1 ;}
+				[[ "$2" == ALL ]] || { printf -- "$FUNCNAME: Error:" $"Only %s is yet a known domain for vouching"".\n" "'ALL'" >&2 ; return 2 ;}
 				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
 				shift ; vouchfor=${1:?} ;;
 			-l|--local)
@@ -1325,7 +1340,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -1338,7 +1353,7 @@ OPTIONS:
 		elif [[ "${1^^}" =~ ^[ABCDEF0-9]{40}$ ]] ; then
 			targetfpr=${BASH_REMATCH[0]}
 		else
-			printf "$FUNCNAME: Error: "$"Unrecognized argument"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2
+			printf "$FUNCNAME: Error: "$"Unrecognized argument"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2
 			return 2
 		fi
 		shift
@@ -1368,39 +1383,40 @@ OPTIONS:
 	# get fingerprints for certificate to certify
 	local fprs ifpr=0 uids
 	fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$targetid" | cut -d ' '  -f 1 | sort -u))
-	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "$targetid" >&2 ; return 1 ;}
+	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user"" '%s'.\n" "$targetid" >&2 ; return 141 ;}
 	if (( ${#fprs[@]} >= 2 )) ; then
 		printf "$FUNCNAME: Info: "$"User '%s' match many (%d) certificates"".\n" "$targetid" "${#fprs[@]}" >&2
-		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return $?
+		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return 140
 	fi
 
 	if [[ -z "$targetfpr" ]] ; then
 		local rep txt=$"Please verify and complete target's fingerprint:"
 		local question=".... .... $(sed -E 's,(....),\1 ,g' <<<${fprs[$ifpr]:8:32})"
 		for ((;;)) ; do
-			rep=$(bl_input --default "$rep" --text "$txt" "$question") || return $?
+			rep=$(bl_input --default "$rep" --text "$txt" "$question") || return 140
 			targetfpr=$(sed "s,[^ABCDEF0-9],,g" <<<${rep^^} )${fprs[$ifpr]:8:32}
 			[[ ${#targetfpr} != 40 ]] || break
 			txt=$"Enter the first 8 hexadecimal characters of target's fingerprint:"
 		done
 	fi
 
-	[[ "$targetfpr" != "$keyfpr" ]] || { echo "$FUNCNAME: Warning: "$"Self-certification is not innovative! ;-)" >&2 ; return 42 ;}
-	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 1 ;}
+	[[ "$targetfpr" != "$keyfpr" ]] || { echo "$FUNCNAME: Warning: "$"Self-certification is not innovative! ;-)" >&2 ; return 142 ;}
+	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 143 ;}
 
 	# Get full uids containing $targetid (cf. /usr/share/doc/gnupg/DETAILS.gz ; from first keyring only)
 	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:.*'"$targetid"'/ { i+=1 ; print $10 }')
 	[[ "$uids" ]] || { echo "$FUNCNAME: Crit: "$"No uid. Certificate is probably corrupted." >&2 ; return 1 ;}
 
 	if ((revoke)) ; then
-		if [[ "$oforce" ]] || [[ "$vouchfor" ]] ; then
-			echo "$FUNCNAME: Info: "$"Vouching or forcing are non-sense, then ignored, when revoking." >&2
-		fi
+		[[ -z "$ownertrust" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--ownertrust" >&2
+		[[ -z "$oforce" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--force-sign-key" >&2
+		[[ -z "$vouchfor" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--vouch-for" >&2
 		gpg --homedir "$gpghome" --quick-revoke-sig "$targetfpr" "$keyfpr" "${uids[@]/#/=}" || return $?
 		printf "$FUNCNAME: Notice: "$"The sub-layer (%s) return no error, but it may have found nothing to revoke.""\n" "gpg --quick-revoke-sig" >&2
 	else
 		gpg --homedir "$gpghome" --local-user "$keyfpr" $oforce --quick-$signcmd-key "$targetfpr" "${uids[@]/#/=}" || return $?
 		printf "$FUNCNAME: Notice: "$"Successfully sign %d '%s' inside certificate %s.""\n" ${#uids[@]} "$targetid" "$targetfpr" >&2
+		gpg --homedir "$gpghome" --quick-set-ownertrust "$targetfpr" "${ownertrust:-marginal}" || return $?
 	fi
 
 	[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "$keyserv" --send-keys "$targetfpr" || return $?
@@ -1411,10 +1427,10 @@ OPTIONS:
 if ((BL_PGPID_isprogram)) ; then
 	BL_PGPID_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_PGPID_shelpmsg="
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -h, --help              "$"Show help and exit.""
+  -V, --version           "$"Show version and exit.""
 
-Actions:
+ACTIONS:
 $(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s %s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help option, eg:
@@ -1453,7 +1469,7 @@ if function=$(grep -o "\<bl_pgpid_$1\>" <<< "${BL_PGPID_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "$BL_PGPID_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
+	printf "$BL_PGPID_NAME: Error: "$"Unrecognized action"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

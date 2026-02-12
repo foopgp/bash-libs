@@ -89,7 +89,8 @@ fi
 BL_DJIBIAN_chelpmsg="
 "$"System tools for Djibian GNU/Linux. Mainly to manage users.""
 
-Main options:"
+MAIN OPTIONS:
+  -f, --frontend PROGRAM   "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND"
 
 ### external functions ###
 
@@ -171,7 +172,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -188,6 +189,7 @@ OPTIONS:
 		local -A cardinfo
 
 		umask 0002 # Because bl_pgpid_token_check may write into /var/share/djibian/keyrings (sticky bit, group 'users')
+		su -l "${SUDO_USER:-$USER}" -c "gpgconf --kill scdaemon" || true
 		bl_pgpid_token_check --no-fetch --aaname cardinfo || return $?
 
 		email=${cardinfo[pgpid_email]}
@@ -258,8 +260,12 @@ OPTIONS:
 
 	if [[ "$fromcard" ]] ; then
 		# Try configuring its ~/.gnupg/ with its ownertrust set to ultimate
+		mkdir /home/$identifier/.gnupg
+		chmod go-rwx /home/$identifier/.gnupg
+		touch /home/$identifier/.gnupg/pubring.kbx
 		gpgconf --kill scdaemon
 		bl_pgpid_token_check --homedir "/home/$identifier/.gnupg" || true
+		gpgconf --homedir "/home/$identifier/.gnupg" --kill scdaemon
 		chown -hR "$username:$username" "/home/$identifier"
 		su -l "$username" -c "gpg --quick-set-ownertrust ${cardinfo[pgpid_Skeyfpr]} ultimate" || true
 	fi
@@ -279,7 +285,7 @@ bl_djibian_admins()
 OPTIONS:
   -a, --add USER        "$"Add user to admin group (sudo). May be passed multiple time.""
   -r, --remove USER     "$"Remove user to admin group (sudo). May be passed multiple time.""
-  -l, --list            "$"Do nothing, as $name always output users with admin rights (after eventual add or remove).""
+  -l, --list            "$"Do nothing, as users with admin rights are always output.""
 "
 	local toadd toremove ret=0
 	for ((;$#;)) ; do
@@ -293,7 +299,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_DJIBIAN_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -329,11 +335,10 @@ OPTIONS:
 if ((BL_DJIBIAN_isprogram)) ; then
 	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
-  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND)
-  -h, --help               "$"show help and exit""
-  -V, --version            "$"show version and exit""
+  -h, --help               "$"Show help and exit.""
+  -V, --version            "$"Show version and exit.""
 
-Actions:
+ACTIONS:
 $(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:11}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help option, eg:
@@ -372,7 +377,7 @@ if function=$(grep -o "\<bl_djibian_$1\>" <<< "${BL_DJIBIAN_FUNCTIONS[@]}") ; th
 	$function "$@"
 	exit $?
 else
-	printf "$BL_DJIBIAN_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
+	printf "$BL_DJIBIAN_NAME: Error: "$"Unrecognized action"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

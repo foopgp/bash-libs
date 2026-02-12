@@ -28,13 +28,13 @@ Bash-libs was initialy developped by **foopgp.org**, to manage:
 
 ## bl-pgpid
 
-Generate and manage OpenPGP ID: u4 or u5 strings, fixed system *uid*, OpenPGP certificate, etc.
+Generate and manage OpenPGP ID, an OpenPGP configuration providing universal and decentralized civil status to secure your digital life (emails, git, ssh, avatar, sso, etc.).
 
 See [**bl-pgpid**](bl-pgpid.1.md)(1) manual for more details.
 
 ## bl-qrkey
 
-Backup or restore OpenPGP keys using printed QR codes and Shamir's secret sharing.
+Backup or restore OpenPGP ID using printed QR codes and Shamir's secret sharing. Configure Yubikeys or Nitrokeys for OpenPGP ID.
 Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, ...).
 
 See [**bl-qrkey**](bl-qrkey.1.md)(1) manual for more details.

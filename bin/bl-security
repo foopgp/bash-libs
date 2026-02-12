@@ -45,7 +45,7 @@ if [[ "$1" == --bash-completion ]] ; then
 					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
 					return 0
 				fi
-				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				COMPREPLY=( $(compgen -W "$coptions --frontend" -- $cur ) )
 				return 0 ;;
 		esac
 		if grep -q "\<shred_path\>" <<< "${COMP_WORDS[@]}" ; then
@@ -89,8 +89,8 @@ fi
 BL_SECURITY_chelpmsg="
 "$"Provide some cybersecurity features.""
 
-Main options:
-  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND)"
+MAIN OPTIONS:
+  -f, --frontend PROGRAM   "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND"
 
 ### external functions ###
 
@@ -104,7 +104,7 @@ _bl_security_parseoptions() {
 	for ((;$#;)) ; do
 		case "$1" in
 			-f|--frontend) shift; frontend="$1";; # Will be passed to bl-interactive
-			-h|--help) printf "%s\n%s\n%s\n" "$BL_SECURITY_usage" "$BL_SECURITY_chelpmsg" "$BL_SECURITY_shelpmsg" ; return 1 ;;
+			-h|--help) printf "%s\n%s%s\n" "$BL_SECURITY_usage" "$BL_SECURITY_chelpmsg" "$BL_SECURITY_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_SECURITY_NAME" "$BL_SECURITY_VERSION" ; return 1 ;;
 			--) shift ; break ;;
 			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_SECURITY_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
@@ -139,7 +139,7 @@ bl_urandom() {
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -173,7 +173,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -227,7 +227,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -254,14 +254,14 @@ OPTIONS:
 	if $interactive ; then
 		local aspell_dicts
 		mapfile -t aspell_dicts < <(aspell dump dicts | grep "^[a-z]\+$")
-		dict=$(bl_radiolist -n 5 -v -p "Prefered language to generate a good passphrase:" "${aspell_dicts[@]}") || return $?
+		dict=$(bl_radiolist -n 5 -v -p $"Prefered language to generate a good passphrase:" "${aspell_dicts[@]}") || return $?
 	fi
 	# We use multiple time aspell dump, to avoid a big variable (using some Mo of RAM)
 	sd=$(aspell -d "$dict" dump master | grep --count --invert-match "'" ; exit ${PIPESTATUS[0]}) || return $?
 	while true ; do
 		ret="$(aspell -d "$dict" dump master | grep -v "'" | eval sed -n \""$sedcmd"\" | sed ':a;N;$!ba;s/\n/'"$delim"'/g')"
 		$interactive || break
-		! bl_yesno --default=yes --text "random passphrase: $ret" "Agree" || break
+		! bl_yesno --default=yes --text $"Random passphrase: ""$ret" $"Agree" || break
 	done
 	! $showsize || echo -n "$sd "
 	echo "$ret"
@@ -271,18 +271,18 @@ OPTIONS:
 bl_new_password() {
 	local name
 	local preamble dict=${LANG::2} nw=3
-	local question="Password"
+	local question=$"Password"
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] [QUESTION]..."
 	local helpmsg="
 "$"Ask to enter a new password and force retyping it.""
 "$"Output the new password.""
-(Default QUESTION: '$question')
+("$"Default QUESTION: ""'$question')
 
 OPTIONS:
   -t, --text TEXT           "$"Text to display as preamble. If none generate a passphrase suggestion.""
-  -D, --dict DICTIONARY     "$"Dictionary for passphrase suggestion (default: ${dict:=en})""
-  -n, --num NUMBER          "$"Number of words for passphrase suggestion (default: $nw)""
+  -D, --dict DICTIONARY     "$"Dictionary for passphrase suggestion"" - "$"Default: ""${dict:=en}
+  -n, --num NUMBER          "$"Number of words for passphrase suggestion"" - "$"Default: ""$nw
 "
 	for ((;$#;)) ; do
 		case "$1" in
@@ -292,7 +292,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_SECURITY_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -341,7 +341,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -396,10 +396,10 @@ OPTIONS:
 if ((BL_SECURITY_isprogram)) ; then
 	BL_SECURITY_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_SECURITY_shelpmsg="
-  -h, --help               "$"show help and exit""
-  -V, --version            "$"show version and exit""
+  -h, --help               "$"Show help and exit.""
+  -V, --version            "$"Show version and exit.""
 
-Actions:
+ACTIONS:
 $(for f in "${BL_SECURITY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 "$"All actions support a --help option, eg:""
@@ -436,7 +436,7 @@ if function=$(grep -o "\<bl_$1\>" <<< "${BL_SECURITY_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "$BL_SECURITY_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
+	printf "$BL_SECURITY_NAME: Error: "$"Unrecognized action"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 

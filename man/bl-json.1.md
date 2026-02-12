@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-JSON
 section: 1
 header: User Commands
-footer: bash-libs 0.2.9
+footer: bash-libs 0.3.0
 ---
 
 # NAME
@@ -26,17 +26,17 @@ bash variables or arrays, and vice-versa.
 Use jq (Command-line JSON processor) to convert json data to bash
 variables or arrays, and vice-versa.
 
-## Main options:
+## MAIN OPTIONS:
 
 **-h**, **\--help**
 
-:   show help and exit
+:   Show help and exit.
 
 **-V**, **\--version**
 
-:   show version and exit
+:   Show version and exit.
 
-## Actions:
+## ACTIONS:
 
 from_str
 

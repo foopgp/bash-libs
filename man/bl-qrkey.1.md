@@ -8,13 +8,14 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-QRKEY
 section: 1
 header: User Commands
-footer: bash-libs 0.2.9
+footer: bash-libs 0.3.0
 ---
 
 # NAME
 
-bl-qrkey - Backup or restore OpenPGP keys using printed QR codes and
-Shamir\'s secret sharing.
+bl-qrkey - Backup or restore OpenPGP ID using printed QR codes and
+Shamir\'s secret sharing. Configure Yubikeys or Nitrokeys for OpenPGP
+ID.
 
 # SYNOPSIS
 
@@ -23,30 +24,31 @@ Shamir\'s secret sharing.
 
 # DESCRIPTION
 
-Backup or restore OpenPGP keys using printed QR codes and Shamir\'s
-secret sharing. Also facilitate changing passphrase protecting OpenPGP
-keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey,
-\...).
+Backup or restore OpenPGP ID using printed QR codes and Shamir\'s secret
+sharing. Configure Yubikeys or Nitrokeys for OpenPGP ID. Also facilitate
+changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of
+OpenPGP security tokens (YubiKey, \...).
 
-Note: OpenPGP keys should have been generated with bl-pgpid. Unexpected
-keys may cause unexpected issues.
+Note: OpenPGP ID is a specific OpenPGP configuration managed by
+bl-pgpid. Using bl-qrkey with other OpenPGP configuration should cause
+unexpected issues.
 
-## Main options:
+## MAIN OPTIONS:
 
 **-f**, **\--frontend** PROGRAM
 
-:   Select a frontend program {NONE,whiptail,dialog,zenity} (environment
-    var: BL_INTERACTIVE_FRONTEND)
+:   Select a frontend program {NONE,whiptail,dialog,zenity} -
+    Environment variable: BL_INTERACTIVE_FRONTEND
 
 **-h**, **\--help**
 
-:   show help and exit
+:   Show help and exit.
 
 **-V**, **\--version**
 
-:   show version and exit
+:   Show version and exit.
 
-## Actions:
+## ACTIONS:
 
 change_passphrase
 

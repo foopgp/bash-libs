@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-DJI
 section: 1
 header: User Commands
-footer: bash-libs 0.2.9
+footer: bash-libs 0.3.0
 ---
 
 # NAME
@@ -24,17 +24,17 @@ bl-dji - Manage djis (Ɉ), also known as foopgp tokens.
 
 Manage djis (Ɉ), also known as foopgp tokens.
 
-## Main options:
+## MAIN OPTIONS:
 
 **-h**, **\--help**
 
-:   show help and exit
+:   Show help and exit.
 
 **-V**, **\--version**
 
-:   show version and exit
+:   Show version and exit.
 
-## Actions:
+## ACTIONS:
 
 2micro
 

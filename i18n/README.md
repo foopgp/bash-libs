@@ -15,6 +15,18 @@ make update
 ```
 ---
 
+# About transliterations
+
+ICAO 9330 standard, then 'u4' string which is build on it, requires rigorous civil status processes and deterministic transliterations.
+
+Alas, both of them depends on administrations which are all, more or less, fallible. And there no deterministic and stable transliterations for all people birth's name in the world.
+
+BTW, bl-pgpid used *iconv -f utf-8 -t ascii//TRANSLIT* to automate (with warning) transliteration for latin alphabets.
+Note that, if we maybe could use instead *konwert UTF8-ascii* to manage many more alphabets (e.g.: Cyrillic, Japanese, ...).
+Such decision depends on accuracy and size of this eventually new dependency.
+
+---
+
 # About using gettext to internationalize bash-written software
 
 I really plan to use this bash feature:
@@ -106,7 +118,6 @@ things in a bash program that use the *$"string"* feature.
 Moreover hackers may also do very nasty things to such program, by changing
 TEXTDOMAINDIR or TEXTDOMAIN environment variables to make any bash code using
 that feature running some malevolent code placed into forged \*.mo files.
-
 
 Then the workaround I plan to use, is to:
  * Forbid any «`» or «$» in strings-to-be-translated

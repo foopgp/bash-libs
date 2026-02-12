@@ -40,7 +40,7 @@ if [[ "$1" == --bash-completion ]] ; then
 					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
 					return 0
 				fi
-				COMPREPLY=( $(compgen -W "$coptions --frontend" -- $cur ) )
+				COMPREPLY=( $(compgen -W "$coptions --frontend --zenity-extra" -- $cur ) )
 				return 0 ;;
 		esac
 		# complete actions if none in ${COMP_WORDS[@]}
@@ -83,9 +83,9 @@ fi
 BL_INTERACTIVE_chelpmsg="
 "$"Help managing interactive choices, while supporting multiple frontends: NONE, whiptail, dialog or zenity.""
 
-Main options:
-  -f, --frontend PROGRAM   "$"Select a frontend program {NONE,whiptail,dialog,zenity} (environment var: ""BL_INTERACTIVE_FRONTEND, "$"default: ""$BL_INTERACTIVE_FRONTEND)
-  -z, --zenity-extra ARGS  "$"Extra args for zenity (if used), cf: zenity --help-general (environment var: ""BL_INTERACTIVE_ZENITY_EXTRA, "$"default: ""$BL_INTERACTIVE_ZENITY_EXTRA)"
+MAIN OPTIONS:
+  -f, --frontend PROGRAM   "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND, "$"default: ""$BL_INTERACTIVE_FRONTEND
+  -z, --zenity-extra ARGS  "$"Extra args for zenity (if used)"" (zenity --help-general) - "$"Environment variable: ""BL_INTERACTIVE_ZENITY_EXTRA, "$"default: ""$BL_INTERACTIVE_ZENITY_EXTRA"
 
 ### internal functions ###
 
@@ -99,14 +99,14 @@ _bl_interactive_parseoptions() {
 			-z|--zenity-extra)
 				shift ; BL_INTERACTIVE_ZENITY_EXTRA="$1" ;;
 			-h|--help)
-				printf "%s\n%s\n%s\n" "$BL_INTERACTIVE_usage" "$BL_INTERACTIVE_chelpmsg" "$BL_INTERACTIVE_shelpmsg" ;
+				printf "%s\n%s%s\n" "$BL_INTERACTIVE_usage" "$BL_INTERACTIVE_chelpmsg" "$BL_INTERACTIVE_shelpmsg" ;
 				return 1 ;;
 			-V|--version)
 				printf "%s %s\n" "$BL_INTERACTIVE_NAME" "$BL_INTERACTIVE_VERSION" ;
 				return 1 ;;
 			--)
 				shift ; break ;;
-			-*) printf -- "$BL_INTERACTIVE_NAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2 ; return 2 ;;
+			-*) printf -- "$BL_INTERACTIVE_NAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2 ; return 2 ;;
 			*)
 				break ;;
 		esac
@@ -200,7 +200,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -256,7 +256,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -343,7 +343,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -413,7 +413,7 @@ OPTIONS:
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_INTERACTIVE_VERSION" ; return ;;
 			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 			*) break ;;
 		esac
 		shift
@@ -492,10 +492,10 @@ OPTIONS:
 if ((BL_INTERACTIVE_isprogram)) ; then
 	BL_INTERACTIVE_usage="Usage: $(basename "$BASH_SOURCE") [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_INTERACTIVE_shelpmsg="
-  -h, --help               "$"show help and exit""
-  -V, --version            "$"show version and exit""
+  -h, --help               "$"Show help and exit.""
+  -V, --version            "$"Show version and exit.""
 
-Actions:
+ACTIONS:
 $(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
 
 All actions support a --help option, eg:
@@ -532,7 +532,7 @@ if function=$(grep -o "\<bl_$1\>" <<< "${BL_INTERACTIVE_FUNCTIONS[@]}") ; then
 	$function "$@"
 	exit $?
 else
-	printf "$BL_INTERACTIVE_NAME: Error: "$"Unrecognized action"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
+	printf "$BL_INTERACTIVE_NAME: Error: "$"Unrecognized action"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
 	exit 2
 fi
 
