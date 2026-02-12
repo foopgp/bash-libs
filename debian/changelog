@@ -1,3 +1,20 @@
+bash-libs (0.3.0-1) UNRELEASED; urgency=medium
+
+  [ jjbrucker ]
+  * minor improve completion
+  * big wording changes for coherence + translation 
+  * bl_djibian_adduser(): bugfix with files and scdaemon ownerships
+  * Improve bl-pgpid and bl-qrkey main description
+  * bl_pgpid_certify(): change return values + new option --ownertrust
+  * debian/control: update descriptions
+  * update/fix translations
+  * update manpages
+
+  [ mael ]
+  * update traduction
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Thu, 12 Feb 2026 19:55:04 +0100
+
 bash-libs (0.2.9-1) unstable; urgency=medium
 
   [ jjbrucker ]
