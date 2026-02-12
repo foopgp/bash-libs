@@ -8,13 +8,14 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs 0.2.9
+footer: bash-libs 0.3.0
 ---
 
 # NAME
 
-bl-pgpid - Generate and manage OpenPGP ID: u4 or u5 strings, fixed
-system \*uid\*, OpenPGP certificate, etc.
+bl-pgpid - Generate and manage OpenPGP ID, an OpenPGP configuration
+providing universal and decentralized civil status to secure your
+digital life (emails, git, ssh, avatar, sso, etc.).
 
 # SYNOPSIS
 
@@ -23,25 +24,28 @@ system \*uid\*, OpenPGP certificate, etc.
 
 # DESCRIPTION
 
-Generate and manage OpenPGP ID: u4 or u5 strings, fixed system \*uid\*,
-OpenPGP certificate, etc.
+Generate and manage OpenPGP ID, an OpenPGP configuration providing
+universal and decentralized civil status to secure your digital life
+(emails, git, ssh, avatar, sso, etc.). It combines the power of OpenPGP
+(RFC 9580) with those of others open international standards: POSIX,
+ICAO 9303, ISO/IEC 7816, many others RFC.
 
-## Main options:
+## MAIN OPTIONS:
 
 **-f**, **\--frontend** PROGRAM
 
-:   Select a frontend program {NONE,whiptail,dialog,zenity} (environment
-    var: BL_INTERACTIVE_FRONTEND)
+:   Select a frontend program {NONE,whiptail,dialog,zenity} -
+    Environment variable: BL_INTERACTIVE_FRONTEND
 
 **-h**, **\--help**
 
-:   show help and exit
+:   Show help and exit.
 
 **-V**, **\--version**
 
-:   show version and exit
+:   Show version and exit.
 
-## Actions:
+## ACTIONS:
 
 mrz_to_u4
 

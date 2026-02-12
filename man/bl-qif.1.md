@@ -8,12 +8,12 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-QIF
 section: 1
 header: User Commands
-footer: bash-libs 0.2.9
+footer: bash-libs 0.3.0
 ---
 
 # NAME
 
-bl-qif - Main options:
+bl-qif - MAIN OPTIONS:
 
 # SYNOPSIS
 
@@ -22,17 +22,17 @@ bl-qif - Main options:
 
 # DESCRIPTION
 
-## Main options:
+## MAIN OPTIONS:
 
 **-h**, **\--help**
 
-:   show help and exit/return
+:   Show help and exit/return
 
 **-V**, **\--version**
 
-:   show version and exit/return
+:   Show version and exit/return
 
-## Actions:
+## ACTIONS:
 
 tobash
 

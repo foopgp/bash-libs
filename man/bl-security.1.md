@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-SECURITY
 section: 1
 header: User Commands
-footer: bash-libs 0.2.9
+footer: bash-libs 0.3.0
 ---
 
 # NAME
@@ -24,22 +24,22 @@ bl-security - Provide some cybersecurity features.
 
 Provide some cybersecurity features.
 
-## Main options:
+## MAIN OPTIONS:
 
 **-f**, **\--frontend** PROGRAM
 
-:   Select a frontend program {NONE,whiptail,dialog,zenity} (environment
-    var: BL_INTERACTIVE_FRONTEND)
+:   Select a frontend program {NONE,whiptail,dialog,zenity} -
+    Environment variable: BL_INTERACTIVE_FRONTEND
 
 **-h**, **\--help**
 
-:   show help and exit
+:   Show help and exit.
 
 **-V**, **\--version**
 
-:   show version and exit
+:   Show version and exit.
 
-## Actions:
+## ACTIONS:
 
 urandom
 

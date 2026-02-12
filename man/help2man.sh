@@ -75,7 +75,7 @@ EOF
 	# Fix 2 artefacts.
 	sed -i ' s, \.\./bin/bl-, bl-, ; /All actions .*/i \\ ' "${blname}.1.md.draft"
 	# Fix 2 more artefacts.
-	sed -i 's,(É.),(Ɉ), ; s,^Main options:,## Main options:,' "${blname}.1.md.draft"
+	sed -i 's,(É.),(Ɉ), ;  s,(â\\\\¬),(€), ' "${blname}.1.md.draft"
 
 	# Ask for erasing previous man
 	if ! colordiff --report-identical-files --unified "${blname}.1.md" "${blname}.1.md.draft" ; then

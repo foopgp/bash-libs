@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-INTERACTIVE
 section: 1
 header: User Commands
-footer: bash-libs 0.2.9
+footer: bash-libs 0.3.0
 ---
 
 # NAME
@@ -26,27 +26,27 @@ multiple frontends: NONE, whiptail, dialog or zenity.
 Help managing interactive choices, while supporting multiple frontends:
 NONE, whiptail, dialog or zenity.
 
-## Main options:
+## MAIN OPTIONS:
 
 **-f**, **\--frontend** PROGRAM
 
-:   Select a frontend program {NONE,whiptail,dialog,zenity} (environment
-    var: BL_INTERACTIVE_FRONTEND, default: NONE)
+:   Select a frontend program {NONE,whiptail,dialog,zenity} -
+    Environment variable: BL_INTERACTIVE_FRONTEND, default: NONE
 
 **-z**, **\--zenity-extra** ARGS
 
-:   Extra args for zenity (if used), cf: zenity **\--help-general**
-    (environment var: BL_INTERACTIVE_ZENITY_EXTRA, default: )
+:   Extra args for zenity (if used) (zenity **\--help-general**) -
+    Environment variable: BL_INTERACTIVE_ZENITY_EXTRA, default:
 
 **-h**, **\--help**
 
-:   show help and exit
+:   Show help and exit.
 
 **-V**, **\--version**
 
-:   show version and exit
+:   Show version and exit.
 
-## Actions:
+## ACTIONS:
 
 msgstop
 

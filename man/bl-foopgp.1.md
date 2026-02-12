@@ -8,13 +8,13 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-FOOPGP
 section: 1
 header: User Commands
-footer: bash-libs 0.2.9
+footer: bash-libs 0.3.0
 ---
 
 # NAME
 
 bl-foopgp - Calculate how many djis (Ɉ) may be created for each
-contribution in euros to the the foopgp association.
+contribution in euros (€) to the the foopgp association.
 
 # SYNOPSIS
 
@@ -26,7 +26,7 @@ contribution in euros to the the foopgp association.
 Calculate how many djis (Ɉ) may be created for each contribution in
 euros (€) to the the foopgp association.
 
-## Main options:
+## MAIN OPTIONS:
 
 **-v**, **\--verbose**
 
@@ -43,13 +43,13 @@ euros (€) to the the foopgp association.
 
 **-h**, **\--help**
 
-:   show help and exit
+:   Show help and exit.
 
 **-V**, **\--version**
 
-:   show version and exit
+:   Show version and exit.
 
-## Actions:
+## ACTIONS:
 
 symlinks
 
