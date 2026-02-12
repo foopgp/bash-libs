@@ -520,8 +520,8 @@ OPTIONS:
 if ((BL_DJI_isprogram)) ; then
 	BL_DJI_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_DJI_shelpmsg="
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -h, --help              "$"Show help and exit.""
+  -V, --version           "$"Show version and exit.""
 
 ACTIONS:
 $(for f in "${BL_DJI_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:7}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)

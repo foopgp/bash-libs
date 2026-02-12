@@ -285,7 +285,7 @@ bl_djibian_admins()
 OPTIONS:
   -a, --add USER        "$"Add user to admin group (sudo). May be passed multiple time.""
   -r, --remove USER     "$"Remove user to admin group (sudo). May be passed multiple time.""
-  -l, --list            "$"Do nothing, as $name always output users with admin rights (after eventual add or remove).""
+  -l, --list            "$"Do nothing, as users with admin rights are always output.""
 "
 	local toadd toremove ret=0
 	for ((;$#;)) ; do
@@ -335,8 +335,8 @@ OPTIONS:
 if ((BL_DJIBIAN_isprogram)) ; then
 	BL_DJIBIAN_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_DJIBIAN_shelpmsg="
-  -h, --help               "$"show help and exit""
-  -V, --version            "$"show version and exit""
+  -h, --help               "$"Show help and exit.""
+  -V, --version            "$"Show version and exit.""
 
 ACTIONS:
 $(for f in "${BL_DJIBIAN_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:11}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)

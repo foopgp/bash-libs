@@ -71,8 +71,8 @@ fi
 
 BL_QIF_chelpmsg="
 MAIN OPTIONS:
-  -h, --help               show help and exit/return
-  -V, --version            show version and exit/return
+  -h, --help               Show help and exit/return
+  -V, --version            Show version and exit/return
 "
 
 ### external functions ###

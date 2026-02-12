@@ -88,7 +88,7 @@ _bl_json_parseoptions() {
 	local npp=$#
 	for ((;$#;)) ; do
 		case "$1" in
-			-h|--help) printf "%s\n%s\n%s\n" "$BL_JSON_usage" "$BL_JSON_chelpmsg" "$BL_JSON_shelpmsg" ; return 1 ;;
+			-h|--help) printf "%s\n%s%s\n" "$BL_JSON_usage" "$BL_JSON_chelpmsg" "$BL_JSON_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_JSON_NAME" "$BL_JSON_VERSION" ; return 1 ;;
 			--) shift ; break ;;
 			-*) printf "%s: unrecognized option '%s'\n\nTry '%s --help' for more information.\n" "$BL_JSON_NAME" "$1" "$BASH_SOURCE" >&2 ; return 2 ;;
@@ -135,7 +135,7 @@ bl_json_from_var() {
 
 OPTIONS:
     -n, --nested        "$"Assume any value beginning with \"declare -[aA]\" are nested data to be translate to JSON format""
-    -s, --shift NUMBER  "$"Number of tabs shifting of each line (default $shft)""
+    -s, --shift NUMBER  "$"Number of tabs shifting of each line"" - "$"Default: ""$shft
 
 "$"Warnings: --nested option may introduce security issues (because it uses eval on unsanitized inputs).""
 
@@ -337,8 +337,8 @@ OPTIONS:
 if ((BL_JSON_isprogram)) ; then
 	BL_JSON_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_JSON_shelpmsg="
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -h, --help              "$"Show help and exit.""
+  -V, --version           "$"Show version and exit.""
 
 ACTIONS:
 $(for f in "${BL_JSON_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:8}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)

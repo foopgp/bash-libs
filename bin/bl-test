@@ -71,8 +71,8 @@ readonly BL_TEST_NAME BL_TEST_VERSION BL_TEST_FUNCTIONS
 
 BL_TEST_chelpmsg="
 MAIN OPTIONS:
-  -h, --help               show help and exit/return
-  -V, --version            show version and exit/return"
+  -h, --help               Show help and exit/return
+  -V, --version            Show version and exit/return"
 
 if ((BL_TEST_isprogram)) ; then
 	#! if bl_$0 is an exposed function written above (eg: symlink --> readlink -f $BASH_SOURCE), execute it NOW (with default global parameters)

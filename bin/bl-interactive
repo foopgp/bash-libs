@@ -99,7 +99,7 @@ _bl_interactive_parseoptions() {
 			-z|--zenity-extra)
 				shift ; BL_INTERACTIVE_ZENITY_EXTRA="$1" ;;
 			-h|--help)
-				printf "%s\n%s\n%s\n" "$BL_INTERACTIVE_usage" "$BL_INTERACTIVE_chelpmsg" "$BL_INTERACTIVE_shelpmsg" ;
+				printf "%s\n%s%s\n" "$BL_INTERACTIVE_usage" "$BL_INTERACTIVE_chelpmsg" "$BL_INTERACTIVE_shelpmsg" ;
 				return 1 ;;
 			-V|--version)
 				printf "%s %s\n" "$BL_INTERACTIVE_NAME" "$BL_INTERACTIVE_VERSION" ;
@@ -492,8 +492,8 @@ OPTIONS:
 if ((BL_INTERACTIVE_isprogram)) ; then
 	BL_INTERACTIVE_usage="Usage: $(basename "$BASH_SOURCE") [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_INTERACTIVE_shelpmsg="
-  -h, --help               "$"show help and exit""
-  -V, --version            "$"show version and exit""
+  -h, --help               "$"Show help and exit.""
+  -V, --version            "$"Show version and exit.""
 
 ACTIONS:
 $(for f in "${BL_INTERACTIVE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)

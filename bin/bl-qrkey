@@ -930,8 +930,8 @@ OPTIONS:
 if ((BL_QRKEY_isprogram)) ; then
 	BL_QRKEY_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_QRKEY_shelpmsg="
-  -h, --help               "$"show help and exit""
-  -V, --version            "$"show version and exit""
+  -h, --help               "$"Show help and exit.""
+  -V, --version            "$"Show version and exit.""
 
 ACTIONS:
 $(for f in "${BL_QRKEY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)

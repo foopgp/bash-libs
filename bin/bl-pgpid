@@ -706,7 +706,7 @@ OPTIONS:
 	sname=$(sed 's,[ ;,<-]\+,<,g'<<<"$sname" ) # replace and squeeze some word separators
 	translit=$(iconv -f utf-8 -t ascii//TRANSLIT <<<"$sname") # transliterate (according to iconv), may differ from Passport transliterations.
 	if [[ "$translit" != "$sname" ]] ; then
-		printf "$FUNCNAME: Warning: "$"'$%s' has been transliterated to '%s'. "$"It may be WRONG !""\n" "$sname" "$translit" >&2
+		printf "$FUNCNAME: Warning: "$"'%s' has been transliterated to '%s'. "$"It may be WRONG !""\n" "$sname" "$translit" >&2
 		sname="$translit"
 	fi
 	sname="${sname^^}" # uppercase
@@ -714,7 +714,7 @@ OPTIONS:
 	gname=$(sed 's,[ ;,<-]\+,<,g'<<<"$gname" )
 	translit=$(iconv -f utf-8 -t ascii//TRANSLIT <<<"$gname")
 	if [[ "$translit" != "$gname" ]] ; then
-		printf "$FUNCNAME: Warning: "$"'$%s' has been transliterated to '%s'. "$"It may be WRONG !""\n" "$gname" "$translit" >&2
+		printf "$FUNCNAME: Warning: "$"'%s' has been transliterated to '%s'. "$"It may be WRONG !""\n" "$gname" "$translit" >&2
 		gname="$translit"
 	fi
 	gname="${gname^^}"
@@ -1427,8 +1427,8 @@ OPTIONS:
 if ((BL_PGPID_isprogram)) ; then
 	BL_PGPID_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_PGPID_shelpmsg="
-  -h, --help               show help and exit
-  -V, --version            show version and exit
+  -h, --help              "$"Show help and exit.""
+  -V, --version           "$"Show version and exit.""
 
 ACTIONS:
 $(for f in "${BL_PGPID_FUNCTIONS[@]}" ; do printf "   %-19s %s\n" "${f:9}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)

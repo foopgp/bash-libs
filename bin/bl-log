@@ -137,8 +137,8 @@ OPTIONS:
   -Q, --no-act             "$"do not send message to the logs system (syslog)""
       --color[=<on|off|auto>]
                            "$"colorize messages sent to standard error (default: auto)""
-  -h, --help               "$"show help and exit/return""
-  -V, --version            "$"show version and exit/return""
+  -h, --help               "$"Show help and exit/return""
+  -V, --version            "$"Show version and exit/return""
 
 "$"Options forwarded to 'logger':""
   -i                       "$"log the logger command's PID""

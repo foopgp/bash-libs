@@ -277,12 +277,12 @@ bl_new_password() {
 	local helpmsg="
 "$"Ask to enter a new password and force retyping it.""
 "$"Output the new password.""
-(Default QUESTION: '$question')
+("$"Default QUESTION: ""'$question')
 
 OPTIONS:
   -t, --text TEXT           "$"Text to display as preamble. If none generate a passphrase suggestion.""
-  -D, --dict DICTIONARY     "$"Dictionary for passphrase suggestion (default: ${dict:=en})""
-  -n, --num NUMBER          "$"Number of words for passphrase suggestion (default: $nw)""
+  -D, --dict DICTIONARY     "$"Dictionary for passphrase suggestion"" - "$"Default: ""${dict:=en}
+  -n, --num NUMBER          "$"Number of words for passphrase suggestion"" - "$"Default: ""$nw
 "
 	for ((;$#;)) ; do
 		case "$1" in
@@ -396,8 +396,8 @@ OPTIONS:
 if ((BL_SECURITY_isprogram)) ; then
 	BL_SECURITY_usage="Usage: $BASH_SOURCE [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
 	BL_SECURITY_shelpmsg="
-  -h, --help               "$"show help and exit""
-  -V, --version            "$"show version and exit""
+  -h, --help               "$"Show help and exit.""
+  -V, --version            "$"Show version and exit.""
 
 ACTIONS:
 $(for f in "${BL_SECURITY_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:3}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
