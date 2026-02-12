@@ -1385,7 +1385,7 @@ msgid "Invalid or ambiguous private key to use '%s'."
 msgstr ""
 
 #: ../bin/bl-pgpid:1389
-msgid "Please select fingerprint"
+msgid "Please select key fingerprint"
 msgstr ""
 
 #: ../bin/bl-pgpid:1393
@@ -1393,7 +1393,7 @@ msgid "Please verify and complete target's fingerprint:"
 msgstr ""
 
 #: ../bin/bl-pgpid:1399
-msgid "Enter the first 8 hexadecimal characters of target's fingerprint:"
+msgid "Enter the first 8 hexadecimal characters of target's key fingerprint:"
 msgstr ""
 
 #: ../bin/bl-pgpid:1408

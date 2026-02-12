@@ -1013,13 +1013,13 @@ msgstr ""
 msgid "Invalid or ambiguous private key to use '%s'."
 msgstr ""
 
-msgid "Please select fingerprint"
+msgid "Please select key fingerprint"
 msgstr ""
 
 msgid "Please verify and complete target's fingerprint:"
 msgstr ""
 
-msgid "Enter the first 8 hexadecimal characters of target's fingerprint:"
+msgid "Enter the first 8 hexadecimal characters of target's key fingerprint:"
 msgstr ""
 
 msgid "No uid. Certificate is probably corrupted."

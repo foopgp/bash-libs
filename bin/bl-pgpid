@@ -1386,7 +1386,7 @@ OPTIONS:
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user"" '%s'.\n" "$targetid" >&2 ; return 141 ;}
 	if (( ${#fprs[@]} >= 2 )) ; then
 		printf "$FUNCNAME: Info: "$"User '%s' match many (%d) certificates"".\n" "$targetid" "${#fprs[@]}" >&2
-		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return 140
+		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select key fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return 140
 	fi
 
 	if [[ -z "$targetfpr" ]] ; then
@@ -1396,7 +1396,7 @@ OPTIONS:
 			rep=$(bl_input --default "$rep" --text "$txt" "$question") || return 140
 			targetfpr=$(sed "s,[^ABCDEF0-9],,g" <<<${rep^^} )${fprs[$ifpr]:8:32}
 			[[ ${#targetfpr} != 40 ]] || break
-			txt=$"Enter the first 8 hexadecimal characters of target's fingerprint:"
+			txt=$"Enter the first 8 hexadecimal characters of target's key fingerprint:"
 		done
 	fi
 
