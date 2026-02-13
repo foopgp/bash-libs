@@ -636,11 +636,9 @@ msgstr ""
 "colorer les messages envoyés sur la sortie d’erreur standard (par défaut : "
 "auto)"
 
-#, fuzzy
 msgid "Show help and exit/return"
 msgstr "Afficher l’aide et quitter / retourner"
 
-#, fuzzy
 msgid "Show version and exit/return"
 msgstr "Afficher la version et quitter / retourner"
 
@@ -748,7 +746,7 @@ msgid "No editable OpenPGP certificate (in %s)"
 msgstr "Aucun certificat OpenPGP modifiable (dans %s)"
 
 msgid "Choosing the only one editable OpenPGP certificate (%s)"
-msgstr ""
+msgstr "Sélection du seul certificat OpenPGP modifiable (%s)"
 
 msgid ""
 "Birth date, expected format : Year-Month-Day (for people born 100+ years "
@@ -1002,10 +1000,10 @@ msgid "supernumerary OpenPGP ID string"
 msgstr "Chaîne d’identifiant OpenPGP surnuméraire"
 
 msgid ""
-"Check if OpenPGP token is correctly configured for OpenPGP ID ; may output "
+"Check if security token is correctly configured for OpenPGP ID ; may output "
 "informations."
 msgstr ""
-"Vérifier si le token OpenPGP est correctement configuré pour OpenPGP ID ; "
+"Vérifier si la clé de sécurité est correctement configuré pour OpenPGP ID ; "
 "peut afficher des informations."
 
 msgid ""
@@ -1019,7 +1017,13 @@ msgid ""
 "Don't try to fetch public certificate (from URL indicated in token metadata)."
 msgstr ""
 "Ne pas tenter de récupérer le certificat public (depuis l’URL indiquée dans "
-"les métadonnées du token)."
+"les métadonnées de la clé)."
+
+msgid "Don't errput 'Info' or 'Notice' messages."
+msgstr "Ne pas afficher les messages « Info » ou « Notice »."
+
+msgid "Output certificate fingerprint (Certification key fpr)."
+msgstr "Afficher l’empreinte du certificat (de la clé de certification)."
 
 msgid ""
 "Output content of the associative array containing relevant metadata (may be "
@@ -1027,9 +1031,6 @@ msgid ""
 msgstr ""
 "Afficher le contenu du tableau associatif contenant les métadonnées "
 "pertinentes (peut être évalué avec eval)."
-
-msgid "Don't errput 'Info' or 'Notice' messages."
-msgstr "Ne pas afficher les messages « Info » ou « Notice »."
 
 msgid ""
 "If VARNAME is a reacheable associative array: fill it (whithout cleaning "
@@ -1044,9 +1045,10 @@ msgstr "Sinon : afficher « declare -A VARNAME=... »"
 msgid "Return value:"
 msgstr "Valeur de retour :"
 
-msgid "0 if no error and OpenPGP token is correctly configured for OpenPGP ID."
+msgid ""
+"0 if no error and security token is correctly configured for OpenPGP ID."
 msgstr ""
-"0 s’il n’y a aucune erreur et que le token OpenPGP est correctement "
+"0 s’il n’y a aucune erreur et que la clé de sécurité est correctement "
 "configuré pour OpenPGP ID."
 
 msgid "100 + number of missing OpenPGP ID data fields."
@@ -1066,6 +1068,11 @@ msgstr "Arguments supplémentaires '%s' ignorés..."
 
 msgid "Getting pubkey from %s ..."
 msgstr "Récupération de la clé publique depuis %s ..."
+
+msgid ""
+"No certificate fingerprint. Please fetch this key (on keyserver, by "
+"email, ...)"
+msgstr ""
 
 msgid "supernumerary emails, skipping"
 msgstr "Adresses e-mail surnuméraires, ignorées"
@@ -1114,15 +1121,16 @@ msgid "Select private key to use. "
 msgstr "Sélectionner la clé privée à utiliser."
 
 msgid "Guess it from connected token, else ask."
-msgstr "La deviner à partir du token connecté, sinon demander."
+msgstr "La deviner à partir de la clé de sécurité connecté, sinon demander."
 
 msgid "Revoke your previous certifications on someone else's certificate."
 msgstr ""
 "Révoquer vos certifications précédentes sur le certificat d’une autre "
 "personne."
 
-msgid "Set owner trust level"
-msgstr ""
+msgid ""
+"What level of trust do you assign to the target to correctly certify others"
+msgstr "Quelle confiance attribuez-vous à la cible pour certifier correctement"
 
 msgid "Take legal responsability for any actions by the target. "
 msgstr "Assumer la responsabilité légale des actions de la personne ciblée. "
@@ -1240,7 +1248,7 @@ msgstr ""
 "à la norme ISO 7816-4."
 
 msgid "Return: - 0 if SW means Success (SW == 0x9000)"
-msgstr "Retour : 0 si le statut de la carte signifie succès (SW == 0x9000)"
+msgstr "Retour : - 0 si le statut de la carte signifie succès (SW == 0x9000)"
 
 msgid "194 (OxC2) if only 2 remaining attempt."
 msgstr "194 (0xC2) s’il ne reste que 2 tentatives."
@@ -1463,7 +1471,7 @@ msgid "URL to retrieve your OpenPGP certificate"
 msgstr "URL pour récupérer votre certificat OpenPGP"
 
 msgid "Security token (OpenPGP smartcard) prefered language"
-msgstr "Langue préférée du token de sécurité (carte OpenPGP)"
+msgstr "Langue préférée de la clé de sécurité (carte OpenPGP)"
 
 msgid "Customize name of security token's cardholder"
 msgstr "Personnaliser le nom du titulaire de la carte de sécurité"

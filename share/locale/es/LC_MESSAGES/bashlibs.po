@@ -858,7 +858,7 @@ msgid "supernumerary OpenPGP ID string"
 msgstr ""
 
 msgid ""
-"Check if OpenPGP token is correctly configured for OpenPGP ID ; may output "
+"Check if security token is correctly configured for OpenPGP ID ; may output "
 "informations."
 msgstr ""
 
@@ -871,12 +871,15 @@ msgid ""
 "Don't try to fetch public certificate (from URL indicated in token metadata)."
 msgstr ""
 
+msgid "Don't errput 'Info' or 'Notice' messages."
+msgstr ""
+
+msgid "Output certificate fingerprint (Certification key fpr)."
+msgstr ""
+
 msgid ""
 "Output content of the associative array containing relevant metadata (may be "
 "evaluted with eval)."
-msgstr ""
-
-msgid "Don't errput 'Info' or 'Notice' messages."
 msgstr ""
 
 msgid ""
@@ -890,7 +893,8 @@ msgstr ""
 msgid "Return value:"
 msgstr ""
 
-msgid "0 if no error and OpenPGP token is correctly configured for OpenPGP ID."
+msgid ""
+"0 if no error and security token is correctly configured for OpenPGP ID."
 msgstr ""
 
 msgid "100 + number of missing OpenPGP ID data fields."
@@ -907,6 +911,11 @@ msgid "Ignoring extra args '%s'..."
 msgstr ""
 
 msgid "Getting pubkey from %s ..."
+msgstr ""
+
+msgid ""
+"No certificate fingerprint. Please fetch this key (on keyserver, by "
+"email, ...)"
 msgstr ""
 
 msgid "supernumerary emails, skipping"
@@ -953,7 +962,8 @@ msgstr ""
 msgid "Revoke your previous certifications on someone else's certificate."
 msgstr ""
 
-msgid "Set owner trust level"
+msgid ""
+"What level of trust do you assign to the target to correctly certify others"
 msgstr ""
 
 msgid "Take legal responsability for any actions by the target. "

@@ -1140,28 +1140,30 @@ bl_pgpid_token_check()
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]..."
 	local helpmsg="
-"$"Check if OpenPGP token is correctly configured for OpenPGP ID ; may output informations.""
+"$"Check if security token is correctly configured for OpenPGP ID ; may output informations.""
 "$"Will try to import cleaned certificate indicated in 'URL of public key' field.""
 
 OPTIONS:
   -f, --no-fetch          "$"Don't try to fetch public certificate (from URL indicated in token metadata).""
-  -i, --info              "$"Output content of the associative array containing relevant metadata (may be evaluted with eval).""
   -q, --quiet             "$"Don't errput 'Info' or 'Notice' messages.""
-  -H, --homedir GNUPGHOME "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
+  -p, --cert-fpr          "$"Output certificate fingerprint (Certification key fpr).""
+  -i, --info              "$"Output content of the associative array containing relevant metadata (may be evaluted with eval).""
   -A, --aaname VARNAME    "$"If VARNAME is a reacheable associative array: fill it (whithout cleaning known fields)""
-							"$"else: Output 'declare -A VARNAME=...'""
+                            "$"else: Output 'declare -A VARNAME=...'""
+  -H, --homedir GNUPGHOME "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
 
 "$"Return value:""
--   "$"0 if no error and OpenPGP token is correctly configured for OpenPGP ID.""
+-   "$"0 if no error and security token is correctly configured for OpenPGP ID.""
 - "$"100 + number of missing OpenPGP ID data fields.""
 - "$"then 107 if all required data are missing (OpenPGP card is probably empty).""
 - "$"Other non-zero on other errors.""
 "
-	local varname fetch=1 info=0 quiet=0 isaa=0
+	local varname fetch=1 info=0 quiet=0 isaa=0 noCfpr=1
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
 			-f|--no-fetch) fetch=0 ;;
+			-p|--cert-fpr) noCfpr=0 ;;
 			-i|--info) info=1 ;;
 			-q|--quiet) quiet=1 ;;
 			-H|--homedir)
@@ -1237,7 +1239,8 @@ OPTIONS:
 	done <<<"${cardstatus}"
 
 	# Signature key on token may differs from main key, aka Certification key.
-	aaname[pgpid_Ckeyfpr]=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "${aaname[pgpid_Skeyfpr]:- ${aaname[pgpid_Ekeyfpr]:- ${aaname[pgpid_Akeyfpr]}}}" | grep -o -m1 "\<[0-9ABCDEF]\{40\}\>") || true
+	aaname[pgpid_Ckeyfpr]=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "${aaname[pgpid_Skeyfpr]:- ${aaname[pgpid_Ekeyfpr]:- ${aaname[pgpid_Akeyfpr]}}}" | grep -o -m1 "\<[0-9ABCDEF]\{40\}\>") || echo "$FUNCNAME: Warning:" $"No certificate fingerprint. Please fetch this key (on keyserver, by email, ...)" >&2
+	((noCfpr)) || echo "${aaname[pgpid_Ckeyfpr]}"
 
 	aaname[pgpid_email]="${emails[0]}"
 	(( $(sort -u <<<"${emails[@]}" | wc -l) < 2 )) || ((quiet)) || echo "$FUNCNAME: Notice:" $"supernumerary emails, skipping" "$(sort -u <<<"${emails[@]}" | grep -v "${emails[0]}") ..." >&2
@@ -1294,7 +1297,7 @@ bl_pgpid_certify() {
 OPTIONS:
   -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask.""
   -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate.""
-  -o, --ownertrust VALUE       "$"Set owner trust level"" {undefined,marginal,full,ultimate,never} - "$"Default: ""marginal.
+  -o, --ownertrust VALUE       "$"What level of trust do you assign to the target to correctly certify others"" {undefined,marginal,full,ultimate,never} - "$"Default: ""marginal.
   -G, --vouch                  "$"Take legal responsability for any actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
   -g, --vouch-for DOMAIN       "$"Assume some legal responsibilities on the target."" (Not implemented yet)
   -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing.""
