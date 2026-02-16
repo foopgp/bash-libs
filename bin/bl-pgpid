@@ -1189,6 +1189,9 @@ OPTIONS:
 
 	[[ "${aaname@a}" ]] || local -A aaname
 
+	# Create gpghome if missing (workaround for Gnupg's bug : sometime ~/.gnupg is created (-K or -k), sometime not (--card-status))
+	[[ -d "$gpghome" ]] || ( mkdir -p "$gpghome" && chmod go-rwx "$gpghome" ) || return $?
+
 	local cardstatus
 	cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 
