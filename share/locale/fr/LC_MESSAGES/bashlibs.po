@@ -636,11 +636,9 @@ msgstr ""
 "colorer les messages envoyés sur la sortie d’erreur standard (par défaut : "
 "auto)"
 
-#, fuzzy
 msgid "Show help and exit/return"
 msgstr "Afficher l’aide et quitter / retourner"
 
-#, fuzzy
 msgid "Show version and exit/return"
 msgstr "Afficher la version et quitter / retourner"
 
@@ -748,7 +746,7 @@ msgid "No editable OpenPGP certificate (in %s)"
 msgstr "Aucun certificat OpenPGP modifiable (dans %s)"
 
 msgid "Choosing the only one editable OpenPGP certificate (%s)"
-msgstr ""
+msgstr "Sélection du seul certificat OpenPGP modifiable (%s)"
 
 msgid ""
 "Birth date, expected format : Year-Month-Day (for people born 100+ years "
@@ -1002,10 +1000,10 @@ msgid "supernumerary OpenPGP ID string"
 msgstr "Chaîne d’identifiant OpenPGP surnuméraire"
 
 msgid ""
-"Check if OpenPGP token is correctly configured for OpenPGP ID ; may output "
+"Check if security token is correctly configured for OpenPGP ID ; may output "
 "informations."
 msgstr ""
-"Vérifier si le token OpenPGP est correctement configuré pour OpenPGP ID ; "
+"Vérifier si la clé de sécurité est correctement configuré pour OpenPGP ID ; "
 "peut afficher des informations."
 
 msgid ""
@@ -1019,7 +1017,13 @@ msgid ""
 "Don't try to fetch public certificate (from URL indicated in token metadata)."
 msgstr ""
 "Ne pas tenter de récupérer le certificat public (depuis l’URL indiquée dans "
-"les métadonnées du token)."
+"les métadonnées de la clé)."
+
+msgid "Don't errput 'Info' or 'Notice' messages."
+msgstr "Ne pas afficher les messages « Info » ou « Notice »."
+
+msgid "Output certificate fingerprint (Certification key fpr)."
+msgstr "Afficher l’empreinte du certificat (de la clé de certification)."
 
 msgid ""
 "Output content of the associative array containing relevant metadata (may be "
@@ -1027,9 +1031,6 @@ msgid ""
 msgstr ""
 "Afficher le contenu du tableau associatif contenant les métadonnées "
 "pertinentes (peut être évalué avec eval)."
-
-msgid "Don't errput 'Info' or 'Notice' messages."
-msgstr "Ne pas afficher les messages « Info » ou « Notice »."
 
 msgid ""
 "If VARNAME is a reacheable associative array: fill it (whithout cleaning "
@@ -1044,9 +1045,10 @@ msgstr "Sinon : afficher « declare -A VARNAME=... »"
 msgid "Return value:"
 msgstr "Valeur de retour :"
 
-msgid "0 if no error and OpenPGP token is correctly configured for OpenPGP ID."
+msgid ""
+"0 if no error and security token is correctly configured for OpenPGP ID."
 msgstr ""
-"0 s’il n’y a aucune erreur et que le token OpenPGP est correctement "
+"0 s’il n’y a aucune erreur et que la clé de sécurité est correctement "
 "configuré pour OpenPGP ID."
 
 msgid "100 + number of missing OpenPGP ID data fields."
@@ -1067,14 +1069,19 @@ msgstr "Arguments supplémentaires '%s' ignorés..."
 msgid "Getting pubkey from %s ..."
 msgstr "Récupération de la clé publique depuis %s ..."
 
+msgid ""
+"No certificate fingerprint. Please fetch this key (on keyserver, by "
+"email, ...)"
+msgstr ""
+
 msgid "supernumerary emails, skipping"
 msgstr "Adresses e-mail surnuméraires, ignorées"
 
 msgid "Invalid OpenPGP ID token, missing:"
-msgstr "Jeton d’identifiant OpenPGP invalide, élément manquant :"
+msgstr "Clé OpenPGP ID invalide, élément manquant :"
 
 msgid "Valid OpenPGP ID token"
-msgstr "Jeton d’identifiant OpenPGP valide"
+msgstr "Clé OpenPGP ID valide"
 
 msgid "Certify somebody else, identified by its OpenPGP ID TARGET_U4."
 msgstr "Certifier une autre personne, identifiée par son OpenPGP ID TARGET_U4"
@@ -1114,15 +1121,16 @@ msgid "Select private key to use. "
 msgstr "Sélectionner la clé privée à utiliser."
 
 msgid "Guess it from connected token, else ask."
-msgstr "La deviner à partir du token connecté, sinon demander."
+msgstr "La deviner à partir de la clé de sécurité connecté, sinon demander."
 
 msgid "Revoke your previous certifications on someone else's certificate."
 msgstr ""
 "Révoquer vos certifications précédentes sur le certificat d’une autre "
 "personne."
 
-msgid "Set owner trust level"
-msgstr ""
+msgid ""
+"What level of trust do you assign to the target to correctly certify others"
+msgstr "Quelle confiance attribuez-vous à la cible pour certifier correctement"
 
 msgid "Take legal responsability for any actions by the target. "
 msgstr "Assumer la responsabilité légale des actions de la personne ciblée. "
@@ -1167,7 +1175,7 @@ msgid "Key fingerprint does not match."
 msgstr "L’empreinte de la clé ne correspond pas."
 
 msgid "Unknown ownertrust value '%s'"
-msgstr ""
+msgstr "Valeur de confiance ownertrust inconnue « %s »"
 
 msgid "Not implemented yet."
 msgstr "Pas encore implémenté."
@@ -1184,15 +1192,16 @@ msgstr "Clé privée à utiliser ? (KeyID de votre clé de certification)"
 msgid "Invalid or ambiguous private key to use '%s'."
 msgstr "Clé privée invalide ou ambiguë à utiliser '%s'."
 
-msgid "Please select fingerprint"
-msgstr "Veuillez sélectionner l’empreinte"
+msgid "Please select key fingerprint"
+msgstr "Veuillez sélectionner l’empreinte de clé"
 
 msgid "Please verify and complete target's fingerprint:"
 msgstr "Veuillez vérifier et compléter l’empreinte de la cible :"
 
-msgid "Enter the first 8 hexadecimal characters of target's fingerprint:"
+msgid "Enter the first 8 hexadecimal characters of target's key fingerprint:"
 msgstr ""
-"Entrez les 8 premiers caractères hexadécimaux de l’empreinte de la cible :"
+"Entrez les 8 premiers caractères hexadécimaux de l’empreinte de clé de la "
+"cible :"
 
 msgid "No uid. Certificate is probably corrupted."
 msgstr "Aucun uid. Le certificat est probablement corrompu."
@@ -1222,14 +1231,16 @@ msgid ""
 "Admin) codes of OpenPGP security tokens (YubiKey, ...)."
 msgstr ""
 "Facilite également le changement de la phrase de passe protégeant les clés "
-"OpenPGP, ou des codes PIN / Admin des jetons de sécurité OpenPGP (YubiKey, "
-"…)."
+"OpenPGP, ou des codes PIN / Admin des clés de sécurité OpenPGP (YubiKey, …)."
 
 msgid ""
 "Note: OpenPGP ID is a specific OpenPGP configuration managed by bl-pgpid. "
 "Using bl-qrkey with other OpenPGP configuration should cause unexpected "
 "issues."
 msgstr ""
+"Remarque : « OpenPGP ID » est une configuration OpenPGP spécifique gérée par "
+"bl-pgpid. L’utilisation de bl-qrkey avec une autre configuration OpenPGP "
+"peut entraîner des problèmes inattendus."
 
 msgid "Status word (SW) is four hexa digits, as defined by ISO 7816-4."
 msgstr ""
@@ -1237,7 +1248,7 @@ msgstr ""
 "à la norme ISO 7816-4."
 
 msgid "Return: - 0 if SW means Success (SW == 0x9000)"
-msgstr "Retour : 0 si le SW indique un succès (SW == 0x9000)"
+msgstr "Retour : - 0 si le statut de la carte signifie succès (SW == 0x9000)"
 
 msgid "194 (OxC2) if only 2 remaining attempt."
 msgstr "194 (0xC2) s’il ne reste que 2 tentatives."
@@ -1298,8 +1309,8 @@ msgid ""
 "Check and change PIN (or Admin) code protecting use of a security token "
 "(OpenPGP smartcard)."
 msgstr ""
-"Vérifier et modifier le code PIN (ou Admin) protégeant l’utilisation d’un "
-"jeton de sécurité (carte OpenPGP)."
+"Vérifier et modifier le code PIN (ou Admin) protégeant l’utilisation d’une "
+"clé de sécurité (carte OpenPGP)."
 
 msgid "Return:"
 msgstr "Retour :"
@@ -1309,14 +1320,14 @@ msgstr "Autre valeur non nulle en cas d’erreur."
 
 msgid "Current PIN (or Admin) code protecting use of security token"
 msgstr ""
-"Code PIN (ou Admin) actuel protégeant l’utilisation du jeton de sécurité"
+"Code PIN (ou Admin) actuel protégeant l’utilisation de la clé de sécurité"
 
 msgid "Get current PIN (or Admin) code from first line of FILE"
 msgstr "Lire le code PIN (ou Admin) actuel depuis la première ligne du FICHIER"
 
 msgid "New PIN (or Admin) code to protect use of security token"
 msgstr ""
-"Nouveau code PIN (ou Admin) pour protéger l’utilisation du jeton de sécurité"
+"Nouveau code PIN (ou Admin) pour protéger l’utilisation de la clé de sécurité"
 
 msgid "Get new PIN (or Admin) code from the first line of FILE"
 msgstr ""
@@ -1446,11 +1457,10 @@ msgstr ""
 "FICHIER"
 
 msgid "Move OpenPGP secrets to security token (OpenPGP smartcard)."
-msgstr ""
-"Déplacer les secrets OpenPGP vers un jeton de sécurité (carte OpenPGP)."
+msgstr "Déplacer les secrets OpenPGP vers la clé de sécurité (carte OpenPGP)."
 
 msgid "Security token (OpenPGP smartcard) must be connected."
-msgstr "Le jeton de sécurité (carte OpenPGP) doit être connecté."
+msgstr "La clé de sécurité (carte OpenPGP) doit être connectée."
 
 msgid "Output ASCII armored OpenPGP certificate, PIN code and admin code."
 msgstr ""
@@ -1461,7 +1471,7 @@ msgid "URL to retrieve your OpenPGP certificate"
 msgstr "URL pour récupérer votre certificat OpenPGP"
 
 msgid "Security token (OpenPGP smartcard) prefered language"
-msgstr "Langue préférée du token de sécurité (carte OpenPGP)"
+msgstr "Langue préférée de la clé de sécurité (carte OpenPGP)"
 
 msgid "Customize name of security token's cardholder"
 msgstr "Personnaliser le nom du titulaire de la carte de sécurité"
@@ -1482,7 +1492,7 @@ msgstr "Augmenter le niveau de verbosité"
 
 msgid "Don't ask before resetting unempty security token (OpenPGP smartcard)"
 msgstr ""
-"Ne pas demander de confirmation avant de réinitialiser un jeton de sécurité "
+"Ne pas demander de confirmation avant de réinitialiser une clé de sécurité "
 "non vide (carte OpenPGP)"
 
 msgid "Deprecated option"
@@ -1506,13 +1516,13 @@ msgid "supernumerary pgpid string"
 msgstr "Chaîne OpenPGP ID surnuméraire."
 
 msgid "Detected OpenPGP security token:"
-msgstr "Jeton de sécurité OpenPGP détecté :"
+msgstr "Clé de sécurité OpenPGP détecté :"
 
 msgid "Cardholder:"
 msgstr "Titulaire de la carte :"
 
 msgid "Factory reset OpenPGP security token"
-msgstr "Réinitialiser le jeton de sécurité OpenPGP aux paramètres d’usine."
+msgstr "Réinitialiser la clé de sécurité OpenPGP aux paramètres d’usine."
 
 msgid "(This will wipe all the OpenPGP data stored there!)"
 msgstr "(Cela effacera toutes les données OpenPGP qui y sont stockées !)"

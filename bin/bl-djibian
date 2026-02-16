@@ -216,7 +216,7 @@ OPTIONS:
 		printf "$FUNCNAME: Notice:
 "$" As defined by IEEE Std 1003.1-2001, the username should consist only of
  letters, digits, underscores, periods, at signs and dashes, then it has
- been changed to: ""$username" >&2
+ been changed to: ""$username\n" >&2
 	fi
 
 	[[ "$passwd" ]] || passwd=$(bl_new_password)
@@ -260,14 +260,14 @@ OPTIONS:
 
 	if [[ "$fromcard" ]] ; then
 		# Try configuring its ~/.gnupg/ with its ownertrust set to ultimate
-		mkdir /home/$identifier/.gnupg
-		chmod go-rwx /home/$identifier/.gnupg
-		touch /home/$identifier/.gnupg/pubring.kbx
+		mkdir /home/$identifier/.gnupg /home/$identifier/.ssh
+		chmod go-rwx /home/$identifier/.gnupg /home/$identifier/.ssh
 		gpgconf --kill scdaemon
 		bl_pgpid_token_check --homedir "/home/$identifier/.gnupg" || true
 		gpgconf --homedir "/home/$identifier/.gnupg" --kill scdaemon
 		chown -hR "$username:$username" "/home/$identifier"
 		su -l "$username" -c "gpg --quick-set-ownertrust ${cardinfo[pgpid_Skeyfpr]} ultimate" || true
+		su -l "$username" -c "gpg --export-ssh-key ${cardinfo[pgpid_Skeyfpr]} > /home/$identifier/.ssh/authorized_keys" || true
 	fi
 
 	printf "$FUNCNAME: Notice: "$"user %s (%s) successfully added to current system"".\n" "$username" "$identifier" >&2

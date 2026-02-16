@@ -37,7 +37,7 @@ msgstr ""
 #: ../bin/bl-markdown:130 ../bin/bl-markdown:212 ../bin/bl-pgpid:361
 #: ../bin/bl-pgpid:497 ../bin/bl-pgpid:545 ../bin/bl-pgpid:664
 #: ../bin/bl-pgpid:779 ../bin/bl-pgpid:860 ../bin/bl-pgpid:962
-#: ../bin/bl-pgpid:1073 ../bin/bl-pgpid:1180 ../bin/bl-pgpid:1343
+#: ../bin/bl-pgpid:1073 ../bin/bl-pgpid:1182 ../bin/bl-pgpid:1346
 #: ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420
 #: ../bin/bl-qrkey:119 ../bin/bl-qrkey:145 ../bin/bl-qrkey:257
 #: ../bin/bl-qrkey:345 ../bin/bl-qrkey:478 ../bin/bl-qrkey:637
@@ -59,8 +59,8 @@ msgstr ""
 #: ../bin/bl-markdown:130 ../bin/bl-markdown:212 ../bin/bl-markdown:315
 #: ../bin/bl-pgpid:361 ../bin/bl-pgpid:497 ../bin/bl-pgpid:545
 #: ../bin/bl-pgpid:664 ../bin/bl-pgpid:779 ../bin/bl-pgpid:860
-#: ../bin/bl-pgpid:962 ../bin/bl-pgpid:1073 ../bin/bl-pgpid:1180
-#: ../bin/bl-pgpid:1343 ../bin/bl-pgpid:1356 ../bin/bl-pgpid:1472
+#: ../bin/bl-pgpid:962 ../bin/bl-pgpid:1073 ../bin/bl-pgpid:1182
+#: ../bin/bl-pgpid:1346 ../bin/bl-pgpid:1359 ../bin/bl-pgpid:1475
 #: ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420
 #: ../bin/bl-qif:609 ../bin/bl-qrkey:119 ../bin/bl-qrkey:145
 #: ../bin/bl-qrkey:157 ../bin/bl-qrkey:257 ../bin/bl-qrkey:345
@@ -151,13 +151,13 @@ msgstr ""
 
 #: ../bin/bl-dji:523 ../bin/bl-djibian:338 ../bin/bl-foopgp:392
 #: ../bin/bl-interactive:495 ../bin/bl-json:340 ../bin/bl-markdown:273
-#: ../bin/bl-pgpid:1430 ../bin/bl-qrkey:933 ../bin/bl-security:399
+#: ../bin/bl-pgpid:1433 ../bin/bl-qrkey:933 ../bin/bl-security:399
 msgid "Show help and exit."
 msgstr ""
 
 #: ../bin/bl-dji:524 ../bin/bl-djibian:339 ../bin/bl-foopgp:393
 #: ../bin/bl-interactive:496 ../bin/bl-json:341 ../bin/bl-markdown:274
-#: ../bin/bl-pgpid:1431 ../bin/bl-qrkey:934 ../bin/bl-security:400
+#: ../bin/bl-pgpid:1434 ../bin/bl-qrkey:934 ../bin/bl-security:400
 msgid "Show version and exit."
 msgstr ""
 
@@ -171,7 +171,7 @@ msgstr ""
 
 #: ../bin/bl-dji:565 ../bin/bl-djibian:380 ../bin/bl-foopgp:434
 #: ../bin/bl-interactive:535 ../bin/bl-json:380 ../bin/bl-markdown:315
-#: ../bin/bl-pgpid:1472 ../bin/bl-qif:609 ../bin/bl-qrkey:975
+#: ../bin/bl-pgpid:1475 ../bin/bl-qif:609 ../bin/bl-qrkey:975
 #: ../bin/bl-security:439 ../bin/bl-test:198
 msgid "Unrecognized action"
 msgstr ""
@@ -201,7 +201,7 @@ msgid "Need root permissions"
 msgstr ""
 
 #: ../bin/bl-djibian:134 ../bin/bl-pgpid:639 ../bin/bl-pgpid:818
-#: ../bin/bl-pgpid:1287 ../bin/bl-qrkey:231 ../bin/bl-qrkey:305
+#: ../bin/bl-pgpid:1290 ../bin/bl-qrkey:231 ../bin/bl-qrkey:305
 #: ../bin/bl-qrkey:436 ../bin/bl-qrkey:607 ../bin/bl-qrkey:787
 msgid "Missing input will be asked interactively."
 msgstr ""
@@ -387,7 +387,7 @@ msgstr ""
 msgid "set STINGYNALTY according to given date"
 msgstr ""
 
-#: ../bin/bl-foopgp:181 ../bin/bl-pgpid:926 ../bin/bl-pgpid:1282
+#: ../bin/bl-foopgp:181 ../bin/bl-pgpid:926 ../bin/bl-pgpid:1285
 msgid "Usage:"
 msgstr ""
 
@@ -485,7 +485,7 @@ msgid ""
 "NONE, whiptail, dialog or zenity."
 msgstr ""
 
-#: ../bin/bl-interactive:87 ../bin/bl-interactive:88 ../bin/bl-pgpid:1303
+#: ../bin/bl-interactive:87 ../bin/bl-interactive:88 ../bin/bl-pgpid:1306
 #: ../bin/bl-qrkey:234 ../bin/bl-qrkey:312 ../bin/bl-qrkey:446
 #: ../bin/bl-qrkey:617 ../bin/bl-qrkey:792
 msgid "default: "
@@ -628,8 +628,8 @@ msgstr ""
 
 #: ../bin/bl-json:138 ../bin/bl-pgpid:825 ../bin/bl-pgpid:830
 #: ../bin/bl-pgpid:831 ../bin/bl-pgpid:938 ../bin/bl-pgpid:939
-#: ../bin/bl-pgpid:1043 ../bin/bl-pgpid:1045 ../bin/bl-pgpid:1295
-#: ../bin/bl-pgpid:1297 ../bin/bl-pgpid:1302 ../bin/bl-qrkey:444
+#: ../bin/bl-pgpid:1043 ../bin/bl-pgpid:1045 ../bin/bl-pgpid:1298
+#: ../bin/bl-pgpid:1300 ../bin/bl-pgpid:1305 ../bin/bl-qrkey:444
 #: ../bin/bl-qrkey:445 ../bin/bl-security:284 ../bin/bl-security:285
 msgid "Default: "
 msgstr ""
@@ -1051,12 +1051,12 @@ msgid "Prefered OpenPGP certificate server. "
 msgstr ""
 
 #: ../bin/bl-pgpid:832 ../bin/bl-pgpid:940 ../bin/bl-pgpid:1046
-#: ../bin/bl-pgpid:1150
+#: ../bin/bl-pgpid:1153
 msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr ""
 
 #: ../bin/bl-pgpid:832 ../bin/bl-pgpid:940 ../bin/bl-pgpid:1046
-#: ../bin/bl-pgpid:1150 ../bin/bl-pgpid:1303
+#: ../bin/bl-pgpid:1153 ../bin/bl-pgpid:1306
 msgid "Environnement variable: "
 msgstr ""
 
@@ -1113,7 +1113,7 @@ msgstr ""
 msgid "Unable to resize image"
 msgstr ""
 
-#: ../bin/bl-pgpid:1001 ../bin/bl-pgpid:1093 ../bin/bl-pgpid:1388
+#: ../bin/bl-pgpid:1001 ../bin/bl-pgpid:1093 ../bin/bl-pgpid:1391
 msgid "User '%s' match many (%d) certificates"
 msgstr ""
 
@@ -1177,13 +1177,13 @@ msgstr ""
 msgid "No OpenPGP ID string (u4|u5) in %s certificate."
 msgstr ""
 
-#: ../bin/bl-pgpid:1118 ../bin/bl-pgpid:1247
+#: ../bin/bl-pgpid:1118 ../bin/bl-pgpid:1250
 msgid "supernumerary OpenPGP ID string"
 msgstr ""
 
 #: ../bin/bl-pgpid:1143
 msgid ""
-"Check if OpenPGP token is correctly configured for OpenPGP ID ; may output "
+"Check if security token is correctly configured for OpenPGP ID ; may output "
 "informations."
 msgstr ""
 
@@ -1199,13 +1199,17 @@ msgid ""
 msgstr ""
 
 #: ../bin/bl-pgpid:1148
-msgid ""
-"Output content of the associative array containing relevant metadata (may be "
-"evaluted with eval)."
+msgid "Don't errput 'Info' or 'Notice' messages."
 msgstr ""
 
 #: ../bin/bl-pgpid:1149
-msgid "Don't errput 'Info' or 'Notice' messages."
+msgid "Output certificate fingerprint (Certification key fpr)."
+msgstr ""
+
+#: ../bin/bl-pgpid:1150
+msgid ""
+"Output content of the associative array containing relevant metadata (may be "
+"evaluted with eval)."
 msgstr ""
 
 #: ../bin/bl-pgpid:1151
@@ -1218,198 +1222,206 @@ msgstr ""
 msgid "else: Output 'declare -A VARNAME=...'"
 msgstr ""
 
-#: ../bin/bl-pgpid:1154 ../bin/bl-pgpid:1305
+#: ../bin/bl-pgpid:1155 ../bin/bl-pgpid:1308
 msgid "Return value:"
 msgstr ""
 
-#: ../bin/bl-pgpid:1155
-msgid "0 if no error and OpenPGP token is correctly configured for OpenPGP ID."
-msgstr ""
-
 #: ../bin/bl-pgpid:1156
-msgid "100 + number of missing OpenPGP ID data fields."
+msgid ""
+"0 if no error and security token is correctly configured for OpenPGP ID."
 msgstr ""
 
 #: ../bin/bl-pgpid:1157
+msgid "100 + number of missing OpenPGP ID data fields."
+msgstr ""
+
+#: ../bin/bl-pgpid:1158
 msgid ""
 "then 107 if all required data are missing (OpenPGP card is probably empty)."
 msgstr ""
 
-#: ../bin/bl-pgpid:1158 ../bin/bl-pgpid:1312
+#: ../bin/bl-pgpid:1159 ../bin/bl-pgpid:1315
 msgid "Other non-zero on other errors."
 msgstr ""
 
-#: ../bin/bl-pgpid:1186
+#: ../bin/bl-pgpid:1188
 msgid "Ignoring extra args '%s'..."
 msgstr ""
 
-#: ../bin/bl-pgpid:1197
+#: ../bin/bl-pgpid:1199
 msgid "Getting pubkey from %s ..."
 msgstr ""
 
-#: ../bin/bl-pgpid:1243
+#: ../bin/bl-pgpid:1242
+msgid ""
+"No certificate fingerprint. Please fetch this key (on keyserver, by "
+"email, ...)"
+msgstr ""
+
+#: ../bin/bl-pgpid:1246
 msgid "supernumerary emails, skipping"
 msgstr ""
 
-#: ../bin/bl-pgpid:1269
+#: ../bin/bl-pgpid:1272
 msgid "Invalid OpenPGP ID token, missing:"
 msgstr ""
 
-#: ../bin/bl-pgpid:1275
+#: ../bin/bl-pgpid:1278
 msgid "Valid OpenPGP ID token"
 msgstr ""
 
-#: ../bin/bl-pgpid:1286
+#: ../bin/bl-pgpid:1289
 msgid "Certify somebody else, identified by its OpenPGP ID TARGET_U4."
 msgstr ""
 
-#: ../bin/bl-pgpid:1287
+#: ../bin/bl-pgpid:1290
 msgid "Civil status to calculate TARGET_U4."
 msgstr ""
 
-#: ../bin/bl-pgpid:1289
+#: ../bin/bl-pgpid:1292
 msgid ""
 "Certification means : I know this other certificate belongs to this real "
 "person."
 msgstr ""
 
-#: ../bin/bl-pgpid:1290
+#: ../bin/bl-pgpid:1293
 msgid ""
 "This implies verifying the civil status and the public key fingerprint of "
 "the TARGET."
 msgstr ""
 
-#: ../bin/bl-pgpid:1291
+#: ../bin/bl-pgpid:1294
 msgid ""
 "This allows you to expand and strengthen your web of trust and those of your "
 "close ones."
 msgstr ""
 
-#: ../bin/bl-pgpid:1292
+#: ../bin/bl-pgpid:1295
 msgid ""
 "This is a commitment: the more you certify, the more you increase your "
 "reputation, but if you do it wrong, you will ruin your credibility."
 msgstr ""
 
-#: ../bin/bl-pgpid:1295
+#: ../bin/bl-pgpid:1298
 msgid "Select private key to use. "
 msgstr ""
 
-#: ../bin/bl-pgpid:1295
+#: ../bin/bl-pgpid:1298
 msgid "Guess it from connected token, else ask."
 msgstr ""
 
-#: ../bin/bl-pgpid:1296
+#: ../bin/bl-pgpid:1299
 msgid "Revoke your previous certifications on someone else's certificate."
 msgstr ""
 
-#: ../bin/bl-pgpid:1297
-msgid "Set owner trust level"
-msgstr ""
-
-#: ../bin/bl-pgpid:1298
-msgid "Take legal responsability for any actions by the target. "
-msgstr ""
-
-#: ../bin/bl-pgpid:1298
-msgid "Same as"
-msgstr ""
-
-#: ../bin/bl-pgpid:1299
-msgid "Assume some legal responsibilities on the target."
-msgstr ""
-
 #: ../bin/bl-pgpid:1300
-msgid "« Non-exportable » certification. Pretty useless, except for testing."
+msgid ""
+"What level of trust do you assign to the target to correctly certify others"
 msgstr ""
 
 #: ../bin/bl-pgpid:1301
-msgid "Allow to unrevoke or to change vouching."
+msgid "Take legal responsability for any actions by the target. "
+msgstr ""
+
+#: ../bin/bl-pgpid:1301
+msgid "Same as"
 msgstr ""
 
 #: ../bin/bl-pgpid:1302
+msgid "Assume some legal responsibilities on the target."
+msgstr ""
+
+#: ../bin/bl-pgpid:1303
+msgid "« Non-exportable » certification. Pretty useless, except for testing."
+msgstr ""
+
+#: ../bin/bl-pgpid:1304
+msgid "Allow to unrevoke or to change vouching."
+msgstr ""
+
+#: ../bin/bl-pgpid:1305
 msgid "If non-empty, receive and send updated certificate to this keyserver. "
 msgstr ""
 
-#: ../bin/bl-pgpid:1303 ../bin/bl-qrkey:234 ../bin/bl-qrkey:312
+#: ../bin/bl-pgpid:1306 ../bin/bl-qrkey:234 ../bin/bl-qrkey:312
 #: ../bin/bl-qrkey:446 ../bin/bl-qrkey:617 ../bin/bl-qrkey:792
 msgid "GnuPG home directory"
 msgstr ""
 
-#: ../bin/bl-pgpid:1306
+#: ../bin/bl-pgpid:1309
 msgid "No error"
 msgstr ""
 
-#: ../bin/bl-pgpid:1307
+#: ../bin/bl-pgpid:1310
 msgid "Input/Usage error"
 msgstr ""
 
-#: ../bin/bl-pgpid:1308
+#: ../bin/bl-pgpid:1311
 msgid "Interactivity error"
 msgstr ""
 
-#: ../bin/bl-pgpid:1309 ../bin/bl-pgpid:1386
+#: ../bin/bl-pgpid:1312 ../bin/bl-pgpid:1389
 msgid "No certificate for user"
 msgstr ""
 
-#: ../bin/bl-pgpid:1310 ../bin/bl-pgpid:1403
+#: ../bin/bl-pgpid:1313 ../bin/bl-pgpid:1406
 msgid "Self-certification is not innovative! ;-)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1311 ../bin/bl-pgpid:1404
+#: ../bin/bl-pgpid:1314 ../bin/bl-pgpid:1407
 msgid "Key fingerprint does not match."
 msgstr ""
 
-#: ../bin/bl-pgpid:1323
+#: ../bin/bl-pgpid:1326
 msgid "Unknown ownertrust value '%s'"
 msgstr ""
 
-#: ../bin/bl-pgpid:1326 ../bin/bl-pgpid:1330
+#: ../bin/bl-pgpid:1329 ../bin/bl-pgpid:1333
 msgid "Not implemented yet."
 msgstr ""
 
-#: ../bin/bl-pgpid:1329
+#: ../bin/bl-pgpid:1332
 msgid "Only %s is yet a known domain for vouching"
 msgstr ""
 
-#: ../bin/bl-pgpid:1356
+#: ../bin/bl-pgpid:1359
 msgid "Unrecognized argument"
 msgstr ""
 
-#: ../bin/bl-pgpid:1365
+#: ../bin/bl-pgpid:1368
 msgid "Private key to use ? (KeyID of your Certification Key)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1371
+#: ../bin/bl-pgpid:1374
 msgid "Invalid or ambiguous private key to use '%s'."
 msgstr ""
 
-#: ../bin/bl-pgpid:1389
-msgid "Please select fingerprint"
+#: ../bin/bl-pgpid:1392
+msgid "Please select key fingerprint"
 msgstr ""
 
-#: ../bin/bl-pgpid:1393
+#: ../bin/bl-pgpid:1396
 msgid "Please verify and complete target's fingerprint:"
 msgstr ""
 
-#: ../bin/bl-pgpid:1399
-msgid "Enter the first 8 hexadecimal characters of target's fingerprint:"
+#: ../bin/bl-pgpid:1402
+msgid "Enter the first 8 hexadecimal characters of target's key fingerprint:"
 msgstr ""
 
-#: ../bin/bl-pgpid:1408
+#: ../bin/bl-pgpid:1411
 msgid "No uid. Certificate is probably corrupted."
 msgstr ""
 
-#: ../bin/bl-pgpid:1411 ../bin/bl-pgpid:1412 ../bin/bl-pgpid:1413
+#: ../bin/bl-pgpid:1414 ../bin/bl-pgpid:1415 ../bin/bl-pgpid:1416
 msgid "%s is non-sense, then ignored, when revoking."
 msgstr ""
 
-#: ../bin/bl-pgpid:1415
+#: ../bin/bl-pgpid:1418
 msgid ""
 "The sub-layer (%s) return no error, but it may have found nothing to revoke."
 msgstr ""
 
-#: ../bin/bl-pgpid:1418
+#: ../bin/bl-pgpid:1421
 msgid "Successfully sign %d '%s' inside certificate %s."
 msgstr ""
 
