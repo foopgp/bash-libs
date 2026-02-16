@@ -1,11 +1,12 @@
-bash-libs (0.3.1-1) UNRELEASED; urgency=medium
+bash-libs (0.3.1-1) unstable; urgency=medium
 
+  [ jjbrucker ]
   * minor wording + translation fix (security token -fr> clé de sécurité)
   * bl_pgpid_token_check(): new option --cert-fpr + minor wording/translation improvments
   * bl_pgpid_token_check(): bugfix: create gpghome if missing
   * bl_djibian_adduser(): create .ssh/authorized_keys
 
- -- jjbrucker <jjbrucker@foopgp.org>  Mon, 16 Feb 2026 16:52:10 +0100
+ -- piseb <piseb@mailo.com>  Mon, 16 Feb 2026 16:54:55 +0100
 
 bash-libs (0.3.0-1) unstable; urgency=medium
 
