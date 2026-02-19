@@ -1237,16 +1237,16 @@ OPTIONS:
 		fi
 
 		if [[ "$line" =~ ${BL_INTERACTIVE_EMAIL_REGEX} ]] ; then
-			emails+=("${BASH_REMATCH[0]}")
+			grep --quiet "\<${BASH_REMATCH[0]}\>" <<<"${emails[@]}" || emails+=("${BASH_REMATCH[0]}")
 		fi
 	done <<<"${cardstatus}"
 
 	# Signature key on token may differs from main key, aka Certification key.
-	aaname[pgpid_Ckeyfpr]=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "${aaname[pgpid_Skeyfpr]:- ${aaname[pgpid_Ekeyfpr]:- ${aaname[pgpid_Akeyfpr]}}}" | grep -o -m1 "\<[0-9ABCDEF]\{40\}\>") || echo "$FUNCNAME: Warning:" $"No certificate fingerprint. Please fetch this key (on keyserver, by email, ...)" >&2
+	aaname[pgpid_Ckeyfpr]=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "${aaname[pgpid_Skeyfpr]:- ${aaname[pgpid_Ekeyfpr]:- ${aaname[pgpid_Akeyfpr]}}}" | grep -o -m1 "\<[0-9ABCDEF]\{40\}\>") || echo "$FUNCNAME: Warning:" $"No known certification key. Please share or get certificate (keyserver, by email, ...)" >&2
 	((noCfpr)) || echo "${aaname[pgpid_Ckeyfpr]}"
 
 	aaname[pgpid_email]="${emails[0]}"
-	(( $(sort -u <<<"${emails[@]}" | wc -l) < 2 )) || ((quiet)) || echo "$FUNCNAME: Notice:" $"supernumerary emails, skipping" "$(sort -u <<<"${emails[@]}" | grep -v "${emails[0]}") ..." >&2
+	(( ${#emails[@]} < 2 )) || ((quiet)) || echo "$FUNCNAME: Notice:" $"supernumerary emails, skipping" "${emails[@]:1} ..." >&2
 
 	# Should be in 'Login data' field, but who knows ? (yet...) 
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}" | sort -u))
