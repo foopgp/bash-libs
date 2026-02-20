@@ -268,7 +268,8 @@ for OpenPGP usages, see: ""$BL_DJIBIAN_NAME confhome4pgp --help
 	echo "$passwd" | passwd --stdin "$username" || { ret=$? ; deluser --stdoutmsglevel=info "$username" ; return $ret ; }
 
 	if ((fromcard)) ; then
-		su -l "$username" -c "'$(readlink -f $BASH_SOURCE)' confhome4pgp $keyfpr" || true
+		su -l "$username" -c "'$(readlink -f $BASH_SOURCE)' confhome4pgp $keyfpr"\
+			|| printf "$FUNCNAME: Warning: "$"Unable to configure %s's HOME for OpenPGP"" -"$" See: ""$BASH_SOURCE confhome4pgp\n" "$username" >&2
 	fi
 
 	printf "$FUNCNAME: Notice: "$"user %s (%s) successfully added to current system"".\n" "$username" "$identifier" >&2
@@ -283,9 +284,10 @@ bl_djibian_confhome4pgp()
 "$"Reconfigure HOME directory for djibian's OpenPGP usage:""
 - '~/.config/systemd/user': "$"Force SSH_AUTH_SOCK to use gpg-agent (crazy systemd workaround).""
 "$"And if a key fingerprint [KEYFPR] is passed as argument:""
-- '\$GNUPGHOME': "$"Set KEYFPR as the GnuPG's default-key.""
-- '\$GNUPGHOME': "$"Set KEYFPR as the only one ultimate key (downgrading other trust ultimate -> full).""
-- '~/.ssh': "$"Set last usable OpenPGP authentication key as the only one authorized key for ssh login.""
+- '\$GNUPGHOME':   "$"Set KEYFPR as the GnuPG's default-key.""
+- '\$GNUPGHOME':   "$"Set KEYFPR as the only one ultimate key (downgrading other trust ultimate -> full).""
+- '~/.ssh':       "$"Set last usable OpenPGP authentication key as the only one authorized key for ssh login.""
+- '~/.gitconfig': "$"Set KEYFPR as the git global « user.signingKey ».""
 "
 	local fromcard=0 ret=0
 	for ((;$#;)) ; do
@@ -301,7 +303,8 @@ bl_djibian_confhome4pgp()
 
 	if [[ -f /usr/lib/systemd/user/gpg-agent.socket ]] ; then
 		mkdir --parents ~/.config/systemd/user/sockets.target.wants || return $?
-		cp --verbose --force /usr/lib/systemd/user/gpg-agent.socket ~/.config/systemd/user/sockets.target.wants >&2 || return $?
+		printf "$FUNCNAME: Info: " >&2
+		cp --force --verbose /usr/lib/systemd/user/gpg-agent.socket ~/.config/systemd/user/sockets.target.wants >&2 || return $?
 	else
 		printf "$FUNCNAME: Notice: "$"%s is missing. "$"Did you get rid of systemd ?""\n" "'/usr/lib/systemd/user/gpg-agent.socket'" >&2
 	fi
@@ -312,12 +315,12 @@ bl_djibian_confhome4pgp()
 	local key keyfpr=${BASH_REMATCH[2]}
 
 	printf "$FUNCNAME: Info: "$"Check directories and %s certificate.""..\n" "$keyfpr" >&2
-	mkdir -p "${GNUPGHOME:-~/.gnupg}" ~/.ssh || return $?
-	chmod go-rwx "${GNUPGHOME:-~/.gnupg}" ~/.ssh || return $?
+	mkdir -p "${GNUPGHOME:-$HOME/.gnupg}" ~/.ssh || return $?
+	chmod go-rwx "${GNUPGHOME:-$HOME/.gnupg}" ~/.ssh || return $?
 	gpg --list-key 0x$keyfpr || gpg --recv-key 0x$keyfpr || return $?
 
 	printf "$FUNCNAME: Info: "$"Set %s as the GnuPG's default-key"" (${GNUPGHOME:-~/.gnupg})...\n" "$keyfpr" >&2
-	echo "default-key:0:\"$keyfpr" | gpgconf --change-options gpg >&2 || return $?
+	echo "default-key:0:\"$keyfpr" | gpgconf --quiet --change-options gpg >&2 || return $?
 
 	printf "$FUNCNAME: Info: "$"Set %s as the only one ultimate key"" (${GNUPGHOME:-~/.gnupg})...\n" "$keyfpr" >&2
 	for key in $(gpg --export-ownertrust | awk -F: '/:6:/ {print $1} ') ; do
@@ -326,7 +329,13 @@ bl_djibian_confhome4pgp()
 	gpg --quick-set-ownertrust "$keyfpr" ultimate || return $?
 
 	printf "$FUNCNAME: Info: "$"Set last usable OpenPGP authentication key as the only one authorized key for ssh login.""..\n" >&2
-	gpg --export-ssh-key "$keyfpr" > $HOME/.ssh/authorized_keys
+	gpg --export-ssh-key "$keyfpr" | sed "s,\$, $(date -I) $FUNCNAME $keyfpr," > ~/.ssh/authorized_keys || return $?
+	chmod go-rwx ~/.ssh/authorized_keys
+
+	printf "$FUNCNAME: Info: "$"Set KEYFPR as the git global « user.signingKey ».""..\n" >&2
+	touch ~/.gitconfig || return $?
+	grep --quiet "^\[user\]" ~/.gitconfig || echo -e "\n[user]" >> ~/.gitconfig || return $?
+	sed -i '/^\[user\]/,/^\[/ { /^[[:space:]]*signingKey\>/d } ; /^\[user\]/a\\tsigningKey = '"$keyfpr # set $(date -I) by $FUNCNAME"  ~/.gitconfig || return $?
 }
 
 bl_djibian_admins()
