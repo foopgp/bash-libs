@@ -1185,7 +1185,7 @@ OPTIONS:
 		shift
 	done
 
-	[[ -z "$1" ]] || printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'...""\n" "$1" >&2
+	((! $#)) || printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'...""\n" "$1" >&2
 
 	[[ "${aaname@a}" ]] || local -A aaname
 

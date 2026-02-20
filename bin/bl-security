@@ -232,7 +232,7 @@ OPTIONS:
 		esac
 		shift
 	done
-	((! $#)) || printf "%s: Warning: ignoring arguments %s\n" "$FUNCNAME" "$*" >&2
+	((! $#)) || printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'...""\n" "$1" >&2
 
 	if $listdicts ; then
 		if $showsize ; then
@@ -246,7 +246,7 @@ OPTIONS:
 		fi
 	fi
 
-	((nw>0)) || { printf "%s: Error: invalid number of words (%s)\n" "$FUNCNAME" "$nw" >&2 ; return 2 ; }
+	((nw>0)) || { printf "$FUNCNAME: Error: "$"Invalid number of words"" (%s).\n" "$nw" >&2 ; return 2 ; }
 	while ((nw-- > 0)) ; do
 		sedcmd+="\$(bl_urandom \$sd)p ; "
 	done
@@ -301,13 +301,13 @@ OPTIONS:
 
 	local passwd passwd2
 
-	[[ "$preamble" ]] || preamble="Suggestion: "$(bl_gen_passphrase --delimiter " " --dict "$dict" --num "$nw")
+	[[ "$preamble" ]] || preamble=$"Suggestion: "$(bl_gen_passphrase --delimiter " " --dict "$dict" --num "$nw")
 	passwd2=$(bl_input --password --text "$preamble" "$question") || return $?
-	preamble=$(printf "Retype %s" "$question")
+	preamble=$(printf $"Retype %s" "$question")
 	while true ; do
 		passwd=$(bl_input --password --text "$preamble" "$question") || return $?
 		[[ "$passwd2" != $passwd ]] || break
-		preamble="Passwords do not match. Please retype"
+		preamble=$"Passwords do not match. Please retype"
 		passwd2=$passwd
 	done
 	echo "$passwd"
@@ -326,7 +326,7 @@ bl_shrink_num() {
 
 OPTIONS:
   -i, --input-encoding ENCODING  Eg: raw(default), base64, base64url, base32, base32hex, base16, base2msbf or base2lsbf.
-  -g, --ignore-garbage           When decoding (a 'baseXXX' input), ignore non-alphabet characters.
+  -g, --ignore-garbage           "$"When decoding (a 'baseXXX' input), ignore non-alphabet characters.""
   -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
 "
 	local ienc="raw" oenc="base10" iextropts=""
@@ -361,7 +361,7 @@ OPTIONS:
 		base64|base64url|base32|base32hex|base16|base2msbf|base2lsbf)
 			decoder="basenc --decode --$ienc $iextraopts" ;;
 		*)
-			printf "%s: Error: Unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
+			printf "$FUNCNAME: Error: "$"Unrecognized encoding"" '$ienc'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 	esac
 
 	while read offset hex char; do
@@ -387,7 +387,7 @@ OPTIONS:
 		base64|base64url|base32|base32hex|base2msbf|base2lsbf)
 			echo "$hex" | xxd -r -p | basenc --$oenc ;;
 		*)
-			printf "%s: Error: Unrecognized encoding '%s'\nTry '%s --help' for more information.\n" "$FUNCNAME" "$ienc" "$name" >&2 ; return 2 ;;
+			printf "$FUNCNAME: Error: "$"Unrecognized encoding"" '$ienc'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 	esac
 }
 

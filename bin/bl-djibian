@@ -187,7 +187,7 @@ for OpenPGP usages, see: ""$BL_DJIBIAN_NAME confhome4pgp --help
 	done
 
 	if [[ "$(id --user)" != 0 ]] ; then
-		printf "%s: Error: Need root power (sudo).\n" "$FUNCNAME" >&2
+		printf "$FUNCNAME: Error: "$"Need root power (sudo).""\n" >&2
 		return 2
 	fi
 
@@ -360,10 +360,11 @@ OPTIONS:
 		esac
 		shift
 	done
+	((! $#)) || printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'...""\n" "$1" >&2
 
 	if [[ "$toadd" ]] || [[ "$toremove" ]] ; then
 		if [[ "$(id --user)" != 0 ]] ; then
-			printf "%s: Error: Need root power (sudo).\n" "$FUNCNAME" >&2
+			printf "$FUNCNAME: Error: "$"Need root power (sudo).""\n" >&2
 			return 2
 		fi
 		local user
@@ -371,7 +372,7 @@ OPTIONS:
 			if [[ "$user" != ${SUDO_USER:-$USER} ]] ; then
 				gpasswd --delete "$user" sudo >&2 || ((ret+=$?))
 			else
-				printf "%s: Warning: %s: no one can remove himself from admin group (sudo).\n" "$FUNCNAME" "$user" >&2
+				printf "$FUNCNAME: Warning: $user: "$"No one can remove himself from admin group"" (sudo).\n" >&2
 				((++ret))
 			fi
 		done
