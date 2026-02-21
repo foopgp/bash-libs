@@ -120,7 +120,7 @@ bl_dji_2micro()
 	local helpmsg="
 "$"Translate given VALUES to their microVALUES, aka µVALUES (10^-6).""
 "$"Values with too much decimals will be rounded half-to-even,""
-"$"confer"" https://www.exploringbinary.com/inconsistent-rounding-of-printed-floating-point-numbers/
+"$"see: ""https://www.exploringbinary.com/inconsistent-rounding-of-printed-floating-point-numbers/
 "$"Given VALUES may be suffixed by symbol or name of the International System of Units (ISO/IEC 80000):""
   * 'd' for deci.
   * 'c' for centi.
@@ -238,7 +238,7 @@ bl_dji_2bin()
 	local helpmsg="
 "$"Translate given VALUES to their µVALUES: round(VALUE*10^6), then to binary.""
 "$"Values with too much decimals will be rounded half-to-even,""
-"$"confer"" https://www.exploringbinary.com/inconsistent-rounding-of-printed-floating-point-numbers/
+"$"see: ""https://www.exploringbinary.com/inconsistent-rounding-of-printed-floating-point-numbers/
 "$"Given VALUES may be suffixed by:""
   * 'd' for deci.
   * 'c' for centi.

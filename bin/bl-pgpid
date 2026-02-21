@@ -500,12 +500,12 @@ OPTIONS:
 		shift
 	done
 
-	# confer https://www.rfc-editor.org/rfc/rfc9580#name-public-key-algorithms
+	# See: https://www.rfc-editor.org/rfc/rfc9580#name-public-key-algorithms
 	local -a pka=([1]="RSA" "RSA_Encrypt-Only" "RSA_Sign-Only" [16]="Elgamal_Encrypt-Only" "DSA" "ECDH" "ECDSA" "Elgamal" "Diffie-Hellman" "EdDSALegacy" "AEDH" "AEDSA" "X25519" "X448" "Ed25519" "Ed448")
 	local pkaindex
 	local -A record
 
-	# Confer https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=blob_plain;f=doc/DETAILS
+	# See: https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=blob_plain;f=doc/DETAILS
 	gpg --homedir "$gpghome" --list-secret-keys --with-colons $1 | grep "^sec:" | while	IFS=':' read record[Type] record[Validity] record[KeyLenght] record[PubKeyAlgo] record[KeyID] record[CreationDate] record[ExpirationDate] record[Field8] record[Ownertrust] record[UserID] record[SignatureClass] record[KeyCapabilities] record[Field13] record[Flags] record[TockenSN] record[HashAlgo] record[CurveName] record[ComplianceFlags] record[LastUpdate] record[Origin] record[Comment] record[rfu] ; do
 		if eval "$filtertest" ; then
 			if ! pkaindex=$((${record[PubKeyAlgo]})) ; then
@@ -748,7 +748,7 @@ bl_pgpid_gen_uid() {
 #   If we let 4294967294, 4294967293 and id under 2^18 (< 262144), for some futur usage/convention,
 #   then we can use range 262144 to 4294967292, to get an almost unique Unix User ID from unique OpenPGP ID string (u4,...)
 #
-#   Confer https://www.debian.org/doc/debian-policy/ch-opersys.html#users-and-groups
+#   See: https://www.debian.org/doc/debian-policy/ch-opersys.html#users-and-groups
 #
 #   Which make 4294705148 slots, ~= about half of the actual human population (~8 billions).
 #   But we encounter many problems when ( uid >= 2^31 ), probably because many software manipulate uid as signed instead of unsigned.
@@ -758,13 +758,13 @@ bl_pgpid_gen_uid() {
 
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... [UDID4]"
+	local usage="Usage: $name [OPTIONS]... [U4]"
 	local helpmsg="
 "$"Generate a 32bit Unix User ID, from 2^18 to (2^31)-2"" ([$BL_PGPID_XUID_MIN,$BL_PGPID_XUID_MAX]).
-"$"If UDID4 is not given, it will ask for surname, names and date of birth.""
+"$"If no argument is given, it will ask for surname, names and date of birth.""
 
 OPTIONS:
-  -f, --free-input            "$"Accept any input, not only valid OpenPGP ID string.""
+  -f, --free-input            "$"Accept any input, not only valid PGPID U4 string.""
   -F, --from FILE             "$"Get input from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
 "
 	local freeinput=0 str_in u4h num
@@ -823,7 +823,7 @@ bl_pgpid_gen_key() {
 
 OPTIONS:
   -N, --name PSEUDONYM             "$"Common name or pseudonym. "$"Default: "$"first part of email"".
-  -c, --comment U4|U5              "$"First part of comment field MUST be a OpenPGP ID string."" Confer \$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
+  -c, --comment U4|U5              "$"First part of comment field MUST be a OpenPGP ID string."$" See: ""\$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
   -C, --extra-comment COMMENT      "$"Comment (second part of comment field, free to use).""
   -p, --passphrase PASSPHRASE      "$"Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage).""
   -P, --passfrom FILE              "$"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""

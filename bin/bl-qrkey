@@ -291,7 +291,7 @@ OPTIONS:
 	return 0
 }
 
-# gpg (GnuPG) 2.4.7 --batch can't do it, then we send direct APDU through gpg-connect-agent, confer:
+# gpg (GnuPG) 2.4.7 --batch can't do it, then we send direct APDU through gpg-connect-agent, see:
 #   - https://foopgp.org/blog/2014-08-21-openpgp-card-une-application-cryptographique-pour-carte-a-puce/#communiquer-avec-scdaemon-et-la-carte
 #   - https://g10code.com/docs/openpgp-card-2.0.pdf
 # Note: existence of a (new in 2025) tool: 'oct' - https://codeberg.org/openpgp-card/openpgp-card-tools
