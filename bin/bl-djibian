@@ -288,6 +288,7 @@ bl_djibian_confhome4pgp()
 - '\$GNUPGHOME':   "$"Set KEYFPR as the only one ultimate key (downgrading other trust ultimate -> full).""
 - '~/.ssh':       "$"Set last usable OpenPGP authentication key as the only one authorized key for ssh login.""
 - '~/.gitconfig': "$"Set KEYFPR as the git global « user.signingKey ».""
+- '~/.face':      "$"If KEYFPR certificate contain an avatar, copy it to this file.""
 "
 	local fromcard=0 ret=0
 	for ((;$#;)) ; do
@@ -336,6 +337,15 @@ bl_djibian_confhome4pgp()
 	touch ~/.gitconfig || return $?
 	grep --quiet "^\[user\]" ~/.gitconfig || echo -e "\n[user]" >> ~/.gitconfig || return $?
 	sed -i '/^\[user\]/,/^\[/ { /^[[:space:]]*signingKey\>/d } ; /^\[user\]/a\\tsigningKey = '"$keyfpr # set $(date -I) by $FUNCNAME"  ~/.gitconfig || return $?
+
+	local avatar=$(bl_pgpid_avatar "$keyfpr" | tail -n 1)
+	if [[ -f "$avatar" ]] ; then
+		touch ~/.face || return $?
+		printf "$FUNCNAME: Info: " >&2
+		cp --force --verbose ~/.face ~/.face.$(md5sum ~/.face | head -c 32) >&2 || return $?
+		printf "$FUNCNAME: Info: " >&2
+		cp --force --verbose "$avatar" ~/.face >&2 || return $?
+	fi
 }
 
 bl_djibian_admins()
