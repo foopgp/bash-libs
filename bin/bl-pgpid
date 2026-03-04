@@ -342,7 +342,7 @@ BL_PGPID_chelpmsg="
 "$"It combines the power of OpenPGP (RFC 9580) with those of others open international standards: POSIX, ICAO 9303, ISO/IEC 7816, many others RFC.""
 
 MAIN OPTIONS:
-  -f, --frontend PROGRAM   "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND"
+  -f, --frontend PROGRAM  "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND"
 
 ### external functions ###
 
@@ -890,24 +890,23 @@ OPTIONS:
 	[[ "$passphrase" ]] || passphrase=$(bl_new_password "Passphrase")
 	[[ "$passphrase" ]] || { printf "%s: Error: Passphrase can't be empty at this stage.\n" "$FUNCNAME" >&2 ; return 2 ;}
 
-	local genkey_batch="
-%echo Generating OpenPGP key for ${email}
-Key-Type: eddsa
-Key-Curve: Ed25519
-Key-Usage: cert sign
-Subkey-Type: ecdh
-Subkey-Curve: Curve25519
-Subkey-Usage: encrypt
-Name-Real: ${pseudo}
-Name-Comment: ${pgpidu} ${extracomment}
-Name-Email: ${email}
-Expire-Date: $(date -I -d "+$expire years")
-Passphrase: ${passphrase}
-Keyserver: ${keyserv}
-# Do a commit here, so that we can later print 'done' :-)
-%commit
-"
-	gpg --homedir "$gpghome" --batch --generate-key --allow-freeform-uid <<<"$genkey_batch" || return $?
+	cat <<-EOF | gpg --homedir "$gpghome" --batch --generate-key --allow-freeform-uid || return $?
+		%echo Generating OpenPGP key for ${email}
+		Key-Type: eddsa
+		Key-Curve: Ed25519
+		Key-Usage: cert sign
+		Subkey-Type: ecdh
+		Subkey-Curve: Curve25519
+		Subkey-Usage: encrypt
+		Name-Real: ${pseudo}
+		Name-Comment: ${pgpidu} ${extracomment}
+		Name-Email: ${email}
+		Expire-Date: $(date -I -d "+$expire years")
+		Passphrase: ${passphrase}
+		Keyserver: ${keyserv}
+		# Do a commit here, so that we can later print 'done' :-)
+		%commit
+	EOF
 
 	# get first 2 fprs
 	local fprs
