@@ -325,8 +325,9 @@ declare -Ar BL_PGPID_COORDINATES=(
 
 ### Others Globals ###
 
-BL_PGPID_KEYSERVERS=(
+[[ "${BL_PGPID_KEYSERVERS[*]}" ]] || BL_PGPID_KEYSERVERS=(
 "hkps://keys.foopgp.org"
+"hkps://pgp.id"
 )
 
 if ((BL_PGPID_isprogram)) ; then
@@ -812,7 +813,7 @@ bl_pgpid_gen_key() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... EMAIL"
-	local keyserv=${BL_PGPID_KEYSERVERS[0]}
+	local keyserv="${BL_PGPID_KEYSERVERS[0]}"
 	local helpmsg="
 "$"Generate an OpenPGP key pair (public and secret) according to OpenPGP ID standards.""
 "$"Missing input will be asked interactively.""
@@ -924,7 +925,7 @@ bl_pgpid_avatar() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local tmpdir="/tmp/$FUNCNAME.$USER"
 	local usage=$"Usage:"" $name [OPTIONS]... [NAME|KEYID|U4|U5]"
-	local keyserv=${BL_PGPID_KEYSERVERS[0]}
+	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 	local helpmsg="
 "$"Extract or add image inside OpenPGP certificate.""
 "$"Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
@@ -936,8 +937,9 @@ OPTIONS:
   -A, --addfrom IMAGE         "$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image).""
   -R, --revoke                "$"Just revoke all existing images inside OpenPGP certificate.""
   -W, --workdir DIRECTORY     "$"Working directory. Will contain previous and new resized images. "$"Default: ""$tmpdir .
-  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default: ""$keyserv .
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
+  -K, --keyservers KEYSERVERS "$"If non-empty, send updated certificate to this keyservers. "$"Default: ""
+$(printf -- "%80s\n" ${keyservs[@]})
 "
 	local image revoke
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -953,7 +955,10 @@ OPTIONS:
 			-W|--tmpdir|--workdir)
 				shift ; tmpdir=${1:?} ;;
 			-k|--keyserver)
-				shift ; keyserv=$1 ;;
+				printf -- "$FUNCNAME: Warning: "$"Deprecated option"" '--keyserver' - "$"Please use %s instead.""\n" "'--keyservers'" >&2
+				;&
+			-K|--keyservers)
+				shift ; keyservs=($1) ;;
 			-H|--homedir)
 				shift ; gpghome=${1:?} ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -997,6 +1002,7 @@ OPTIONS:
 		fi
 	fi
 
+	local ret=0
 	if [[ "$revoke" ]] ; then
 		(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many (%d) certificates"" (%s).\n" "$user" ${#fprs[@]} "${fprs[*]}" >&2 ; return 1 ;}
 
@@ -1016,8 +1022,10 @@ OPTIONS:
 			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "${fprs[0]}" 2> >(grep "image of size" | sort -u >&2 ) <<<"$commands" || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "addphoto" >&2 ; return 1 ;}
 		fi
 
-		# Send new certificate to keyserver
-		[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "${fprs[0]}" || return 1
+		# Send new certificate to keyservers
+		for keyserv in ${keyservs[@]} ; do
+			gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "${fprs[0]}" || ret=$?
+		done
 	fi
 
 	if [[ -s "$tmpdir/imglist" ]] ; then
@@ -1025,13 +1033,15 @@ OPTIONS:
 	else
 		printf "%s: Notice: No image extracted from %s certificate...\n" "$FUNCNAME" "$user" >&2
 	fi
+
+	return $ret
 }
 
 bl_pgpid_email() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
-	local keyserv=${BL_PGPID_KEYSERVERS[0]}
+	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 	local helpmsg="
 "$"Display and add or revoke emails inside OpenPGP certificate.""
 "$"Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
@@ -1042,9 +1052,10 @@ OPTIONS:
   -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options.""
   -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL. "$"Default: "$"first part of email.""
   -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL.""
-  -k, --keyserver KEYSERVER   "$"If non-empty, send updated certificate to this keyserver. "$"Default: ""$keyserv .
-  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
   -v, --verbose               "$"Increase verbosity.""
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
+  -K, --keyservers KEYSERVERS "$"If non-empty, send updated certificate to this keyservers. "$"Default: ""
+$(printf -- "%80s\n" ${keyservs[@]})
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
 	local toadd torev pseudo extracomment
@@ -1063,7 +1074,10 @@ OPTIONS:
 			-C|--extracomment|--extra-comment)
 				shift ; extracomment=" $1" ;;
 			-k|--keyserver)
-				shift ; keyserv=$1 ;;
+				printf -- "$FUNCNAME: Warning: "$"Deprecated option"" '--keyserver' - "$"Please use %s instead.""\n" "'--keyservers'" >&2
+				;&
+			-K|--keyservers)
+				shift ; keyservs=($1) ;;
 			-H|--homedir)
 				shift ; gpghome=${1:?} ;;
 			-v|--verbose) gpgfilter="cat" ;;
@@ -1126,12 +1140,16 @@ OPTIONS:
 		done
 	fi
 
-	# Send updated certificate to keyserver
-	if [[ "$keyserv" ]] && [[ "$torev" || "$toadd" ]] ; then
-		gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "$user" || return 1
+	local ret=0
+	# Send updated certificate to keyservers
+	if [[ "$torev" || "$toadd" ]] ; then
+		for keyserv in ${keyservs[@]} ; do
+			gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "$user" || ret=$?
+		done
 	fi
 
 	gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | cut -d ' ' -f 2
+	return $ret
 }
 
 bl_pgpid_token_check()
@@ -1286,7 +1304,7 @@ bl_pgpid_certify() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage=$"Usage:"" $name [OPTIONS]... [TARGET_U4|TARGET_U5] [TARGET_KEYFPR]"
-	local keyserv=${BL_PGPID_KEYSERVERS[0]}
+	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 
 	local helpmsg="
 "$"Certify somebody else, identified by its OpenPGP ID TARGET_U4.""
@@ -1305,8 +1323,9 @@ OPTIONS:
   -g, --vouch-for DOMAIN       "$"Assume some legal responsibilities on the target."" (Not implemented yet)
   -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing.""
   -f, --force-sign-key         "$"Allow to unrevoke or to change vouching.""
-  -k, --keyserver KEYSERVER    "$"If non-empty, receive and send updated certificate to this keyserver. "$"Default: ""$keyserv.
   -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environnement variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'.
+  -K, --keyservers KEYSERVERS  "$"If non-empty, receive and send updated certificate from and to this keyservers. "$"Default: ""
+$(printf -- "%80s\n" ${keyservs[@]})
 
 "$"Return value:""
 -   0 "$"No error""
@@ -1340,7 +1359,10 @@ OPTIONS:
 			-f|--force-sign-key|--force)
 				oforce="--force-sign-key" ;;
 			-k|--keyserver)
-				shift ; keyserv=$1 ;;
+				printf -- "$FUNCNAME: Warning: "$"Deprecated option"" '--keyserver' - "$"Please use %s instead.""\n" "'--keyservers'" >&2
+				;&
+			-K|--keyservers)
+				shift ; keyservs=($1) ;;
 			-H|--homedir)
 				shift ; gpghome=${1:?} ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -1381,10 +1403,10 @@ OPTIONS:
 	# We have to focus on BL_PGPID_U4H_REGEX because BL_PGPID_CO_REGEX part of udid4 is fuzzy (and may be used to distinguish different persons with same BL_PGPID_U4H_REGEX). And we have to include ${BASH_REMATCH[2]::1} because search feature on key server use to search for whole words.
 	! [[ "$targetid" =~ (${BL_PGPID_U4H_REGEX})(${BL_PGPID_CO_REGEX}) ]] || targetid="${BASH_REMATCH[1]}${BASH_REMATCH[2]::1}"
 
-	if [[ "$keyserv" ]] ; then
+	for keyserv in ${keyservs[@]} ; do
 		# Retrieve at most 16 certificates from keyserver (there should be only one active, keyserver has to make sure each id does not match more than 16 active + revoked certificates)
-		seq -s ' ' 16 | gpg --homedir "$gpghome" --keyserver "${keyserv}" --command-fd 0 --batch --search-keys "$targetid" > /dev/null || return $?
-	fi
+		echo {1..16} | gpg --homedir "$gpghome" --keyserver "${keyserv}" --command-fd 0 --batch --search-keys "$targetid" > /dev/null || true
+	done
 
 	# get fingerprints for certificate to certify
 	local fprs ifpr=0 uids
@@ -1425,7 +1447,11 @@ OPTIONS:
 		gpg --homedir "$gpghome" --quick-set-ownertrust "$targetfpr" "${ownertrust:-marginal}" || return $?
 	fi
 
-	[[ -z "$keyserv" ]] || gpg --homedir "$gpghome" --keyserver "$keyserv" --send-keys "$targetfpr" || return $?
+	local ret=0
+	for keyserv in ${keyservs[@]} ; do
+		gpg --homedir "$gpghome" --keyserver "$keyserv" --send-keys "$targetfpr" || ret=$?
+	done
+	return $ret
 }
 
 ### Init ###
