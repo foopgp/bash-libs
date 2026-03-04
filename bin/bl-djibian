@@ -277,13 +277,13 @@ for OpenPGP usages, see: ""$BL_DJIBIAN_NAME confhome4pgp --help
 
 bl_djibian_confhome4pgp()
 {
+# TODO: manage options like --{,disable,enable}-{systemd,gnupg,ssh,git,face,all} To enable or disable specific parts of configuration
 	local name
 	((BL_DJIBIAN_isprogram)) && name="$BL_DJIBIAN_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
-	local usage="Usage: $name [KEYFPR]"
+	local usage="Usage: $name KEYFPR"
 	local helpmsg="
 "$"Reconfigure HOME directory for djibian's OpenPGP usage:""
 - '~/.config/systemd/user': "$"Force SSH_AUTH_SOCK to use gpg-agent (crazy systemd workaround).""
-"$"And if a key fingerprint [KEYFPR] is passed as argument:""
 - '\$GNUPGHOME':   "$"Set KEYFPR as the GnuPG's default-key.""
 - '\$GNUPGHOME':   "$"Set KEYFPR as the only one ultimate key (downgrading other trust ultimate -> full).""
 - '~/.ssh':       "$"Set last usable OpenPGP authentication key as the only one authorized key for ssh login.""
@@ -302,16 +302,6 @@ bl_djibian_confhome4pgp()
 		shift
 	done
 
-	if [[ -f /usr/lib/systemd/user/gpg-agent.socket ]] ; then
-		mkdir --parents ~/.config/systemd/user/sockets.target.wants || return $?
-		printf "$FUNCNAME: Info: " >&2
-		cp --force --verbose /usr/lib/systemd/user/gpg-agent.socket ~/.config/systemd/user/sockets.target.wants >&2 || return $?
-	else
-		printf "$FUNCNAME: Notice: "$"%s is missing. "$"Did you get rid of systemd ?""\n" "'/usr/lib/systemd/user/gpg-agent.socket'" >&2
-	fi
-
-	[[ "$1" ]] || return 0
-
 	[[ "${1^^}" =~ ^(0X)?([ABCDEF0-9]{40})$ ]] || { printf "$FUNCNAME: Error: "$"Argument must be a PGP fingerprint (40 xdigits).""\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ; }
 	local key keyfpr=${BASH_REMATCH[2]}
 
@@ -319,6 +309,14 @@ bl_djibian_confhome4pgp()
 	mkdir -p "${GNUPGHOME:-$HOME/.gnupg}" ~/.ssh || return $?
 	chmod go-rwx "${GNUPGHOME:-$HOME/.gnupg}" ~/.ssh || return $?
 	gpg --list-key 0x$keyfpr || gpg --recv-key 0x$keyfpr || return $?
+
+	if [[ -f /usr/lib/systemd/user/gpg-agent.socket ]] ; then
+		mkdir --parents ~/.config/systemd/user/sockets.target.wants || return $?
+		printf "$FUNCNAME: Info: " >&2
+		cp --force --verbose /usr/lib/systemd/user/gpg-agent.socket ~/.config/systemd/user/sockets.target.wants >&2 || return $?
+	else
+		printf "$FUNCNAME: Notice: "$"%s is missing. "$"Did you get rid of systemd ?""\n" "'/usr/lib/systemd/user/gpg-agent.socket'" >&2
+	fi
 
 	printf "$FUNCNAME: Info: "$"Set %s as the GnuPG's default-key"" (${GNUPGHOME:-~/.gnupg})...\n" "$keyfpr" >&2
 	echo "default-key:0:\"$keyfpr" | gpgconf --quiet --change-options gpg >&2 || return $?
