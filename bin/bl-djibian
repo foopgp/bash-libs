@@ -142,7 +142,7 @@ OPTIONS:
   -t, --phone NUMBER               "$"User phone number (optional)""
   -p, --password PASSWORD          "$"User password (for current djibian Operating System)""
   -P, --passfrom FILE              "$"Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
-  -f, --from-certificate USER-ID   "$"Get user data from OpenPGP ID certificate identified by given [KEY|U4|U5|EMAIL]."" (Not implemented)
+  -f, --from-certificate USER-ID   "$"Get user data from OpenPGP ID certificate identified by given FPR|U4."" (Not implemented)
   -F, --from-pgpid-token           "$"Get user data from OpenPGP ID smartcard (eg: yubikey, nitrokey, ...)""
   -v, --verify                     "$"Resume input data for verification""
   -a, --admin                      "$"Enable admin rights (root power through sudo group)""
@@ -283,12 +283,12 @@ bl_djibian_confhome4pgp()
 	local usage="Usage: $name KEYFPR"
 	local helpmsg="
 "$"Reconfigure HOME directory for djibian's OpenPGP usage:""
-- '~/.config/systemd/user': "$"Force SSH_AUTH_SOCK to use gpg-agent (crazy systemd workaround).""
-- '\$GNUPGHOME':   "$"Set KEYFPR as the GnuPG's default-key.""
-- '\$GNUPGHOME':   "$"Set KEYFPR as the only one ultimate key (downgrading other trust ultimate -> full).""
-- '~/.ssh':       "$"Set last usable OpenPGP authentication key as the only one authorized key for ssh login.""
-- '~/.gitconfig': "$"Set KEYFPR as the git global « user.signingKey ».""
-- '~/.face':      "$"If KEYFPR certificate contain an avatar, copy it to this file.""
+- '~/.config/systemd/': "$"Force SSH_AUTH_SOCK to use gpg-agent (crazy systemd workaround).""
+- '\$GNUPGHOME':         "$"Set KEYFPR as the GnuPG's default-key.""
+- '\$GNUPGHOME':         "$"Set KEYFPR as the only one ultimate key (downgrading other trust ultimate -> full).""
+- '~/.ssh':             "$"Set last usable OpenPGP authentication key as the only one authorized key for ssh login.""
+- '~/.gitconfig':       "$"Set KEYFPR as the git global « user.signingKey ».""
+- '~/.face':            "$"If KEYFPR certificate contain an avatar, copy it to this file.""
 "
 	local fromcard=0 ret=0
 	for ((;$#;)) ; do

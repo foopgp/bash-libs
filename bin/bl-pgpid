@@ -327,7 +327,7 @@ declare -Ar BL_PGPID_COORDINATES=(
 
 [[ "${BL_PGPID_KEYSERVERS[*]}" ]] || BL_PGPID_KEYSERVERS=(
 "hkps://keys.foopgp.org"
-"hkps://pgp.id"
+"hkps://pgp.id:11371"
 )
 
 if ((BL_PGPID_isprogram)) ; then
@@ -562,6 +562,98 @@ OPTIONS:
 }
 
 ### public functions / program actions ###
+
+bl_pgpid_get_fpr() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... NAME|U4|U5|EMAIL"
+	local maxfromks=100
+	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
+	local helpmsg="
+"$"Refresh certificate(s) matching NAME|U4|U5|EMAIL from keyservers, and output their fingerprint(s)""
+"$"(40 hexadecimal digits identifying OpenPGP Certification key).""
+
+OPTIONS:
+  -s, --secret                "$"Search through local secret keys instead of public certificate.""
+  -m, --errexit-g=1           "$"Return an error if there is more than one (1) entry."" - "$"You may replace '1' by an other number.""
+  -M, --max-from-keyserv MAX  "$"Set maximum number of corresponding keys received from keyservers. "$"Default: ""$maxfromks
+  -T, --ownertrust THRESHOLD  "$"Only output fingerprint with ownertrust greater or equal to THRESHOLD."" (Not implemented)
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
+  -K, --keyservers KEYSERVERS "$"If non-empty, search and refresh certificate from this keyservers. "$"Default: ""
+$(printf -- "%80s\n" ${keyservs[@]})
+"
+	local gpgaction="--list-keys"
+	local errexit=$(getconf INT_MAX)
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	for ((;$#;)) ; do
+		case "$1" in
+			-s|--secret)
+				gpgaction="--list-secret-keys"
+				maxfromks=0 ;;
+			-m|--errexit|--errexit-g)
+				errexit=1 ;;
+			--errexit*=*)
+				errexit=${1#*=}
+				[[ "$errexit" =~ ^[1-9][0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Option %s expect a number"".\n" "--errexit-g=" >&2 ; return 2 ; }
+				;;
+			-M|--max-from-keyserv)
+				[[ "$2" =~ ^[0-9]+$ ]] || { printf "$FUNCNAME: Error: "$"Option %s expect a number"".\n" "--max-from-keyserv" >&2 ; return 2 ; }
+				shift ; maxfromks=$1 ;;
+			-T|--ownertrust)
+				printf "$FUNCNAME: Error: "$"Sorry, option %s not implemented yet.""\n" "$1" >&2 ; return 2 ;;
+			-K|--keyservers)
+				shift ; keyservs=($1) ;;
+			-H|--homedir)
+				shift ; gpghome=${1:?} ;;
+			-v|--verify) verify=1 ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	[[ "$1" ]] || { printf "$usage\n" >&2 ; return 2 ; }
+	local user=$1
+
+	if ((maxfromks>0)) ; then
+		local -a ksfprs
+		local scheme serv port path ksurl kspfr
+		for keyserv in ${keyservs[@]} ; do
+			[[ "$keyserv" =~ // ]] || keyserv="hkps://$keyserv"
+			[[ "${keyserv,,}" =~ ^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*) ]] || { printf "$FUNCNAME: Warning: "$"Non RFC3986 URI, skipping  %s.""\n" "'$keyserv'" ; continue ; }
+			scheme=${BASH_REMATCH[2]}
+			serv=${BASH_REMATCH[4]}
+			path=${BASH_REMATCH[5]}
+			[[ $scheme == hkp ]] || [[ $scheme == hkps ]] ||{ printf "$FUNCNAME: Warning: "$"Non hkp or hkps scheme, skipping  %s.""\n" "'$keyserv'" ; continue ; }
+			if [[ "${serv##*:}" =~ ^[0-9]+$ ]] ; then
+				port=${BASH_REMATCH[0]}
+				serv=${serv%:*}
+			else
+				[[ "${scheme:3:1}" == s ]] && port=443 || port=11371
+			fi
+			ksurl="http${scheme:3:1}://${serv}:${port}${path}/pks/lookup"
+			ksfprs=($(curl --no-progress-meter --location --get --data-urlencode 'op=index' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | sed -n 's,^pub:\([[:xdigit:]]*\):.*,\1,p'))
+			if [[ -z "${ksfprs[@]}" ]] ; then
+				printf "$FUNCNAME: Warning: "$"No certificate for %s on %s.""\n" "'$user'" "'$keyserv'" >&2
+				continue
+			elif ((${#ksfprs[@]} <= maxfromks )) ; then
+				curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import
+			else
+				for ksfpr in "${ksfprs[@]}" ; do
+					curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=0x$ksfpr" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import
+				done
+			fi
+		done
+	fi
+
+	local -a fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction "$1" | cut -d ' '  -f 1 | sort -u))
+	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user"" '%s'.\n" "$user" >&2 ; return 141 ;}
+	(( ${#fprs[@]} <= errexit )) || { printf "$FUNCNAME: Error: "$"User '%s' match many (%d) certificates"" (%s).\n" "$user" ${#fprs[@]} "> $errexit" >&2 ; return 7 ;}
+	printf -- "%s\n" "${fprs[@]}"
+}
 
 bl_pgpid_mrz_to_u4() {
 	local name
