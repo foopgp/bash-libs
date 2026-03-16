@@ -1,0 +1,11 @@
+
+# ENVIRONMENT
+
+**BL_INTERACTIVE_FRONTEND**
+:   Select the frontend program, between : NONE, whiptail, dialog or zenity.
+
+**BL_PGPID_KEYSERVERS**
+:   URLs of OpenPGP keyservers to use, separated by spaces. The first one MUST be HKPS compatible (*hkps://...*), and may be the only one used, depending on context.
+
+**GNUPGHOME**
+:   GnuPG home directory, to be used instead of "~/.gnupg".

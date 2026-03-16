@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-DJIBIAN
 section: 1
 header: User Commands
-footer: bash-libs 0.3.0
+footer: bash-libs 0.3.2
 ---
 
 # NAME
@@ -44,6 +44,10 @@ System tools for Djibian GNU/Linux. Mainly to manage users.
 adduser
 
 :   Add user to this djibian system. Need root permissions (sudo).
+
+confhome4pgp
+
+:   Reconfigure HOME directory for djibian\'s OpenPGP usage:
 
 admins
 

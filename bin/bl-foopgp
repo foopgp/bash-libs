@@ -111,13 +111,25 @@ declare -Ar BL_FOOPGP_STINGYNALTYS=(
 [2026-09]=1.14415185072666004741
 [2026-10]=1.14987260998029334764
 [2026-11]=1.15562197303019481437
-[2027-12]=1.16140008289534578844
+[2026-12]=1.16140008289534578844
 [2027-01]=1.16720708330982251738
 [2027-02]=1.17304311872637162996
 [2027-03]=1.17890833432000348810
 [2027-04]=1.18480287599160350554
 [2027-05]=1.19072689037156152306
 [2027-06]=1.19668052482341933067
+[2027-07]=1.20266392744753642732
+[2027-08]=1.20867724708477410945
+[2027-09]=1.21472063332019797999
+[2027-10]=1.22079423648679896988
+[2027-11]=1.22689820766923296472
+[2027-12]=1.23303269870757912954
+[2028-01]=1.23919786220111702518
+[2028-02]=1.24539385151212261030
+[2028-03]=1.25162082076968322335
+[2028-04]=1.25787892487353163946
+[2028-05]=1.26416831949789929765
+[2028-06]=1.27048916109538879413
 )
 
 [[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_FOOPGP_isprogram=1 || declare -r BL_FOOPGP_isprogram=0
@@ -242,11 +254,11 @@ OPTIONS:
 		case "$1" in
 			-t|--tokens)
 				shift ; t=0${1/,/.}
-				[[ "$t" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${t: 1}" >&2 ; return 2 ; }
+				[[ "$t" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Given parameter '%s' is not a valid number.""\n" "${t: 1}" >&2 ; return 2 ; }
 				;;
 			-g|--gifts)
 				shift ; g=0${1/,/.}
-				[[ "$g" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${g: 1}" >&2 ; return 2 ; }
+				[[ "$g" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Given parameter '%s' is not a valid number.""\n" "${g: 1}" >&2 ; return 2 ; }
 				;;
 			-s|--siprefix) shift ; symbol=$1 ;;
 			-p|--printsym) printsym="yes" ;;
@@ -258,9 +270,10 @@ OPTIONS:
 		esac
 		shift
 	done
-	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
+	(($#)) || { printf "$FUNCNAME: Error: "$"no VALUE given as argument.""\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ; }
 
 	for i in "$@" ; do
+		[[ "$i" =~ ^[0-9]*\.?[0-9]*$ ]] || printf "$FUNCNAME: Warning: "$"Given argument '%s' is not a valid number.""\n" "$i" >&2
 		tokens=$(bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else 0 ; scale=16 ")
 		case "$symbol" in
 			d|deci)
@@ -305,11 +318,11 @@ OPTIONS:
 		case "$1" in
 			-t|--tokens)
 				shift ; t=0${1/,/.}
-				[[ "$t" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${t: 1}" >&2 ; return 2 ; }
+				[[ "$t" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Given parameter '%s' is not a valid number.""\n" "${t: 1}" >&2 ; return 2 ; }
 				;;
 			-g|--gifts)
 				shift ; g=0${1/,/.}
-				[[ "$g" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "${g: 1}" >&2 ; return 2 ; }
+				[[ "$g" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Given parameter '%s' is not a valid number.""\n" "${g: 1}" >&2 ; return 2 ; }
 				;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
@@ -319,10 +332,10 @@ OPTIONS:
 		esac
 		shift
 	done
-	(($#)) || { printf "%s: Error: no VALUE given as argument\nTry '%s --help' for more information.\n" "$FUNCNAME" "$name" >&2 ; return 2 ; }
+	(($#)) || { printf "$FUNCNAME: Error: "$"no VALUE given as argument.""\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ; }
 
 	for i in "$@" ; do
-		#bc -l <<<"for (i=1;i<13;i++) { z=e(l(2)*1.08*i)-1 ; scale=2 ; z=z*100+1 ; z/100 ; scale=16 }"
+		[[ "$i" =~ ^[0-9]*\.?[0-9]*$ ]] || printf "$FUNCNAME: Warning: "$"Given argument '%s' is not a valid number.""\n" "$i" >&2
 		bc -l <<<"z=e(l(2)*$BL_FOOPGP_STINGYNALTY*($i+$t))-1-$g ; scale=2 ; z=z*100+1 ; z/100 ; scale=16"
 	done
 }
@@ -349,11 +362,11 @@ OPTIONS:
 		case "$1" in
 			-t|--tokens)
 				shift ; tg=${1/,/.}
-				[[ "$tg" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$tg" >&2 ; return 2 ; }
+				[[ "$tg" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Given parameter '%s' is not a valid number.""\n" "$tg" >&2 ; return 2 ; }
 				;;
 			-g|--gifts)
 				shift ; gg=${1/,/.}
-				[[ "$gg" =~ ^[0-9]+\.?[0-9]*$ ]] || { printf "%s: Error: given parameter '%s' is not a valid number.\n" "$FUNCNAME" "$gg" >&2 ; return 2 ; }
+				[[ "$gg" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Given parameter '%s' is not a valid number.""\n" "$gg" >&2 ; return 2 ; }
 				;;
 			-m|--max) shift ; max=$(($1)) || return 2 ;;
 			-M|--max-line) shift ; maxl=$(($1)) || return 2 ;;

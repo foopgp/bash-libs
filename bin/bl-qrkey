@@ -291,7 +291,7 @@ OPTIONS:
 	return 0
 }
 
-# gpg (GnuPG) 2.4.7 --batch can't do it, then we send direct APDU through gpg-connect-agent, confer:
+# gpg (GnuPG) 2.4.7 --batch can't do it, then we send direct APDU through gpg-connect-agent, see:
 #   - https://foopgp.org/blog/2014-08-21-openpgp-card-une-application-cryptographique-pour-carte-a-puce/#communiquer-avec-scdaemon-et-la-carte
 #   - https://g10code.com/docs/openpgp-card-2.0.pdf
 # Note: existence of a (new in 2025) tool: 'oct' - https://codeberg.org/openpgp-card/openpgp-card-tools
@@ -576,24 +576,24 @@ OPTIONS:
 			( printf "~$((qrversion))$((thresn-1))$i" ; cat "$f" ) | qrencode --level=M --dpi=50 --output "$f.png"
 		fi
 		((++i)) # Not i++ because i start from 0 and set -e ;-)
-		cat <<EOF | pandoc --from markdown --to pdf -fmarkdown-implicit_figures | pdfcrop --quiet --margins "4" - "$f.pdf" >&2
-\pagenumbering{gobble}
+		cat <<-EOF | pandoc --from markdown --to pdf -fmarkdown-implicit_figures | pdfcrop --quiet --margins "4" - "$f.pdf" >&2
+			\pagenumbering{gobble}
 
-*$(hostname) - $(date --iso-8601)*
+			*$(hostname) - $(date --iso-8601)*
 
-*${FUNCNAME} ${BL_QRKEY_VERSION} - QR version: ${qrversion}*
+			*${FUNCNAME} ${BL_QRKEY_VERSION} - QR version: ${qrversion}*
 
-## PGPID SECRET (/${thresn}) - FRAGMENT ${i}/${splitn}
+			## PGPID SECRET (/${thresn}) - FRAGMENT ${i}/${splitn}
 
-$(gpg --homedir "$gpghome" --with-colons --list-keys "$keyfpr" | awk -F: '$1=="uid" { print $10"\n" }')
-\`\`\`
-    ${keyfpr: 0:4} ${keyfpr: 4:4} ${keyfpr: 8:4} ${keyfpr: 12:4} ${keyfpr: 16:4} ${keyfpr: 20:4} ${keyfpr: 24:4} ${keyfpr: 28:4} ${keyfpr: 32:4} ${keyfpr: 36:4}
-\`\`\`
-![qrcode $i]($f.png)
+			$(gpg --homedir "$gpghome" --with-colons --list-keys "$keyfpr" | awk -F: '$1=="uid" { print $10"\n" }')
+			\`\`\`
+			    ${keyfpr: 0:4} ${keyfpr: 4:4} ${keyfpr: 8:4} ${keyfpr: 12:4} ${keyfpr: 16:4} ${keyfpr: 20:4} ${keyfpr: 24:4} ${keyfpr: 28:4} ${keyfpr: 32:4} ${keyfpr: 36:4}
+			\`\`\`
+			![qrcode $i]($f.png)
 
-$( [[ -z "$withpass" ]] || echo "Passphrase: ${passphrase}" )
+			$( [[ -z "$withpass" ]] || echo "Passphrase: ${passphrase}" )
+		EOF
 
-EOF
 		lpr -# 1 -P "${printer}" "${f}.pdf" >&2
 	done
 )
@@ -812,7 +812,7 @@ OPTIONS:
 				shift ; passphrase=$1 ;;
 			-P|--passfrom|--pass-from)
 				shift ; passphrase=$( sed 1q < "$1" ) || return 1 ;;
-			-K|--keyserver)
+			-k|--keyserver)
 				shift ; hkpsserv=$1 ;;
 			-U|--certurl)
 				shift ; certurl=$1 ;;
