@@ -1,3 +1,26 @@
+bash-libs (0.3.2-1) unstable; urgency=medium
+
+  [ jjbrucker ]
+  * bl_pgpid_token_check(): minor code factorization + wording improvement
+  * new function bl_djibian_confhome4pgp(), used in bl_djibian_adduser()
+  * put some forgotten strings into gettext scope (for translations)
+  * bl-foopgp: update BL_FOOPGP_STINGYNALTYS array
+  * bl_djibian_confhome4pgp(): also set KEYFPR as the git global « user.signingKey » + minor fixes
+  * some wording fixes
+  * bl_djibian_confhome4pgp(): If KEYFPR certificate contain an avatar, copy it to ~/.face
+  * bl-foopgp: udpate strings for translations + stderr warning for some non-expected arguments
+  * simplify a little bit bl_djibian_confhome4pgp() (improve UX)
+  * bl_pgpid_certify(), bl_pgpid_avatar() and bl_pgpid_email() now manage multiple keyservers
+  * 1 minor bugfixe + cosmetical change (discovering <<-EOF)
+  * new function bl_pgpid_get_fpr(), will be used for factorization
+  * debug/finalise bl_pgpid_get() + factorization
+  * now bl_pgpid_get() also output OpenPGP ID identifier (if present)
+  * bl_djibian_adduser(): support --from-certificate
+  * help2man.sh --target-version 0.3.2
+  * make -C i18n
+
+ -- piseb <piseb@mailo.com>  Mon, 16 Mar 2026 17:06:04 +0100
+
 bash-libs (0.3.1-1) unstable; urgency=medium
 
   [ jjbrucker ]
