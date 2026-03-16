@@ -155,6 +155,7 @@ MAIN OPTIONS:
 
 ### external functions ###
 
+source "$(dirname "$BASH_SOURCE")"/bl-markdown --
 source "$(dirname "$BASH_SOURCE")"/bl-pgpid --
 
 ### internal functions ###
@@ -185,55 +186,6 @@ _bl_foopgp_parseoptions() {
 }
 
 ### public functions / program actions ###
-
-# Because there is a 'cd', use sub-shell '(...' (instead of '{...').
-bl_foopgp_symlinks() (
-	local name
-	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
-	local usage=$"Usage:"" $name [OPTIONS] INDEX_DIR ..."
-	local helpmsg="
-"$"Update symlinks in the foopgp tree"".
-
-OPTIONS:
-  -c, --clean         "$"Just remove existing symlinks (without recreating them)"".
-"
-	local clean
-	for ((;$#;)) ; do
-		case "$1" in
-			-c|--clean) clean="true" ;;
-			-h|--help) printf -- "$usage\n$helpmsg\n" ; return ;;
-			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
-			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
-			*) break ;;
-		esac
-		shift
-	done
-	(($#)) || { printf -- "${usage}\n" >&2 ; return 2 ; }
-
-	[[ -d "$1/by-id" ]] || { echo "$FUNCNAME: Error: "$"Unexpected foopgp index directory"" '$1'" >&2 ; return 2 ; }
-	cd "$1" || return $?
-
-	if [[ -d "by-email" ]] ; then
-		printf -- $"Deleting existing symlinks in"" 'by-email/' ...\n" >&2
-		find "by-email/" -type l -delete || return $?
-	fi
-	[[ -z "$clean" ]] || return 0
-
-	local file email domain tld i
-	printf -- $"Creating symlinks from"" 'by-id/' ...\n" >&2
-	find by-id/u4/*/*/*/emails/ -type f | while read file
-	do
-		email=${file##*\/}
-		[[ "$email" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { echo "$FUNCNAME: Error: "$"Invalid email"" '$email'." >&2 ; return 1 ;}
-		domain=${BASH_REMATCH[2]}
-		tld=${BASH_REMATCH[4]}
-		mkdir -p "by-email/${tld}/${domain}" || return $?
-		ln -s "../../../${file%%/emails/*}" "by-email/${tld}/${domain}/${email}" || return $?
-		printf "\r%8d %-40s" $((++i)) "$email" >&2
-	done
-	printf "\r\t %-40s\n" "Done !" >&2
-)
 
 bl_foopgp_g2t() {
 	local name
@@ -396,6 +348,154 @@ OPTIONS:
 		LC_NUMERIC=POSIX printf "| %10s ${csymb[EUR]} | %2s00.0000 cɈ |\n" "$g" "$i"
 	done #| uniq
 }
+
+# Because there is a 'cd', use sub-shell '(...' (instead of '{...').
+bl_foopgp_symlinks() (
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage=$"Usage:"" $name [OPTIONS] INDEX_DIR ..."
+	local helpmsg="
+"$"Update symlinks in the foopgp tree"".
+
+OPTIONS:
+  -c, --clean         "$"Just remove existing symlinks (without recreating them)"".
+"
+	local clean
+	for ((;$#;)) ; do
+		case "$1" in
+			-c|--clean) clean="true" ;;
+			-h|--help) printf -- "$usage\n$helpmsg\n" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	(($#)) || { printf -- "${usage}\n" >&2 ; return 2 ; }
+
+	[[ -d "$1/by-id" ]] || { echo "$FUNCNAME: Error: "$"Unexpected foopgp index directory"" '$1'" >&2 ; return 2 ; }
+	cd "$1" || return $?
+
+	if [[ -d "by-email" ]] ; then
+		printf -- $"Deleting existing symlinks in"" 'by-email/' ...\n" >&2
+		find "by-email/" -type l -delete || return $?
+	fi
+	[[ -z "$clean" ]] || return 0
+
+	local file email domain tld i
+	printf -- $"Creating symlinks from"" 'by-id/' ...\n" >&2
+	find by-id/u4/*/*/*/emails/ -type f | while read file
+	do
+		email=${file##*\/}
+		[[ "$email" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { echo "$FUNCNAME: Error: "$"Invalid email"" '$email'." >&2 ; return 1 ;}
+		domain=${BASH_REMATCH[2]}
+		tld=${BASH_REMATCH[4]}
+		mkdir -p "by-email/${tld}/${domain}" || return $?
+		ln -s "../../../${file%%/emails/*}" "by-email/${tld}/${domain}/${email}" || return $?
+		printf "\r%8d %-40s" $((++i)) "$email" >&2
+	done
+	printf "\r\t %-40s\n" "Done !" >&2
+)
+
+# Because there is a 'cd', use sub-shell '(...' (instead of '{...').
+bl_foopgp_contribs() (
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage=$"Usage:"" $name [OPTIONS] INDEX_DIR ..."
+	local helpmsg="
+"$"Calculate total contributions and total djis (Ɉ) created by contributions.""
+
+OPTIONS:
+  -S, --stats         "$"Only output statistics.""
+  -U, --users         "$"Only output by-id array.""
+"
+	local stats=1 users=1
+	for ((;$#;)) ; do
+		case "$1" in
+			-s|--stats) stats=1 users=0 ;;
+			-u|--users) stats=0 users=1 ;;
+			-h|--help) printf -- "$usage\n$helpmsg\n" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	(($#)) || { printf -- "${usage}\n" >&2 ; return 2 ; }
+
+	[[ -d "$1/by-id" ]] || { echo "$FUNCNAME: Error: "$"Unexpected foopgp index directory"" '$1'" >&2 ; return 2 ; }
+	cd "$1" || return $?
+	readarray -t files < <(find . -type f -name contributions.md)
+
+	echo -e "\n### $name $BL_FOOPGP_VERSION $(date -R)\n" >&2
+
+	if ((users)) ; then
+		echo "| last contrib  |                    id                   | nb contribs | total contribution | total created | certification lvl | µJ^(1/2) |"
+		echo "|---------------|-----------------------------------------|-------------|--------------------|---------------|-------------------|----------|"
+	fi
+
+	totid=0
+	totcontribs=0
+	certifiedtotcontribs=0
+	totcontribution=0
+	certifiedtotcontribution=0
+	totcreated=0
+	certifiedtotcreated=0
+
+	## For each path in the array.
+	for file in "${files[@]}" ; do
+		dir=$(dirname "$file")
+
+		## get id from path
+		[[ "$file" =~ (udid4|email)/[^/]+/[^/]+/([^/]+)/contributions.md$ ]] || { echo "$0: Warning: Unexpected path $file" >&2 ; continue ; }
+		[[ "${BASH_REMATCH[1]}" == udid4 ]] && id="u4=${BASH_REMATCH[2]}" || id="<${BASH_REMATCH[2]}>"
+		nbcontribs=0
+		totEURbyid=0
+		totDJIbyid=0
+
+		## For the moment, certification level is just the number of certification. In the futur this level should also depend on the quality of the issuers/certifiers, an on the age of certifications.
+		[[ -f "$dir/certifications.log" ]] && certlvl=$(wc -l < "$dir/certifications.log") || certlvl=0
+
+		while read line ; do
+			#grep -q '\[date\]=\"2025-' <<<"$line" && continue # To Dismiss 2025 Inputs
+			eval "$line"
+			totEURbyid=$(bc -l <<<"${totEURbyid}+${entry[EUR]/,/.}")
+			totDJIbyid=$(bc -l <<<"${totDJIbyid}+${entry[DJI]/,/.}")
+			((++nbcontribs))
+		done < <(bl_md_arraytobash  < "$file")
+
+		if ((users)) ; then
+			statid=$(printf "|    ${entry[date]} | %-39s | %11d | %16s € | %11s Ɉ | %17s | %8s |\n"  "${id}" "$nbcontribs" "$totEURbyid" "$totDJIbyid" "$certlvl" "$(bc -l <<<"scale=0;sqrt(${totDJIbyid/./})")")
+			output+=("$statid")
+		fi
+		printf "\t%12s\r" "$totid" >&2
+		((++totid))
+		((totcontribs+=nbcontribs))
+		totcontribution=$(bc -l <<<"${totcontribution}+${totEURbyid}")
+		totcreated=$(bc -l <<<"${totcreated}+${totDJIbyid}")
+		if ((certlvl)) ; then
+			((++nbcerts))
+			((certifiedtotcontribs+=nbcontribs))
+			certifiedtotcontribution=$(bc -l <<<"${certifiedtotcontribution}+${totEURbyid}")
+			certifiedtotcreated=$(bc -l <<<"${certifiedtotcreated}+${totDJIbyid}")
+		fi
+	done
+	printf "\t%12s\r" " " >&2
+
+	((!users)) || printf "%s\n" "${output[@]}" | sort -rn
+
+	if ((stats)) ; then
+		echo >&2
+		echo -e "- Total members:\t$totid - Total certified members: $nbcerts / $totid"
+		echo -e "- Total contribs:\t$totcontribs - Total certified contribs: $certifiedtotcontribs / $totcontribs"
+		echo -e "- Total contribution:\t$totcontribution € - Total certified contribution: $certifiedtotcontribution € / $totcontribution €"
+		echo -e "- Total created:\t$totcreated Ɉ - Total certified created: $certifiedtotcreated Ɉ / $totcreated Ɉ"
+		echo >&2
+	fi
+)
+
 
 ### Init ###
 

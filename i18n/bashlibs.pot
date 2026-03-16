@@ -29,9 +29,9 @@ msgstr ""
 
 #: ../bin/bl-dji:138 ../bin/bl-dji:185 ../bin/bl-dji:216 ../bin/bl-dji:259
 #: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-djibian:182
-#: ../bin/bl-djibian:305 ../bin/bl-djibian:381 ../bin/bl-foopgp:207
-#: ../bin/bl-foopgp:268 ../bin/bl-foopgp:330 ../bin/bl-foopgp:378
-#: ../bin/bl-interactive:109 ../bin/bl-interactive:203
+#: ../bin/bl-djibian:305 ../bin/bl-djibian:381 ../bin/bl-foopgp:220
+#: ../bin/bl-foopgp:282 ../bin/bl-foopgp:330 ../bin/bl-foopgp:370
+#: ../bin/bl-foopgp:421 ../bin/bl-interactive:109 ../bin/bl-interactive:203
 #: ../bin/bl-interactive:259 ../bin/bl-interactive:346
 #: ../bin/bl-interactive:416 ../bin/bl-json:119 ../bin/bl-json:156
 #: ../bin/bl-json:209 ../bin/bl-json:267 ../bin/bl-markdown:130
@@ -52,13 +52,13 @@ msgstr ""
 #: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-dji:565
 #: ../bin/bl-djibian:174 ../bin/bl-djibian:182 ../bin/bl-djibian:305
 #: ../bin/bl-djibian:311 ../bin/bl-djibian:381 ../bin/bl-djibian:460
-#: ../bin/bl-foopgp:207 ../bin/bl-foopgp:268 ../bin/bl-foopgp:273
-#: ../bin/bl-foopgp:330 ../bin/bl-foopgp:335 ../bin/bl-foopgp:378
-#: ../bin/bl-foopgp:447 ../bin/bl-interactive:109 ../bin/bl-interactive:203
-#: ../bin/bl-interactive:259 ../bin/bl-interactive:346
-#: ../bin/bl-interactive:416 ../bin/bl-interactive:422
-#: ../bin/bl-interactive:535 ../bin/bl-json:119 ../bin/bl-json:156
-#: ../bin/bl-json:209 ../bin/bl-json:267 ../bin/bl-json:380
+#: ../bin/bl-foopgp:220 ../bin/bl-foopgp:225 ../bin/bl-foopgp:282
+#: ../bin/bl-foopgp:287 ../bin/bl-foopgp:330 ../bin/bl-foopgp:370
+#: ../bin/bl-foopgp:421 ../bin/bl-foopgp:547 ../bin/bl-interactive:109
+#: ../bin/bl-interactive:203 ../bin/bl-interactive:259
+#: ../bin/bl-interactive:346 ../bin/bl-interactive:416
+#: ../bin/bl-interactive:422 ../bin/bl-interactive:535 ../bin/bl-json:119
+#: ../bin/bl-json:156 ../bin/bl-json:209 ../bin/bl-json:267 ../bin/bl-json:380
 #: ../bin/bl-markdown:130 ../bin/bl-markdown:212 ../bin/bl-markdown:315
 #: ../bin/bl-pgpid:362 ../bin/bl-pgpid:498 ../bin/bl-pgpid:546
 #: ../bin/bl-pgpid:619 ../bin/bl-pgpid:791 ../bin/bl-pgpid:906
@@ -153,19 +153,19 @@ msgid ""
 "Don't remove any grain from wallet FILE, but output grains to be removed."
 msgstr ""
 
-#: ../bin/bl-dji:523 ../bin/bl-djibian:418 ../bin/bl-foopgp:405
+#: ../bin/bl-dji:523 ../bin/bl-djibian:418 ../bin/bl-foopgp:505
 #: ../bin/bl-interactive:495 ../bin/bl-json:340 ../bin/bl-markdown:273
 #: ../bin/bl-pgpid:1579 ../bin/bl-qrkey:933 ../bin/bl-security:399
 msgid "Show help and exit."
 msgstr ""
 
-#: ../bin/bl-dji:524 ../bin/bl-djibian:419 ../bin/bl-foopgp:406
+#: ../bin/bl-dji:524 ../bin/bl-djibian:419 ../bin/bl-foopgp:506
 #: ../bin/bl-interactive:496 ../bin/bl-json:341 ../bin/bl-markdown:274
 #: ../bin/bl-pgpid:1580 ../bin/bl-qrkey:934 ../bin/bl-security:400
 msgid "Show version and exit."
 msgstr ""
 
-#: ../bin/bl-dji:543 ../bin/bl-djibian:438 ../bin/bl-foopgp:425
+#: ../bin/bl-dji:543 ../bin/bl-djibian:438 ../bin/bl-foopgp:525
 #: ../bin/bl-interactive:514 ../bin/bl-json:359 ../bin/bl-qrkey:953
 #: ../bin/bl-security:418
 msgid ""
@@ -173,7 +173,7 @@ msgid ""
 "environment variables, i.e. the same global options."
 msgstr ""
 
-#: ../bin/bl-dji:565 ../bin/bl-djibian:460 ../bin/bl-foopgp:447
+#: ../bin/bl-dji:565 ../bin/bl-djibian:460 ../bin/bl-foopgp:547
 #: ../bin/bl-interactive:535 ../bin/bl-json:380 ../bin/bl-markdown:315
 #: ../bin/bl-pgpid:1621 ../bin/bl-qif:609 ../bin/bl-qrkey:975
 #: ../bin/bl-security:439 ../bin/bl-test:198
@@ -483,109 +483,123 @@ msgstr ""
 msgid "set STINGYNALTY according to given date"
 msgstr ""
 
-#: ../bin/bl-foopgp:193 ../bin/bl-pgpid:1052 ../bin/bl-pgpid:1429
-msgid "Usage:"
-msgstr ""
-
-#: ../bin/bl-foopgp:195
-msgid "Update symlinks in the foopgp tree"
-msgstr ""
-
-#: ../bin/bl-foopgp:198
-msgid "Just remove existing symlinks (without recreating them)"
-msgstr ""
-
-#: ../bin/bl-foopgp:214
-msgid "Unexpected foopgp index directory"
-msgstr ""
-
-#: ../bin/bl-foopgp:218
-msgid "Deleting existing symlinks in"
-msgstr ""
-
-#: ../bin/bl-foopgp:224
-msgid "Creating symlinks from"
-msgstr ""
-
-#: ../bin/bl-foopgp:228
-msgid "Invalid email"
-msgstr ""
-
-#: ../bin/bl-foopgp:244
+#: ../bin/bl-foopgp:196
 msgid ""
 "Calculate how many djis (Ɉ) would be created from a contribution in euros "
 "(€)."
 msgstr ""
 
-#: ../bin/bl-foopgp:247
+#: ../bin/bl-foopgp:199
 msgid "Set the base of djis (Ɉ) already created (default: 0)"
 msgstr ""
 
-#: ../bin/bl-foopgp:248
+#: ../bin/bl-foopgp:200
 msgid "Set the base of values in EUR (€) already contributed (default: 0)"
 msgstr ""
 
-#: ../bin/bl-foopgp:249
+#: ../bin/bl-foopgp:201
 msgid ""
 "Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. "
 "International System of Units)."
 msgstr ""
 
-#: ../bin/bl-foopgp:250
+#: ../bin/bl-foopgp:202
 msgid "Also print symbol, eg: ' µɈ'."
 msgstr ""
 
-#: ../bin/bl-foopgp:257 ../bin/bl-foopgp:261 ../bin/bl-foopgp:321
-#: ../bin/bl-foopgp:325 ../bin/bl-foopgp:365 ../bin/bl-foopgp:369
+#: ../bin/bl-foopgp:209 ../bin/bl-foopgp:213 ../bin/bl-foopgp:273
+#: ../bin/bl-foopgp:277 ../bin/bl-foopgp:317 ../bin/bl-foopgp:321
 msgid "Given parameter '%s' is not a valid number."
 msgstr ""
 
-#: ../bin/bl-foopgp:273 ../bin/bl-foopgp:335
+#: ../bin/bl-foopgp:225 ../bin/bl-foopgp:287
 msgid "no VALUE given as argument."
 msgstr ""
 
-#: ../bin/bl-foopgp:276 ../bin/bl-foopgp:338
+#: ../bin/bl-foopgp:228 ../bin/bl-foopgp:290
 msgid "Given argument '%s' is not a valid number."
 msgstr ""
 
-#: ../bin/bl-foopgp:309
+#: ../bin/bl-foopgp:261
 msgid ""
 "Calculate how much euros (€) should be given to create a targeted number of "
 "djis (Ɉ)."
 msgstr ""
 
-#: ../bin/bl-foopgp:312 ../bin/bl-foopgp:351
+#: ../bin/bl-foopgp:264 ../bin/bl-foopgp:303
 msgid "Set the base of djis Ɉ already created (default: 0)"
 msgstr ""
 
-#: ../bin/bl-foopgp:313
+#: ../bin/bl-foopgp:265
 msgid "Set the base of values in euros € already contributed (default: 0)"
 msgstr ""
 
-#: ../bin/bl-foopgp:348
+#: ../bin/bl-foopgp:300
 msgid ""
 "Display an array to indicate how many djis (Ɉ) gonna be created from a "
 "contribution in euros (€)."
 msgstr ""
 
-#: ../bin/bl-foopgp:352
+#: ../bin/bl-foopgp:304
 msgid "Set the base of values in EUR € already contributed (default: 0)"
 msgstr ""
 
-#: ../bin/bl-foopgp:353
+#: ../bin/bl-foopgp:305
 msgid "Set a limit in term of targeted djis (defaut: 12)"
 msgstr ""
 
-#: ../bin/bl-foopgp:354
+#: ../bin/bl-foopgp:306
 msgid "Limit number of lines (defaut: 24)"
 msgstr ""
 
-#: ../bin/bl-foopgp:355
+#: ../bin/bl-foopgp:307
 msgid "Only display header line, and return."
 msgstr ""
 
-#: ../bin/bl-foopgp:356
+#: ../bin/bl-foopgp:308
 msgid "Also display header line and separation line at the beginning of array."
+msgstr ""
+
+#: ../bin/bl-foopgp:356 ../bin/bl-foopgp:405 ../bin/bl-pgpid:1052
+#: ../bin/bl-pgpid:1429
+msgid "Usage:"
+msgstr ""
+
+#: ../bin/bl-foopgp:358
+msgid "Update symlinks in the foopgp tree"
+msgstr ""
+
+#: ../bin/bl-foopgp:361
+msgid "Just remove existing symlinks (without recreating them)"
+msgstr ""
+
+#: ../bin/bl-foopgp:377 ../bin/bl-foopgp:428
+msgid "Unexpected foopgp index directory"
+msgstr ""
+
+#: ../bin/bl-foopgp:381
+msgid "Deleting existing symlinks in"
+msgstr ""
+
+#: ../bin/bl-foopgp:387
+msgid "Creating symlinks from"
+msgstr ""
+
+#: ../bin/bl-foopgp:391
+msgid "Invalid email"
+msgstr ""
+
+#: ../bin/bl-foopgp:407
+msgid ""
+"Calculate total contributions and total djis (Ɉ) created by contributions."
+msgstr ""
+
+#: ../bin/bl-foopgp:410
+msgid "Only output statistics."
+msgstr ""
+
+#: ../bin/bl-foopgp:411
+msgid "Only output by-id array."
 msgstr ""
 
 #: ../bin/bl-interactive:84

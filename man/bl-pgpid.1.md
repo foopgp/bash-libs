@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs 0.3.2
+footer: bash-libs 0.3.3
 ---
 
 # NAME

@@ -1109,7 +1109,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	# Backup existing photos and get fingerprints
 	echo -n > "$tmpdir/imglist" || return $?
-	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "img=\$(md5sum %i | head -c 32).%t && cp -v %i ${tmpdir@Q}/\$img > >(sed 's,^,$FUNCNAME: Debug: ,' > /proc/$$/fd/2) 2>&1 && echo ${tmpdir@Q}/\$img >> ${tmpdir@Q}/imglist" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p' | sort -u ))
+	fprs=($(gpg --homedir "$gpghome" --list-key --list-options "$listopts" --photo-viewer "img=\$(md5sum %i | head -c 32).%t && cp %i ${tmpdir@Q}/\$img && echo ${tmpdir@Q}/\$img >> ${tmpdir@Q}/imglist" "$user" | sed -nE 's,^ *([0-9ABCDEF]{40})$,\1,p' | sort -u ))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "'$user'" >&2 ; return 1 ;}
 
 	if [[ "$image" ]] ; then
