@@ -383,28 +383,6 @@ msgstr "Définir STINGYNALTY"
 msgid "set STINGYNALTY according to given date"
 msgstr "Définir STINGYNALTY en fonction de la date fournie"
 
-msgid "Usage:"
-msgstr "Utilisation :"
-
-msgid "Update symlinks in the foopgp tree"
-msgstr "Mettre à jour les liens symboliques dans l’arborescence foopgp"
-
-msgid "Just remove existing symlinks (without recreating them)"
-msgstr ""
-"Supprimer uniquement les liens symboliques existants (sans les recréer)"
-
-msgid "Unexpected foopgp index directory"
-msgstr "Répertoire d’index foopgp inattendu."
-
-msgid "Deleting existing symlinks in"
-msgstr "Suppression des liens symboliques existants dans"
-
-msgid "Creating symlinks from"
-msgstr "Création des liens symboliques depuis"
-
-msgid "Invalid email"
-msgstr "Adresse e-mail invalide."
-
 msgid ""
 "Calculate how many djis (Ɉ) would be created from a contribution in euros "
 "(€)."
@@ -476,6 +454,41 @@ msgid "Also display header line and separation line at the beginning of array."
 msgstr ""
 "Afficher également la ligne d’en-tête et une ligne de séparation au début du "
 "tableau."
+
+msgid "Usage:"
+msgstr "Utilisation :"
+
+msgid "Update symlinks in the foopgp tree"
+msgstr "Mettre à jour les liens symboliques dans l’arborescence foopgp"
+
+msgid "Just remove existing symlinks (without recreating them)"
+msgstr ""
+"Supprimer uniquement les liens symboliques existants (sans les recréer)"
+
+msgid "Unexpected foopgp index directory"
+msgstr "Répertoire d’index foopgp inattendu."
+
+msgid "Deleting existing symlinks in"
+msgstr "Suppression des liens symboliques existants dans"
+
+msgid "Creating symlinks from"
+msgstr "Création des liens symboliques depuis"
+
+msgid "Invalid email"
+msgstr "Adresse e-mail invalide."
+
+#, fuzzy
+msgid ""
+"Calculate total contributions and total djis (Ɉ) created by contributions."
+msgstr ""
+"Calculer le nombre de djis (Ɉ) qui seraient créés à partir d’une cotisation "
+"en euros (€)."
+
+msgid "Only output statistics."
+msgstr ""
+
+msgid "Only output by-id array."
+msgstr ""
 
 msgid ""
 "Help managing interactive choices, while supporting multiple frontends: "

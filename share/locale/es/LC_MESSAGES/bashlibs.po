@@ -329,27 +329,6 @@ msgstr ""
 msgid "set STINGYNALTY according to given date"
 msgstr ""
 
-msgid "Usage:"
-msgstr "Uso:"
-
-msgid "Update symlinks in the foopgp tree"
-msgstr ""
-
-msgid "Just remove existing symlinks (without recreating them)"
-msgstr ""
-
-msgid "Unexpected foopgp index directory"
-msgstr ""
-
-msgid "Deleting existing symlinks in"
-msgstr ""
-
-msgid "Creating symlinks from"
-msgstr ""
-
-msgid "Invalid email"
-msgstr ""
-
 msgid ""
 "Calculate how many djis (Ɉ) would be created from a contribution in euros "
 "(€)."
@@ -407,6 +386,37 @@ msgid "Only display header line, and return."
 msgstr ""
 
 msgid "Also display header line and separation line at the beginning of array."
+msgstr ""
+
+msgid "Usage:"
+msgstr "Uso:"
+
+msgid "Update symlinks in the foopgp tree"
+msgstr ""
+
+msgid "Just remove existing symlinks (without recreating them)"
+msgstr ""
+
+msgid "Unexpected foopgp index directory"
+msgstr ""
+
+msgid "Deleting existing symlinks in"
+msgstr ""
+
+msgid "Creating symlinks from"
+msgstr ""
+
+msgid "Invalid email"
+msgstr ""
+
+msgid ""
+"Calculate total contributions and total djis (Ɉ) created by contributions."
+msgstr ""
+
+msgid "Only output statistics."
+msgstr ""
+
+msgid "Only output by-id array."
 msgstr ""
 
 msgid ""

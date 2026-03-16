@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-FOOPGP
 section: 1
 header: User Commands
-footer: bash-libs 0.3.2
+footer: bash-libs 0.3.3
 ---
 
 # NAME
@@ -51,10 +51,6 @@ euros (€) to the the foopgp association.
 
 ## ACTIONS:
 
-symlinks
-
-:   Update symlinks in the foopgp tree.
-
 g2t
 
 :   Calculate how many djis (Ɉ) would be created from a contribution in
@@ -70,9 +66,18 @@ giftarray
 :   Display an array to indicate how many djis (Ɉ) gonna be created from
     a contribution in euros (€).
 
+symlinks
+
+:   Update symlinks in the foopgp tree.
+
+contribs
+
+:   Calculate total contributions and total djis (Ɉ) created by
+    contributions.
+
  
-All actions support a **\--help** option, eg: \$ bl-foopgp
-symlinks **\--help**
+All actions support a **\--help** option, eg: \$ bl-foopgp g2t
+**\--help**
 
 bl-foopgp is also bash library, see: \$ source bl-foopgp
 **\--help**
