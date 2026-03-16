@@ -1,3 +1,12 @@
+bash-libs (0.3.3-1) unstable; urgency=medium
+
+  [ jjbrucker ]
+  * bl_pgpid_avatar(): bugfix due to /proc/$$/fd/2 (sometime unwritable)
+  * new function bl_foopgp_contribs()
+  * make -C i18n + help2man.sh --target-version 0.3.3
+
+ -- piseb <piseb@mailo.com>  Tue, 17 Mar 2026 00:00:18 +0100
+
 bash-libs (0.3.2-1) unstable; urgency=medium
 
   [ jjbrucker ]
