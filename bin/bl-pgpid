@@ -563,33 +563,39 @@ OPTIONS:
 
 ### public functions / program actions ###
 
-bl_pgpid_get_fpr() {
+bl_pgpid_get() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... NAME|U4|U5|EMAIL"
 	local maxfromks=100
 	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 	local helpmsg="
-"$"Refresh certificate(s) matching NAME|U4|U5|EMAIL from keyservers, and output their fingerprint(s)""
-"$"(40 hexadecimal digits identifying OpenPGP Certification key).""
+"$"Output fingerprints and emails of certificates matching NAME|U4|U5|EMAIL, refreshing local keyring from keyservers.""
 
 OPTIONS:
+  -F, --fingerprint           "$"Output only fingerprints.""
+  -E, --email                 "$"Output only emails.""
   -s, --secret                "$"Search through local secret keys instead of public certificate.""
   -m, --errexit-g=1           "$"Return an error if there is more than one (1) entry."" - "$"You may replace '1' by an other number.""
-  -M, --max-from-keyserv MAX  "$"Set maximum number of corresponding keys received from keyservers. "$"Default: ""$maxfromks
+  -M, --max-from-keyserv MAX  "$"Set maximum matching certificates to receive from keyservers. "$"Default: ""$maxfromks
   -T, --ownertrust THRESHOLD  "$"Only output fingerprint with ownertrust greater or equal to THRESHOLD."" (Not implemented)
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
   -K, --keyservers KEYSERVERS "$"If non-empty, search and refresh certificate from this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
 "
+	local onlyfpr=0 onlymbox=0
 	local gpgaction="--list-keys"
 	local errexit=$(getconf INT_MAX)
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
+			-F|--fpr|--fingerprint)
+				onlyfpr=1 onlymbox=0 ;;
+			-E|--mbox|--email)
+				onlyfpr=0 onlymbox=1 ;;
 			-s|--secret)
 				gpgaction="--list-secret-keys"
-				maxfromks=0 ;;
+				keyservs=() ;;
 			-m|--errexit|--errexit-g)
 				errexit=1 ;;
 			--errexit*=*)
@@ -598,6 +604,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				;;
 			-M|--max-from-keyserv)
 				[[ "$2" =~ ^[0-9]+$ ]] || { printf "$FUNCNAME: Error: "$"Option %s expect a number"".\n" "--max-from-keyserv" >&2 ; return 2 ; }
+				(($2 <= 100)) || printf "$FUNCNAME: Warning: "$"%s exceeds usual key server limit %s"".\n" "$2" "(100)" >&2
 				shift ; maxfromks=$1 ;;
 			-T|--ownertrust)
 				printf "$FUNCNAME: Error: "$"Sorry, option %s not implemented yet.""\n" "$1" >&2 ; return 2 ;;
@@ -637,22 +644,37 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			ksurl="http${scheme:3:1}://${serv}:${port}${path}/pks/lookup"
 			ksfprs=($(curl --no-progress-meter --location --get --data-urlencode 'op=index' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | sed -n 's,^pub:\([[:xdigit:]]*\):.*,\1,p'))
 			if [[ -z "${ksfprs[@]}" ]] ; then
-				printf "$FUNCNAME: Warning: "$"No certificate for %s on %s.""\n" "'$user'" "'$keyserv'" >&2
+				printf "$FUNCNAME: Notice: "$"No certificate for %s on %s.""\n" "'$user'" "'$keyserv'" >&2
 				continue
 			elif ((${#ksfprs[@]} <= maxfromks )) ; then
-				curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import
+				curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import-options import-clean --import
 			else
-				for ksfpr in "${ksfprs[@]}" ; do
-					curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=0x$ksfpr" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import
+				local i
+				for ((i=0;i<maxfromks;i++)) ; do
+					curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=0x${ksfprs[i]}" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import
 				done
 			fi
 		done
 	fi
 
-	local -a fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction "$1" | cut -d ' '  -f 1 | sort -u))
+	local -a fprmbox fprs
+	readarray -t fprmbox < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction "$user")
+	fprs=($(printf -- "%s\n" "${fprmbox[@]%% *}" | sort -u))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user"" '%s'.\n" "$user" >&2 ; return 141 ;}
-	(( ${#fprs[@]} <= errexit )) || { printf "$FUNCNAME: Error: "$"User '%s' match many (%d) certificates"" (%s).\n" "$user" ${#fprs[@]} "> $errexit" >&2 ; return 7 ;}
-	printf -- "%s\n" "${fprs[@]}"
+	if ((onlyfpr)) ; then
+		printf -- "%s\n" "${fprs[@]}"
+	elif ((onlymbox)) ; then
+		printf -- "%s\n" "${fprmbox[@]#* }"
+	else
+		printf -- "%s\n" "${fprmbox[@]}"
+	fi
+
+	if ((${#fprs[@]} != 1 )) ; then
+		(( ${#fprs[@]} <= errexit )) && local errlvl="Notice" || local errlvl="Error"
+		printf "$FUNCNAME: $errlvl: "$"%s certificates for %s." "${#fprs[@]}" "'$user'" >&2
+		(( ${#fprs[@]} >= maxfromks )) && printf " "$"Some public certificates may be missing.""\n" >&2 || printf "\n" >&2
+	fi
+	(( ${#fprs[@]} <= errexit )) || return 7
 }
 
 bl_pgpid_mrz_to_u4() {
@@ -1193,9 +1215,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	# Check that $user match only one certificate
 	local fprs
-	fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user" | cut -d ' ' -f 1 | sort -u))
-	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user '%s'.""\n" "$user" >&2 ; return 1 ;}
-	(( ${#fprs[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"User '%s' match many (%d) certificates"" (%s).\n" "$user" ${#fprs[@]} "${fprs[*]}" >&2 ; return 1 ;}
+	fprs=($(bl_pgpid_get --fpr --errexit-g=1 --homedir "$gpghome" --keyservers "" "$user")) || return $?
 	user=${fprs[0]}
 
 	if [[ "$torev" || "$toadd" ]] ; then
@@ -1494,15 +1514,9 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	# We have to focus on BL_PGPID_U4H_REGEX because BL_PGPID_CO_REGEX part of udid4 is fuzzy (and may be used to distinguish different persons with same BL_PGPID_U4H_REGEX). And we have to include ${BASH_REMATCH[2]::1} because search feature on key server use to search for whole words.
 	! [[ "$targetid" =~ (${BL_PGPID_U4H_REGEX})(${BL_PGPID_CO_REGEX}) ]] || targetid="${BASH_REMATCH[1]}${BASH_REMATCH[2]::1}"
 
-	for keyserv in ${keyservs[@]} ; do
-		# Retrieve at most 16 certificates from keyserver (there should be only one active, keyserver has to make sure each id does not match more than 16 active + revoked certificates)
-		echo {1..16} | gpg --homedir "$gpghome" --keyserver "${keyserv}" --command-fd 0 --batch --search-keys "$targetid" > /dev/null || true
-	done
-
 	# get fingerprints for certificate to certify
 	local fprs ifpr=0 uids
-	fprs=($(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$targetid" | cut -d ' '  -f 1 | sort -u))
-	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user"" '%s'.\n" "$targetid" >&2 ; return 141 ;}
+	fprs=($(bl_pgpid_get --fpr --homedir "$gpghome" --keyservers "${keyservs[*]}" "$targetid")) || return 141
 	if (( ${#fprs[@]} >= 2 )) ; then
 		printf "$FUNCNAME: Info: "$"User '%s' match many (%d) certificates"".\n" "$targetid" "${#fprs[@]}" >&2
 		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select key fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return 140
