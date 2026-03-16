@@ -627,7 +627,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	if ((maxfromks>0)) ; then
 		local -a ksfprs
-		local scheme serv port path ksurl kspfr
+		local scheme serv port path ksurl
 		for keyserv in ${keyservs[@]} ; do
 			[[ "$keyserv" =~ // ]] || keyserv="hkps://$keyserv"
 			[[ "${keyserv,,}" =~ ^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*) ]] || { printf "$FUNCNAME: Warning: "$"Non RFC3986 URI, skipping  %s.""\n" "'$keyserv'" ; continue ; }
@@ -657,16 +657,28 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		done
 	fi
 
-	local -a fprmbox fprs
-	readarray -t fprmbox < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction "$user")
-	fprs=($(printf -- "%s\n" "${fprmbox[@]%% *}" | sort -u))
+	local -a fprmboxs fprs
+	readarray -t fprmboxs < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction "$user")
+	fprs=($(printf -- "%s\n" "${fprmboxs[@]%% *}" | sort -u))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for user"" '%s'.\n" "$user" >&2 ; return 141 ;}
 	if ((onlyfpr)) ; then
 		printf -- "%s\n" "${fprs[@]}"
 	elif ((onlymbox)) ; then
-		printf -- "%s\n" "${fprmbox[@]#* }"
+		printf -- "%s\n" "${fprmboxs[@]#* }"
 	else
-		printf -- "%s\n" "${fprmbox[@]}"
+		local cl cfpr prevfpr id
+		for cl in "${fprmboxs[@]}" ; do
+			cfpr=${cl%% *}
+			if [[ "$cfpr" != $prevfpr ]] ; then
+				id=" $(gpg --homedir "$gpghome" --with-colons $gpgaction "0x$cfpr" | sed --silent --regexp-extended "s,^uid:.*4=?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,^uid:.*5=?(${BL_PGPID_U5_REGEX}).*,u5\1,p" | sort -u)"
+				if [[ "$id" == *$'\n'* ]] ; then
+					printf "$FUNCNAME: Warning: "$"Certificate %s contain more than one OpenPGP ID string.""\n" "0x$cfpr" >&2
+					id=""
+				fi
+			fi
+			printf -- "%-80s${id}\n" "$cl"
+			prevfpr=$cfpr
+		done
 	fi
 
 	if ((${#fprs[@]} != 1 )) ; then
