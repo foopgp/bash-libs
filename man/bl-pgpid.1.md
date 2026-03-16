@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs 0.3.0
+footer: bash-libs 0.3.2
 ---
 
 # NAME
@@ -47,6 +47,11 @@ ICAO 9303, ISO/IEC 7816, many others RFC.
 
 ## ACTIONS:
 
+get
+
+:   Output fingerprints and emails of certificates matching
+    NAME\|U4\|U5\|EMAIL, refreshing local keyring from keyservers.
+
 mrz_to_u4
 
 :   Calculate and output a OpenPGP ID u4, from the Machine Readable Zone
@@ -77,7 +82,7 @@ email
 
 token_check
 
-:   Check if OpenPGP token is correctly configured for OpenPGP ID ; may
+:   Check if security token is correctly configured for OpenPGP ID ; may
     output informations.
 
 certify
@@ -85,11 +90,22 @@ certify
 :   Certify somebody else, identified by its OpenPGP ID TARGET_U4.
 
  
-All actions support a **\--help** option, eg: \$ bl-pgpid
-mrz_to_u4 **\--help**
+All actions support a **\--help** option, eg: \$ bl-pgpid get
+**\--help**
 
 bl-pgpid is also bash library, see: \$ source bl-pgpid
 **\--help**
+
+# ENVIRONMENT
+
+**BL_INTERACTIVE_FRONTEND**
+:   Select the frontend program, between : NONE, whiptail, dialog or zenity.
+
+**BL_PGPID_KEYSERVERS**
+:   URLs of OpenPGP keyservers to use, separated by spaces. The first one MUST be HKPS compatible (*hkps://...*), and may be the only one used, depending on context.
+
+**GNUPGHOME**
+:   GnuPG home directory, to be used instead of "~/.gnupg".
 
 # DIAGNOSTICS
 
