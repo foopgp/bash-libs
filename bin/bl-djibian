@@ -208,10 +208,10 @@ for OpenPGP usages, see: ""$BL_DJIBIAN_NAME confhome4pgp --help
 	fi
 
 	if [[ "$identifier" ]] ; then
-		sname=$(printf "// substitued by %s" "${identifier:: 6}...")
-		gname=$(printf "// substitued by %s" "${identifier:: 6}...")
-		bdate=$(printf "// substitued by %s" "${identifier:: 6}...")
-		bcountry=$(printf "// substitued by %s" "${identifier:: 6}...")
+		bdate=$(printf "// "$"substitued by your OpenPGP ID")
+		sname=$bdate
+		gname=$bdate
+		bcountry=$bdate
 	fi
 
 	# If username is given as first argument, use it (and override username extracted from smartcard)

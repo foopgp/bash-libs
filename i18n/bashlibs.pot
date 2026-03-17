@@ -275,6 +275,10 @@ msgstr ""
 msgid "Need root power (sudo)."
 msgstr ""
 
+#: ../bin/bl-djibian:211
+msgid "substitued by your OpenPGP ID"
+msgstr ""
+
 #: ../bin/bl-djibian:220
 msgid "User surname (family name) at birth"
 msgstr ""

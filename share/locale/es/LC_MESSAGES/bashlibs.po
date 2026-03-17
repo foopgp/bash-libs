@@ -170,6 +170,9 @@ msgstr ""
 msgid "Need root power (sudo)."
 msgstr ""
 
+msgid "substitued by your OpenPGP ID"
+msgstr ""
+
 msgid "User surname (family name) at birth"
 msgstr ""
 
