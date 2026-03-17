@@ -28,8 +28,8 @@ msgid "Values with too much decimals will be truncated instead of rounded."
 msgstr ""
 
 #: ../bin/bl-dji:138 ../bin/bl-dji:185 ../bin/bl-dji:216 ../bin/bl-dji:259
-#: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-djibian:182
-#: ../bin/bl-djibian:305 ../bin/bl-djibian:381 ../bin/bl-foopgp:220
+#: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-djibian:181
+#: ../bin/bl-djibian:318 ../bin/bl-djibian:394 ../bin/bl-foopgp:220
 #: ../bin/bl-foopgp:282 ../bin/bl-foopgp:330 ../bin/bl-foopgp:370
 #: ../bin/bl-foopgp:421 ../bin/bl-interactive:109 ../bin/bl-interactive:203
 #: ../bin/bl-interactive:259 ../bin/bl-interactive:346
@@ -50,8 +50,8 @@ msgstr ""
 
 #: ../bin/bl-dji:138 ../bin/bl-dji:185 ../bin/bl-dji:216 ../bin/bl-dji:259
 #: ../bin/bl-dji:310 ../bin/bl-dji:370 ../bin/bl-dji:445 ../bin/bl-dji:565
-#: ../bin/bl-djibian:174 ../bin/bl-djibian:182 ../bin/bl-djibian:305
-#: ../bin/bl-djibian:311 ../bin/bl-djibian:381 ../bin/bl-djibian:460
+#: ../bin/bl-djibian:173 ../bin/bl-djibian:181 ../bin/bl-djibian:318
+#: ../bin/bl-djibian:324 ../bin/bl-djibian:394 ../bin/bl-djibian:473
 #: ../bin/bl-foopgp:220 ../bin/bl-foopgp:225 ../bin/bl-foopgp:282
 #: ../bin/bl-foopgp:287 ../bin/bl-foopgp:330 ../bin/bl-foopgp:370
 #: ../bin/bl-foopgp:421 ../bin/bl-foopgp:547 ../bin/bl-interactive:109
@@ -153,19 +153,19 @@ msgid ""
 "Don't remove any grain from wallet FILE, but output grains to be removed."
 msgstr ""
 
-#: ../bin/bl-dji:523 ../bin/bl-djibian:418 ../bin/bl-foopgp:505
+#: ../bin/bl-dji:523 ../bin/bl-djibian:431 ../bin/bl-foopgp:505
 #: ../bin/bl-interactive:495 ../bin/bl-json:340 ../bin/bl-markdown:273
 #: ../bin/bl-pgpid:1579 ../bin/bl-qrkey:933 ../bin/bl-security:399
 msgid "Show help and exit."
 msgstr ""
 
-#: ../bin/bl-dji:524 ../bin/bl-djibian:419 ../bin/bl-foopgp:506
+#: ../bin/bl-dji:524 ../bin/bl-djibian:432 ../bin/bl-foopgp:506
 #: ../bin/bl-interactive:496 ../bin/bl-json:341 ../bin/bl-markdown:274
 #: ../bin/bl-pgpid:1580 ../bin/bl-qrkey:934 ../bin/bl-security:400
 msgid "Show version and exit."
 msgstr ""
 
-#: ../bin/bl-dji:543 ../bin/bl-djibian:438 ../bin/bl-foopgp:525
+#: ../bin/bl-dji:543 ../bin/bl-djibian:451 ../bin/bl-foopgp:525
 #: ../bin/bl-interactive:514 ../bin/bl-json:359 ../bin/bl-qrkey:953
 #: ../bin/bl-security:418
 msgid ""
@@ -173,7 +173,7 @@ msgid ""
 "environment variables, i.e. the same global options."
 msgstr ""
 
-#: ../bin/bl-dji:565 ../bin/bl-djibian:460 ../bin/bl-foopgp:547
+#: ../bin/bl-dji:565 ../bin/bl-djibian:473 ../bin/bl-foopgp:547
 #: ../bin/bl-interactive:535 ../bin/bl-json:380 ../bin/bl-markdown:315
 #: ../bin/bl-pgpid:1621 ../bin/bl-qif:609 ../bin/bl-qrkey:975
 #: ../bin/bl-security:439 ../bin/bl-test:198
@@ -245,8 +245,7 @@ msgid ""
 msgstr ""
 
 #: ../bin/bl-djibian:145
-msgid ""
-"Get user data from OpenPGP ID certificate identified by given FINGERPRINT."
+msgid "Get user data from OpenPGP certificate identified by given FINGERPRINT."
 msgstr ""
 
 #: ../bin/bl-djibian:146
@@ -268,200 +267,212 @@ msgid ""
 "for OpenPGP usages, see: "
 msgstr ""
 
-#: ../bin/bl-djibian:174
+#: ../bin/bl-djibian:173
 msgid "--from-certificate expect a PGP fingerprint (40 xdigits)."
 msgstr ""
 
-#: ../bin/bl-djibian:189 ../bin/bl-djibian:390
+#: ../bin/bl-djibian:188 ../bin/bl-djibian:403
 msgid "Need root power (sudo)."
 msgstr ""
 
-#: ../bin/bl-djibian:222
+#: ../bin/bl-djibian:220
 msgid "User surname (family name) at birth"
 msgstr ""
 
-#: ../bin/bl-djibian:223
+#: ../bin/bl-djibian:221
 msgid "User forenames (all given names) at birth"
 msgstr ""
 
-#: ../bin/bl-djibian:224
+#: ../bin/bl-djibian:222
 msgid "User birth date (YYYY-MM-DD)"
 msgstr ""
 
-#: ../bin/bl-djibian:225
+#: ../bin/bl-djibian:223
 msgid "User birth country (3 letter code)"
 msgstr ""
 
 #: ../bin/bl-djibian:232
 msgid ""
 " As defined by IEEE Std 1003.1-2001, the username should consist only of\n"
-" letters, digits, underscores, periods, at signs and dashes, then it has\n"
-" been changed to: "
+" letters, digits, underscores, periods, at signs and dashes. And it should\n"
+" start with a letter."
 msgstr ""
 
-#: ../bin/bl-djibian:242 ../bin/bl-pgpid:820
+#: ../bin/bl-djibian:237
+msgid " Then username has been changed to: "
+msgstr ""
+
+#: ../bin/bl-djibian:245 ../bin/bl-pgpid:820
 msgid "Surname at birth:"
 msgstr ""
 
-#: ../bin/bl-djibian:243 ../bin/bl-pgpid:821
+#: ../bin/bl-djibian:246 ../bin/bl-pgpid:821
 msgid "Given names at birth:"
 msgstr ""
 
-#: ../bin/bl-djibian:244 ../bin/bl-pgpid:822
+#: ../bin/bl-djibian:247 ../bin/bl-pgpid:822
 msgid "Date of birth:"
 msgstr ""
 
-#: ../bin/bl-djibian:245 ../bin/bl-pgpid:823
+#: ../bin/bl-djibian:248 ../bin/bl-pgpid:823
 msgid "Country of birth:"
 msgstr ""
 
-#: ../bin/bl-djibian:246
+#: ../bin/bl-djibian:249
 msgid "Email:"
 msgstr ""
 
-#: ../bin/bl-djibian:247
+#: ../bin/bl-djibian:250
 msgid "Phone number:"
 msgstr ""
 
-#: ../bin/bl-djibian:248
+#: ../bin/bl-djibian:251
 msgid "User name:"
 msgstr ""
 
-#: ../bin/bl-djibian:249
+#: ../bin/bl-djibian:252
 msgid "User Password:"
 msgstr ""
 
-#: ../bin/bl-djibian:251 ../bin/bl-pgpid:825
+#: ../bin/bl-djibian:254 ../bin/bl-pgpid:825
 msgid "Is that correct"
 msgstr ""
 
-#: ../bin/bl-djibian:253 ../bin/bl-pgpid:811 ../bin/bl-pgpid:827
+#: ../bin/bl-djibian:256 ../bin/bl-pgpid:811 ../bin/bl-pgpid:827
 msgid "Birth surname (family name)"
 msgstr ""
 
-#: ../bin/bl-djibian:254 ../bin/bl-pgpid:812 ../bin/bl-pgpid:828
+#: ../bin/bl-djibian:257 ../bin/bl-pgpid:812 ../bin/bl-pgpid:828
 msgid "Birth names (all given names)"
 msgstr ""
 
-#: ../bin/bl-djibian:255 ../bin/bl-pgpid:813 ../bin/bl-pgpid:829
+#: ../bin/bl-djibian:258 ../bin/bl-pgpid:813 ../bin/bl-pgpid:829
 msgid "Birth date (YYYY-MM-DD)"
 msgstr ""
 
-#: ../bin/bl-djibian:256 ../bin/bl-pgpid:814 ../bin/bl-pgpid:830
+#: ../bin/bl-djibian:259 ../bin/bl-pgpid:814 ../bin/bl-pgpid:830
 msgid "Birth country (3 letter code)"
 msgstr ""
 
-#: ../bin/bl-djibian:257
+#: ../bin/bl-djibian:260
 msgid "Email"
 msgstr ""
 
-#: ../bin/bl-djibian:258
+#: ../bin/bl-djibian:261
 msgid "Phone number"
 msgstr ""
 
-#: ../bin/bl-djibian:260
+#: ../bin/bl-djibian:263
 msgid "User name (only letters [a-zA-Z], digits [0-9], and [_-])"
 msgstr ""
 
-#: ../bin/bl-djibian:262
+#: ../bin/bl-djibian:265
 msgid "User password (for this system)"
 msgstr ""
 
-#: ../bin/bl-djibian:278
-msgid "Unable to configure %s's HOME for OpenPGP"
+#: ../bin/bl-djibian:271
+msgid "Check system groups."
 msgstr ""
 
-#: ../bin/bl-djibian:278 ../bin/bl-pgpid:953
-msgid " See: "
-msgstr ""
-
-#: ../bin/bl-djibian:281
-msgid "user %s (%s) successfully added to current system"
+#: ../bin/bl-djibian:276
+msgid "No %s group."
 msgstr ""
 
 #: ../bin/bl-djibian:291
-msgid "Reconfigure HOME directory for djibian's OpenPGP usage:"
+msgid "Unable to configure %s's HOME for OpenPGP"
 msgstr ""
 
-#: ../bin/bl-djibian:292
-msgid "Force SSH_AUTH_SOCK to use gpg-agent (crazy systemd workaround)."
-msgstr ""
-
-#: ../bin/bl-djibian:293
-msgid "Set KEYFPR as the GnuPG's default-key."
+#: ../bin/bl-djibian:291 ../bin/bl-pgpid:953
+msgid " See: "
 msgstr ""
 
 #: ../bin/bl-djibian:294
+msgid "user %s (%s) successfully added to current system"
+msgstr ""
+
+#: ../bin/bl-djibian:304
+msgid "Reconfigure HOME directory for djibian's OpenPGP usage:"
+msgstr ""
+
+#: ../bin/bl-djibian:305
+msgid "Force SSH_AUTH_SOCK to use gpg-agent (crazy systemd workaround)."
+msgstr ""
+
+#: ../bin/bl-djibian:306
+msgid "Set KEYFPR as the GnuPG's default-key."
+msgstr ""
+
+#: ../bin/bl-djibian:307
 msgid ""
 "Set KEYFPR as the only one ultimate key (downgrading other trust ultimate -> "
 "full)."
 msgstr ""
 
-#: ../bin/bl-djibian:295 ../bin/bl-djibian:336
+#: ../bin/bl-djibian:308 ../bin/bl-djibian:349
 msgid ""
 "Set last usable OpenPGP authentication key as the only one authorized key "
 "for ssh login."
 msgstr ""
 
-#: ../bin/bl-djibian:296 ../bin/bl-djibian:340
+#: ../bin/bl-djibian:309 ../bin/bl-djibian:353
 msgid "Set KEYFPR as the git global « user.signingKey »."
 msgstr ""
 
-#: ../bin/bl-djibian:297
+#: ../bin/bl-djibian:310
 msgid "If KEYFPR certificate contain an avatar, copy it to this file."
 msgstr ""
 
-#: ../bin/bl-djibian:311
+#: ../bin/bl-djibian:324
 msgid "Argument must be a PGP fingerprint (40 xdigits)."
 msgstr ""
 
-#: ../bin/bl-djibian:314
+#: ../bin/bl-djibian:327
 msgid "Check directories and %s certificate."
 msgstr ""
 
-#: ../bin/bl-djibian:324
+#: ../bin/bl-djibian:337
 msgid "%s is missing. "
 msgstr ""
 
-#: ../bin/bl-djibian:324
+#: ../bin/bl-djibian:337
 msgid "Did you get rid of systemd ?"
 msgstr ""
 
-#: ../bin/bl-djibian:327
+#: ../bin/bl-djibian:340
 msgid "Set %s as the GnuPG's default-key"
 msgstr ""
 
-#: ../bin/bl-djibian:330
+#: ../bin/bl-djibian:343
 msgid "Set %s as the only one ultimate key"
 msgstr ""
 
-#: ../bin/bl-djibian:361
+#: ../bin/bl-djibian:374
 msgid ""
 "List, add or remove local admins (root power through sudo group). Add or "
 "remove need admin rights."
 msgstr ""
 
-#: ../bin/bl-djibian:362
+#: ../bin/bl-djibian:375
 msgid "SUDO_USER is not allowed to remove himself (from sudo group)."
 msgstr ""
 
-#: ../bin/bl-djibian:365
+#: ../bin/bl-djibian:378
 msgid "Add user to admin group (sudo). May be passed multiple time."
 msgstr ""
 
-#: ../bin/bl-djibian:366
+#: ../bin/bl-djibian:379
 msgid "Remove user to admin group (sudo). May be passed multiple time."
 msgstr ""
 
-#: ../bin/bl-djibian:367
+#: ../bin/bl-djibian:380
 msgid "Do nothing, as users with admin rights are always output."
 msgstr ""
 
-#: ../bin/bl-djibian:386 ../bin/bl-pgpid:1329 ../bin/bl-security:235
+#: ../bin/bl-djibian:399 ../bin/bl-pgpid:1329 ../bin/bl-security:235
 msgid "Ignoring extra args '%s'..."
 msgstr ""
 
-#: ../bin/bl-djibian:398
+#: ../bin/bl-djibian:411
 msgid "No one can remove himself from admin group"
 msgstr ""
 
