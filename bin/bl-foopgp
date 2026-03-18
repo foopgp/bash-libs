@@ -200,9 +200,11 @@ OPTIONS:
   -t, --tokens DJISUM   "$"Set the base of djis (Ɉ) already created (default: 0)""
   -g, --gifts EURSUM    "$"Set the base of values in EUR (€) already contributed (default: 0)""
   -s, --siprefix SYMBOL "$"Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. International System of Units).""
+  -d, --date STRING     "$"Use stingynalty of given date"" (cf. <https://www.gnu.org/software/coreutils/date>).
   -p, --printsym        "$"Also print symbol, eg: ' µɈ'.""
 "
 	local i t=0 g=0 symbol printsym outsym
+	local stingynalty=$BL_FOOPGP_STINGYNALTY
 	for ((;$#;)) ; do
 		case "$1" in
 			-t|--tokens)
@@ -214,6 +216,7 @@ OPTIONS:
 				[[ "$g" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Given parameter '%s' is not a valid number.""\n" "${g: 1}" >&2 ; return 2 ; }
 				;;
 			-s|--siprefix) shift ; symbol=$1 ;;
+			-d|--date) shift ; stingynalty=${BL_FOOPGP_STINGYNALTYS[$(date --iso-8601 --date "$1"  | head -c 7)]} ;;
 			-p|--printsym) printsym="yes" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
@@ -227,7 +230,7 @@ OPTIONS:
 
 	for i in "$@" ; do
 		[[ "$i" =~ ^[0-9]*\.?[0-9]*$ ]] || printf "$FUNCNAME: Warning: "$"Given argument '%s' is not a valid number.""\n" "$i" >&2
-		tokens=$(bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else 0 ; scale=16 ")
+		tokens=$(bc -l <<<"y=l($i+$g+1)/l(2)/$stingynalty-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else 0 ; scale=16 ")
 		case "$symbol" in
 			d|deci)
 				[[ "$printsym" ]] && outsym=" dɈ" || outsym=""
@@ -430,6 +433,55 @@ bl_foopgp_update_input() {
 	done
 }
 
+bl_foopgp_update_contribs() (
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage=$"Usage:"" $name [OPTIONS] [INDEX_DIR]"
+	local helpmsg="
+"$"Update 'contributions.md' according to new entries in 'EUR-input.log'.""
+"$"If no INDEX_DIR is given, search for all 'EUR-input.log' in current subtree"" ($PWD).
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf -- "$usage\n$helpmsg\n" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	[[ "$1" ]] || set "."
+
+	find "$@" -name EUR-input.log | while read file ; do
+		path="$(dirname "$file")"
+		t=0 ; g=0 ; n=0
+		mapfile -t Tcontrib < <( bl_md_arraytobash -d Econtrib < "$path/contributions.md" )
+		bl_md_arraytobash date EUR <"$file" | while read line ; do
+			eval "${Tcontrib[$n]}"
+			eval "$line"
+
+			entry[DJI]=$(bl_foopgp_g2t --date ${entry[date]} -t $t -g $g ${entry[EUR]/,/.})
+			g=$(bc -l <<<"$g+${entry[EUR]/,/.}")
+			t=$(bc -l <<<"$t+${entry[DJI]}")
+
+			if [[ "${Econtrib[registered]}" == yes ]] ; then
+				[[ "${entry[date]}" == "${Econtrib[date]}" ]] || { echo "$FUNCNAME: Critical: $path: date line $n: ${entry[date]} != ${Econtrib[date]}" >&2 ; return 2 ; }
+				[[ "${entry[EUR]}" == "${Econtrib[EUR]}" ]] || { echo "$FUNCNAME: Critical: $path: EUR line $n: ${entry[EUR]} != ${Econtrib[EUR]}" >&2 ; return 2 ; }
+				[[ "${entry[DJI]}" == "${Econtrib[DJI]}" ]] || { echo "$FUNCNAME: Critical: $path: DJI line $n: ${entry[DJI]} != ${Econtrib[DJI]}" >&2 ; return 2 ; }
+				entry[registered]="${Econtrib[registered]}"
+			else
+				entry[registered]="no"
+			fi
+
+			echo "$path ; n=$((n++)) ; g=$g ; t=$t " >&2
+			declare -p entry
+		done | bl_md_arrayfrombash -F date EUR DJI registered > "$path/contributions.md"
+		echo
+	done
+)
+
 # Because there is a 'cd', use sub-shell '(...' (instead of '{...').
 bl_foopgp_symlinks() (
 	local name
@@ -530,8 +582,8 @@ OPTIONS:
 		dir=$(dirname "$file")
 
 		## get id from path
-		[[ "$file" =~ (udid4|email)/[^/]+/[^/]+/([^/]+)/contributions.md$ ]] || { echo "$0: Warning: Unexpected path $file" >&2 ; continue ; }
-		[[ "${BASH_REMATCH[1]}" == udid4 ]] && id="u4=${BASH_REMATCH[2]}" || id="<${BASH_REMATCH[2]}>"
+		[[ "$file" =~ (udid4|u4|email)/[^/]+/[^/]+/([^/]+)/contributions.md$ ]] || { echo "$0: Warning: Unexpected path $file" >&2 ; continue ; }
+		[[ "${BASH_REMATCH[1]}" == u*4 ]] && id="u4=${BASH_REMATCH[2]}" || id="<${BASH_REMATCH[2]}>"
 		nbcontribs=0
 		totEURbyid=0
 		totDJIbyid=0
