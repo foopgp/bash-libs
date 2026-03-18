@@ -156,6 +156,7 @@ MAIN OPTIONS:
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-markdown --
+source "$(dirname "$BASH_SOURCE")"/bl-interactive --
 source "$(dirname "$BASH_SOURCE")"/bl-pgpid --
 
 ### internal functions ###
@@ -349,6 +350,86 @@ OPTIONS:
 	done #| uniq
 }
 
+bl_foopgp_update_input() {
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage=$"Usage:"" $name [OPTIONS] INDEX_DIR CSV_FILES..."
+	local helpmsg="
+"$"Update EUR-input.log in the dji directory tree.""
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf -- "$usage\n$helpmsg\n" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local indexdir=$(readlink -f "$1") && [[ "$2" ]] || { printf -- "${usage}\n" >&2 ; return 2 ; }
+	shift
+
+	local outfile="EUR-input.log"
+	local format etc f csvversion line date debit credit lib solde ecriture ref
+
+	read format etc < "$indexdir/.FORMAT" || { echo "$FUNCNAME: Error: "$"Unexpected dji directory tree." >&2 ; return 2 ; }
+
+	[[ "$format" == 1.0 ]] || { printf "$FUNCNAME: Error: "$"Unsupported format %s.""\n" "($format)" >&2 ; return 2 ; }
+
+	for f in "$@" ; do
+		[[ "$(basename $f)" =~ ^([0-9]{4}).*.csv$ ]] || { printf "$FUNCNAME: Warning: "$"Skipping invalid filename %s.""\n" "'$f'" >&2 ; continue ; }
+		csvversion=${BASH_REMATCH[1]}
+
+		while read line ; do
+			if ((csvversion < 2026)) ; then
+				IFS='|' read date debit credit lib solde ecriture ref etc <<<"$line"
+			else
+				IFS='|' read ecriture date debit credit lib solde ref etc <<<"$line"
+			fi
+			if [[ "$credit" =~ [0-9,]+ ]] ; then
+				credit=${BASH_REMATCH[0]}
+				if [[ "$ref" =~ (u(did)?4)=?($BL_PGPID_U4_REGEX) ]] ; then
+					u4=${BASH_REMATCH[3]}
+					dir="$indexdir/by-id/u4/${u4:0:2}/${u4:0:4}/$u4"
+#					if [[ "$ref" =~ ([A-Z0-9a-z._%+-]+)@(([A-Za-z0-9.-]+)\.([A-Za-z]{2,64})) ]] ; then
+#						mkdir -p "$dir/emails"
+#						touch "$dir/emails/${BASH_REMATCH[0]}"
+#					fi
+					ref="u4=$u4"
+				elif [[ "$ref" =~ ([A-Z0-9a-z._%+-]+)@(([A-Za-z0-9.-]+)\.([A-Za-z]{2,64})) ]] ; then
+					ref=${BASH_REMATCH[0]}
+					dir="$indexdir/by-email/${BASH_REMATCH[4]}/${BASH_REMATCH[2]}/$ref"
+					ref="<${ref}>"
+				else
+					continue
+				fi
+
+				# Check and rewrite date
+				if [[ "$date" =~ [^0-9]?([0-3][0-9])[^0-9]([0-1][0-9])[^0-9]([1-2][0-9][0-9][0-9])[^0-9]? ]] ; then
+					date=$(date --iso-8601 --date "${BASH_REMATCH[3]}-${BASH_REMATCH[2]}-${BASH_REMATCH[1]}")
+				elif [[ "$date" =~ [^0-9]?([1-2][0-9][0-9][0-9])[^0-9]([0-1][0-9])[^0-9]([0-3][0-9])[^0-9]? ]] ; then
+					date=$(date --iso-8601 --date "${BASH_REMATCH[1]}-${BASH_REMATCH[2]}-${BASH_REMATCH[3]}")
+				else
+					echo "Error: invalid date: $date $debit $credit $lib $solde"
+					exit 1
+				fi
+
+				mkdir -p "$dir"
+				touch "$dir/$outfile"
+				if grep -q "^| $date | " "$dir/$outfile" ; then
+					echo "Notice: operation | $date | $credit | already written for $ref" >&2
+				else
+					echo -en "$ref\r\033[48C << "
+					echo "| $date | $(printf "% 10.02f" "$credit") |" | tee -a "$dir/$outfile"
+				fi
+				#echo -e "\033[1A\033[40C  >> $dir/$outfile"
+			fi
+		done <"$f"
+	done
+}
+
 # Because there is a 'cd', use sub-shell '(...' (instead of '{...').
 bl_foopgp_symlinks() (
 	local name
@@ -495,7 +576,6 @@ OPTIONS:
 		echo >&2
 	fi
 )
-
 
 ### Init ###
 

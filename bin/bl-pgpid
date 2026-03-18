@@ -570,7 +570,8 @@ bl_pgpid_get() {
 	local maxfromks=100
 	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 	local helpmsg="
-"$"Output fingerprints and emails of certificates matching NAME|U4|U5|EMAIL, refreshing local keyring from keyservers.""
+"$"Output fingerprints, emails and OpenPGP IDentifier of certificates matching NAME|U4|U5|EMAIL.""
+"$"May also get or refresh certificates from keyservers.""
 
 OPTIONS:
   -F, --fingerprint           "$"Output only fingerprints.""
@@ -580,7 +581,7 @@ OPTIONS:
   -M, --max-from-keyserv MAX  "$"Set maximum matching certificates to receive from keyservers. "$"Default: ""$maxfromks
   -T, --ownertrust THRESHOLD  "$"Only output fingerprint with ownertrust greater or equal to THRESHOLD."" (Not implemented)
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
-  -K, --keyservers KEYSERVERS "$"If non-empty, search and refresh certificate from this keyservers. "$"Default: ""
+  -K, --keyservers KEYSERVERS "$"If non-empty, search and refresh certificates from this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
 "
 	local onlyfpr=0 onlymbox=0
