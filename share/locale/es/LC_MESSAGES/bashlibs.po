@@ -356,6 +356,9 @@ msgid ""
 "International System of Units)."
 msgstr ""
 
+msgid "Use stingynalty of given date"
+msgstr ""
+
 msgid "Also print symbol, eg: ' µɈ'."
 msgstr ""
 
@@ -401,6 +404,25 @@ msgstr ""
 
 msgid "Usage:"
 msgstr "Uso:"
+
+msgid "Update EUR-input.log in the dji directory tree."
+msgstr ""
+
+msgid "Unexpected dji directory tree."
+msgstr ""
+
+msgid "Unsupported format %s."
+msgstr ""
+
+msgid "Skipping invalid filename %s."
+msgstr ""
+
+msgid "Update 'contributions.md' according to new entries in 'EUR-input.log'."
+msgstr ""
+
+msgid ""
+"If no INDEX_DIR is given, search for all 'EUR-input.log' in current subtree"
+msgstr ""
 
 msgid "Update symlinks in the foopgp tree"
 msgstr ""
@@ -742,8 +764,11 @@ msgid "Choosing the only one editable OpenPGP certificate (%s)"
 msgstr ""
 
 msgid ""
-"Output fingerprints and emails of certificates matching NAME|U4|U5|EMAIL, "
-"refreshing local keyring from keyservers."
+"Output fingerprints, emails and OpenPGP IDentifier of certificates matching "
+"NAME|U4|U5|EMAIL."
+msgstr ""
+
+msgid "May also get or refresh certificates from keyservers."
 msgstr ""
 
 msgid "Output only fingerprints."
@@ -773,7 +798,7 @@ msgstr ""
 msgid "Environnement variable: "
 msgstr ""
 
-msgid "If non-empty, search and refresh certificate from this keyservers. "
+msgid "If non-empty, search and refresh certificates from this keyservers. "
 msgstr ""
 
 msgid "Option %s expect a number"

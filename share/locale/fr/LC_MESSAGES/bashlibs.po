@@ -412,6 +412,9 @@ msgstr ""
 "Afficher un sous-multiple, symboles acceptés : [d|m|µ|deci|milli|micro] (cf. "
 "Système international d’unités)."
 
+msgid "Use stingynalty of given date"
+msgstr ""
+
 msgid "Also print symbol, eg: ' µɈ'."
 msgstr "Afficher également le symbole, par ex. : « µɈ »."
 
@@ -465,6 +468,27 @@ msgstr ""
 
 msgid "Usage:"
 msgstr "Utilisation :"
+
+msgid "Update EUR-input.log in the dji directory tree."
+msgstr ""
+
+#, fuzzy
+msgid "Unexpected dji directory tree."
+msgstr "Répertoire d’index foopgp inattendu."
+
+#, fuzzy
+msgid "Unsupported format %s."
+msgstr "MRZ non pris en charge."
+
+msgid "Skipping invalid filename %s."
+msgstr ""
+
+msgid "Update 'contributions.md' according to new entries in 'EUR-input.log'."
+msgstr ""
+
+msgid ""
+"If no INDEX_DIR is given, search for all 'EUR-input.log' in current subtree"
+msgstr ""
 
 msgid "Update symlinks in the foopgp tree"
 msgstr "Mettre à jour les liens symboliques dans l’arborescence foopgp"
@@ -855,9 +879,15 @@ msgid "Choosing the only one editable OpenPGP certificate (%s)"
 msgstr "Sélection du seul certificat OpenPGP modifiable (%s)"
 
 msgid ""
-"Output fingerprints and emails of certificates matching NAME|U4|U5|EMAIL, "
-"refreshing local keyring from keyservers."
+"Output fingerprints, emails and OpenPGP IDentifier of certificates matching "
+"NAME|U4|U5|EMAIL."
 msgstr ""
+
+#, fuzzy
+msgid "May also get or refresh certificates from keyservers."
+msgstr ""
+"Si non vide, recherche et rafraîchi le certificat depuis ces serveurs de "
+"clés. "
 
 msgid "Output only fingerprints."
 msgstr "Afficher seulement les fingerprints."
@@ -886,7 +916,8 @@ msgstr "Répertoire personnel de GnuPG (par défaut : ~/.gnupg). "
 msgid "Environnement variable: "
 msgstr "Variable d’environnement : "
 
-msgid "If non-empty, search and refresh certificate from this keyservers. "
+#, fuzzy
+msgid "If non-empty, search and refresh certificates from this keyservers. "
 msgstr ""
 "Si non vide, recherche et rafraîchi le certificat depuis ces serveurs de "
 "clés. "
