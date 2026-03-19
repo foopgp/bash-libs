@@ -156,6 +156,7 @@ MAIN OPTIONS:
 ### external functions ###
 
 source "$(dirname "$BASH_SOURCE")"/bl-markdown --
+source "$(dirname "$BASH_SOURCE")"/bl-interactive --
 source "$(dirname "$BASH_SOURCE")"/bl-pgpid --
 
 ### internal functions ###
@@ -199,9 +200,11 @@ OPTIONS:
   -t, --tokens DJISUM   "$"Set the base of djis (Ɉ) already created (default: 0)""
   -g, --gifts EURSUM    "$"Set the base of values in EUR (€) already contributed (default: 0)""
   -s, --siprefix SYMBOL "$"Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. International System of Units).""
+  -d, --date STRING     "$"Use stingynalty of given date"" (cf. <https://www.gnu.org/software/coreutils/date>).
   -p, --printsym        "$"Also print symbol, eg: ' µɈ'.""
 "
 	local i t=0 g=0 symbol printsym outsym
+	local stingynalty=$BL_FOOPGP_STINGYNALTY
 	for ((;$#;)) ; do
 		case "$1" in
 			-t|--tokens)
@@ -213,6 +216,7 @@ OPTIONS:
 				[[ "$g" =~ ^[0-9]*\.?[0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Given parameter '%s' is not a valid number.""\n" "${g: 1}" >&2 ; return 2 ; }
 				;;
 			-s|--siprefix) shift ; symbol=$1 ;;
+			-d|--date) shift ; stingynalty=${BL_FOOPGP_STINGYNALTYS[$(date --iso-8601 --date "$1"  | head -c 7)]} ;;
 			-p|--printsym) printsym="yes" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
@@ -226,7 +230,7 @@ OPTIONS:
 
 	for i in "$@" ; do
 		[[ "$i" =~ ^[0-9]*\.?[0-9]*$ ]] || printf "$FUNCNAME: Warning: "$"Given argument '%s' is not a valid number.""\n" "$i" >&2
-		tokens=$(bc -l <<<"y=l($i+$g+1)/l(2)/$BL_FOOPGP_STINGYNALTY-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else 0 ; scale=16 ")
+		tokens=$(bc -l <<<"y=l($i+$g+1)/l(2)/$stingynalty-$t ; scale=6 ; y=y*1000 ; if (y>0) y/1000 else 0 ; scale=16 ")
 		case "$symbol" in
 			d|deci)
 				[[ "$printsym" ]] && outsym=" dɈ" || outsym=""
@@ -349,6 +353,135 @@ OPTIONS:
 	done #| uniq
 }
 
+bl_foopgp_update_input() {
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage=$"Usage:"" $name [OPTIONS] INDEX_DIR CSV_FILES..."
+	local helpmsg="
+"$"Update EUR-input.log in the dji directory tree.""
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf -- "$usage\n$helpmsg\n" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local indexdir=$(readlink -f "$1") && [[ "$2" ]] || { printf -- "${usage}\n" >&2 ; return 2 ; }
+	shift
+
+	local outfile="EUR-input.log"
+	local format etc f csvversion line date debit credit lib solde ecriture ref
+
+	read format etc < "$indexdir/.FORMAT" || { echo "$FUNCNAME: Error: "$"Unexpected dji directory tree." >&2 ; return 2 ; }
+
+	[[ "$format" == 1.0 ]] || { printf "$FUNCNAME: Error: "$"Unsupported format %s.""\n" "($format)" >&2 ; return 2 ; }
+
+	for f in "$@" ; do
+		[[ "$(basename $f)" =~ ^([0-9]{4}).*.csv$ ]] || { printf "$FUNCNAME: Warning: "$"Skipping invalid filename %s.""\n" "'$f'" >&2 ; continue ; }
+		csvversion=${BASH_REMATCH[1]}
+
+		while read line ; do
+			if ((csvversion < 2026)) ; then
+				IFS='|' read date debit credit lib solde ecriture ref etc <<<"$line"
+			else
+				IFS='|' read ecriture date debit credit lib solde ref etc <<<"$line"
+			fi
+			if [[ "$credit" =~ [0-9,]+ ]] ; then
+				credit=${BASH_REMATCH[0]}
+				if [[ "$ref" =~ (u(did)?4)=?($BL_PGPID_U4_REGEX) ]] ; then
+					u4=${BASH_REMATCH[3]}
+					dir="$indexdir/by-id/u4/${u4:0:2}/${u4:0:4}/$u4"
+#					if [[ "$ref" =~ ([A-Z0-9a-z._%+-]+)@(([A-Za-z0-9.-]+)\.([A-Za-z]{2,64})) ]] ; then
+#						mkdir -p "$dir/emails"
+#						touch "$dir/emails/${BASH_REMATCH[0]}"
+#					fi
+					ref="u4=$u4"
+				elif [[ "$ref" =~ ([A-Z0-9a-z._%+-]+)@(([A-Za-z0-9.-]+)\.([A-Za-z]{2,64})) ]] ; then
+					ref=${BASH_REMATCH[0]}
+					dir="$indexdir/by-email/${BASH_REMATCH[4]}/${BASH_REMATCH[2]}/$ref"
+					ref="<${ref}>"
+				else
+					continue
+				fi
+
+				# Check and rewrite date
+				if [[ "$date" =~ [^0-9]?([0-3][0-9])[^0-9]([0-1][0-9])[^0-9]([1-2][0-9][0-9][0-9])[^0-9]? ]] ; then
+					date=$(date --iso-8601 --date "${BASH_REMATCH[3]}-${BASH_REMATCH[2]}-${BASH_REMATCH[1]}")
+				elif [[ "$date" =~ [^0-9]?([1-2][0-9][0-9][0-9])[^0-9]([0-1][0-9])[^0-9]([0-3][0-9])[^0-9]? ]] ; then
+					date=$(date --iso-8601 --date "${BASH_REMATCH[1]}-${BASH_REMATCH[2]}-${BASH_REMATCH[3]}")
+				else
+					echo "Error: invalid date: $date $debit $credit $lib $solde"
+					exit 1
+				fi
+
+				mkdir -p "$dir"
+				touch "$dir/$outfile"
+				if grep -q "^| $date | " "$dir/$outfile" ; then
+					echo "Notice: operation | $date | $credit | already written for $ref" >&2
+				else
+					echo -en "$ref\r\033[48C << "
+					echo "| $date | $(printf "% 10.02f" "$credit") |" | tee -a "$dir/$outfile"
+				fi
+				#echo -e "\033[1A\033[40C  >> $dir/$outfile"
+			fi
+		done <"$f"
+	done
+}
+
+bl_foopgp_update_contribs() (
+	local name
+	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage=$"Usage:"" $name [OPTIONS] [INDEX_DIR]"
+	local helpmsg="
+"$"Update 'contributions.md' according to new entries in 'EUR-input.log'.""
+"$"If no INDEX_DIR is given, search for all 'EUR-input.log' in current subtree"" ($PWD).
+"
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf -- "$usage\n$helpmsg\n" ; return ;;
+			-V|--version) echo "$FUNCNAME $BL_FOOPGP_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	[[ "$1" ]] || set "."
+
+	find "$@" -name EUR-input.log | while read file ; do
+		path="$(dirname "$file")"
+		t=0 ; g=0 ; n=0
+		mapfile -t Tcontrib < <( bl_md_arraytobash -d Econtrib < "$path/contributions.md" )
+		bl_md_arraytobash date EUR <"$file" | while read line ; do
+			eval "${Tcontrib[$n]}"
+			eval "$line"
+
+			entry[DJI]=$(bl_foopgp_g2t --date ${entry[date]} -t $t -g $g ${entry[EUR]/,/.})
+			g=$(bc -l <<<"$g+${entry[EUR]/,/.}")
+			t=$(bc -l <<<"$t+${entry[DJI]}")
+
+			if [[ "${Econtrib[registered]}" == yes ]] ; then
+				[[ "${entry[date]}" == "${Econtrib[date]}" ]] || { echo "$FUNCNAME: Critical: $path: date line $n: ${entry[date]} != ${Econtrib[date]}" >&2 ; return 2 ; }
+				[[ "${entry[EUR]}" == "${Econtrib[EUR]}" ]] || { echo "$FUNCNAME: Critical: $path: EUR line $n: ${entry[EUR]} != ${Econtrib[EUR]}" >&2 ; return 2 ; }
+				[[ "${entry[DJI]}" == "${Econtrib[DJI]}" ]] || { echo "$FUNCNAME: Critical: $path: DJI line $n: ${entry[DJI]} != ${Econtrib[DJI]}" >&2 ; return 2 ; }
+				entry[registered]="${Econtrib[registered]}"
+			else
+				entry[registered]="no"
+			fi
+
+			echo "$path ; n=$((n++)) ; g=$g ; t=$t " >&2
+			declare -p entry
+		done | bl_md_arrayfrombash -F date EUR DJI registered > "$path/contributions.md"
+		echo
+	done
+)
+
 # Because there is a 'cd', use sub-shell '(...' (instead of '{...').
 bl_foopgp_symlinks() (
 	local name
@@ -449,8 +582,8 @@ OPTIONS:
 		dir=$(dirname "$file")
 
 		## get id from path
-		[[ "$file" =~ (udid4|email)/[^/]+/[^/]+/([^/]+)/contributions.md$ ]] || { echo "$0: Warning: Unexpected path $file" >&2 ; continue ; }
-		[[ "${BASH_REMATCH[1]}" == udid4 ]] && id="u4=${BASH_REMATCH[2]}" || id="<${BASH_REMATCH[2]}>"
+		[[ "$file" =~ (udid4|u4|email)/[^/]+/[^/]+/([^/]+)/contributions.md$ ]] || { echo "$0: Warning: Unexpected path $file" >&2 ; continue ; }
+		[[ "${BASH_REMATCH[1]}" == u*4 ]] && id="u4=${BASH_REMATCH[2]}" || id="<${BASH_REMATCH[2]}>"
 		nbcontribs=0
 		totEURbyid=0
 		totDJIbyid=0
@@ -495,7 +628,6 @@ OPTIONS:
 		echo >&2
 	fi
 )
-
 
 ### Init ###
 
