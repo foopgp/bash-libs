@@ -188,9 +188,9 @@ OPTIONS:
 bl_json_from_var_ng() {
 	local name
 	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:8}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] VARNAME"
+	local usage="Usage: $name [OPTIONS] VARNAME..."
 	local helpmsg="
-"$"Output content of VARNAME in a JSON object.""
+"$"Output content of VARNAMES in a JSON object.""
 
 OPTIONS:
     -n, --nested        "$"Assume any value beginning with \"declare -[aA]\" are nested data to be translate to JSON format""
@@ -199,12 +199,10 @@ OPTIONS:
 "$"Warnings: --nested option may introduce security issues (because it uses eval on unsanitized inputs).""
 
 "$"Reminder: bash arrays are not exportable to sub shells (cf. https://www.mail-archive.com/bug-bash@gnu.org/msg01774.html).""
-          "$"Then to use this function as an action, you should use the (dangerous)"" --nested option with \"declare -p\"
-	  eg: bl-json json_from_var --nested "'"$(declare -p VARNAME)"'
+        "$"Then you should better use directly the function, eg:""
+        source bl-json ; bl_json_from_var_ng ARRAYNAME"
 
 	local nested=false shft=0
-#TODO: one more options to display non-associative array as json array, and to manage arrays with non-contiguous indices.
-#TODO: ... Maybe a selector <on|auto|off>, whith 'auto' to detect if array indices are non-contiguous.
 	for ((;$#;)) ; do
 		case "$1" in
 			-n|--nest*) nested=true ;;
@@ -218,52 +216,54 @@ OPTIONS:
 		shift
 	done
 
-	local varname lb i notstarted=true
-
-	local -n aa=$1
-	varname=$1
+	local varname lb i notstarted0=true notstarted
 
 	! ((shft)) || lb=$(eval printf '\\t%.0s' {1..$shft})
 	printf "$lb{\n"
-	echo -n "$lb	\"$(bl_json_from_str -- "$varname")\":"
-	if  [[ ${aa@a} =~ a ]] ; then
-		local ai=("${!aa[@]}")
-		printf "[\n"
-		for ((i=0;i<=${ai[-1]};i++)) ; do
-			$notstarted || printf ",\n"
-			notstarted=false
-			if $nested && [[ "${aa[$i]}" =~ ^declare\ -[Aa][a-zA-Z]*\ ([a-zA-Z_][a-zA-Z0-9_]*)=\(.*\)$ ]] ; then
-				local "${BASH_REMATCH[1]}"
-				eval "${aa[$i]}" # dangerous as previous regexp isn't sufficient to prevent security issues
-				echo -n "$(bl_json_from_var --nested --shift $((shft+2)) "${BASH_REMATCH[1]}")"
-			else
-				echo -n "$lb		\"$(bl_json_from_str -- "${aa[$i]}")\""
-			fi
-		done
-		printf "\n$lb		]"
-	elif [[ ${aa@a} =~ A ]] ; then
-		printf "{\n"
-		for i in "${!aa[@]}"; do
-			$notstarted || printf ",\n"
-			notstarted=false
-			if $nested && [[ "${aa[$i]}" =~ ^declare\ -[Aa][a-zA-Z]*\ ([a-zA-Z_][a-zA-Z0-9_]*)=\(.*\)$ ]] ; then
-				local "${BASH_REMATCH[1]}"
-				eval "${aa[$i]}" # dangerous as previous regexp isn't sufficient to prevent security issues
-				echo -n "$lb		\"$(bl_json_from_str -- "$i")\":"$'\n'"$(bl_json_from_var --nested --shift $((shft+2)) "${BASH_REMATCH[1]}")"
-			else
-				echo -n "$lb		\"$(bl_json_from_str -- "$i")\": \"$(bl_json_from_str -- "${aa[$i]}")\""
-			fi
-		done
-		printf "\n$lb		}"
-	else
-		if $nested && [[ "${aa}" =~ ^declare\ -[Aa][a-zA-Z]*\ ([a-zA-Z_][a-zA-Z0-9_]*)=\(.*\)$ ]] ; then
-			local "${BASH_REMATCH[1]}"
-			eval "${aa}" # dangerous as previous regexp isn't sufficient to prevent security issues
-			echo -n "$(bl_json_from_var --nested --shift $((shft+2)) "${BASH_REMATCH[1]}")"
+	while (($#)) ; do
+		local -n ce_nom_est_interdit=$1 || { shift ; continue ;}
+		varname=$1
+		shift
+		$notstarted0 || printf ",\n"
+		notstarted0=false
+		notstarted=true
+		echo -n "$lb	\"$(bl_json_from_str -- "$varname")\":"
+		if  [[ ${ce_nom_est_interdit@a} =~ a ]] ; then
+			local ai=("${!ce_nom_est_interdit[@]}")
+			printf "[\n"
+			for ((i=0;i<=${ai[-1]};i++)) ; do
+				$notstarted || printf ",\n"
+				notstarted=false
+				if $nested && [[ "${ce_nom_est_interdit[$i]}" =~ ^declare\ -([Aa][a-zA-Z]*)\ ([a-zA-Z_][a-zA-Z0-9_]*)=\(.*\)$ ]] ; then
+					eval "${ce_nom_est_interdit[$i]/#declare/local}" || true
+					echo -n "$(bl_json_from_var_ng --nested --shift $((shft+2)) "${BASH_REMATCH[2]}")"
+				else
+					echo -n "$lb		\"$(bl_json_from_str -- "${ce_nom_est_interdit[$i]}")\""
+				fi
+			done
+			printf "\n$lb		]"
+		elif [[ ${ce_nom_est_interdit@a} =~ A ]] ; then
+			printf "{\n"
+			for i in "${!ce_nom_est_interdit[@]}"; do
+				$notstarted || printf ",\n"
+				notstarted=false
+				if $nested && [[ "${ce_nom_est_interdit[$i]}" =~ ^declare\ -([Aa][a-zA-Z]*)\ ([a-zA-Z_][a-zA-Z0-9_]*)=\(.*\)$ ]] ; then
+					eval "${ce_nom_est_interdit[$i]/#declare/local}" || true
+					echo -n "$lb		\"$(bl_json_from_str -- "$i")\":"$'\n'"$(bl_json_from_var_ng --nested --shift $((shft+2)) "${BASH_REMATCH[2]}")"
+				else
+					echo -n "$lb		\"$(bl_json_from_str -- "$i")\": \"$(bl_json_from_str -- "${ce_nom_est_interdit[$i]}")\""
+				fi
+			done
+			printf "\n$lb		}"
 		else
-			echo -n "\"$(bl_json_from_str -- "${aa}")\""
+			if $nested && [[ "${ce_nom_est_interdit}" =~ ^declare\ -([Aa][a-zA-Z]*)\ ([a-zA-Z_][a-zA-Z0-9_]*)=\(.*\)$ ]] ; then
+					eval "${ce_nom_est_interdit/#declare/local}" || true
+				echo -n "$(bl_json_from_var_ng --nested --shift $((shft+2)) "${BASH_REMATCH[2]}")"
+			else
+				echo -n "\"$(bl_json_from_str -- "${ce_nom_est_interdit}")\""
+			fi
 		fi
-	fi
+	done
 	printf "\n$lb}\n"
 }
 
