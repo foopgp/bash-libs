@@ -1,3 +1,14 @@
+bash-libs (0.3.4-1) unstable; urgency=medium
+
+  [ jjbrucker ]
+  * bl_djibian_adduser(): fix 2 bug + update translations
+  * bl_djibian_adduser(): 1 little bugfix
+  * new function bl_foopgp_update_input()
+  * new function bl_foopgp_update_contribs() (to be more tested)
+  * make i18n
+
+ -- piseb <piseb@mailo.com>  Thu, 19 Mar 2026 12:48:41 +0100
+
 bash-libs (0.3.3-1) unstable; urgency=medium
 
   [ jjbrucker ]
