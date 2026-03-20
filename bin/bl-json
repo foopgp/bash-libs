@@ -128,69 +128,9 @@ Escape '\\' and [/\"\b\f\n\r\t] characters as required by JSON format.
 bl_json_from_var() {
 	local name
 	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:8}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS] VARNAME"
-	local helpmsg="
-"$"Output content of VARNAME in a JSON object.""
-
-OPTIONS:
-    -n, --nested        "$"Assume any value beginning with \"declare -[aA]\" are nested data to be translate to JSON format""
-    -s, --shift NUMBER  "$"Number of tabs shifting of each line"" - "$"Default: ""$shft
-
-"$"Warnings: --nested option may introduce security issues (because it uses eval on unsanitized inputs).""
-
-"$"Reminder: bash arrays are not exportable to sub shells (cf. https://www.mail-archive.com/bug-bash@gnu.org/msg01774.html).""
-          "$"Then to use this function as an action, you should use the (dangerous)"" --nested option with \"declare -p\"
-	  eg: bl-json json_from_var --nested "'"$(declare -p VARNAME)"'
-
-	local nested=false shft=0
-#TODO: one more options to display non-associative array as json array, and to manage arrays with non-contiguous indices.
-#TODO: ... Maybe a selector <on|auto|off>, whith 'auto' to detect if array indices are non-contiguous.
-	for ((;$#;)) ; do
-		case "$1" in
-			-n|--nest*) nested=true ;;
-			-s|--shift) shift ; shft=$(($1)) ;;
-			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
-			-V|--version) echo "$FUNCNAME $BL_JSON_VERSION" ; return ;;
-			--) shift ; break ;;
-			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
-			*) break ;;
-		esac
-		shift
-	done
-
-	local lb notstarted=true
-
-	if $nested && [[ "$1" =~ ^declare" "-[Aa][a-zA-Z]*" "([a-zA-Z_][a-zA-Z0-9_]*)=\(.*" "\)$ ]] ; then
-			local "${BASH_REMATCH[1]}"
-			eval "$1" # dangerous as previous regexp isn't sufficient to prevent security issues
-			local -n aa=${BASH_REMATCH[1]}
-	else
-		local -n aa=$1
-	fi
-
-	! ((shft)) || lb=$(eval printf '\\t%.0s' {1..$shft})
-	printf "$lb{\n"
-	for i in "${!aa[@]}"; do
-		$notstarted || printf ",\n"
-		notstarted=false
-		#TODO: Maybe use and depend on "jq". cf. https://stackoverflow.com/questions/44792241/constructing-a-json-hash-from-a-bash-associative-array
-		if $nested && [[ "${aa[$i]}" =~ ^declare" "-[Aa][a-zA-Z]*" "([a-zA-Z_][a-zA-Z0-9_]*)=\(.*" "\)$ ]] ; then
-			local "${BASH_REMATCH[1]}"
-			eval "${aa[$i]}" # dangerous as previous regexp isn't sufficient to prevent security issues
-			echo -n "$lb	\"$(bl_json_from_str -- "$i")\":"$'\n'"$(bl_json_from_var --nested --shift $((shft+2)) "${BASH_REMATCH[1]}")"
-		else
-			echo -n "$lb	\"$(bl_json_from_str -- "$i")\": \"$(bl_json_from_str -- "${aa[$i]}")\""
-		fi
-	done
-	printf "\n$lb}\n"
-}
-
-bl_json_from_var_ng() {
-	local name
-	((BL_JSON_isprogram)) && name="$BL_JSON_NAME ${FUNCNAME:8}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS] VARNAME..."
 	local helpmsg="
-"$"Output content of VARNAMES in a JSON object.""
+"$"Output VARNAMES in a JSON object.""
 
 OPTIONS:
     -n, --nested        "$"Assume any value beginning with \"declare -[aA]\" are nested data to be translate to JSON format""
@@ -200,7 +140,7 @@ OPTIONS:
 
 "$"Reminder: bash arrays are not exportable to sub shells (cf. https://www.mail-archive.com/bug-bash@gnu.org/msg01774.html).""
         "$"Then you should better use directly the function, eg:""
-        source bl-json ; bl_json_from_var_ng ARRAYNAME"
+        source bl-json ; bl_json_from_var ARRAYNAME"
 
 	local nested=false shft=0
 	for ((;$#;)) ; do
@@ -236,7 +176,7 @@ OPTIONS:
 				notstarted=false
 				if $nested && [[ "${ce_nom_est_interdit[$i]}" =~ ^declare\ -([Aa][a-zA-Z]*)\ ([a-zA-Z_][a-zA-Z0-9_]*)=\(.*\)$ ]] ; then
 					eval "${ce_nom_est_interdit[$i]/#declare/local}" || true
-					echo -n "$(bl_json_from_var_ng --nested --shift $((shft+2)) "${BASH_REMATCH[2]}")"
+					echo -n "$(bl_json_from_var --nested --shift $((shft+2)) "${BASH_REMATCH[2]}")"
 				else
 					echo -n "$lb		\"$(bl_json_from_str -- "${ce_nom_est_interdit[$i]}")\""
 				fi
@@ -249,7 +189,7 @@ OPTIONS:
 				notstarted=false
 				if $nested && [[ "${ce_nom_est_interdit[$i]}" =~ ^declare\ -([Aa][a-zA-Z]*)\ ([a-zA-Z_][a-zA-Z0-9_]*)=\(.*\)$ ]] ; then
 					eval "${ce_nom_est_interdit[$i]/#declare/local}" || true
-					echo -n "$lb		\"$(bl_json_from_str -- "$i")\":"$'\n'"$(bl_json_from_var_ng --nested --shift $((shft+2)) "${BASH_REMATCH[2]}")"
+					echo -n "$lb		\"$(bl_json_from_str -- "$i")\":"$'\n'"$(bl_json_from_var --nested --shift $((shft+2)) "${BASH_REMATCH[2]}")"
 				else
 					echo -n "$lb		\"$(bl_json_from_str -- "$i")\": \"$(bl_json_from_str -- "${ce_nom_est_interdit[$i]}")\""
 				fi
@@ -258,7 +198,7 @@ OPTIONS:
 		else
 			if $nested && [[ "${ce_nom_est_interdit}" =~ ^declare\ -([Aa][a-zA-Z]*)\ ([a-zA-Z_][a-zA-Z0-9_]*)=\(.*\)$ ]] ; then
 					eval "${ce_nom_est_interdit/#declare/local}" || true
-				echo -n "$(bl_json_from_var_ng --nested --shift $((shft+2)) "${BASH_REMATCH[2]}")"
+				echo -n "$(bl_json_from_var --nested --shift $((shft+2)) "${BASH_REMATCH[2]}")"
 			else
 				echo -n "\"$(bl_json_from_str -- "${ce_nom_est_interdit}")\""
 			fi
