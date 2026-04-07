@@ -51,7 +51,7 @@ Package: bashlibs-pgpid
 Architecture: all
 Depends: bashlibs-common, gpg, xxd, adduser, passwd, curl, qrencode, graphicsmagick,
          libgfshare-bin, pandoc, texlive-extra-utils, cups-client, cups-bsd, zbar-tools,
-         texlive-latex-recommended,
+         texlive-latex-recommended, scdaemon,
          ${misc:Depends}
 Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
