@@ -821,14 +821,14 @@ OPTIONS:
 	"$"Surname at birth:""     ${sname}
 	"$"Given names at birth:"" ${gname}
 	"$"Date of birth:""        ${bdate}
-	"$"Country of birth:""     ${bcountry}
+	"$"Country of birth:""     ${bcountry^^}
 	" \
 			$"Is that correct" || break
 
 		sname=$(bl_input --default "${sname^^}" $"Birth surname (family name)")
 		gname=$(bl_input --default "${gname}" $"Birth names (all given names)")
 		bdate=$(bl_input --iso-8601 --default "${bdate}" $"Birth date (YYYY-MM-DD)")
-		bcountry=$(bl_input --default "${bcountry}" $"Birth country (3 letter code)")
+		bcountry=$(bl_input --default "${bcountry^^}" $"Birth country (3 letter code)")
 	done
 
 	sname=$(sed 's,[ ;,<-]\+,<,g'<<<"$sname" ) # replace and squeeze some word separators
@@ -847,7 +847,7 @@ OPTIONS:
 	fi
 	gname="${gname^^}"
 
-	if ! fakemrz="P<${bcountry}$(LC_COLLATE="C.UTF-8" grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${sname}<<$gname<<" )" ; then
+	if ! fakemrz="P<${bcountry^^}$(LC_COLLATE="C.UTF-8" grep -o "[A-Z]\{1,32\}<<[A-Z]\{1,32\}<[A-Z]\{0,32\}<" <<<"${sname}<<$gname<<" )" ; then
 		echo "$FUNCNAME: Error: "$"Only [A-Z] characters allowed in names." >&2
 		return 1
 	fi

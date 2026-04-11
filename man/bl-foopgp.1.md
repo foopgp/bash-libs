@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-FOOPGP
 section: 1
 header: User Commands
-footer: bash-libs 0.3.3
+footer: bash-libs 0.3.5
 ---
 
 # NAME
@@ -34,7 +34,7 @@ euros (€) to the the foopgp association.
 
 **-s**, **\--stingynalty** VALUE
 
-:   set STINGYNALTY (2026-03: 1.11042005507266444075)
+:   set STINGYNALTY (2026-04: 1.11597215534802776295)
 
 **-d**, **\--date** STRING
 
@@ -65,6 +65,15 @@ giftarray
 
 :   Display an array to indicate how many djis (Ɉ) gonna be created from
     a contribution in euros (€).
+
+update_input
+
+:   Update EUR-input.log in the dji directory tree.
+
+update_contribs
+
+:   Update \'contributions.md\' according to new entries in
+    \'EUR-input.log\'.
 
 symlinks
 
