@@ -374,7 +374,7 @@ bl_foopgp_update_input() {
 	local indexdir=$(readlink -f "$1") && [[ "$2" ]] || { printf -- "${usage}\n" >&2 ; return 2 ; }
 	shift
 
-	local outfile="EUR-input.log"
+	local outcontent outfile="EUR-input.log"
 	local format etc f csvversion line date debit credit lib solde ecriture ref
 
 	read format etc < "$indexdir/.FORMAT" || { echo "$FUNCNAME: Error: "$"Unexpected dji directory tree." >&2 ; return 2 ; }
@@ -426,6 +426,8 @@ bl_foopgp_update_input() {
 				else
 					echo -en "$ref\r\033[48C << "
 					echo "| $date | $(printf "% 10.02f" "$credit") |" | tee -a "$dir/$outfile"
+					outcontent=$(sort "$dir/$outfile")
+					echo "$outcontent" > "$dir/$outfile"
 				fi
 				#echo -e "\033[1A\033[40C  >> $dir/$outfile"
 			fi
@@ -436,7 +438,7 @@ bl_foopgp_update_input() {
 bl_foopgp_update_contribs() (
 	local name
 	((BL_FOOPGP_isprogram)) && name="$BL_FOOPGP_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
-	local usage=$"Usage:"" $name [OPTIONS] [INDEX_DIR]"
+	local usage=$"Usage:"" $name [INDEX_DIR]"
 	local helpmsg="
 "$"Update 'contributions.md' according to new entries in 'EUR-input.log'.""
 "$"If no INDEX_DIR is given, search for all 'EUR-input.log' in current subtree"" ($PWD).
