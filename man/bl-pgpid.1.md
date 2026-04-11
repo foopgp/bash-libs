@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs 0.3.3
+footer: bash-libs 0.3.5
 ---
 
 # NAME
@@ -49,8 +49,8 @@ ICAO 9303, ISO/IEC 7816, many others RFC.
 
 get
 
-:   Output fingerprints and emails of certificates matching
-    NAME\|U4\|U5\|EMAIL, refreshing local keyring from keyservers.
+:   Output fingerprints, emails and OpenPGP IDentifier of certificates
+    matching NAME\|U4\|U5\|EMAIL.
 
 mrz_to_u4
 
