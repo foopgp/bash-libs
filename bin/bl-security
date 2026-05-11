@@ -203,6 +203,7 @@ OPTIONS:
 
 bl_gen_passphrase() {
 	local dict=${LANG::2} nw=3 interactive=false sedcmd sd ret
+	aspell dump dicts | grep --quiet "^${dict}$" || dict=$(aspell dump dicts | head -1)
 	local name delim="_" showsize=false listdicts=false
 	((BL_SECURITY_isprogram)) && name="$BL_SECURITY_NAME ${FUNCNAME:3}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]"

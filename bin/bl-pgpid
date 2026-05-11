@@ -925,11 +925,12 @@ OPTIONS:
 
 	if ((freeinput)) ; then
 		u4h="$(echo "$str_in" | md5sum | xxd -r -p | basenc --base64url)"
-		echo "$u4h"
 	elif [[ "$str_in" =~ (${BL_PGPID_U4H_REGEX})${BL_PGPID_CO_REGEX} ]] ; then
 		u4h="${BASH_REMATCH[1]}=="
+	elif [[ "$str_in" =~ ${BL_PGPID_U5_REGEX} ]] ; then
+		u4h="$(echo "${BASH_REMATCH[0]}" | md5sum | xxd -r -p | basenc --base64url)"
 	else
-		printf "$FUNCNAME: Error: "$"No u4 string (hash) found in '%s'""...\n" "${str_in: 0:50}" >&2
+		printf "$FUNCNAME: Error: "$"No OpenPGP ID (u4 or u5) found in '%s'""...\n" "${str_in: 0:50}" >&2
 		return 2
 	fi
 
