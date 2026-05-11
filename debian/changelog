@@ -1,3 +1,10 @@
+bash-libs (0.3.6-1) unstable; urgency=medium
+
+  * bl_pgpid_gen_uid(): manage u5 OpenPGP ID
+  * bl-security gen_passphrase: bugfix LANG=C.UTF-8
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Mon, 11 May 2026 19:43:09 +0200
+
 bash-libs (0.3.5-1) unstable; urgency=medium
 
   * new function bl_json_from_var_ng(), to replace bl_json_from_var()

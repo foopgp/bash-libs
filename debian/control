@@ -20,7 +20,7 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
 
 Package: bashlibs-common
 Architecture: all
-Depends: bsdutils (>= 3.0-0), aspell, xxd,
+Depends: bsdutils (>= 3.0-0), aspell-en, xxd,
          ${misc:Depends}
 Recommends: bash-completion, whiptail
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
