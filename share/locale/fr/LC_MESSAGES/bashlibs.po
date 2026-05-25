@@ -196,15 +196,17 @@ msgid ""
 "configure user's HOME\n"
 "for OpenPGP usages, see: "
 msgstr ""
+"Notez que --from-pgpid-token et --from-certificate configureront automatiquement le HOME de l’utilisateur\n"
+"pour les usages OpenPGP, voir : "
 
 msgid "--from-certificate expect a PGP fingerprint (40 xdigits)."
-msgstr ""
+msgstr "--from-certificate attend une empreinte PGP (40 hexa)."
 
 msgid "Need root power (sudo)."
 msgstr "Droits administrateur requis (sudo)."
 
 msgid "substitued by your OpenPGP ID"
-msgstr ""
+msgstr "remplacé par votre identifiant OpenPGP"
 
 msgid "User surname (family name) at birth"
 msgstr "Nom de famille de naissance de l’utilisateur"
@@ -284,47 +286,47 @@ msgid "User password (for this system)"
 msgstr "Mot de passe utilisateur (pour ce système)"
 
 msgid "Check system groups."
-msgstr ""
+msgstr "Vérifier les groupes système."
 
 msgid "No %s group."
-msgstr ""
+msgstr "Pas de groupe %s."
 
 msgid "Unable to configure %s's HOME for OpenPGP"
-msgstr ""
+msgstr "Impossible de configurer le HOME de %s pour OpenPGP"
 
 msgid " See: "
-msgstr ""
+msgstr " Voir : "
 
 msgid "user %s (%s) successfully added to current system"
 msgstr "Utilisateur %s (%s) ajouté avec succès au système"
 
 msgid "Reconfigure HOME directory for djibian's OpenPGP usage:"
-msgstr ""
+msgstr "Reconfigurer le répertoire HOME pour l’usage OpenPGP de djibian :"
 
 msgid "Force SSH_AUTH_SOCK to use gpg-agent (crazy systemd workaround)."
-msgstr ""
+msgstr "Forcer SSH_AUTH_SOCK à utiliser gpg-agent (contournement systemd peu élégant)."
 
 msgid "Set KEYFPR as the GnuPG's default-key."
-msgstr ""
+msgstr "Définir KEYFPR comme « default-key » de GnuPG."
 
 msgid ""
 "Set KEYFPR as the only one ultimate key (downgrading other trust ultimate -> "
 "full)."
-msgstr ""
+msgstr "Définir KEYFPR comme seule clé de confiance « ultimate » (rétrograder les autres ultimate → full)."
 
 msgid ""
 "Set last usable OpenPGP authentication key as the only one authorized key "
 "for ssh login."
-msgstr ""
+msgstr "Définir la dernière clé d’authentification OpenPGP utilisable comme seule clé autorisée pour la connexion SSH."
 
 msgid "Set KEYFPR as the git global « user.signingKey »."
-msgstr ""
+msgstr "Définir KEYFPR comme « user.signingKey » global de git."
 
 msgid "If KEYFPR certificate contain an avatar, copy it to this file."
-msgstr ""
+msgstr "Si le certificat KEYFPR contient un avatar, le copier dans ce fichier."
 
 msgid "Argument must be a PGP fingerprint (40 xdigits)."
-msgstr ""
+msgstr "L’argument doit être une empreinte PGP (40 hexa)."
 
 msgid "Check directories and %s certificate."
 msgstr "Vérifier les répertoires et le certificat %s."
@@ -333,13 +335,13 @@ msgid "%s is missing. "
 msgstr "%s est manquant. "
 
 msgid "Did you get rid of systemd ?"
-msgstr ""
+msgstr "Vous êtes-vous débarrassé de systemd ?"
 
 msgid "Set %s as the GnuPG's default-key"
-msgstr ""
+msgstr "Définir %s comme « default-key » de GnuPG"
 
 msgid "Set %s as the only one ultimate key"
-msgstr ""
+msgstr "Définir %s comme seule clé de confiance « ultimate »"
 
 msgid ""
 "List, add or remove local admins (root power through sudo group). Add or "
@@ -413,19 +415,19 @@ msgstr ""
 "Système international d’unités)."
 
 msgid "Use stingynalty of given date"
-msgstr ""
+msgstr "Utiliser la « stingynalty » de la date fournie"
 
 msgid "Also print symbol, eg: ' µɈ'."
 msgstr "Afficher également le symbole, par ex. : « µɈ »."
 
 msgid "Given parameter '%s' is not a valid number."
-msgstr ""
+msgstr "Le paramètre fourni « %s » n’est pas un nombre valide."
 
 msgid "no VALUE given as argument."
-msgstr ""
+msgstr "aucune VALEUR fournie en argument."
 
 msgid "Given argument '%s' is not a valid number."
-msgstr ""
+msgstr "L’argument fourni « %s » n’est pas un nombre valide."
 
 msgid ""
 "Calculate how much euros (€) should be given to create a targeted number of "
@@ -470,25 +472,23 @@ msgid "Usage:"
 msgstr "Utilisation :"
 
 msgid "Update EUR-input.log in the dji directory tree."
-msgstr ""
+msgstr "Mettre à jour EUR-input.log dans l’arborescence dji."
 
-#, fuzzy
 msgid "Unexpected dji directory tree."
-msgstr "Répertoire d’index foopgp inattendu."
+msgstr "Arborescence de répertoire dji inattendue."
 
-#, fuzzy
 msgid "Unsupported format %s."
-msgstr "MRZ non pris en charge."
+msgstr "Format %s non pris en charge."
 
 msgid "Skipping invalid filename %s."
-msgstr ""
+msgstr "Ignore le nom de fichier invalide %s."
 
 msgid "Update 'contributions.md' according to new entries in 'EUR-input.log'."
-msgstr ""
+msgstr "Met à jour « contributions.md » selon les nouvelles entrées dans « EUR-input.log »."
 
 msgid ""
 "If no INDEX_DIR is given, search for all 'EUR-input.log' in current subtree"
-msgstr ""
+msgstr "Si aucun INDEX_DIR n’est fourni, cherche tous les « EUR-input.log » dans le sous-arbre courant"
 
 msgid "Update symlinks in the foopgp tree"
 msgstr "Mettre à jour les liens symboliques dans l’arborescence foopgp"
@@ -516,10 +516,10 @@ msgstr ""
 "contributions."
 
 msgid "Only output statistics."
-msgstr ""
+msgstr "Affiche seulement les statistiques."
 
 msgid "Only output by-id array."
-msgstr ""
+msgstr "Affiche seulement le tableau by-id."
 
 msgid ""
 "Help managing interactive choices, while supporting multiple frontends: "
@@ -631,8 +631,11 @@ msgstr ""
 "Utilise jq (processeur JSON en ligne de commande) pour convertir des données "
 "JSON en variables ou tableaux Bash, et inversement."
 
-msgid "Output content of VARNAME in a JSON object."
-msgstr "Affiche le contenu de VARNAME sous forme d’objet JSON."
+msgid "If there is no STRING in command line, read it from stdin."
+msgstr "Si aucune CHAÎNE n’est fournie en ligne de commande, la lire depuis stdin."
+
+msgid "Output VARNAMES in a JSON object."
+msgstr "Affiche les VARNAMES dans un objet JSON."
 
 msgid ""
 "Assume any value beginning with \\\"declare -[aA]\\\" are nested data to be "
@@ -661,10 +664,8 @@ msgstr ""
 "Rappel : les tableaux Bash ne sont pas exportables vers les sous-shells "
 "(voir https://www.mail-archive.com/bug-bash@gnu.org/msg01774.html)."
 
-msgid "Then to use this function as an action, you should use the (dangerous)"
-msgstr ""
-"Ainsi, pour utiliser cette fonction comme action, vous devez utiliser la "
-"méthode (dangereuse)"
+msgid "Then you should better use directly the function, eg:"
+msgstr "Vous devriez alors plutôt utiliser directement la fonction, eg :"
 
 msgid "Expect JSON type regarding the begining of JSONTEXT."
 msgstr "Détermine le type JSON attendu à partir du début de JSONTEXT."
@@ -881,13 +882,10 @@ msgstr "Sélection du seul certificat OpenPGP modifiable (%s)"
 msgid ""
 "Output fingerprints, emails and OpenPGP IDentifier of certificates matching "
 "NAME|U4|U5|EMAIL."
-msgstr ""
+msgstr "Affiche les empreintes, emails et identifiants OpenPGP des certificats correspondant à NOM|U4|U5|EMAIL."
 
-#, fuzzy
 msgid "May also get or refresh certificates from keyservers."
-msgstr ""
-"Si non vide, recherche et rafraîchi le certificat depuis ces serveurs de "
-"clés. "
+msgstr "Peut aussi récupérer ou rafraîchir les certificats depuis les serveurs de clés."
 
 msgid "Output only fingerprints."
 msgstr "Afficher seulement les fingerprints."
@@ -895,20 +893,26 @@ msgstr "Afficher seulement les fingerprints."
 msgid "Output only emails."
 msgstr "Afficher seulement les courriels."
 
+msgid "Don't refresh certificates from keyservers or Web Key Directories."
+msgstr "Ne pas rafraîchir les certificats depuis les serveurs de clés ou Web Key Directories."
+
 msgid "Search through local secret keys instead of public certificate."
-msgstr ""
+msgstr "Chercher dans les clés secrètes locales plutôt que dans le certificat public."
+
+msgid "Imply --local."
+msgstr "Implique --local."
 
 msgid "Return an error if there is more than one (1) entry."
-msgstr ""
+msgstr "Retourner une erreur s’il y a plus d’une (1) entrée."
 
 msgid "You may replace '1' by an other number."
-msgstr ""
+msgstr "Vous pouvez remplacer « 1 » par un autre nombre."
 
 msgid "Set maximum matching certificates to receive from keyservers. "
-msgstr ""
+msgstr "Nombre maximum de certificats correspondants à recevoir depuis les serveurs de clés. "
 
 msgid "Only output fingerprint with ownertrust greater or equal to THRESHOLD."
-msgstr ""
+msgstr "Affiche seulement les empreintes dont l’ownertrust est ≥ SEUIL."
 
 msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr "Répertoire personnel de GnuPG (par défaut : ~/.gnupg). "
@@ -916,41 +920,38 @@ msgstr "Répertoire personnel de GnuPG (par défaut : ~/.gnupg). "
 msgid "Environnement variable: "
 msgstr "Variable d’environnement : "
 
-#, fuzzy
-msgid "If non-empty, search and refresh certificates from this keyservers. "
-msgstr ""
-"Si non vide, recherche et rafraîchi le certificat depuis ces serveurs de "
-"clés. "
+msgid "Search and refresh certificates from this keyservers. "
+msgstr "Chercher et rafraîchir les certificats depuis ces serveurs de clés. "
 
 msgid "Option %s expect a number"
-msgstr ""
+msgstr "L’option %s attend un nombre"
 
 msgid "%s exceeds usual key server limit %s"
-msgstr ""
+msgstr "%s dépasse la limite habituelle du serveur de clés %s"
 
 msgid "Sorry, option %s not implemented yet."
 msgstr "Désolé, l'option %s n'est pas encore implémenté."
 
 msgid "Non RFC3986 URI, skipping  %s."
-msgstr ""
+msgstr "URI non conforme à la RFC 3986, ignore %s."
 
 msgid "Non hkp or hkps scheme, skipping  %s."
-msgstr ""
+msgstr "Schéma non hkp/hkps, ignore %s."
 
 msgid "No certificate for %s on %s."
 msgstr "Aucun certificat pour %s sur %s."
 
-msgid "No certificate for user"
-msgstr "Aucun certificat pour l’utilisateur"
+msgid "No certificate for"
+msgstr "Aucun certificat pour"
 
 msgid "Certificate %s contain more than one OpenPGP ID string."
 msgstr "Le certificat %s contient plus d'une chaîne OpenPGP ID."
 
-msgid "%s certificates for %s."
-msgstr "%s certificats pour %s."
+msgid "%s certificates for %s input params."
+msgstr "%s certificats pour %s paramètre(s) d’entrée."
 
 msgid "Some public certificates may be missing."
-msgstr ""
+msgstr "Certains certificats publics peuvent manquer."
 
 msgid ""
 "Birth date, expected format : Year-Month-Day (for people born 100+ years "
@@ -1037,8 +1038,8 @@ msgstr ""
 msgid "Option %s overide given argument '%s'"
 msgstr "L'option %s remplace l'argument fourni '%s'"
 
-msgid "No u4 string (hash) found in '%s'"
-msgstr "Aucune chaîne u4 (hachage) trouvée dans '%s'"
+msgid "No OpenPGP ID (u4 or u5) found in '%s'"
+msgstr "Aucun identifiant OpenPGP (u4 ou u5) trouvé dans « %s »"
 
 msgid ""
 "Generate an OpenPGP key pair (public and secret) according to OpenPGP ID "
@@ -1140,7 +1141,7 @@ msgid "Deprecated option"
 msgstr "Option obsolète."
 
 msgid "Please use %s instead."
-msgstr ""
+msgstr "Utilisez %s à la place."
 
 msgid "No certificate for user '%s'."
 msgstr "Aucun certificat pour « %s »."
@@ -1273,7 +1274,7 @@ msgstr "Récupération de la clé publique depuis %s ..."
 msgid ""
 "No known certification key. Please share or get certificate (keyserver, by "
 "email, ...)"
-msgstr ""
+msgstr "Aucune clé de certification connue. Partagez ou récupérez un certificat (keyserver, par email, …)"
 
 msgid "supernumerary emails, skipping"
 msgstr "Adresses e-mail surnuméraires, ignorées"
@@ -1360,13 +1361,16 @@ msgstr ""
 "serveurs de clés. "
 
 msgid "No error"
-msgstr ""
+msgstr "Aucune erreur"
 
 msgid "Input/Usage error"
-msgstr ""
+msgstr "Erreur d’entrée/usage"
 
 msgid "Interactivity error"
-msgstr ""
+msgstr "Erreur d’interactivité"
+
+msgid "No certificate for user"
+msgstr "Aucun certificat pour l’utilisateur"
 
 msgid "Self-certification is not innovative! ;-)"
 msgstr "L’auto-certification n’est pas innovante ! ;-)"
@@ -1821,13 +1825,13 @@ msgid "Number of words for passphrase suggestion"
 msgstr "Nombre de mots pour la suggestion de phrase de passe"
 
 msgid "Suggestion: "
-msgstr ""
+msgstr "Suggestion : "
 
 msgid "Retype %s"
-msgstr ""
+msgstr "Saisissez à nouveau %s"
 
 msgid "Passwords do not match. Please retype"
-msgstr ""
+msgstr "Les mots de passe ne correspondent pas. Saisissez à nouveau"
 
 msgid "Shrink input data to a number limited by SIZE."
 msgstr "Réduit les données d’entrée à un nombre limité par SIZE."
@@ -1859,13 +1863,19 @@ msgstr ""
 "Concernant les encodages : consultez le manuel de basenc (GNU coreutils)."
 
 msgid "When decoding (a 'baseXXX' input), ignore non-alphabet characters."
-msgstr ""
+msgstr "Lors du décodage (entrée « baseXXX »), ignorer les caractères hors alphabet."
 
 msgid "Unrecognized encoding"
 msgstr "Encodage non reconnue"
 
 msgid "All actions support a --help option, eg:"
 msgstr "Toutes les actions prennent en charge l’option --help, par exemple :"
+
+#~ msgid ""
+#~ "Then to use this function as an action, you should use the (dangerous)"
+#~ msgstr ""
+#~ "Ainsi, pour utiliser cette fonction comme action, vous devez utiliser la "
+#~ "méthode (dangereuse)"
 
 #~ msgid ""
 #~ "Note: OpenPGP keys should have been generated with bl-pgpid. Unexpected "
