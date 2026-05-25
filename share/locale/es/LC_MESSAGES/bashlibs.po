@@ -551,7 +551,10 @@ msgid ""
 "or arrays, and vice-versa."
 msgstr ""
 
-msgid "Output content of VARNAME in a JSON object."
+msgid "If there is no STRING in command line, read it from stdin."
+msgstr ""
+
+msgid "Output VARNAMES in a JSON object."
 msgstr ""
 
 msgid ""
@@ -575,7 +578,7 @@ msgid ""
 "archive.com/bug-bash@gnu.org/msg01774.html)."
 msgstr ""
 
-msgid "Then to use this function as an action, you should use the (dangerous)"
+msgid "Then you should better use directly the function, eg:"
 msgstr ""
 
 msgid "Expect JSON type regarding the begining of JSONTEXT."
@@ -777,7 +780,13 @@ msgstr ""
 msgid "Output only emails."
 msgstr ""
 
+msgid "Don't refresh certificates from keyservers or Web Key Directories."
+msgstr ""
+
 msgid "Search through local secret keys instead of public certificate."
+msgstr ""
+
+msgid "Imply --local."
 msgstr ""
 
 msgid "Return an error if there is more than one (1) entry."
@@ -798,7 +807,7 @@ msgstr ""
 msgid "Environnement variable: "
 msgstr ""
 
-msgid "If non-empty, search and refresh certificates from this keyservers. "
+msgid "Search and refresh certificates from this keyservers. "
 msgstr ""
 
 msgid "Option %s expect a number"
@@ -819,13 +828,13 @@ msgstr ""
 msgid "No certificate for %s on %s."
 msgstr ""
 
-msgid "No certificate for user"
+msgid "No certificate for"
 msgstr ""
 
 msgid "Certificate %s contain more than one OpenPGP ID string."
 msgstr ""
 
-msgid "%s certificates for %s."
+msgid "%s certificates for %s input params."
 msgstr ""
 
 msgid "Some public certificates may be missing."
@@ -903,7 +912,7 @@ msgstr ""
 msgid "Option %s overide given argument '%s'"
 msgstr ""
 
-msgid "No u4 string (hash) found in '%s'"
+msgid "No OpenPGP ID (u4 or u5) found in '%s'"
 msgstr ""
 
 msgid ""
@@ -1184,6 +1193,9 @@ msgid "Input/Usage error"
 msgstr ""
 
 msgid "Interactivity error"
+msgstr ""
+
+msgid "No certificate for user"
 msgstr ""
 
 msgid "Self-certification is not innovative! ;-)"

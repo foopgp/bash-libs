@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-MARKDOWN
 section: 1
 header: User Commands
-footer: bash-libs 0.3.3
+footer: bash-libs 0.3.7
 ---
 
 # NAME
@@ -41,7 +41,7 @@ only converts: markdown arrays \<\> bash arrays.
 
 arraytobash
 
-:   Expect stdin to be a markdwon array (with or whithout header), and
+:   Expect stdin to be a markdown array (with or whithout header), and
     convert each line of this array to a \"declare **-A** \...\"
     statement to be loaded with eval.
 
