@@ -1,3 +1,15 @@
+bash-libs (0.3.7-1) unstable; urgency=medium
+
+  [ jjbrucker ]
+  * add crontab to BL_DJIBIAN_EXTRA_GROUPS
+  * bl_pgpid_get(): fix 1 bug + manage wkd + manage multiple input parameters
+  * help2man.sh --target-version 0.3.7
+
+  [ Mnème ]
+  * i18n: refresh .pot + update fr/es .po (50 fr translations + 10 fuzzy fixes)
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Mon, 25 May 2026 23:37:57 +0200
+
 bash-libs (0.3.6-1) unstable; urgency=medium
 
   * bl_pgpid_gen_uid(): manage u5 OpenPGP ID
