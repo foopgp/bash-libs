@@ -1,3 +1,9 @@
+bash-libs (0.3.7-2) unstable; urgency=medium
+
+  * ../LC_MESSAGES/bashlibs.po are not generated at build time. Then we have to run make and to push them...
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Tue, 26 May 2026 00:11:15 +0200
+
 bash-libs (0.3.7-1) unstable; urgency=medium
 
   [ jjbrucker ]
