@@ -551,7 +551,7 @@ OPTIONS:
 	done
 
 	local -a seckeyids
-	mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome" $getargs $1)
+	mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome" $getargs -- "$1")
 	((${#seckeyids[@]}>0)) || { printf "$FUNCNAME: Error: "$"No editable OpenPGP certificate (in %s)"".\n" "$gpghome" >&2 ; return 1 ; }
 	if ((${#seckeyids[@]}==1)) ; then
 		keyid=${seckeyids[0]}
@@ -667,7 +667,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	$wkdcmd --homedir "$gpghome" $(grep -o --extended-regexp "$BL_INTERACTIVE_EMAIL_REGEX" <<<"${users[@]}") || true
 
 	local -a fprmboxs fprs
-	readarray -t fprmboxs < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction "${users[@]}")
+	readarray -t fprmboxs < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction -- "${users[@]}")
 	fprs=($(printf -- "%s\n" "${fprmboxs[@]%% *}" | sort -u))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for"" '%s'...\n" "$users" >&2 ; return 141 ;}
 	if ((onlyfpr)) ; then
@@ -1237,7 +1237,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	# Check that $user match only one certificate
 	local fprs
-	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --local "$user")) || return $?
+	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --local -- "$user")) || return $?
 	user=${fprs[0]}
 
 	if [[ "$torev" || "$toadd" ]] ; then
@@ -1538,7 +1538,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	# get fingerprints for certificate to certify
 	local fprs ifpr=0 uids
-	fprs=($(bl_pgpid_get --fingerprint --homedir "$gpghome" --keyservers "${keyservs[*]}" "$targetid")) || return 141
+	fprs=($(bl_pgpid_get --fingerprint --homedir "$gpghome" --keyservers "${keyservs[*]}" -- "$targetid")) || return 141
 	if (( ${#fprs[@]} >= 2 )) ; then
 		printf "$FUNCNAME: Info: "$"User '%s' match many (%d) certificates"".\n" "$targetid" "${#fprs[@]}" >&2
 		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select key fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return 140
