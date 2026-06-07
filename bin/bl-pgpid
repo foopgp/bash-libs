@@ -81,6 +81,7 @@ declare -r BL_PGPID_U4H_REGEX="[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV
 declare -r BL_PGPID_U4_REGEX="${BL_PGPID_U4H_REGEX}${BL_PGPID_CO_REGEX}"							# Birth of "human" (must have a name, should have a soul)
 declare -r BL_PGPID_TIME_REGEX="[01-][0-9]{11}\.[0-9]{3}"											# From 'Thu Feb 15 14:22:42 LMT -1199' to 'Wed Nov 16 10:46:39 CET 5138'
 declare -r BL_PGPID_U5_REGEX="${BL_PGPID_TIME_REGEX}${BL_PGPID_CO_REGEX}"							# Apparition of anything (with or without any ghost in the shell)
+declare -r BL_PGPID_EID_REGEX="(${BL_PGPID_U4_REGEX}|${BL_PGPID_U5_REGEX})"						# OpenPGP entity ID — umbrella for every current and future variant
 declare -r BL_PGPID_DATE_REGEX="(18|19|20)[0-9]{2}(0[1-9]|1[0,1,2])(0[1-9]|[12][0-9]|3[01])"
 declare -r BL_PGPID_N2_REGEX="${BL_PGPID_DATE_REGEX}${BL_PGPID_CO_REGEX}"							# Deprecated
 
@@ -550,7 +551,7 @@ OPTIONS:
 	done
 
 	local -a seckeyids
-	mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome" $getargs $1)
+	mapfile -t seckeyids < <(_bl_pgp_get_seckeyid --homedir "$gpghome" $getargs -- "$1")
 	((${#seckeyids[@]}>0)) || { printf "$FUNCNAME: Error: "$"No editable OpenPGP certificate (in %s)"".\n" "$gpghome" >&2 ; return 1 ; }
 	if ((${#seckeyids[@]}==1)) ; then
 		keyid=${seckeyids[0]}
@@ -666,7 +667,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	$wkdcmd --homedir "$gpghome" $(grep -o --extended-regexp "$BL_INTERACTIVE_EMAIL_REGEX" <<<"${users[@]}") || true
 
 	local -a fprmboxs fprs
-	readarray -t fprmboxs < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction "${users[@]}")
+	readarray -t fprmboxs < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction -- "${users[@]}")
 	fprs=($(printf -- "%s\n" "${fprmboxs[@]%% *}" | sort -u))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for"" '%s'...\n" "$users" >&2 ; return 141 ;}
 	if ((onlyfpr)) ; then
@@ -1236,7 +1237,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	# Check that $user match only one certificate
 	local fprs
-	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --local "$user")) || return $?
+	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --local -- "$user")) || return $?
 	user=${fprs[0]}
 
 	if [[ "$torev" || "$toadd" ]] ; then
@@ -1537,7 +1538,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	# get fingerprints for certificate to certify
 	local fprs ifpr=0 uids
-	fprs=($(bl_pgpid_get --fingerprint --homedir "$gpghome" --keyservers "${keyservs[*]}" "$targetid")) || return 141
+	fprs=($(bl_pgpid_get --fingerprint --homedir "$gpghome" --keyservers "${keyservs[*]}" -- "$targetid")) || return 141
 	if (( ${#fprs[@]} >= 2 )) ; then
 		printf "$FUNCNAME: Info: "$"User '%s' match many (%d) certificates"".\n" "$targetid" "${#fprs[@]}" >&2
 		[[ "$targetfpr" ]] || ifpr=$(bl_radiolist --output-index --text $"Please select key fingerprint" -- "${fprs[@]/#????????????????????????/...}") || return 140
