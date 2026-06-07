@@ -1,3 +1,13 @@
+bash-libs (0.3.8-1) unstable; urgency=medium
+
+  [ jjbrucker ]
+  * bugfix: unable to certify u4 begining with dash '-'
+
+  [ Mnème ]
+  * bl-pgpid: add BL_PGPID_EID_REGEX (umbrella regex for u4|u5)
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Sun, 07 Jun 2026 03:13:35 +0200
+
 bash-libs (0.3.7-2) unstable; urgency=medium
 
   * ../LC_MESSAGES/bashlibs.po are not generated at build time. Then we have to run make and to push them...
