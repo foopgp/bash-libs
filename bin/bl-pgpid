@@ -328,7 +328,7 @@ declare -Ar BL_PGPID_COORDINATES=(
 
 [[ "${BL_PGPID_KEYSERVERS[*]}" ]] || BL_PGPID_KEYSERVERS=(
 "hkps://keys.foopgp.org"
-"hkps://pgp.id:11371"
+"hkps://keys.openpgp.org"
 )
 
 if ((BL_PGPID_isprogram)) ; then
