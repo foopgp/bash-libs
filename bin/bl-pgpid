@@ -575,11 +575,11 @@ bl_pgpid_get() {
 "$"May also get or refresh certificates from keyservers.""
 
 OPTIONS:
-  -F, --fingerprint           "$"Output only fingerprints.""
-  -E, --email                 "$"Output only emails.""
-  -l, --local                 "$"Don't refresh certificates from keyservers or Web Key Directories.""
-  -s, --secret                "$"Search through local secret keys instead of public certificate."" - "$"Imply --local.""
-  -m, --errexit-g=1           "$"Return an error if there is more than one (1) entry."" - "$"You may replace '1' by an other number.""
+  -F, --fingerprint           "$"Output only fingerprints""
+  -E, --email                 "$"Output only emails""
+  -l, --local                 "$"Don't refresh certificates from keyservers or Web Key Directories""
+  -s, --secret                "$"Search through local secret keys instead of public certificate."" - "$"Imply --local""
+  -m, --errexit-g=1           "$"Return an error if there is more than one (1) entry."" - "$"You may replace '1' by an other number""
   -M, --max-from-keyserv MAX  "$"Set maximum matching certificates to receive from keyservers. "$"Default: ""$maxfromks
   -T, --ownertrust THRESHOLD  "$"Only output fingerprint with ownertrust greater or equal to THRESHOLD."" (Not implemented)
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
@@ -707,8 +707,8 @@ Calculate and output a OpenPGP ID u4, from the Machine Readable Zone of an icao9
 If MRZ is not passed as argument, it will we read from STDIN.
 
 OPTIONS:
-  -d, --birth-date YYYY-MM-DD  "$"Birth date, expected format : Year-Month-Day (for people born 100+ years ago).""
-  -u, --uncheck                "$"Change some MRZ errors to warnings (only if you really know what you do !).""
+  -d, --birth-date YYYY-MM-DD  "$"Birth date, expected format : Year-Month-Day (for people born 100+ years ago)""
+  -u, --uncheck                "$"Change some MRZ errors to warnings (only if you really know what you do !)""
 
 WARNING: mrz data may be irrelevant to generate u4 string. eg:
          * Surname or given names may be incomplete (cut bc exceed mrz size)
@@ -777,9 +777,9 @@ bl_pgpid_gen_u4() {
 
 OPTIONS:
   -s, --surname SURNAME            "$"Surname/family name at birth"".
-  -g, --given-names GIVEN_NAMES    "$"Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.""
+  -g, --given-names GIVEN_NAMES    "$"Given names at birth, separated by space ' ' or comma ',' or hyphen '-'""
   -d, --birth-date YYYY-MM-DD      "$"Birth date, expected format : Year-Month-Day"".
-  -c, --birth-country COUNTRY_CODE "$"3 letters country code of birth place: GBR, NGA, FRA, ...""
+  -c, --birth-country COUNTRY_CODE "$"3 letters country code of birth place: GBR, NGA, FRA, …""
   -v, --verify                     "$"Ask for verification"".
 "
 	local sname gname translit bdate bcountry errlvl="Error"
@@ -900,8 +900,8 @@ bl_pgpid_gen_uid() {
 "$"If no argument is given, it will ask for surname, names and date of birth.""
 
 OPTIONS:
-  -f, --free-input            "$"Accept any input, not only valid PGPID U4 string.""
-  -F, --from FILE             "$"Get input from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
+  -f, --free-input            "$"Accept any input, not only valid PGPID U4 string""
+  -F, --from FILE             "$"Get input from first line of FILE (eg: fifo, tmpfs, /dev/stdin …)""
 "
 	local freeinput=0 str_in u4h num
 	for ((;$#;)) ; do
@@ -961,9 +961,9 @@ bl_pgpid_gen_key() {
 OPTIONS:
   -N, --name PSEUDONYM             "$"Common name or pseudonym. "$"Default: "$"first part of email"".
   -c, --comment U4|U5              "$"First part of comment field MUST be a OpenPGP ID string."$" See: ""\$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
-  -C, --extra-comment COMMENT      "$"Comment (second part of comment field, free to use).""
-  -p, --passphrase PASSPHRASE      "$"Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage).""
-  -P, --passfrom FILE              "$"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
+  -C, --extra-comment COMMENT      "$"Comment (second part of comment field, free to use)""
+  -p, --passphrase PASSPHRASE      "$"Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage)""
+  -P, --passfrom FILE              "$"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin …)""
   -e, --expiration YEARS           "$"Number of years before certificate expiration. "$"Default: ""11 -> $(date -I -d "+11 years"))
   -k, --keyserver KEYSERVER        "$"Prefered OpenPGP certificate server. "$"Default: ""$keyserv
   -H, --homedir GNUPGHOME          "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
@@ -1068,9 +1068,9 @@ bl_pgpid_avatar() {
 "$"Output path(s) of extracted image(s).""
 
 OPTIONS:
-  -E, --extract-all           "$"Extract also all revoked or expired existing images from OpenPGP certificate.""
-  -A, --addfrom IMAGE         "$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image).""
-  -R, --revoke                "$"Just revoke all existing images inside OpenPGP certificate.""
+  -E, --extract-all           "$"Extract also all revoked or expired existing images from OpenPGP certificate""
+  -A, --addfrom IMAGE         "$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image)""
+  -R, --revoke                "$"Just revoke all existing images inside OpenPGP certificate""
   -W, --workdir DIRECTORY     "$"Working directory. Will contain previous and new resized images. "$"Default: ""$tmpdir .
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
   -K, --keyservers KEYSERVERS "$"If non-empty, send updated certificate to this keyservers. "$"Default: ""
@@ -1147,13 +1147,13 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		[[ "$commands" ]] || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "'$user'" "$gpghome" >&2 ; return 1 ; }
 
 		if [[ "$commands" =~ ^uid ]] ; then
-			printf "$FUNCNAME: Info: "$"Revoking previous image(s) inside %s certificate...""\n" "$user" >&2
+			printf "$FUNCNAME: Info: "$"Revoking previous image(s) inside %s certificate…""\n" "$user" >&2
 			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "${fprs[0]}" 2> >(grep "image of size" | sort -u >&2) <<<"$commands" || { printf "%s: Error: Can't revoke - good PIN ?.\n" "$FUNCNAME" >&2 ; return 1 ;}
 		fi
 
 		if [[ "$image" ]] ; then
 			commands=$(printf "addphoto\n${tmpdir}/new.jpg\ny\nsave\n")
-			printf "$FUNCNAME: Info: "$"Adding %s into %s certificate...""\n" "$image" "$user" >&2
+			printf "$FUNCNAME: Info: "$"Adding %s into %s certificate…""\n" "$image" "$user" >&2
 			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "${fprs[0]}" 2> >(grep "image of size" | sort -u >&2 ) <<<"$commands" || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "addphoto" >&2 ; return 1 ;}
 		fi
 
@@ -1183,10 +1183,10 @@ bl_pgpid_email() {
 "$"Output usable emails (non-revoked and non-expired).""
 
 OPTIONS:
-  -R, --revoke EMAIL          "$"Revoke existing EMAIL (may be used more than once).""
-  -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options.""
-  -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL. "$"Default: "$"first part of email.""
-  -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL.""
+  -R, --revoke EMAIL          "$"Revoke existing EMAIL (may be used more than once)""
+  -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options""
+  -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL. "$"Default: "$"first part of email""
+  -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL""
   -v, --verbose               "$"Increase verbosity""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
   -K, --keyservers KEYSERVERS "$"If non-empty, send updated certificate to this keyservers. "$"Default: ""
@@ -1272,7 +1272,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			commands=$(awk "/^uid:[^r].*<$email>/ "'{ printf "uid "NR"\nrevuid\ny\n4\n\ny\nsave\n" }' <<<"$uids")
 			[[ "$commands" ]] || { printf "$FUNCNAME: Error: "$"No revokable %s inside certificate %s (in %s).""\n" "<$email>" "$user" "$gpghome" >&2 ; return 1 ; }
 
-			printf "$FUNCNAME: Notice: "$"Revoking %s inside %s certificate...""\n" "<$email>" "$user" >&2
+			printf "$FUNCNAME: Notice: "$"Revoking %s inside %s certificate…""\n" "<$email>" "$user" >&2
 			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\[" | sort -u | sort -t'(' --key=2n ) <<<"$commands" || { echo "$FUNCNAME: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
 		done
 	fi
@@ -1299,12 +1299,12 @@ bl_pgpid_token_check()
 "$"Will try to import cleaned certificate indicated in 'URL of public key' field.""
 
 OPTIONS:
-  -f, --no-fetch          "$"Don't try to fetch public certificate (from URL indicated in token metadata).""
-  -q, --quiet             "$"Don't errput 'Info' or 'Notice' messages.""
-  -p, --cert-fpr          "$"Output certificate fingerprint (Certification key fpr).""
-  -i, --info              "$"Output content of the associative array containing relevant metadata (may be evaluted with eval).""
+  -f, --no-fetch          "$"Don't try to fetch public certificate (from URL indicated in token metadata)""
+  -q, --quiet             "$"Don't errput 'Info' or 'Notice' messages""
+  -p, --cert-fpr          "$"Output certificate fingerprint (Certification key fpr)""
+  -i, --info              "$"Output content of the associative array containing relevant metadata (may be evaluted with eval)""
   -A, --aaname VARNAME    "$"If VARNAME is a reacheable associative array: fill it (whithout cleaning known fields)""
-                            "$"else: Output 'declare -A VARNAME=...'""
+                            "$"else: Output 'declare -A VARNAME=…'""
   -H, --homedir GNUPGHOME "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
 
 "$"Return value:""
@@ -1340,7 +1340,7 @@ OPTIONS:
 		shift
 	done
 
-	((! $#)) || printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'...""\n" "$1" >&2
+	((! $#)) || printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'…""\n" "$1" >&2
 
 	[[ "${aaname@a}" ]] || local -A aaname
 
@@ -1354,7 +1354,7 @@ OPTIONS:
 	aaname[pgpid_certurl]=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
 	[[ "${aaname[pgpid_certurl]}" != "[not set]" ]] || aaname[pgpid_certurl]=""
 	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
-		((quiet)) || printf "$FUNCNAME: Notice: "$"Getting pubkey from %s ...""\n" "${aaname[pgpid_certurl]}" >&2
+		((quiet)) || printf "$FUNCNAME: Notice: "$"Getting pubkey from %s …""\n" "${aaname[pgpid_certurl]}" >&2
 		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import-options keep-ownertrust,import-clean --import ; then
 			cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 		fi
@@ -1453,13 +1453,13 @@ bl_pgpid_certify() {
 "$"This is a commitment: the more you certify, the more you increase your reputation, but if you do it wrong, you will ruin your credibility.""
 
 OPTIONS:
-  -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask.""
-  -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate.""
+  -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask""
+  -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate""
   -o, --ownertrust VALUE       "$"What level of trust do you assign to the target to correctly certify others"" {undefined,marginal,full,ultimate,never} - "$"Default: ""marginal.
   -G, --vouch                  "$"Take legal responsability for any actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
   -g, --vouch-for DOMAIN       "$"Assume some legal responsibilities on the target."" (Not implemented yet)
-  -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing.""
-  -f, --force-sign-key         "$"Allow to unrevoke or to change vouching.""
+  -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing""
+  -f, --force-sign-key         "$"Allow to unrevoke or to change vouching""
   -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environnement variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
   -K, --keyservers KEYSERVERS  "$"If non-empty, receive and send updated certificate from and to this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})

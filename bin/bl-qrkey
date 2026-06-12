@@ -93,7 +93,7 @@ fi
 
 BL_QRKEY_chelpmsg="
 "$"Backup or restore OpenPGP ID using printed QR codes and Shamir's secret sharing. Configure Yubikeys or Nitrokeys for OpenPGP ID.""
-"$"Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, ...).""
+"$"Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, …).""
 
 "$"Note: OpenPGP ID is a specific OpenPGP configuration managed by bl-pgpid. Using bl-qrkey with other OpenPGP configuration should cause unexpected issues.""
 
@@ -508,8 +508,8 @@ OPTIONS:
   -p, --passphrase PASSPHRASE    "$"Passphrase to access secret parts of OpenPGP key""
   -P, --passfrom FILE            "$"Get passphrase from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
   -t, --printer PRINTER          "$"Name of printer to use""
-  -w, --with-passphrase          "$"Also print passphrase beside QR codes (INCREASE UX, DECREASE SECURITY).""
-  -W, --workdir DIRECTORY        "$"Use given working directory instead of a temporary directory (don't forget to shred its content).""
+  -w, --with-passphrase          "$"Also print passphrase beside QR codes (INCREASE UX, DECREASE SECURITY)""
+  -W, --workdir DIRECTORY        "$"Use given working directory instead of a temporary directory (don't forget to shred its content)""
   -S, --split NUM                "$"Number of shares to be generated"" - "$"Default: ""$splitn
   -T, --threshold NUM            "$"Number of shares necessary to reconstruct the secret"" - "$"Default: ""$thresn
   -H, --homedir GNUPGHOME        "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
@@ -678,7 +678,7 @@ bl_qrkey_scan() (
 
 OPTIONS:
   -c, --camera V4LDEVICE        "$"Video device to scan for QR code"" (/dev/v4l/by-id/...)
-  -W, --workdir DIRECTORY       "$"Use given working directory instead of a temporary directory (don't forget to shred its content).""
+  -W, --workdir DIRECTORY       "$"Use given working directory instead of a temporary directory (don't forget to shred its content)""
   -p, --passphrase PASSPHRASE   "$"This extra passphrase is related to QR VERSIONS:""
                                   * "$"1 to 3: Only numbers, use to be a date: YYYYMMDD.""
                                   * "$"4 to 5: No need for extra passphrase (in addition to the ones defined in RFC9580).""

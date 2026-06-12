@@ -235,7 +235,7 @@ OPTIONS:
   -t, --text PREAMBLE      "$"Text to display before the QUESTION""
   -e, --email              "$"Expect an email address""
   -I, --iso-8601[=FMT]     "$"Input should describe time, output date/time in ISO 8601 format"" (\$ man date).
-      --utc-iso-8601[=FMT] "$"Same as --iso-8601 but using Coordinated Universal Time (UTC).""
+      --utc-iso-8601[=FMT] "$"Same as --iso-8601 but using Coordinated Universal Time (UTC)""
   -P, --password           "$"Hide input chars with '*'""
 "
 	local def ttle pr emailaddr=false iso8601 boxt="inputbox" zenityopts

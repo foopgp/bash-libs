@@ -267,7 +267,7 @@ bl_json_to_var() {
 
 OPTIONS:
     -d, --declare VARNAME  output \"declare -[aA-] VARNAME=...\" statement to be use with 'eval ...'.
-    -r, --recurse          "$"also parse JSON arrays or objects nested in JSON_TEXT.""
+    -r, --recurse          "$"also parse JSON arrays or objects nested in JSON_TEXT""
 
 "$"Examples:""
 * "$"if JSON_TEXT refer to JSON boolean, string or number:"" bash_var=\$($name [JSON_TEXT])

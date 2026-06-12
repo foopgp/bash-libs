@@ -135,15 +135,15 @@ bl_djibian_adduser()
 
 OPTIONS:
   -s, --surname SURNAME            "$"Surname/family name at birth""
-  -g, --given-names GIVEN_NAMES    "$"Given names at birth, separated by space ' ' or comma ',' or hyphen '-'.""
-  -d, --birth-date BIRTH_DATE      "$"Birth date, expected format : YYYY-MM-DD.""
-  -c, --birth-country COUNTRY_CODE "$"3 letters country code of birth place: FRA, GBR, ...""
+  -g, --given-names GIVEN_NAMES    "$"Given names at birth, separated by space ' ' or comma ',' or hyphen '-'""
+  -d, --birth-date BIRTH_DATE      "$"Birth date, expected format : YYYY-MM-DD""
+  -c, --birth-country COUNTRY_CODE "$"3 letters country code of birth place: FRA, GBR, …""
   -e, --email EMAIL                "$"User email (optional)""
   -t, --phone NUMBER               "$"User phone number (optional)""
   -p, --password PASSWORD          "$"User password (for current djibian Operating System)""
-  -P, --passfrom FILE              "$"Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin ...)""
-  -f, --from-certificate FPR       "$"Get user data from OpenPGP certificate identified by given FINGERPRINT.""
-  -F, --from-pgpid-token           "$"Get user data from OpenPGP ID smartcard (eg: yubikey, nitrokey, ...)""
+  -P, --passfrom FILE              "$"Get user password from first line of FILE (eg: fifo, tmpfs, /dev/stdin …)""
+  -f, --from-certificate FPR       "$"Get user data from OpenPGP certificate identified by given FINGERPRINT""
+  -F, --from-pgpid-token           "$"Get user data from OpenPGP ID smartcard (eg: yubikey, nitrokey, …)""
   -v, --verify                     "$"Resume input data for verification""
   -a, --admin                      "$"Enable admin rights (root power through sudo group)""
 
@@ -375,9 +375,9 @@ bl_djibian_admins()
 "$"SUDO_USER is not allowed to remove himself (from sudo group).""
 
 OPTIONS:
-  -a, --add USER        "$"Add user to admin group (sudo). May be passed multiple time.""
-  -r, --remove USER     "$"Remove user to admin group (sudo). May be passed multiple time.""
-  -l, --list            "$"Do nothing, as users with admin rights are always output.""
+  -a, --add USER        "$"Add user to admin group (sudo). May be passed multiple time""
+  -r, --remove USER     "$"Remove user to admin group (sudo). May be passed multiple time""
+  -l, --list            "$"Do nothing, as users with admin rights are always output""
 "
 	local toadd toremove ret=0
 	for ((;$#;)) ; do
@@ -396,7 +396,7 @@ OPTIONS:
 		esac
 		shift
 	done
-	((! $#)) || printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'...""\n" "$1" >&2
+	((! $#)) || printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'…""\n" "$1" >&2
 
 	if [[ "$toadd" ]] || [[ "$toremove" ]] ; then
 		if [[ "$(id --user)" != 0 ]] ; then
