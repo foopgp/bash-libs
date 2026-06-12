@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-QRKEY
 section: 1
 header: User Commands
-footer: bash-libs 0.3.7
+footer: bash-libs 0.3.10
 ---
 
 # NAME
@@ -27,7 +27,7 @@ ID.
 Backup or restore OpenPGP ID using printed QR codes and Shamir\'s secret
 sharing. Configure Yubikeys or Nitrokeys for OpenPGP ID. Also facilitate
 changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of
-OpenPGP security tokens (YubiKey, \...).
+OpenPGP security tokens (YubiKey, ...).
 
 Note: OpenPGP ID is a specific OpenPGP configuration managed by
 bl-pgpid. Using bl-qrkey with other OpenPGP configuration should cause
@@ -49,6 +49,11 @@ unexpected issues.
 :   Show version and exit.
 
 ## ACTIONS:
+
+token_retries
+
+:   Output remaining retry counter of PIN code, Reset Code or Admin code
+    from connected OpenPGP card.
 
 change_passphrase
 
@@ -75,7 +80,7 @@ totoken
 
  
 All actions support a **\--help** option, eg: \$ bl-qrkey
-change_passphrase **\--help**
+token_retries **\--help**
 
 bl-qrkey is also bash library, see: \$ source bl-qrkey
 **\--help**
