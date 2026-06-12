@@ -1188,7 +1188,7 @@ msgid "supernumerary OpenPGP ID string"
 msgstr "Chaîne d’identifiant OpenPGP surnuméraire"
 
 msgid "At least one email must be retained."
-msgstr ""
+msgstr "Au moins une adresse de courriel doit être conservée."
 
 msgid "No revokable %s inside certificate %s (in %s)."
 msgstr "Pas de %s révoquable dans le certificat %s (dans %s)"
@@ -1465,21 +1465,23 @@ msgid "Invalid arguments"
 msgstr "Arguments invalides"
 
 msgid "remaining retries for PIN code (usually 6 digits)"
-msgstr ""
+msgstr "tentatives restantes pour le code PIN (généralement 6 chiffres)"
 
 msgid "remaining retries for Reset Code (usually unused)"
-msgstr ""
+msgstr "tentatives restantes pour le code de réinitialisation (généralement inutilisé)"
 
 msgid "remaining retries for Admin code (usually 8 digits)"
-msgstr ""
+msgstr "tentatives restantes pour le code Admin (généralement 8 chiffres)"
 
 msgid ""
 "Output remaining retry counter of PIN code, Reset Code or Admin code from "
 "connected OpenPGP card."
 msgstr ""
+"Affiche le compteur de tentatives restantes du code PIN, du code de "
+"réinitialisation ou du code Admin de la clé de sécurité OpenPGP connectée."
 
 msgid "Output"
-msgstr ""
+msgstr "Affiche les"
 
 msgid "Decrease verbosity"
 msgstr "Diminuer le niveau de verbosité"
@@ -1567,7 +1569,7 @@ msgid "Given %s code doesn't match %d digits."
 msgstr "Le code %s fourni ne correspond pas à %d chiffres."
 
 msgid "%s code: remaining retries: %d."
-msgstr ""
+msgstr "code %s : tentatives restantes : %d."
 
 msgid "%s code successfully verified."
 msgstr "Code %s vérifié avec succès."
