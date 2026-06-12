@@ -233,7 +233,7 @@ OPTIONS:
 		esac
 		shift
 	done
-	((! $#)) || printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'...""\n" "$1" >&2
+	((! $#)) || printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'…""\n" "$1" >&2
 
 	if $listdicts ; then
 		if $showsize ; then
@@ -281,7 +281,7 @@ bl_new_password() {
 ("$"Default QUESTION: ""'$question')
 
 OPTIONS:
-  -t, --text TEXT           "$"Text to display as preamble. If none generate a passphrase suggestion.""
+  -t, --text TEXT           "$"Text to display as preamble. If none generate a passphrase suggestion""
   -D, --dict DICTIONARY     "$"Dictionary for passphrase suggestion"" - "$"Default: ""${dict:=en}
   -n, --num NUMBER          "$"Number of words for passphrase suggestion"" - "$"Default: ""$nw
 "
@@ -327,7 +327,7 @@ bl_shrink_num() {
 
 OPTIONS:
   -i, --input-encoding ENCODING  Eg: raw(default), base64, base64url, base32, base32hex, base16, base2msbf or base2lsbf.
-  -g, --ignore-garbage           "$"When decoding (a 'baseXXX' input), ignore non-alphabet characters.""
+  -g, --ignore-garbage           "$"When decoding (a 'baseXXX' input), ignore non-alphabet characters""
   -o, --output-encoding ENCODING Eg: raw, base64, base64url, base32, base32hex, base16, base10(default), base2msbf or base2lsbf.
 "
 	local ienc="raw" oenc="base10" iextropts=""

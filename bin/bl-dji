@@ -127,7 +127,7 @@ bl_dji_2micro()
   * 'm' for milli
   * 'µ' for micro (VALUE will just be rounded or truncated in this case).
 OPTIONS:
-  -t, --truncate       "$"Values with too much decimals will be truncated instead of rounded.""
+  -t, --truncate       "$"Values with too much decimals will be truncated instead of rounded""
 "
 	for ((;$#;)) ; do
 		case "$1" in
@@ -245,8 +245,8 @@ bl_dji_2bin()
   * 'm' for milli
   * 'µ' for micro (VALUE will just be rounded or truncated in this case).
 OPTIONS:
-  -r, --reverse        "$"Switch to little-endian, from Least Significant Bit to Most Significant Bit.""
-  -d, --delim DELIM    "$"Use DELIM to separate 0-1 digits (default: '').""
+  -r, --reverse        "$"Switch to little-endian, from Least Significant Bit to Most Significant Bit""
+  -d, --delim DELIM    "$"Use DELIM to separate 0-1 digits (default: '')""
 "
 	local reverse="cat" delim=''
 	for ((;$#;)) ; do
@@ -290,10 +290,10 @@ bl_dji_2powersoftwo()
 	local helpmsg="
 "$"Translate given VALUES v to their microVALUES µv (10^-6), then decompose this (µv) in powers of 2.""
 OPTIONS:
-  -f, --format FORMAT  "$"Output format, eg \"%02X\" for hexadecimal.""
-  -d, --delim DELIM    "$"Use DELIM to separate powers of 2 (default: ' ').""
-  -x, --hex            "$"Output using base16 (aka hexadecimal).""
-  -e, --exponent       "$"Output the exponent n instead of 2^n.""
+  -f, --format FORMAT  "$"Output format, eg \"%02X\" for hexadecimal""
+  -d, --delim DELIM    "$"Use DELIM to separate powers of 2 (default: ' ')""
+  -x, --hex            "$"Output using base16 (aka hexadecimal)""
+  -e, --exponent       "$"Output the exponent n instead of 2^n""
   -r, --reverse        "$"Order output from the greatest to the lowest""
 "
 	local hexa=0 expnt=0 reverse=0 format="" delim=' '
@@ -355,8 +355,8 @@ bl_dji_readwallet()
 "$"Read dji wallet FILE(s), or from /dev/stdin if no FILE passed as argument.""
 Option:
   -c, --count           "$"Output only the total value of the wallet(s), in µɈ.""
-  -g, --grains          "$"Output only the number of each grains of value 2^0 ... 2^n, line by line.""
-  -d, --declare         "$"Output only declare -a grains=(... statement.""
+  -g, --grains          "$"Output only the number of each grains of value 2^0 … 2^n, line by line.""
+  -d, --declare         "$"Output only declare -a grains=(… statement.""
 "
 	local ocount=0 ograins=0 dec=0
 	for ((;$#;)) ; do
@@ -431,8 +431,8 @@ bl_dji_stripwallet()
 	local helpmsg="
 "$"Select and output grains from wallet FILE to be removed to extract VALUE.""
 OPTIONS:
-  -u, --up             "$"Don't exit with error if the exact VALUE can't be extracted, but remove grains > VALUE.""
-  -n, --no-act         "$"Don't remove any grain from wallet FILE, but output grains to be removed.""
+  -u, --up             "$"Don't exit with error if the exact VALUE can't be extracted, but remove grains > VALUE""
+  -n, --no-act         "$"Don't remove any grain from wallet FILE, but output grains to be removed""
 "
 	local up=0 act=1
 	for ((;$#;)) ; do

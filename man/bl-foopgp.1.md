@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-FOOPGP
 section: 1
 header: User Commands
-footer: bash-libs 0.3.7
+footer: bash-libs 0.3.10
 ---
 
 # NAME
@@ -34,7 +34,7 @@ euros (€) to the the foopgp association.
 
 **-s**, **\--stingynalty** VALUE
 
-:   set STINGYNALTY (2026-05: 1.12155201612476790176)
+:   set STINGYNALTY (2026-06: 1.12715977620539174126)
 
 **-d**, **\--date** STRING
 

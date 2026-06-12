@@ -199,9 +199,9 @@ bl_foopgp_g2t() {
 OPTIONS:
   -t, --tokens DJISUM   "$"Set the base of djis (Ɉ) already created (default: 0)""
   -g, --gifts EURSUM    "$"Set the base of values in EUR (€) already contributed (default: 0)""
-  -s, --siprefix SYMBOL "$"Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. International System of Units).""
+  -s, --siprefix SYMBOL "$"Output submultiple, accepted symbol: [d|m|µ|deci|milli|micro] (cf. International System of Units)""
   -d, --date STRING     "$"Use stingynalty of given date"" (cf. <https://www.gnu.org/software/coreutils/date>).
-  -p, --printsym        "$"Also print symbol, eg: ' µɈ'.""
+  -p, --printsym        "$"Also print symbol, eg: ' µɈ'""
 "
 	local i t=0 g=0 symbol printsym outsym
 	local stingynalty=$BL_FOOPGP_STINGYNALTY
@@ -308,8 +308,8 @@ OPTIONS:
   -g, --gifts EURSUM   "$"Set the base of values in EUR € already contributed (default: 0)""
   -m, --max VALUE      "$"Set a limit in term of targeted djis (defaut: 12)""
   -M, --max-line NUM   "$"Limit number of lines (defaut: 24)""
-  -H, --header-only    "$"Only display header line, and return.""
-  -F, --with-header    "$"Also display header line and separation line at the beginning of array.""
+  -H, --header-only    "$"Only display header line, and return""
+  -F, --with-header    "$"Also display header line and separation line at the beginning of array""
 "
 	local max=12 maxl=24 udid header=0 onlyheader=0 ccode=EUR
 	local t g i j k tg=0 gg=0
@@ -542,8 +542,8 @@ bl_foopgp_contribs() (
 "$"Calculate total contributions and total djis (Ɉ) created by contributions.""
 
 OPTIONS:
-  -S, --stats         "$"Only output statistics.""
-  -U, --users         "$"Only output by-id array.""
+  -S, --stats         "$"Only output statistics""
+  -U, --users         "$"Only output by-id array""
 "
 	local stats=1 users=1
 	for ((;$#;)) ; do
