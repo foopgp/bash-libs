@@ -1,3 +1,15 @@
+bash-libs (0.3.10-1) unstable; urgency=medium
+
+  [ jjbrucker ]
+  * bl-qrkey: new action *token_retries*, to map SW 6982/6983 to return 0xC0/C1/C2 in
+    *change_token_code*
+
+  [ Mnème ]
+  * bash-libs: drop trailing dots in OPTIONS descriptions + ASCII '...' → '…' (U+2026)
+  * i18n: refresh fr + es .po after string cohérence pass
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Fri, 12 Jun 2026 13:12:17 +0200
+
 bash-libs (0.3.9-1) unstable; urgency=medium
 
   * bl_pgpid_email(): bugfix: forbid revoking last email
