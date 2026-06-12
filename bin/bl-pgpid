@@ -483,7 +483,7 @@ Call 'gpg --with-colon' and ouput exportable secret keys (all if no argument), o
 KeyID     Creation_Date    Public_Key_Algorithm
 
 OPTIONS:
-  -H, --homedir GNUPGHOME   GnuPG home directory - Environment variable: GNUPGHOME, default: '~/.gnupg'.
+  -H, --homedir GNUPGHOME   GnuPG home directory - Environment variable: GNUPGHOME, default: '~/.gnupg'
   -e, --exportable          Ouput only exportable secret keys (ie. present localy, excluding those on security token)
 "
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -1187,7 +1187,7 @@ OPTIONS:
   -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options.""
   -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL. "$"Default: "$"first part of email.""
   -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL.""
-  -v, --verbose               "$"Increase verbosity.""
+  -v, --verbose               "$"Increase verbosity""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
   -K, --keyservers KEYSERVERS "$"If non-empty, send updated certificate to this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
@@ -1460,7 +1460,7 @@ OPTIONS:
   -g, --vouch-for DOMAIN       "$"Assume some legal responsibilities on the target."" (Not implemented yet)
   -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing.""
   -f, --force-sign-key         "$"Allow to unrevoke or to change vouching.""
-  -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environnement variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'.
+  -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environnement variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
   -K, --keyservers KEYSERVERS  "$"If non-empty, receive and send updated certificate from and to this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
 

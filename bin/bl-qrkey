@@ -224,27 +224,40 @@ _bl_iso7816_sw_analyse() {
 # Read remaining retry counter of PIN, Resetting Code (RC) or Admin code from
 # the connected OpenPGP card, via scdaemon's CHV-STATUS attribute (reflects
 # the 'PW Status Bytes' DO C4 of the OpenPGP card application).
-# Useful to recover the actual retry count when VERIFY returns SW=6982
+# Useful to recover the actual retry count when VERIFY returns SW=6982 or SW=6983
 # (security status not satisfied) instead of the conventional 63CX.
 # scdaemon's output format is: 'S CHV-STATUS +s+l1+l2+l3+c1+c2+c3' where
 # (s, l1..l3) is the PW1 status byte and three max lengths, and (c1, c2, c3)
 # are the PW1 / RC / PW3 error counters respectively.
-bl_qrkey_card_retries() {
+bl_qrkey_token_retries() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... PIN|RC|Admin"
+	local usage="Usage: $name [OPTIONS]..."
+	local -A retriesvarname=([token_pinretries]="token_pinretries=" [token_rcretries]="token_rcretries=" [token_adminretries]="token_adminretries=")
+	local -A retriesmsg=(
+		[token_pinretries]=$"remaining retries for PIN code (usually 6 digits)"
+		[token_rcretries]=$"remaining retries for Reset Code (usually unused)"
+		[token_adminretries]=$"remaining retries for Admin code (usually 8 digits)"
+	)
 	local helpmsg="
-"$"Read remaining retry counter (0-3) of PIN, Resetting Code (RC) or Admin code from connected OpenPGP card.""
-"$"Output the counter on stdout.""
+"$"Output remaining retry counter of PIN code, Reset Code or Admin code from connected OpenPGP card.""
 
 OPTIONS:
-  -H, --homedir GNUPGHOME  "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'.
+  -H, --homedir GNUPGHOME   "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
+  -P, --pin                 "$"Output"" ${retriesmsg[token_pinretries]}
+  -R, --rc                  "$"Output"" ${retriesmsg[token_rcretries]}
+  -A, --admin               "$"Output"" ${retriesmsg[token_adminretries]}
+  -q, --quiet               "$"Decrease verbosity"" (stdout)
 "
-	local field
 	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local showpin=0 showreset=0 showadmin=0 fieldsep=$'\t'"# "
 	for ((;$#;)) ; do
 		case "$1" in
 			-H|--homedir) shift ; gpghome=${1:?} ;;
+			-P|--pin|--pw1) showpin=1 ;;
+			-R|--reset|--rc) showreset=1 ;;
+			-A|--admin|--pw3) showadmin=1 ;;
+			-q|--quiet) retriesvarname=() retriesmsg=() fieldsep="" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -253,29 +266,18 @@ OPTIONS:
 		esac
 		shift
 	done
-	case "$1" in
-		PIN|PW1)   field=4 ;;  # 5th value: PW1 (PIN) retry counter
-		RC)        field=5 ;;  # 6th value: Resetting Code retry counter
-		Admin|PW3) field=6 ;;  # 7th value: PW3 (Admin) retry counter
-		*) printf "$FUNCNAME: Error: "$"Invalid PW type"" '$1' ("$"expected: PIN, RC, Admin"").\n" >&2 ; return 2 ;;
-	esac
 
-	local -a out fields
-	local line
+	((showpin || showreset || showadmin )) || { showpin=1 ; showreset=1 ; showadmin=1 ; }
+
 	mapfile -t out < <(gpg-connect-agent --homedir "$gpghome" "SCD GETATTR CHV-STATUS" "/bye")
-	for line in "${out[@]}" ; do
-		if [[ "$line" =~ ^S[[:space:]]CHV-STATUS[[:space:]]*(.*)$ ]] ; then
-			# Normalize '+' separators (signed format) into spaces, then split on whitespace.
-			read -r -a fields <<<"${BASH_REMATCH[1]//+/ }"
-			if (( ${#fields[@]} >= 7 )) ; then
-				echo "${fields[field]}"
-				return 0
-			fi
-		fi
-	done
-
-	printf "%s: Error: "$"Could not get CHV-STATUS from scdaemon"".\n" "$FUNCNAME" >&2
-	return 1
+	if [[ "${out[*]}" =~ ^S[[:space:]]+CHV-STATUS[[:space:]]*\+?[0-9]+\+[0-9]+\+[0-9]+\+[0-9]+\+([0-9]+)\+([0-9]+)\+([0-9]+).*OK$ ]] ; then
+		! ((showpin)) || echo "${retriesvarname[token_pinretries]}${BASH_REMATCH[1]}${fieldsep}${retriesmsg[token_pinretries]}"
+		! ((showreset)) || echo "${retriesvarname[token_rcretries]}${BASH_REMATCH[2]}${fieldsep}${retriesmsg[token_rcretries]}"
+		! ((showadmin)) || echo "${retriesvarname[token_adminretries]}${BASH_REMATCH[3]}${fieldsep}${retriesmsg[token_adminretries]}"
+	else
+		printf "%s: Error: %s ...\n" "$FUNCNAME" "${out[0]}" >&2
+		return 1
+	fi
 }
 
 bl_qrkey_change_passphrase() {
@@ -288,7 +290,7 @@ bl_qrkey_change_passphrase() {
 "$"Missing input will be asked interactively.""
 
 OPTIONS:
-  -H, --homedir GNUPGHOME        "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'.
+  -H, --homedir GNUPGHOME        "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
   -p, --passphrase PASSPHRASE    "$"Current passphrase protecting secret parts of OpenPGP key"" (empty \"\" for none)
   -P, --passfrom FILE            "$"Get passphrase from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
   -n, --newpassphrase PASSPHRASE "$"New passphrase to protect secret parts of OpenPGP key"" (empty \"\" for none)
@@ -366,7 +368,7 @@ bl_qrkey_change_token_code() {
         - "$"other non-zero value on other errors.""
 
 OPTIONS:
-  -H, --homedir GNUPGHOME   "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'.
+  -H, --homedir GNUPGHOME   "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
   -p, --code CURRENTCODE    "$"Current PIN (or Admin) code protecting use of security token"" (empty \"\" for none)
   -P, --codefrom FILE       "$"Get current PIN (or Admin) code from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
   -n, --newcode NEWCODE     "$"New PIN (or Admin) code to protect use of security token""
@@ -430,10 +432,10 @@ OPTIONS:
 		SW="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
 		_bl_iso7816_sw_analyse "$SW" || {
 			local swrv=$? retries
-			# Some cards return SW=6982 (security status not satisfied) on a
-			# wrong VERIFY instead of the conventional 63CX. Recover the actual
+			# Some cards return SW=6982 (security status not satisfied) or SW=6983 on
+			# a wrong VERIFY instead of the expected 63CX. Recover the actual
 			# retry count from DO C4 and map to the same 0xC0/C1/C2 codes.
-			if [[ "$SW" == 6982 ]] && retries=$(bl_qrkey_card_retries --homedir "$gpghome" "$ctype") && ((retries < 3)) ; then
+			if [[ "$SW" == 698[23] ]] && retries=$(bl_qrkey_token_retries --homedir "$gpghome" --quiet --"${ctype,,}") && ((retries < 3)) ; then
 				printf "$FUNCNAME: Notice: "$"%s code: remaining retries: %d.""\n" "$ctype" "$retries" >&2
 				swrv=$((16#C0 + retries))
 			fi
@@ -510,7 +512,7 @@ OPTIONS:
   -W, --workdir DIRECTORY        "$"Use given working directory instead of a temporary directory (don't forget to shred its content).""
   -S, --split NUM                "$"Number of shares to be generated"" - "$"Default: ""$splitn
   -T, --threshold NUM            "$"Number of shares necessary to reconstruct the secret"" - "$"Default: ""$thresn
-  -H, --homedir GNUPGHOME        "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'.
+  -H, --homedir GNUPGHOME        "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
 
 "$"Note: Split number should be greater than threshold number.""
       "$"If they are equal, a simple split is used instead of Shamir's secret sharing,""
@@ -681,7 +683,7 @@ OPTIONS:
                                   * "$"1 to 3: Only numbers, use to be a date: YYYYMMDD.""
                                   * "$"4 to 5: No need for extra passphrase (in addition to the ones defined in RFC9580).""
   -P, --passfrom FILE           "$"Get extra passphrase from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
-  -H, --homedir GNUPGHOME       "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'.
+  -H, --homedir GNUPGHOME       "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
 "
 
 	local -a passphrase
@@ -856,7 +858,7 @@ bl_qrkey_totoken() {
 "$"Output ASCII armored OpenPGP certificate, PIN code and admin code.""
 
 OPTIONS:
-  -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'.
+  -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
   -p, --passphrase PASSPHRASE  "$"Passphrase to access secret parts of OpenPGP key""
   -P, --passfrom FILE          "$"Get passphrase from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
   -U, --certurl URL            "$"URL to retrieve your OpenPGP certificate"" (default: https://{KEYSERVER}/pks/lookup?op=get&search=0x{KEYFPR} )
