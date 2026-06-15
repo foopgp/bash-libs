@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  Sticker / band template — 78mm × 25mm.
+  Placeholders (envsubst): ${NAME} ${U4} ${FPR_LINE1} ${FPR_LINE2} ${EMAIL} ${QR_HREF}
+  ${QR_HREF} is a data: URI containing the keyserver URL QR code.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     version="1.1"
+     width="78mm" height="25mm"
+     viewBox="0 0 78 25">
+  <defs>
+    <style type="text/css"><![CDATA[
+      .card    { fill: #ffefea; stroke: #90462f; stroke-width: 0.35; }
+      .accent  { fill: #ff8012; }
+      .name    { font: italic bold 4.4px 'DejaVu Sans', sans-serif; fill: #1a1838; text-anchor: middle; }
+      .email   { font: italic bold 3.4px 'DejaVu Sans', sans-serif; fill: #ff8012; text-anchor: middle; }
+      .ident   { font: 2.4px 'DejaVu Sans Mono', monospace; fill: #1a1838; }
+      .fpr     { font: bold 2.4px 'DejaVu Sans Mono', monospace; fill: #1a1838; letter-spacing: 0.2px; }
+    ]]></style>
+  </defs>
+
+  <rect class="card" x="0.5" y="0.5" width="77" height="24"/>
+  <rect class="accent" x="0.5" y="0.5" width="77" height="1.6" opacity="0.85"/>
+
+  <!-- QR code (data URI) -->
+  <image x="53" y="2.5" width="22" height="22" xlink:href="${QR_HREF}"/>
+
+  <!-- Text block (left half) -->
+  <text class="name"  x="26"  y="6.5">${NAME}</text>
+  <text class="ident" x="2.5" y="10.5">${U4}</text>
+  <text class="fpr"   x="2.5" y="14.0">${FPR_LINE1}</text>
+  <text class="fpr"   x="2.5" y="17.0">${FPR_LINE2}</text>
+  <text class="email" x="26"  y="22.5">${EMAIL}</text>
+</svg>

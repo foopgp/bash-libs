@@ -1240,6 +1240,60 @@ msgstr ""
 msgid "Successfully sign %d '%s' inside certificate %s."
 msgstr ""
 
+msgid "Produce or print an OpenPGP ID business card or a sticker."
+msgstr ""
+
+msgid "Missing input is guessed from the connected security token."
+msgstr ""
+
+msgid ""
+"A single email appears on the output: if the argument is an email it is used "
+"verbatim; otherwise the most recent non-revoked email of the certificate is "
+"picked (with a Notice)."
+msgstr ""
+
+msgid "Printer name to send to, or output SVG file if it ends with '.svg'"
+msgstr ""
+
+msgid "Produce a band/sticker instead of a business card"
+msgstr ""
+
+msgid "Output in grayscale instead of color"
+msgstr ""
+
+msgid "Select certificate to print"
+msgstr ""
+
+msgid "No usable certificate for %s."
+msgstr ""
+
+msgid "Email %s matches several non-revoked certificates (%d)."
+msgstr ""
+
+msgid "No usable (non-revoked) email in certificate %s."
+msgstr ""
+
+msgid "Picking most recent email %s."
+msgstr ""
+
+msgid "SVG template %s not found."
+msgstr ""
+
+msgid "Association des amis d'OpenPGP"
+msgstr ""
+
+msgid "Wrote SVG to %s."
+msgstr ""
+
+msgid "No printer detected."
+msgstr ""
+
+msgid "Where to print ?"
+msgstr ""
+
+msgid "Printing %s on %s…"
+msgstr ""
+
 msgid ""
 "Backup or restore OpenPGP ID using printed QR codes and Shamir's secret "
 "sharing. Configure Yubikeys or Nitrokeys for OpenPGP ID."

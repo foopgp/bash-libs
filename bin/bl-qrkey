@@ -44,6 +44,15 @@ if [[ "$1" == --bash-completion ]] ; then
 				compopt -o plusdirs
 				COMPREPLY=( $(compgen -A file -- $cur) )
 				return 0 ;;
+			--print|--printer)
+				# Path-shaped input (./ ../ ~ / or trailing .svg) → file completion ; else printer name
+				if [[ "$cur" == *.svg || "$cur" == [/~.]* ]] ; then
+					compopt -o plusdirs
+					COMPREPLY=( $(compgen -A file -X "!*.svg" -- $cur) )
+				else
+					COMPREPLY=( $(compgen -W "$(LANG= lpstat -p 2>/dev/null | sed -n '"'"'s,^printer \([^ ]*\).*,\1,p'"'"')" -- $cur) )
+				fi
+				return 0 ;;
 			--homedir)
 				compopt -o plusdirs
 				COMPREPLY=( $(compgen -A directory -- $cur) )

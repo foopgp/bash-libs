@@ -11,8 +11,11 @@ SUB_MAKE_DIRS         := specs man tests
 prefix                ?= /usr/local
 exec_prefix           ?= $(prefix)
 bindir                ?= $(exec_prefix)/bin
+datarootdir           ?= $(prefix)/share
 
 BINDIR                := $(DESTDIR)$(bindir)
+SVGDIR                := $(DESTDIR)$(datarootdir)/bash-libs/svg
+SVG_TEMPLATES         := $(wildcard share/bash-libs/svg/*.svg)
 
 GIT_DESCRIBE          := git describe --always -- main
 DIRTY_BROKEN          := \(dirty\|broken\)
@@ -47,7 +50,7 @@ check clean:
 html pdf docbook markdown:
 	$(MAKE) -C specs $@
 
-install: $(addprefix $(BINDIR)/, $(notdir $(TARGETS)))
+install: $(addprefix $(BINDIR)/, $(notdir $(TARGETS))) $(addprefix $(SVGDIR)/, $(notdir $(SVG_TEMPLATES)))
 	$(MAKE) -C man   $@
 	$(MAKE) -C bash-completion   $@
 	$(MAKE) -C i18n   $@
@@ -56,6 +59,7 @@ uninstall:
 	$(MAKE) -C man   $@
 	$(MAKE) -C bash-completion   $@
 	$(RM) $(addprefix $(BINDIR)/, $(notdir $(TARGETS)))
+	$(RM) $(addprefix $(SVGDIR)/, $(notdir $(SVG_TEMPLATES)))
 	$(MAKE) -C i18n   $@
 
 install-pre-commit-hook: .git/hooks/pre-commit
@@ -70,11 +74,15 @@ $(BINDIR)/%: bin/% phony | $(BINDIR)
 	sed 's,^\(BL_[A-Z]\+_VERSION=\).*$$,\1"$(COMMIT_DESCRIPTION)",1' $< > $@
 	chmod 755 $@
 
+$(SVGDIR)/%.svg: share/bash-libs/svg/%.svg | $(SVGDIR)
+	cp $< $@
+	chmod 644 $@
+
 $(SUB_MAKE_DIRS): %:
 	$(MAKE) -C $*
 
 .git/hooks/pre-commit: pre-commit.hook
 	cp --interactive $< $@
 
-$(BINDIR):
+$(BINDIR) $(SVGDIR):
 	mkdir -p $@
