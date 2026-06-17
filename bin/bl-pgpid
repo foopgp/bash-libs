@@ -1744,7 +1744,7 @@ OPTIONS:
 	fi
 
 	# Render template via envsubst (only substitute the names we own — avoid clobbering CSS ${...} should any appear)
-	local subtitle=$"Association des amis d'OpenPGP"
+	local subtitle=$"Friends of OpenPGP"
 	NAME=$pname SUBTITLE=$subtitle U4=$pgpid \
 		FPR_LINE1=$fprline1 FPR_LINE2=$fprline2 \
 		EMAIL=$email QR_HREF=$qrhref \
@@ -1781,10 +1781,14 @@ OPTIONS:
 
 	inkscape --export-type=pdf --export-filename="$tmpdir/single.pdf" "$tmpdir/render.svg" >/dev/null 2>&1 || return $?
 
-	# A4 portrait: card 89×59mm → 2×4 ; sticker 78×25mm → 2×11
-	local nup
-	((stamp)) && nup="2x11" || nup="2x4"
-	pdfjam --quiet --paper a4paper --nup "$nup" --no-landscape --outfile "$tmpdir/page.pdf" "$tmpdir/single.pdf" || return $?
+	# A4 landscape: card 89×59mm → 3×3 = 9/page ; sticker 78×25mm → 3×6 = 18/page.
+	# pdfjam tiles ONE page per --nup slot, so duplicate single.pdf N times first.
+	local nup n i
+	((stamp)) && { nup="3x6" ; n=18 ; } || { nup="3x3" ; n=9 ; }
+	local -a copies=()
+	for ((i=0 ; i<n ; i++)) ; do copies+=("$tmpdir/single.pdf") ; done
+	pdfunite "${copies[@]}" "$tmpdir/duped.pdf" || return $?
+	pdfjam --quiet --paper a4paper --landscape --nup "$nup" --outfile "$tmpdir/page.pdf" "$tmpdir/duped.pdf" || return $?
 
 	printf "$FUNCNAME: Notice: "$"Printing %s on %s…""\n" "${templatename%.svg}" "$printer" >&2
 	lpr -P "$printer" "$tmpdir/page.pdf"

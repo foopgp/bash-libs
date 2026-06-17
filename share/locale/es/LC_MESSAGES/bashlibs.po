@@ -1279,7 +1279,7 @@ msgstr ""
 msgid "SVG template %s not found."
 msgstr ""
 
-msgid "Association des amis d'OpenPGP"
+msgid "Friends of OpenPGP"
 msgstr ""
 
 msgid "Wrote SVG to %s."

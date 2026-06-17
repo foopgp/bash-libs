@@ -1747,7 +1747,7 @@ msgid "SVG template %s not found."
 msgstr ""
 
 #: ../bin/bl-pgpid:1747
-msgid "Association des amis d'OpenPGP"
+msgid "Friends of OpenPGP"
 msgstr ""
 
 #: ../bin/bl-pgpid:1769
