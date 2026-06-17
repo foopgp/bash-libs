@@ -959,8 +959,8 @@ msgid "Extract or add image inside OpenPGP certificate."
 msgstr ""
 
 msgid ""
-"Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively "
-"ask KEYID of secret key."
+"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or "
+"interactively ask KEYID of secret key."
 msgstr ""
 
 msgid "New IMAGE should be 180x180 pixels, or it will be resized."
@@ -1240,28 +1240,27 @@ msgstr ""
 msgid "Successfully sign %d '%s' inside certificate %s."
 msgstr ""
 
-msgid "Produce or print an OpenPGP ID business card or a sticker."
-msgstr ""
-
-msgid "Missing input is guessed from the connected security token."
+msgid "Produce or print an OpenPGP ID stamp or business card."
 msgstr ""
 
 msgid ""
 "A single email appears on the output: if the argument is an email it is used "
 "verbatim; otherwise the most recent non-revoked email of the certificate is "
-"picked (with a Notice)."
+"picked."
 msgstr ""
 
 msgid "Printer name to send to, or output SVG file if it ends with '.svg'"
 msgstr ""
 
-msgid "Produce a band/sticker instead of a business card"
+msgid ""
+"Use this template to produce business card (eg: …/share/bash-libs/svg/"
+"card.svg)"
+msgstr ""
+
+msgid "Override the displayed name"
 msgstr ""
 
 msgid "Output in grayscale instead of color"
-msgstr ""
-
-msgid "Override the display name shown above the eid (u4/u5)"
 msgstr ""
 
 msgid "Select certificate to print"
@@ -1277,6 +1276,9 @@ msgid "No usable (non-revoked) email in certificate %s."
 msgstr ""
 
 msgid "Picking most recent email %s."
+msgstr ""
+
+msgid "Template %s is not readable, falling back to default card template."
 msgstr ""
 
 msgid "SVG template %s not found."
