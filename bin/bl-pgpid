@@ -1735,13 +1735,13 @@ OPTIONS:
 		printf "$FUNCNAME: Error: "$"SVG template %s not found.""\n" "$templatename" >&2 ; return 1
 	}
 
-	# QR code for stickers — links to keyserver index of this fingerprint
+	# QR code (sticker AND card — card embeds the sticker block verbatim).
+	# Links to keyserver index of this fingerprint.
+	# qrencode --margin=3: ~0.5 mm thicker visible quiet zone vs --margin=2.
 	local qrhref=""
-	if ((stamp)) ; then
-		local qrurl="https://keys.foopgp.org/pks/lookup?op=index&search=0x${fpr^^}"
-		qrencode --output "$tmpdir/qr.png" --margin=2 --size=8 --level=H -- "$qrurl" || return $?
-		qrhref="data:image/png;base64,$(base64 -w0 < "$tmpdir/qr.png")"
-	fi
+	local qrurl="https://keys.foopgp.org/pks/lookup?op=index&search=0x${fpr^^}"
+	qrencode --output "$tmpdir/qr.png" --margin=3 --size=8 --level=H -- "$qrurl" || return $?
+	qrhref="data:image/png;base64,$(base64 -w0 < "$tmpdir/qr.png")"
 
 	# Render template via envsubst (only substitute the names we own — avoid clobbering CSS ${...} should any appear)
 	local subtitle=$"Friends of OpenPGP"
