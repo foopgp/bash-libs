@@ -40,7 +40,7 @@ msgstr ""
 #: ../bin/bl-pgpid:556 ../bin/bl-pgpid:634 ../bin/bl-pgpid:809
 #: ../bin/bl-pgpid:924 ../bin/bl-pgpid:1006 ../bin/bl-pgpid:1111
 #: ../bin/bl-pgpid:1231 ../bin/bl-pgpid:1346 ../bin/bl-pgpid:1517
-#: ../bin/bl-pgpid:1647 ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325
+#: ../bin/bl-pgpid:1650 ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325
 #: ../bin/bl-qif:420 ../bin/bl-qrkey:128 ../bin/bl-qrkey:154
 #: ../bin/bl-qrkey:273 ../bin/bl-qrkey:325 ../bin/bl-qrkey:413
 #: ../bin/bl-qrkey:556 ../bin/bl-qrkey:715 ../bin/bl-qrkey:909
@@ -66,7 +66,7 @@ msgstr ""
 #: ../bin/bl-pgpid:634 ../bin/bl-pgpid:809 ../bin/bl-pgpid:924
 #: ../bin/bl-pgpid:1006 ../bin/bl-pgpid:1111 ../bin/bl-pgpid:1231
 #: ../bin/bl-pgpid:1346 ../bin/bl-pgpid:1517 ../bin/bl-pgpid:1530
-#: ../bin/bl-pgpid:1647 ../bin/bl-pgpid:1840 ../bin/bl-qif:162
+#: ../bin/bl-pgpid:1650 ../bin/bl-pgpid:1847 ../bin/bl-qif:162
 #: ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420 ../bin/bl-qif:609
 #: ../bin/bl-qrkey:128 ../bin/bl-qrkey:154 ../bin/bl-qrkey:166
 #: ../bin/bl-qrkey:273 ../bin/bl-qrkey:325 ../bin/bl-qrkey:413
@@ -157,13 +157,13 @@ msgstr ""
 
 #: ../bin/bl-dji:523 ../bin/bl-djibian:431 ../bin/bl-foopgp:639
 #: ../bin/bl-interactive:495 ../bin/bl-json:361 ../bin/bl-markdown:273
-#: ../bin/bl-pgpid:1798 ../bin/bl-qrkey:1011 ../bin/bl-security:400
+#: ../bin/bl-pgpid:1805 ../bin/bl-qrkey:1011 ../bin/bl-security:400
 msgid "Show help and exit."
 msgstr ""
 
 #: ../bin/bl-dji:524 ../bin/bl-djibian:432 ../bin/bl-foopgp:640
 #: ../bin/bl-interactive:496 ../bin/bl-json:362 ../bin/bl-markdown:274
-#: ../bin/bl-pgpid:1799 ../bin/bl-qrkey:1012 ../bin/bl-security:401
+#: ../bin/bl-pgpid:1806 ../bin/bl-qrkey:1012 ../bin/bl-security:401
 msgid "Show version and exit."
 msgstr ""
 
@@ -177,7 +177,7 @@ msgstr ""
 
 #: ../bin/bl-dji:565 ../bin/bl-djibian:473 ../bin/bl-foopgp:681
 #: ../bin/bl-interactive:535 ../bin/bl-json:401 ../bin/bl-markdown:315
-#: ../bin/bl-pgpid:1840 ../bin/bl-qif:609 ../bin/bl-qrkey:1053
+#: ../bin/bl-pgpid:1847 ../bin/bl-qif:609 ../bin/bl-qrkey:1053
 #: ../bin/bl-security:440 ../bin/bl-test:198
 msgid "Unrecognized action"
 msgstr ""
@@ -192,7 +192,7 @@ msgid "Select a frontend program"
 msgstr ""
 
 #: ../bin/bl-djibian:93 ../bin/bl-interactive:87 ../bin/bl-interactive:88
-#: ../bin/bl-pgpid:355 ../bin/bl-pgpid:1629 ../bin/bl-qrkey:110
+#: ../bin/bl-pgpid:355 ../bin/bl-pgpid:1630 ../bin/bl-qrkey:110
 #: ../bin/bl-qrkey:255 ../bin/bl-qrkey:302 ../bin/bl-qrkey:380
 #: ../bin/bl-qrkey:524 ../bin/bl-qrkey:695 ../bin/bl-qrkey:870
 #: ../bin/bl-security:93
@@ -1116,7 +1116,7 @@ msgid "Only output fingerprint with ownertrust greater or equal to THRESHOLD."
 msgstr ""
 
 #: ../bin/bl-pgpid:594 ../bin/bl-pgpid:978 ../bin/bl-pgpid:1084
-#: ../bin/bl-pgpid:1200 ../bin/bl-pgpid:1317 ../bin/bl-pgpid:1629
+#: ../bin/bl-pgpid:1200 ../bin/bl-pgpid:1317 ../bin/bl-pgpid:1630
 msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr ""
 
@@ -1722,47 +1722,51 @@ msgstr ""
 msgid "Output in grayscale instead of color"
 msgstr ""
 
-#: ../bin/bl-pgpid:1665
+#: ../bin/bl-pgpid:1629
+msgid "Override the display name shown above the eid (u4/u5)"
+msgstr ""
+
+#: ../bin/bl-pgpid:1668
 msgid "Select certificate to print"
 msgstr ""
 
-#: ../bin/bl-pgpid:1684
+#: ../bin/bl-pgpid:1687
 msgid "No usable certificate for %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:1685
+#: ../bin/bl-pgpid:1688
 msgid "Email %s matches several non-revoked certificates (%d)."
 msgstr ""
 
-#: ../bin/bl-pgpid:1703
+#: ../bin/bl-pgpid:1706
 msgid "No usable (non-revoked) email in certificate %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:1704
+#: ../bin/bl-pgpid:1707
 msgid "Picking most recent email %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:1735
+#: ../bin/bl-pgpid:1738
 msgid "SVG template %s not found."
 msgstr ""
 
-#: ../bin/bl-pgpid:1747
+#: ../bin/bl-pgpid:1750
 msgid "Friends of OpenPGP"
 msgstr ""
 
-#: ../bin/bl-pgpid:1769
+#: ../bin/bl-pgpid:1772
 msgid "Wrote SVG to %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:1778
+#: ../bin/bl-pgpid:1781
 msgid "No printer detected."
 msgstr ""
 
-#: ../bin/bl-pgpid:1779
+#: ../bin/bl-pgpid:1782
 msgid "Where to print ?"
 msgstr ""
 
-#: ../bin/bl-pgpid:1789
+#: ../bin/bl-pgpid:1796
 msgid "Printing %s on %s…"
 msgstr ""
 

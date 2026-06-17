@@ -1466,6 +1466,9 @@ msgstr "Produire un bandeau ou sticker au lieu d’une carte de visite"
 msgid "Output in grayscale instead of color"
 msgstr "Sortie en niveaux de gris au lieu de couleur"
 
+msgid "Override the display name shown above the eid (u4/u5)"
+msgstr "Surcharger le nom affiché au-dessus de l'eid (u4/u5)"
+
 msgid "Select certificate to print"
 msgstr "Sélectionnez le certificat à imprimer"
 

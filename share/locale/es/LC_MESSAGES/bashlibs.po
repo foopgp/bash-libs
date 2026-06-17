@@ -1261,6 +1261,9 @@ msgstr ""
 msgid "Output in grayscale instead of color"
 msgstr ""
 
+msgid "Override the display name shown above the eid (u4/u5)"
+msgstr ""
+
 msgid "Select certificate to print"
 msgstr ""
 
