@@ -1837,7 +1837,7 @@ OPTIONS:
 		printer=$(bl_radiolist --output-value --default-value "$(lpstat -d | sed 's,.* ,,')" --num-per-line 1 --text $"Where to print ?" "${printers[@]}")
 	fi
 
-	inkscape --export-type=pdf --export-filename="$tmpdir/single.pdf" "$tmpdir/render.svg" >/dev/null 2>&1 || return $?
+	rsvg-convert --format=pdf --output="$tmpdir/single.pdf" "$tmpdir/render.svg" || return $?
 
 	# A4 landscape: default sticker 85×25mm → 3×7 = 21/page ; with --template (card-shaped) → 3×3 = 9/page.
 	# pdfjam tiles ONE page per --nup slot, so duplicate single.pdf N times first.
