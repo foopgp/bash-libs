@@ -628,8 +628,8 @@ bl_pgpid_get() {
 OPTIONS:
   -F, --fingerprint           "$"Output only fingerprints""
   -E, --email                 "$"Output only emails""
-  -l, --local                 "$"Don't refresh certificates from keyservers or Web Key Directories""
-  -s, --secret                "$"Search through local secret keys instead of public certificate."" - "$"Imply --local""
+  -f, --no-fetch              "$"Don't refresh certificates from keyservers or Web Key Directories""
+  -s, --secret                "$"Search through local secret keys instead of public certificate."" - "$"Imply --no-fetch""
   -m, --errexit-g=1           "$"Return an error if there is more than one (1) entry."" - "$"You may replace '1' by an other number""
   -M, --max-from-keyserv MAX  "$"Set maximum matching certificates to receive from keyservers. "$"Default: ""$maxfromks
   -T, --ownertrust THRESHOLD  "$"Only output fingerprint with ownertrust greater or equal to THRESHOLD."" (Not implemented)
@@ -650,7 +650,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				onlyfpr=0 onlymbox=1 ;;
 			-s|--secret)
 				gpgaction="--list-secret-keys" ;&
-			-l|--local)
+			-l|-f|--local|--no-fetch)
 				wkdcmd="true"
 				keyservs=() ;;
 			-m|--errexit|--errexit-g)
@@ -1288,7 +1288,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	# Check that $user match only one certificate
 	local fprs
-	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --local -- "$user")) || return $?
+	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --no-fetch -- "$user")) || return $?
 	user=${fprs[0]}
 
 	if [[ "$torev" || "$toadd" ]] ; then
@@ -1714,7 +1714,7 @@ OPTIONS:
 		email=$user
 		# Identify the certificate by email, but only count those with a non-revoked uid for this email
 		local -a allfprs candidates=() f
-		mapfile -t allfprs < <(bl_pgpid_get --fingerprint --local --homedir "$gpghome" -- "$email" 2>/dev/null) || true
+		mapfile -t allfprs < <(bl_pgpid_get --fingerprint --no-fetch --homedir "$gpghome" -- "$email" 2>/dev/null) || true
 		for f in "${allfprs[@]}" ; do
 			if gpg --homedir "$gpghome" --with-colons --list-keys "$f" 2>/dev/null |
 			   awk -F: -v EM="<$email>" '
@@ -1731,7 +1731,7 @@ OPTIONS:
 		fpr=${candidates[0]}
 	else
 		local -a fprs
-		mapfile -t fprs < <(bl_pgpid_get --fingerprint --errexit-g=1 --local --homedir "$gpghome" -- "$user") || return $?
+		mapfile -t fprs < <(bl_pgpid_get --fingerprint --errexit-g=1 --no-fetch --homedir "$gpghome" -- "$user") || return $?
 		fpr=${fprs[0]}
 	fi
 
