@@ -1,17 +1,17 @@
 diff --git a/Makefile b/Makefile
-index fbabe96..e87251b 100644
+index 6e53e20..b2eaf31 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -14,7 +14,7 @@ bindir                ?= $(exec_prefix)/bin
- 
- BINDIR                := $(DESTDIR)$(bindir)
+@@ -17,7 +17,7 @@ BINDIR                := $(DESTDIR)$(bindir)
+ SVGDIR                := $(DESTDIR)$(datarootdir)/bash-libs/svg
+ SVG_TEMPLATES         := $(wildcard share/bash-libs/svg/*.svg)
  
 -GIT_DESCRIBE          := git describe --always -- main
 +GIT_DESCRIBE          := dpkg-parsechangelog --show-field Version
  DIRTY_BROKEN          := \(dirty\|broken\)
  COMMIT_COUNT          := \([1-9][0-9]*\)
  COMMIT_HASH           := \(g[0-9a-f]\+\)
-@@ -36,12 +36,10 @@ build:
+@@ -39,12 +39,10 @@ build:
  check_licenses:
  	RESULT=$$($(LICENCES_CHECKER) 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)
  

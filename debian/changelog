@@ -1,3 +1,15 @@
+bash-libs (0.3.11-1) unstable; urgency=medium
+
+  [ Mnème ]
+  * i18n: translate strings
+  * New action bl_pgpid_print(): business card + sticker generator
+
+  [ jjbrucker ]
+  * bl_pgpid_get(): rename for consitency "--local" → "--no-fetch" (keep retrocompat)
+  * bugfix: bl_pgpid_{get,email}(): remove duplicate output that occurs when a certificate is in many gpg keyrings
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Thu, 18 Jun 2026 11:29:05 +0200
+
 bash-libs (0.3.10-1) unstable; urgency=medium
 
   [ jjbrucker ]
