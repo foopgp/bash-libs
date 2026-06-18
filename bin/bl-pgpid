@@ -718,7 +718,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	$wkdcmd --homedir "$gpghome" $(grep -o --extended-regexp "$BL_INTERACTIVE_EMAIL_REGEX" <<<"${users[@]}") || true
 
 	local -a fprmboxs fprs
-	readarray -t fprmboxs < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction -- "${users[@]}")
+	readarray -t fprmboxs < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction -- "${users[@]}" | sort -u )
 	fprs=($(printf -- "%s\n" "${fprmboxs[@]%% *}" | sort -u))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for"" '%s'...\n" "$users" >&2 ; return 141 ;}
 	if ((onlyfpr)) ; then
@@ -1336,7 +1336,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		done
 	fi
 
-	gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | cut -d ' ' -f 2
+	gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | sort -u | cut -d ' ' -f 2
 	return $ret
 }
 
