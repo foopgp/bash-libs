@@ -39,6 +39,19 @@ if [[ "$1" == --bash-completion ]] ; then
 				compopt -o plusdirs
 				COMPREPLY=( $(compgen -A file -- $cur) )
 				return 0 ;;
+			-t|--template)
+				compopt -o plusdirs
+				COMPREPLY=( $(compgen -A file -X "!*.svg" -- $cur) )
+				return 0 ;;
+			--print|--printer)
+				# Path-shaped input (./ ../ ~ / or trailing .svg) → file completion ; else printer name
+				if [[ "$cur" == [/~.]* ]] ; then
+					compopt -o plusdirs
+					COMPREPLY=( $(compgen -A file -X "!*.svg" -- $cur) )
+				else
+					COMPREPLY=( $(compgen -W "$(LANG= lpstat -p 2>/dev/null | sed -n '"'"'s,^printer \([^ ]*\).*,\1,p'"'"')" -- $cur) )
+				fi
+				return 0 ;;
 			--homedir)
 				compopt -o plusdirs
 				COMPREPLY=( $(compgen -A directory -- $cur) )
@@ -87,6 +100,44 @@ declare -r BL_PGPID_N2_REGEX="${BL_PGPID_DATE_REGEX}${BL_PGPID_CO_REGEX}"							
 
 declare -r BL_PGPID_XUID_MIN=$((1<<18))
 declare -r BL_PGPID_XUID_MAX=$(((1<<31)-2))
+
+# Default sticker/stamp SVG template (85 × 25 mm, European business-card width).
+# Embedded inline so the default `bl-pgpid print` works without locating a file on disk.
+# A different template (typically a 85×55 mm business card) can be supplied via --template.
+# Placeholders are envsubst names: ${NAME} ${U4} ${FPR_LINE1} ${FPR_LINE2} ${EMAIL} ${QR_HREF}.
+declare -r BL_PGPID_STICKER_TEMPLATE='<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     version="1.1"
+     width="85mm" height="25mm"
+     viewBox="0 0 85 25">
+  <defs>
+    <style type="text/css"><![CDATA[
+      .card    { fill: #ffefea; stroke: #90462f; stroke-width: 0.35; }
+      .accent  { fill: #ff8012; }
+      .name    { font: italic bold 4.4px '\''DejaVu Sans'\'', sans-serif; fill: #1a1838; text-anchor: middle; }
+      .email   { font: italic bold 3.4px '\''DejaVu Sans'\'', sans-serif; fill: #1a1838; text-anchor: middle; }
+      .ident   { font: 2.4px '\''DejaVu Sans Mono'\'', monospace; fill: #1a1838; text-anchor: middle; }
+      .fpr     { font: bold 2.4px '\''DejaVu Sans Mono'\'', monospace; fill: #ff8012; letter-spacing: 0.2px; text-anchor: middle; }
+    ]]></style>
+  </defs>
+
+  <!-- Card background + top/bottom orange strips -->
+  <rect class="card"   x="0.5" y="0.5"  width="84" height="24"/>
+  <rect class="accent" x="0.5" y="0.5"  width="84" height="1.6" opacity="0.85"/>
+  <rect class="accent" x="0.5" y="22.9" width="84" height="1.6" opacity="0.85"/>
+
+  <!-- QR (data URI) — 20.8 × 20.8 mm, white quiet zone touches both orange strips -->
+  <image x="62.2" y="2.1" width="20.8" height="20.8" xlink:href="${QR_HREF}"/>
+
+  <!-- Text block (left of the QR, centered in [0..62.2]) -->
+  <text class="name"  x="31.1" y="6.5">${NAME}</text>
+  <text class="ident" x="31.1" y="10.5">${U4}</text>
+  <text class="fpr"   x="31.1" y="14.0">${FPR_LINE1}</text>
+  <text class="fpr"   x="31.1" y="17.0">${FPR_LINE2}</text>
+  <text class="email" x="31.1" y="21.5">${EMAIL}</text>
+</svg>
+'
 
 declare -Ar BL_PGPID_COORDINATES=(
 [ABW]="e_12.52-069.98 Aruba"
@@ -577,8 +628,8 @@ bl_pgpid_get() {
 OPTIONS:
   -F, --fingerprint           "$"Output only fingerprints""
   -E, --email                 "$"Output only emails""
-  -l, --local                 "$"Don't refresh certificates from keyservers or Web Key Directories""
-  -s, --secret                "$"Search through local secret keys instead of public certificate."" - "$"Imply --local""
+  -f, --no-fetch              "$"Don't refresh certificates from keyservers or Web Key Directories""
+  -s, --secret                "$"Search through local secret keys instead of public certificate."" - "$"Imply --no-fetch""
   -m, --errexit-g=1           "$"Return an error if there is more than one (1) entry."" - "$"You may replace '1' by an other number""
   -M, --max-from-keyserv MAX  "$"Set maximum matching certificates to receive from keyservers. "$"Default: ""$maxfromks
   -T, --ownertrust THRESHOLD  "$"Only output fingerprint with ownertrust greater or equal to THRESHOLD."" (Not implemented)
@@ -599,7 +650,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				onlyfpr=0 onlymbox=1 ;;
 			-s|--secret)
 				gpgaction="--list-secret-keys" ;&
-			-l|--local)
+			-l|-f|--local|--no-fetch)
 				wkdcmd="true"
 				keyservs=() ;;
 			-m|--errexit|--errexit-g)
@@ -667,7 +718,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	$wkdcmd --homedir "$gpghome" $(grep -o --extended-regexp "$BL_INTERACTIVE_EMAIL_REGEX" <<<"${users[@]}") || true
 
 	local -a fprmboxs fprs
-	readarray -t fprmboxs < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction -- "${users[@]}")
+	readarray -t fprmboxs < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction -- "${users[@]}" | sort -u )
 	fprs=($(printf -- "%s\n" "${fprmboxs[@]%% *}" | sort -u))
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for"" '%s'...\n" "$users" >&2 ; return 141 ;}
 	if ((onlyfpr)) ; then
@@ -1059,11 +1110,11 @@ bl_pgpid_avatar() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local tmpdir="/tmp/$FUNCNAME.$USER"
-	local usage=$"Usage:"" $name [OPTIONS]... [NAME|KEYID|U4|U5]"
+	local usage=$"Usage:"" $name [OPTIONS]... [NAME|EMAIL|KEYID|U4|U5]"
 	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 	local helpmsg="
 "$"Extract or add image inside OpenPGP certificate.""
-"$"Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
+"$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
 "$"New IMAGE should be 180x180 pixels, or it will be resized.""
 "$"Output path(s) of extracted image(s).""
 
@@ -1175,11 +1226,11 @@ $(printf -- "%80s\n" ${keyservs[@]})
 bl_pgpid_email() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... [NAME|KEYID|U4|U5]"
+	local usage="Usage: $name [OPTIONS]... [NAME|EMAIL|KEYID|U4|U5]"
 	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 	local helpmsg="
 "$"Display and add or revoke emails inside OpenPGP certificate.""
-"$"Missing NAME|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
+"$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
 "$"Output usable emails (non-revoked and non-expired).""
 
 OPTIONS:
@@ -1237,7 +1288,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	# Check that $user match only one certificate
 	local fprs
-	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --local -- "$user")) || return $?
+	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --no-fetch -- "$user")) || return $?
 	user=${fprs[0]}
 
 	if [[ "$torev" || "$toadd" ]] ; then
@@ -1285,7 +1336,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		done
 	fi
 
-	gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | cut -d ' ' -f 2
+	gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | sort -u | cut -d ' ' -f 2
 	return $ret
 }
 
@@ -1584,6 +1635,222 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	done
 	return $ret
 }
+
+_bl_pgpid_find_template() {
+	# Output first readable path for the given template basename, by trying:
+	#   $BL_PGPID_TEMPLATEDIR — explicit override, useful for tests
+	#   ../share/bash-libs/svg — relative to script (dev install)
+	#   XDG / system paths
+	local n=${1:?} d
+	for d in \
+		"${BL_PGPID_TEMPLATEDIR:-}" \
+		"$(dirname "$(readlink -f "$BASH_SOURCE")")/../share/bash-libs/svg" \
+		"${XDG_DATA_HOME:-$HOME/.local/share}/bash-libs/svg" \
+		/usr/local/share/bash-libs/svg \
+		/usr/share/bash-libs/svg ; do
+		[[ "$d" && -r "$d/$n" ]] || continue
+		printf -- "%s\n" "$d/$n"
+		return 0
+	done
+	return 1
+}
+
+bl_pgpid_print() (
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [NAME|EMAIL|KEYID|U4|U5]"
+	local helpmsg="
+"$"Produce or print an OpenPGP ID stamp or business card.""
+"$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
+"$"A single email appears on the output: if the argument is an email it is used verbatim; otherwise the most recent non-revoked email of the certificate is picked.""
+
+OPTIONS:
+  -P, --print PRINTER|FILE.svg  "$"Printer name to send to, or output SVG file if it ends with '.svg'""
+  -t, --template FILE.svg       "$"Use this template to produce business card (eg: …/share/bash-libs/svg/card.svg)""
+  -N, --usename NAME            "$"Override the displayed name""
+  -g, --no-color                "$"Output in grayscale instead of color""
+  -H, --homedir GNUPGHOME       "$"GnuPG home directory (default: ~/.gnupg). "$"Environment variable: ""\$GNUPGHOME
+"
+
+	local nocolor=0 print usename usetemplate
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	for ((;$#;)) ; do
+		case "$1" in
+			-P|--print|--printer)
+				shift ; print=$1 ;;
+			-t|--template)
+				shift ; usetemplate=${1:?} ;;
+			-g|--no-color|--gray|--grayscale)
+				nocolor=1 ;;
+			-N|--usename|--name)
+				shift ; usename=${1:?} ;;
+			-H|--homedir)
+				shift ; gpghome=${1:?} ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local tmpdir
+	tmpdir=$(mktemp --directory -t "$FUNCNAME".XXXXXX) || return $?
+	trap "rm -rf '$tmpdir'" EXIT
+
+	# Resolve user → fingerprint, and email
+	local user fpr email
+	if [[ "$1" ]] ; then
+		user=$1
+	else
+		local -A cardinfo
+		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
+		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} ||
+			user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome" --text $"Select certificate to print")
+	fi
+
+	if [[ "$user" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then
+		email=$user
+		# Identify the certificate by email, but only count those with a non-revoked uid for this email
+		local -a allfprs candidates=() f
+		mapfile -t allfprs < <(bl_pgpid_get --fingerprint --no-fetch --homedir "$gpghome" -- "$email" 2>/dev/null) || true
+		for f in "${allfprs[@]}" ; do
+			if gpg --homedir "$gpghome" --with-colons --list-keys "$f" 2>/dev/null |
+			   awk -F: -v EM="<$email>" '
+				/^pub:[^r]:/ { cert_ok=1; next }
+				/^pub:r/      { cert_ok=0; next }
+				/^uid:[^r]:/  { if (cert_ok && index($10, EM)) ok=1 }
+				END { exit !ok }
+			   ' ; then
+				candidates+=("$f")
+			fi
+		done
+		(( ${#candidates[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No usable certificate for %s.""\n" "$email" >&2 ; return 1 ; }
+		(( ${#candidates[@]} == 1 )) || { printf "$FUNCNAME: Error: "$"Email %s matches several non-revoked certificates (%d).""\n" "$email" "${#candidates[@]}" >&2 ; return 1 ; }
+		fpr=${candidates[0]}
+	else
+		local -a fprs
+		mapfile -t fprs < <(bl_pgpid_get --fingerprint --errexit-g=1 --no-fetch --homedir "$gpghome" -- "$user") || return $?
+		fpr=${fprs[0]}
+	fi
+
+	# Most-recent non-revoked email if not already set
+	if [[ -z "$email" ]] ; then
+		email=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null |
+			awk -F: '/^uid:[^r]:/ {
+				em = $10
+				if (em ~ /<[^>]+@[^>]+>/) {
+					sub(/.*</, "", em); sub(/>.*/, "", em)
+					print $6, em
+				}
+			}' | sort -rn -k1 | awk 'NR==1 {print $2}')
+		[[ "$email" ]] || { printf "$FUNCNAME: Error: "$"No usable (non-revoked) email in certificate %s.""\n" "$fpr" >&2 ; return 1 ; }
+		printf "$FUNCNAME: Notice: "$"Picking most recent email %s.""\n" "$email" >&2
+	fi
+
+	# Pretty name: --usename overrides ; otherwise pulled from the uid attached to that email, falling back to the local-part.
+	local pname=$usename
+	[[ "$pname" ]] || pname=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null |
+		awk -F: -v EM="<$email>" '/^uid:[^r]:/ {
+			if (index($10, EM)) {
+				n = $10
+				sub(/ *\([^)]*\) *<[^>]+>$/, "", n); sub(/ *<[^>]+>$/, "", n)
+				print n ; exit
+			}
+		}')
+	[[ "$pname" ]] || pname=${email%%@*}
+
+	# OpenPGP ID (u4 or u5), if present in the certificate
+	local pgpid
+	pgpid=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null |
+		sed -nE "s,.*4=?(${BL_PGPID_U4_REGEX}).*,u4=\\1,p ; s,.*5=?(${BL_PGPID_U5_REGEX}).*,u5=\\1,p" | sort -u | head -n1)
+
+	# Format fingerprint as 2 lines of 5 groups of 4 hex
+	local fprspaced fprline1 fprline2
+	fprspaced=$(sed -E 's,([0-9A-F]{4}),\1 ,g; s/ *$//' <<<"${fpr^^}")
+	fprline1=$(awk '{ for(i=1;i<=5;i++) printf "%s%s", $i, (i==5?"":" "); print "" }' <<<"$fprspaced")
+	fprline2=$(awk '{ for(i=6;i<=10;i++) printf "%s%s", $i, (i==10?"":" "); print "" }' <<<"$fprspaced")
+
+	# Resolve template:
+	#   no --template  → default inline sticker (single line in tmpdir)
+	#   --template FILE → use FILE if readable, else warn and fall back to card.svg
+	local template templatename
+	if [[ "$usetemplate" ]] ; then
+		if [[ -r "$usetemplate" ]] ; then
+			template=$usetemplate
+			templatename=$(basename -- "$usetemplate")
+		else
+			printf "$FUNCNAME: Warning: "$"Template %s is not readable, falling back to default card template.""\n" "$usetemplate" >&2
+			template=$(_bl_pgpid_find_template "card.svg") || {
+				printf "$FUNCNAME: Error: "$"SVG template %s not found.""\n" "card.svg" >&2 ; return 1
+			}
+			templatename="card.svg"
+		fi
+	else
+		template="$tmpdir/sticker.svg"
+		printf '%s' "$BL_PGPID_STICKER_TEMPLATE" > "$template" || return $?
+		templatename="sticker.svg"
+	fi
+
+	# QR code (sticker AND card — card embeds the sticker block verbatim).
+	# Links to keyserver index of this fingerprint.
+	# qrencode --margin=3: ~0.5 mm thicker visible quiet zone vs --margin=2.
+	local qrhref=""
+	local qrurl="https://keys.foopgp.org/pks/lookup?op=index&search=0x${fpr^^}"
+	qrencode --output "$tmpdir/qr.png" --margin=3 --size=8 --level=H -- "$qrurl" || return $?
+	qrhref="data:image/png;base64,$(base64 -w0 < "$tmpdir/qr.png")"
+
+	# Render template via envsubst (only substitute the names we own — avoid clobbering CSS ${...} should any appear)
+	local subtitle=$"Friends of OpenPGP"
+	NAME=$pname SUBTITLE=$subtitle U4=$pgpid \
+		FPR_LINE1=$fprline1 FPR_LINE2=$fprline2 \
+		EMAIL=$email QR_HREF=$qrhref \
+		envsubst '$NAME $SUBTITLE $U4 $FPR_LINE1 $FPR_LINE2 $EMAIL $QR_HREF' \
+		< "$template" > "$tmpdir/render.svg"
+
+	# Grayscale post-process by remapping the small palette used in the templates
+	if ((nocolor)) ; then
+		sed -i -E '
+			s,#ff8012,#666666,g
+			s,#90462f,#888888,g
+			s,#ffefea,#f0f0f0,g
+			s,#2c284b,#222222,g
+			s,#5d4ce6,#555555,g
+			s,#fafafa,#ffffff,g
+		' "$tmpdir/render.svg"
+	fi
+
+	# Output to file if asked
+	if [[ "$print" == *.svg ]] ; then
+		cp -- "$tmpdir/render.svg" "$print" || return $?
+		printf "$FUNCNAME: Notice: "$"Wrote SVG to %s.""\n" "$print" >&2
+		return 0
+	fi
+
+	# Else: render to PDF, multi-up on A4, send to printer
+	local printer=$print
+	if [[ -z "$printer" ]] ; then
+		local -a printers
+		printers=($(LANG= lpstat -p | sed -n 's,^printer \([^ ]*\).*,\1,p'))
+		[[ "${printers[0]}" ]] || { printf "%s: Error: "$"No printer detected.""\n" "$FUNCNAME" >&2 ; return 1 ; }
+		printer=$(bl_radiolist --output-value --default-value "$(lpstat -d | sed 's,.* ,,')" --num-per-line 1 --text $"Where to print ?" "${printers[@]}")
+	fi
+
+	rsvg-convert --format=pdf --output="$tmpdir/single.pdf" "$tmpdir/render.svg" || return $?
+
+	# A4 landscape: default sticker 85×25mm → 3×7 = 21/page ; with --template (card-shaped) → 3×3 = 9/page.
+	# pdfjam tiles ONE page per --nup slot, so duplicate single.pdf N times first.
+	local nup n i
+	[[ "$usetemplate" ]] && { nup="3x3" ; n=9 ; } || { nup="3x7" ; n=21 ; }
+	local -a copies=()
+	for ((i=0 ; i<n ; i++)) ; do copies+=("$tmpdir/single.pdf") ; done
+	pdfunite "${copies[@]}" "$tmpdir/duped.pdf" || return $?
+	pdfjam --quiet --paper a4paper --landscape --nup "$nup" --outfile "$tmpdir/page.pdf" "$tmpdir/duped.pdf" || return $?
+
+	printf "$FUNCNAME: Notice: "$"Printing %s on %s…""\n" "${templatename%.svg}" "$printer" >&2
+	lpr -P "$printer" "$tmpdir/page.pdf"
+)
 
 ### Init ###
 

@@ -44,6 +44,9 @@ if [[ "$1" == --bash-completion ]] ; then
 				compopt -o plusdirs
 				COMPREPLY=( $(compgen -A file -- $cur) )
 				return 0 ;;
+			--print|--printer)
+				COMPREPLY=( $(compgen -W "$(LANG= lpstat -p 2>/dev/null | sed -n '"'"'s,^printer \([^ ]*\).*,\1,p'"'"')" -- $cur) )
+				return 0 ;;
 			--homedir)
 				compopt -o plusdirs
 				COMPREPLY=( $(compgen -A directory -- $cur) )
