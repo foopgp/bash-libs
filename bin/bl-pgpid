@@ -115,10 +115,10 @@ declare -r BL_PGPID_STICKER_TEMPLATE='<?xml version="1.0" encoding="UTF-8" stand
     <style type="text/css"><![CDATA[
       .card    { fill: #ffefea; stroke: #90462f; stroke-width: 0.35; }
       .accent  { fill: #ff8012; }
-      .name    { font: italic bold 4.4px '\''DejaVu Sans'\'', sans-serif; fill: #1a1838; text-anchor: middle; }
+      .name    { font: italic bold 4.2px '\''DejaVu Sans'\'', sans-serif; fill: #1a1838; text-anchor: middle; }
       .email   { font: italic bold 3.4px '\''DejaVu Sans'\'', sans-serif; fill: #1a1838; text-anchor: middle; }
-      .ident   { font: 2.4px '\''DejaVu Sans Mono'\'', monospace; fill: #1a1838; text-anchor: middle; }
-      .fpr     { font: bold 2.4px '\''DejaVu Sans Mono'\'', monospace; fill: #ff8012; letter-spacing: 0.2px; text-anchor: middle; }
+      .ident   { font: 2.4px '\''DejaVu Sans Mono'\'', monospace; fill: #ff8012; text-anchor: middle; }
+      .fpr     { font: bold 2.4px '\''DejaVu Sans Mono'\'', monospace; fill: #080808; letter-spacing: 0.2px; text-anchor: middle; }
     ]]></style>
   </defs>
 
@@ -1604,7 +1604,8 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		local question=".... .... $(sed -E 's,(....),\1 ,g' <<<${fprs[$ifpr]:8:32})"
 		for ((;;)) ; do
 			rep=$(bl_input --default "$rep" --text "$txt" "$question") || return 140
-			targetfpr=$(sed "s,[^ABCDEF0-9],,g" <<<${rep^^} )${fprs[$ifpr]:8:32}
+			rep=$(sed "s,[^ABCDEF0-9],,g" <<<${rep^^} )
+			targetfpr="${rep:: 8}${fprs[$ifpr]:8:32}"
 			[[ ${#targetfpr} != 40 ]] || break
 			txt=$"Enter the first 8 hexadecimal characters of target's key fingerprint:"
 		done
@@ -1797,8 +1798,8 @@ OPTIONS:
 	# Links to keyserver index of this fingerprint.
 	# qrencode --margin=3: ~0.5 mm thicker visible quiet zone vs --margin=2.
 	local qrhref=""
-	local qrurl="https://keys.foopgp.org/pks/lookup?op=index&search=0x${fpr^^}"
-	qrencode --output "$tmpdir/qr.png" --margin=3 --size=8 --level=H -- "$qrurl" || return $?
+	local qrurl="https://keys.foopgp.org/pks/lookup?op=index&fingerprint=on&search=0x${fpr^^}"
+	qrencode --output "$tmpdir/qr.png" -- "$qrurl" || return $?
 	qrhref="data:image/png;base64,$(base64 -w0 < "$tmpdir/qr.png")"
 
 	# Render template via envsubst (only substitute the names we own — avoid clobbering CSS ${...} should any appear)
