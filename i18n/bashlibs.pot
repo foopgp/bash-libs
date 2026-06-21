@@ -40,7 +40,7 @@ msgstr ""
 #: ../bin/bl-pgpid:598 ../bin/bl-pgpid:676 ../bin/bl-pgpid:851
 #: ../bin/bl-pgpid:966 ../bin/bl-pgpid:1048 ../bin/bl-pgpid:1153
 #: ../bin/bl-pgpid:1273 ../bin/bl-pgpid:1388 ../bin/bl-pgpid:1559
-#: ../bin/bl-pgpid:1692 ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325
+#: ../bin/bl-pgpid:1693 ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325
 #: ../bin/bl-qif:420 ../bin/bl-qrkey:122 ../bin/bl-qrkey:148
 #: ../bin/bl-qrkey:267 ../bin/bl-qrkey:319 ../bin/bl-qrkey:407
 #: ../bin/bl-qrkey:550 ../bin/bl-qrkey:709 ../bin/bl-qrkey:903
@@ -66,7 +66,7 @@ msgstr ""
 #: ../bin/bl-pgpid:676 ../bin/bl-pgpid:851 ../bin/bl-pgpid:966
 #: ../bin/bl-pgpid:1048 ../bin/bl-pgpid:1153 ../bin/bl-pgpid:1273
 #: ../bin/bl-pgpid:1388 ../bin/bl-pgpid:1559 ../bin/bl-pgpid:1572
-#: ../bin/bl-pgpid:1692 ../bin/bl-pgpid:1902 ../bin/bl-qif:162
+#: ../bin/bl-pgpid:1693 ../bin/bl-pgpid:1903 ../bin/bl-qif:162
 #: ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420 ../bin/bl-qif:609
 #: ../bin/bl-qrkey:122 ../bin/bl-qrkey:148 ../bin/bl-qrkey:160
 #: ../bin/bl-qrkey:267 ../bin/bl-qrkey:319 ../bin/bl-qrkey:407
@@ -157,13 +157,13 @@ msgstr ""
 
 #: ../bin/bl-dji:523 ../bin/bl-djibian:431 ../bin/bl-foopgp:639
 #: ../bin/bl-interactive:495 ../bin/bl-json:361 ../bin/bl-markdown:273
-#: ../bin/bl-pgpid:1860 ../bin/bl-qrkey:1005 ../bin/bl-security:400
+#: ../bin/bl-pgpid:1861 ../bin/bl-qrkey:1005 ../bin/bl-security:400
 msgid "Show help and exit."
 msgstr ""
 
 #: ../bin/bl-dji:524 ../bin/bl-djibian:432 ../bin/bl-foopgp:640
 #: ../bin/bl-interactive:496 ../bin/bl-json:362 ../bin/bl-markdown:274
-#: ../bin/bl-pgpid:1861 ../bin/bl-qrkey:1006 ../bin/bl-security:401
+#: ../bin/bl-pgpid:1862 ../bin/bl-qrkey:1006 ../bin/bl-security:401
 msgid "Show version and exit."
 msgstr ""
 
@@ -177,7 +177,7 @@ msgstr ""
 
 #: ../bin/bl-dji:565 ../bin/bl-djibian:473 ../bin/bl-foopgp:681
 #: ../bin/bl-interactive:535 ../bin/bl-json:401 ../bin/bl-markdown:315
-#: ../bin/bl-pgpid:1902 ../bin/bl-qif:609 ../bin/bl-qrkey:1047
+#: ../bin/bl-pgpid:1903 ../bin/bl-qif:609 ../bin/bl-qrkey:1047
 #: ../bin/bl-security:440 ../bin/bl-test:198
 msgid "Unrecognized action"
 msgstr ""
@@ -192,7 +192,7 @@ msgid "Select a frontend program"
 msgstr ""
 
 #: ../bin/bl-djibian:93 ../bin/bl-interactive:87 ../bin/bl-interactive:88
-#: ../bin/bl-pgpid:397 ../bin/bl-pgpid:1672 ../bin/bl-qrkey:104
+#: ../bin/bl-pgpid:397 ../bin/bl-pgpid:1673 ../bin/bl-qrkey:104
 #: ../bin/bl-qrkey:249 ../bin/bl-qrkey:296 ../bin/bl-qrkey:374
 #: ../bin/bl-qrkey:518 ../bin/bl-qrkey:689 ../bin/bl-qrkey:864
 #: ../bin/bl-security:93
@@ -1096,7 +1096,7 @@ msgid "Search through local secret keys instead of public certificate."
 msgstr ""
 
 #: ../bin/bl-pgpid:632
-msgid "Imply --local"
+msgid "Imply --no-fetch"
 msgstr ""
 
 #: ../bin/bl-pgpid:633
@@ -1116,7 +1116,7 @@ msgid "Only output fingerprint with ownertrust greater or equal to THRESHOLD."
 msgstr ""
 
 #: ../bin/bl-pgpid:636 ../bin/bl-pgpid:1020 ../bin/bl-pgpid:1126
-#: ../bin/bl-pgpid:1242 ../bin/bl-pgpid:1359 ../bin/bl-pgpid:1672
+#: ../bin/bl-pgpid:1242 ../bin/bl-pgpid:1359 ../bin/bl-pgpid:1673
 msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr ""
 
@@ -1326,7 +1326,7 @@ msgstr ""
 msgid "Extract or add image inside OpenPGP certificate."
 msgstr ""
 
-#: ../bin/bl-pgpid:1117 ../bin/bl-pgpid:1233 ../bin/bl-pgpid:1664
+#: ../bin/bl-pgpid:1117 ../bin/bl-pgpid:1233 ../bin/bl-pgpid:1665
 msgid ""
 "Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or "
 "interactively ask KEYID of secret key."
@@ -1634,11 +1634,11 @@ msgstr ""
 msgid "No certificate for user"
 msgstr ""
 
-#: ../bin/bl-pgpid:1523 ../bin/bl-pgpid:1613
+#: ../bin/bl-pgpid:1523 ../bin/bl-pgpid:1614
 msgid "Self-certification is not innovative! ;-)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1524 ../bin/bl-pgpid:1614
+#: ../bin/bl-pgpid:1524 ../bin/bl-pgpid:1615
 msgid "Key fingerprint does not match."
 msgstr ""
 
@@ -1674,101 +1674,101 @@ msgstr ""
 msgid "Please verify and complete target's fingerprint:"
 msgstr ""
 
-#: ../bin/bl-pgpid:1609
+#: ../bin/bl-pgpid:1610
 msgid "Enter the first 8 hexadecimal characters of target's key fingerprint:"
 msgstr ""
 
-#: ../bin/bl-pgpid:1618
+#: ../bin/bl-pgpid:1619
 msgid "No uid. Certificate is probably corrupted."
 msgstr ""
 
-#: ../bin/bl-pgpid:1621 ../bin/bl-pgpid:1622 ../bin/bl-pgpid:1623
+#: ../bin/bl-pgpid:1622 ../bin/bl-pgpid:1623 ../bin/bl-pgpid:1624
 msgid "%s is non-sense, then ignored, when revoking."
 msgstr ""
 
-#: ../bin/bl-pgpid:1625
+#: ../bin/bl-pgpid:1626
 msgid ""
 "The sub-layer (%s) return no error, but it may have found nothing to revoke."
 msgstr ""
 
-#: ../bin/bl-pgpid:1628
+#: ../bin/bl-pgpid:1629
 msgid "Successfully sign %d '%s' inside certificate %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:1663
+#: ../bin/bl-pgpid:1664
 msgid "Produce or print an OpenPGP ID stamp or business card."
 msgstr ""
 
-#: ../bin/bl-pgpid:1665
+#: ../bin/bl-pgpid:1666
 msgid ""
 "A single email appears on the output: if the argument is an email it is used "
 "verbatim; otherwise the most recent non-revoked email of the certificate is "
 "picked."
 msgstr ""
 
-#: ../bin/bl-pgpid:1668
+#: ../bin/bl-pgpid:1669
 msgid "Printer name to send to, or output SVG file if it ends with '.svg'"
 msgstr ""
 
-#: ../bin/bl-pgpid:1669
+#: ../bin/bl-pgpid:1670
 msgid ""
 "Use this template to produce business card (eg: …/share/bash-libs/svg/"
 "card.svg)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1670
+#: ../bin/bl-pgpid:1671
 msgid "Override the displayed name"
 msgstr ""
 
-#: ../bin/bl-pgpid:1671
+#: ../bin/bl-pgpid:1672
 msgid "Output in grayscale instead of color"
 msgstr ""
 
-#: ../bin/bl-pgpid:1710
+#: ../bin/bl-pgpid:1711
 msgid "Select certificate to print"
 msgstr ""
 
-#: ../bin/bl-pgpid:1729
+#: ../bin/bl-pgpid:1730
 msgid "No usable certificate for %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:1730
+#: ../bin/bl-pgpid:1731
 msgid "Email %s matches several non-revoked certificates (%d)."
 msgstr ""
 
-#: ../bin/bl-pgpid:1748
+#: ../bin/bl-pgpid:1749
 msgid "No usable (non-revoked) email in certificate %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:1749
+#: ../bin/bl-pgpid:1750
 msgid "Picking most recent email %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:1784
+#: ../bin/bl-pgpid:1785
 msgid "Template %s is not readable, falling back to default card template."
 msgstr ""
 
-#: ../bin/bl-pgpid:1786
+#: ../bin/bl-pgpid:1787
 msgid "SVG template %s not found."
 msgstr ""
 
-#: ../bin/bl-pgpid:1805
+#: ../bin/bl-pgpid:1806
 msgid "Friends of OpenPGP"
 msgstr ""
 
-#: ../bin/bl-pgpid:1827
+#: ../bin/bl-pgpid:1828
 msgid "Wrote SVG to %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:1836
+#: ../bin/bl-pgpid:1837
 msgid "No printer detected."
 msgstr ""
 
-#: ../bin/bl-pgpid:1837
+#: ../bin/bl-pgpid:1838
 msgid "Where to print ?"
 msgstr ""
 
-#: ../bin/bl-pgpid:1851
+#: ../bin/bl-pgpid:1852
 msgid "Printing %s on %s…"
 msgstr ""
 

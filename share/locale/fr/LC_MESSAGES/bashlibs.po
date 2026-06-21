@@ -915,8 +915,8 @@ msgid "Search through local secret keys instead of public certificate."
 msgstr ""
 "Chercher dans les clés secrètes locales plutôt que dans le certificat public."
 
-msgid "Imply --local"
-msgstr "Implique --local"
+msgid "Imply --no-fetch"
+msgstr "Implique --no-fetch"
 
 msgid "Return an error if there is more than one (1) entry."
 msgstr "Retourner une erreur s’il y a plus d’une (1) entrée."

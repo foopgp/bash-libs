@@ -784,7 +784,7 @@ msgstr ""
 msgid "Search through local secret keys instead of public certificate."
 msgstr ""
 
-msgid "Imply --local"
+msgid "Imply --no-fetch"
 msgstr ""
 
 msgid "Return an error if there is more than one (1) entry."
