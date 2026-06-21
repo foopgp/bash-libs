@@ -163,10 +163,10 @@
     <style type="text/css"><![CDATA[
       .card    { fill: #ffefea; stroke: #90462f; stroke-width: 0.35; }
       .accent  { fill: #ff8012; }
-      .name    { font: italic bold 4.4px 'DejaVu Sans', sans-serif; fill: #1a1838; text-anchor: middle; }
+      .name    { font: italic bold 4.2px 'DejaVu Sans', sans-serif; fill: #1a1838; text-anchor: middle; }
       .email   { font: italic bold 3.4px 'DejaVu Sans', sans-serif; fill: #1a1838; text-anchor: middle; }
-      .ident   { font: 2.4px 'DejaVu Sans Mono', monospace; fill: #1a1838; text-anchor: middle; }
-      .fpr     { font: bold 2.4px 'DejaVu Sans Mono', monospace; fill: #ff8012; letter-spacing: 0.2px; text-anchor: middle; }
+      .ident   { font: 2.4px 'DejaVu Sans Mono', monospace; fill: #ff8012; text-anchor: middle; }
+      .fpr     { font: bold 2.4px 'DejaVu Sans Mono', monospace; fill: #080808; letter-spacing: 0.2px; text-anchor: middle; }
     ]]></style>
   </defs>
 
