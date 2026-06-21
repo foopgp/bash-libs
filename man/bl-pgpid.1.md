@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs 0.3.10
+footer: bash-libs 0.3.12
 ---
 
 # NAME
@@ -88,6 +88,10 @@ token_check
 certify
 
 :   Certify somebody else, identified by its OpenPGP ID TARGET_U4.
+
+print
+
+:   Produce or print an OpenPGP ID stamp or business card.
 
  
 All actions support a **\--help** option, eg: \$ bl-pgpid get
