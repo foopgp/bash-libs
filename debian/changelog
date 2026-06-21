@@ -1,3 +1,11 @@
+bash-libs (0.3.12-1) unstable; urgency=medium
+
+  * bl_pgpid_certify: improve UX when entering part of fingerprint
+  * bl_pgpid_print: Improve printed qrcode and include "&fingerprint=on" into the url
+  * bl_pgpid_print: Switch color as the important information is key fingerprint used to certify
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Sun, 21 Jun 2026 09:52:55 +0200
+
 bash-libs (0.3.11-1) unstable; urgency=medium
 
   [ Mnème ]
