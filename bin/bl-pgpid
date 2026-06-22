@@ -1238,13 +1238,14 @@ OPTIONS:
   -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options""
   -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL. "$"Default: "$"first part of email""
   -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL""
+  -c, --certs-count           "$"Also output the count of external valid certifications per email (tab-separated). If an email appears in several UIDs, only the maximum count is kept.""
   -v, --verbose               "$"Increase verbosity""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
   -K, --keyservers KEYSERVERS "$"If non-empty, send updated certificate to this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
-	local toadd torev pseudo extracomment
+	local toadd torev pseudo extracomment certscount=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local gpgfilter=false
 	for ((;$#;)) ; do
@@ -1259,6 +1260,8 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				shift ; pseudo=$1 ;;
 			-C|--extracomment|--extra-comment)
 				shift ; extracomment=" $1" ;;
+			-c|--certs-count|--certscount)
+				certscount=1 ;;
 			-k|--keyserver)
 				printf -- "$FUNCNAME: Warning: "$"Deprecated option"" '--keyserver' - "$"Please use %s instead.""\n" "'--keyservers'" >&2
 				;&
@@ -1336,7 +1339,43 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		done
 	fi
 
-	gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | sort -u | cut -d ' ' -f 2
+	if ((certscount)) ; then
+		# For each usable (non-revoked, non-expired) UID, count the sig packets
+		# that gpg marked valid (`!`) and whose issuer keyid differs from the
+		# certificate's own keyid (= self-signature). If the same email appears
+		# on several UIDs, keep the maximum across them — the user only cares
+		# how well-vouched the address is, not how many redundant UIDs carry it.
+		# --check-sigs (not --list-sigs) so gpg actually verifies each signature
+		# and tags it with `!` when the signer's public key is in the keyring
+		# and the signature is cryptographically correct. Untaggable sigs
+		# ('?' = unknown signer, '-' = bad sig, '%' = error) don't count.
+		gpg --homedir "$gpghome" --with-colons --check-sigs "$user" 2>/dev/null |
+			awk -F: -v owner="${user: -16}" '
+				function flush_uid(    e, c) {
+					e = cur_email ; c = cur_count
+					if (e != "" && (! (e in best) || c > best[e])) best[e] = c
+				}
+				/^uid:[^re]:/ {
+					flush_uid()
+					cur_count = 0 ; cur_email = ""
+					if (match($10, /<[^>]+>/)) cur_email = substr($10, RSTART + 1, RLENGTH - 2)
+					next
+				}
+				/^(uid|uat):/ {  # revoked/expired uid or uat (photo) — stop counting until next usable uid
+					flush_uid()
+					cur_count = 0 ; cur_email = ""
+					next
+				}
+				/^sig:!::/ {
+					if (cur_email != "" && $5 != owner) cur_count++
+				}
+				END {
+					flush_uid()
+					for (e in best) printf "%s\t%d\n", e, best[e]
+				}' | sort -u
+	else
+		gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | sort -u | cut -d ' ' -f 2
+	fi
 	return $ret
 }
 
