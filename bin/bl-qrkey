@@ -891,7 +891,7 @@ OPTIONS:
 			-L|--lang)
 				shift ; lang=$(sed -nE ' s,.*([A-Za-z]{2}).*,\L\1,p ' <<<"${1:: 2}") ;;
 			-N|--name)
-				shift ; username="${1//[^0-9a-zA-Z ._-]/}" ;;
+				shift ; username=" # ${1//[^[:print:]]/}" ;;
 			-K|--pubkey)
 				shift ; pubkeyfile="$1" ;;
 			-v|--verbose) gpgfilter="cat" ;;
@@ -964,7 +964,7 @@ OPTIONS:
 
 	printf "%s: Notice: Configuring OpenPGP security token...\n" "$FUNCNAME" >&2
 
-	echo -e "admin\nlogin\n${ids[0]:-${emails[0]}}\nurl\n${certurl}\nlang\n$lang\nname\n${emails[0]}\n${username}\n" | \
+	echo -e "admin\nlogin\n${ids[0]:-${emails[0]}}${username}\nurl\n${certurl}\nlang\n$lang\nname\n${emails[0]}\n\n" | \
 	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" >&2 ; return 1 ;}
 
 	echo -e "admin\nkey-attr\n2\n1\n2\n1\n2\n1\nquit" | \

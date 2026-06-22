@@ -1434,6 +1434,10 @@ OPTIONS:
 				# remove first eventual email
 				aaname[pgpid_name]=$(sed --regexp-extended "s,${BL_INTERACTIVE_EMAIL_REGEX},, ; s, *$,, ; s,^ *,," <<<"${aaname[pgpid_name]}")
 			fi
+		elif [[ "$line" =~ ^Login\ data[^#]+\ #\ (.*)  ]] ; then
+			# DO 5E (field « Login data ») allow 254 bytes of any character. Best place to store long UTF-8 name (already after the u4/u5 and a magic " # ").
+		    # Note that `gpg --card-status` always output « Login data » after « Name of cardholder » ⇒ if an name is here, previous aaname[pgpid_name] is overwrited   
+			aaname[pgpid_name]=${BASH_REMATCH[1]}
 		elif [[ "$line" =~ ^Signature\ key ]] ; then
 			aaname[pgpid_Skeyfpr]=$(sed --regexp-extended --silent ' { s, ,,g ; s,.*([ABCDEF0-9]{40}).*,\1,p } ' <<<"${line}")
 		elif [[ "$line" =~ ^Encryption\ key ]] ; then
@@ -1668,7 +1672,7 @@ bl_pgpid_print() (
 OPTIONS:
   -P, --print PRINTER|FILE.svg  "$"Printer name to send to, or output SVG file if it ends with '.svg'""
   -t, --template FILE.svg       "$"Use this template to produce business card (eg: …/share/bash-libs/svg/card.svg)""
-  -N, --usename NAME            "$"Override the displayed name""
+  -N, --name NAME               "$"Override the displayed name"$" (default: guessed from OpenPGP certificate and email)""
   -g, --no-color                "$"Output in grayscale instead of color""
   -H, --homedir GNUPGHOME       "$"GnuPG home directory (default: ~/.gnupg). "$"Environment variable: ""\$GNUPGHOME
 "
@@ -1750,7 +1754,7 @@ OPTIONS:
 		printf "$FUNCNAME: Notice: "$"Picking most recent email %s.""\n" "$email" >&2
 	fi
 
-	# Pretty name: --usename overrides ; otherwise pulled from the uid attached to that email, falling back to the local-part.
+	# Pretty name: --name overrides ; otherwise pulled from the uid attached to that email, falling back to the local-part.
 	local pname=$usename
 	[[ "$pname" ]] || pname=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null |
 		awk -F: -v EM="<$email>" '/^uid:[^r]:/ {
