@@ -1436,7 +1436,7 @@ OPTIONS:
 			fi
 		elif [[ "$line" =~ ^Login\ data[^#]+\ #\ (.*)  ]] ; then
 			# DO 5E (field « Login data ») allow 254 bytes of any character. Best place to store long UTF-8 name (already after the u4/u5 and a magic " # ").
-		    # Note that `gpg --card-status` always output « Login data » after « Name of cardholder » ⇒ if an name is here, previous aaname[pgpid_name] is overwrited   
+		    # Note that `gpg --card-status` always outputs « Login data » after « Name of cardholder » ⇒ if a name is here, the previous aaname[pgpid_name] is overwritten.
 			aaname[pgpid_name]=${BASH_REMATCH[1]}
 		elif [[ "$line" =~ ^Signature\ key ]] ; then
 			aaname[pgpid_Skeyfpr]=$(sed --regexp-extended --silent ' { s, ,,g ; s,.*([ABCDEF0-9]{40}).*,\1,p } ' <<<"${line}")

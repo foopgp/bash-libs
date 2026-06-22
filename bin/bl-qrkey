@@ -891,7 +891,10 @@ OPTIONS:
 			-L|--lang)
 				shift ; lang=$(sed -nE ' s,.*([A-Za-z]{2}).*,\L\1,p ' <<<"${1:: 2}") ;;
 			-N|--name)
-				shift ; username=" # ${1//[^[:print:]]/}" ;;
+				# Force the locale so [:print:] keeps UTF-8 letters (in the C
+				# locale it collapses to ASCII 0x20-0x7E and would strip accents
+				# silently from any user whose shell isn't already *.UTF-8).
+				shift ; username=" # $(LC_CTYPE=C.UTF-8 sed 's,[^[:print:]],,g' <<<"$1")" ;;
 			-K|--pubkey)
 				shift ; pubkeyfile="$1" ;;
 			-v|--verbose) gpgfilter="cat" ;;
