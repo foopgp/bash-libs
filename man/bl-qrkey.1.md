@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-QRKEY
 section: 1
 header: User Commands
-footer: bash-libs 0.3.12
+footer: bash-libs 0.3.13
 ---
 
 # NAME
@@ -58,6 +58,10 @@ token_retries
 change_passphrase
 
 :   Change GnuPG passphrase protecting secret parts of an OpenPGP key.
+
+change_token_meta
+
+:   Change a textual metadata of a security token (OpenPGP smartcard).
 
 change_token_code
 

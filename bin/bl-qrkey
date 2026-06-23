@@ -353,6 +353,132 @@ OPTIONS:
 	return 0
 }
 
+bl_qrkey_change_token_meta() {
+	local name
+	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [NEW_METADATA]"
+	local helpmsg="
+"$"Change a textual metadata of a security token (OpenPGP smartcard).""
+"$"By default, change the cardholder pseudonym (stored in « Login data », UTF-8, up to ~210 bytes), beside the OpenPGP Entity ID (u4=… or u5=…).""
+"$"Missing input will be asked interactively.""
+
+OPTIONS:
+  -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
+  -A, --admincode CODE         "$"Admin code (usually 8 digits) protecting writes to security token metadata""
+  -p, --admincodefrom FILE     "$"Get admin code from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin)
+  -E, --email                  "$"Change « Name of cardholder » instead, verifying the email is present (non-revoked) in the certificate.""
+  -U, --certurl                "$"Change « URL of public key » instead, verifying the URL returns a certificate that holds the public counterparts of the token's three private subkeys (revoked and expired subkeys are accepted).""
+"
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local admincode admincodegiven newmeta
+	local subcmd="login"
+	for ((;$#;)) ; do
+		case "$1" in
+			-H|--homedir)
+				shift ; gpghome=${1:?} ;;
+			-A|--admincode|--admin-code|--code)
+				shift ; admincodegiven=true ; admincode=$1 ;;
+			-p|--admincodefrom|--admin-code-from|--codefrom|--code-from)
+				shift ; admincodegiven=true ; admincode=$( head -n 1 < "$1" ) || return 1 ;;
+			-E|--email)
+				[[ "$subcmd" == "url" ]] && printf "$FUNCNAME: Warning: "$"--email and --certurl are mutually exclusive; keeping the last one"" (--email).\n" >&2
+				subcmd="name" ;;
+			-U|--certurl|--url)
+				[[ "$subcmd" == "name" ]] && printf "$FUNCNAME: Warning: "$"--email and --certurl are mutually exclusive; keeping the last one"" (--certurl).\n" >&2
+				subcmd="url" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	newmeta=${1-}
+
+	# Pull token state — fingerprints (to verify --certurl), current login data
+	# (to preserve the eid prefix when changing the name), and the cardholder
+	# email (used as the default --email argument if user forgets it).
+	local -A tinfo
+	bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname tinfo || true
+	[[ "${tinfo[token_MSN]}" ]] || { printf "$FUNCNAME: Error: "$"No security token detected.""\n" >&2 ; return 1 ;}
+
+	# Build the value to write into the chosen DO
+	case "$subcmd" in
+		login)
+			[[ "$newmeta" ]] || newmeta=$(bl_input --text $"(UTF-8, up to ~210 chars)" $"New cardholder pseudonym")
+			[[ "$newmeta" ]] || { printf "$FUNCNAME: Error: "$"Empty pseudonym, nothing to do.""\n" >&2 ; return 2 ;}
+			# DO 5E content is "<eid> # <pseudonym>" by convention (cf. c3a8dd2 on bash-libs main). Pull the current login data and slice off
+			# everything starting at the magic " # " separator, then re-append the new pseudonym. If no eid is currently stored, fall back to
+			# the empty prefix — the magic separator still lets readers spot the pseudonym.
+			local current_login eid_prefix
+			current_login=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status 2>/dev/null |
+				sed -nE 's,^Login data\.+: ,,p')
+			[[ "$current_login" == "[not set]" ]] && current_login=""
+			eid_prefix=${current_login%% # *}
+			newmeta="${eid_prefix} # $(LC_CTYPE=C.UTF-8 sed 's,[^[:print:]],,g' <<<"$newmeta")"
+			;;
+		name)
+			[[ "$newmeta" ]] || newmeta=$(bl_input --text $"(ASCII only, up to 38 chars)" $"New cardholder email")
+			[[ "$newmeta" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "$FUNCNAME: Error: "$"Invalid email"" '%s'.\n" "$newmeta" >&2 ; return 2 ;}
+			# GnuPG caps DO 5B at 38 chars in `gpg --card-edit` (the spec allows 39 — cf. draft-foopgp-openpgp-id-00 § 6.4.1).
+			# Catch the overflow here with a clear message rather than let card-edit fail opaquely.
+			((${#newmeta} <= 38)) || { printf "$FUNCNAME: Error: "$"Email '%s' exceeds 38 bytes (current GnuPG cap on DO 5B; spec allows 39).""\n" "$newmeta" >&2 ; return 2 ;}
+			# Verify that the email actually exists (non-revoked) in the certificate matching the token's signing key. bl_pgpid_email
+			# without --add/--revoke prints one email per line, restricted to usable (non-revoked, non-expired) UIDs.
+			local cert_emails
+			cert_emails=$(bl_pgpid_email --homedir "$gpghome" -- "${tinfo[pgpid_Skeyfpr]}" 2>/dev/null) ||
+				{ printf "$FUNCNAME: Error: "$"Can't list emails of token's certificate.""\n" >&2 ; return 1 ;}
+			grep -qFx "$newmeta" <<<"$cert_emails" ||
+				{ printf "$FUNCNAME: Error: "$"%s is not a usable email of the token's certificate.""\n" "$newmeta" >&2 ; return 1 ;}
+			;;
+		url)
+			[[ "$newmeta" ]] || newmeta=$(bl_input $"New URL to retrieve cardholder public certificate")
+			[[ "$newmeta" =~ ^https?:// ]] || { printf "$FUNCNAME: Error: "$"--certurl must be an http(s) URL"" ('%s').\n" "$newmeta" >&2 ; return 2 ;}
+			# Fetch the URL into a throw-away keyring, then verify the imported cert holds each of the token's three private subkey fingerprints.
+			# Revoked / expired subkeys are accepted (the user may legitimately want to point at an archived cert) — only presence is required.
+			local tmpring
+			tmpring=$(mktemp --tmpdir --directory "$FUNCNAME".XXXXXX) || return 1
+			trap "rm -rf '$tmpring'" RETURN
+			curl --fail --silent --show-error --location "$newmeta" 2>/tmp/.curl.err |
+				gpg --homedir "$tmpring" --batch --import 2>/dev/null ||
+				{ printf "$FUNCNAME: Error: "$"Can't fetch a usable certificate from %s.""\n" "$newmeta" >&2 ; cat /tmp/.curl.err >&2 ; return 1 ;}
+			local cert_fprs missing=()
+			cert_fprs=$(gpg --homedir "$tmpring" --with-colons --with-fingerprint --list-keys |
+				sed -nE 's,^fpr:::::::::([A-F0-9]+):.*,\1,p')
+			local k fpr
+			for k in S E A ; do
+				fpr=${tinfo[pgpid_${k}keyfpr]}
+				[[ "$fpr" ]] || continue
+				grep -qFx "$fpr" <<<"$cert_fprs" || missing+=("$k=$fpr")
+			done
+			if ((${#missing[@]})) ; then
+				printf "$FUNCNAME: Error: "$"Certificate at %s doesn't hold the token's subkeys: %s.""\n" "$newmeta" "${missing[*]}" >&2
+				return 1
+			fi
+			;;
+	esac
+
+	# Admin code (PW3) is required to write any of these DOs
+	[[ "$admincodegiven" ]] || admincode=$(bl_input --password --text $"(usually 8 digits)" $"Admin code")
+	[[ "$admincode" =~ ^[0-9]{8,}$ ]] || printf "$FUNCNAME: Warning: "$"Admin code shorter than 8 digits.""\n" >&2
+
+	# Pilot gpg --card-edit. For the "name" sub-command, gpg asks first for the surname then for the given names — we shove the whole value into surname.
+	local commands
+	case "$subcmd" in
+		login|url) commands="admin\n${subcmd}\n${newmeta}\nquit\n" ;;
+		name)      commands="admin\nname\n${newmeta}\n\nquit\n" ;;
+	esac
+
+	echo -e "$commands" |
+		gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback \
+			--passphrase "$admincode" --card-edit 2> >(grep ^gpg) ||
+		{ printf "$FUNCNAME: Error: "$"gpg --card-edit failed — wrong Admin code?""\n" >&2 ; return 1 ;}
+
+	printf "$FUNCNAME: Notice: "$"Wrote new value into the security token.""\n" >&2
+}
+
 # gpg (GnuPG) 2.4.7 --batch can't do it, then we send direct APDU through gpg-connect-agent, see:
 #   - https://foopgp.org/blog/2014-08-21-openpgp-card-une-application-cryptographique-pour-carte-a-puce/#communiquer-avec-scdaemon-et-la-carte
 #   - https://g10code.com/docs/openpgp-card-2.0.pdf
@@ -422,7 +548,7 @@ OPTIONS:
 		return 1
 	fi
 
-	[[ "$ccodegiven" ]] || ccode=$(bl_input --password --text "(usually: $lPW digits)" "Current $ctype code")
+	[[ "$ccodegiven" ]] || ccode=$(bl_input --password --text "(usually $lPW digits)" "Current $ctype code")
 
 	[[ "$ccode" =~ ^[0-9]{$lPW}$ ]] || printf "$FUNCNAME: Warning: "$"Given %s code doesn't match %d digits.""\n" "$ctype" "$lPW" >&2
 
@@ -891,7 +1017,10 @@ OPTIONS:
 			-L|--lang)
 				shift ; lang=$(sed -nE ' s,.*([A-Za-z]{2}).*,\L\1,p ' <<<"${1:: 2}") ;;
 			-N|--name)
-				shift ; username="${1//[^0-9a-zA-Z ._-]/}" ;;
+				# Force the locale so [:print:] keeps UTF-8 letters (in the C
+				# locale it collapses to ASCII 0x20-0x7E and would strip accents
+				# silently from any user whose shell isn't already *.UTF-8).
+				shift ; username=" # $(LC_CTYPE=C.UTF-8 sed 's,[^[:print:]],,g' <<<"$1")" ;;
 			-K|--pubkey)
 				shift ; pubkeyfile="$1" ;;
 			-v|--verbose) gpgfilter="cat" ;;
@@ -964,7 +1093,7 @@ OPTIONS:
 
 	printf "%s: Notice: Configuring OpenPGP security token...\n" "$FUNCNAME" >&2
 
-	echo -e "admin\nlogin\n${ids[0]:-${emails[0]}}\nurl\n${certurl}\nlang\n$lang\nname\n${emails[0]}\n${username}\n" | \
+	echo -e "admin\nlogin\n${ids[0]:-${emails[0]}}${username}\nurl\n${certurl}\nlang\n$lang\nname\n${emails[0]}\n\n" | \
 	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" >&2 ; return 1 ;}
 
 	echo -e "admin\nkey-attr\n2\n1\n2\n1\n2\n1\nquit" | \

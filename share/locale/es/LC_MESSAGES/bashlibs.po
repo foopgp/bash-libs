@@ -784,7 +784,7 @@ msgstr ""
 msgid "Search through local secret keys instead of public certificate."
 msgstr ""
 
-msgid "Imply --local"
+msgid "Imply --no-fetch"
 msgstr ""
 
 msgid "Return an error if there is more than one (1) entry."
@@ -1032,6 +1032,12 @@ msgstr ""
 msgid "(Free to use part of) comment beside new EMAIL"
 msgstr ""
 
+msgid ""
+"Also output the count of external valid certifications per email (tab-"
+"separated). If an email appears in several UIDs, only the maximum count is "
+"kept."
+msgstr ""
+
 msgid "Increase verbosity"
 msgstr ""
 
@@ -1260,6 +1266,9 @@ msgstr ""
 msgid "Override the displayed name"
 msgstr ""
 
+msgid " (default: guessed from OpenPGP certificate and email)"
+msgstr ""
+
 msgid "Output in grayscale instead of color"
 msgstr ""
 
@@ -1387,6 +1396,90 @@ msgid "Passphrase unchanged."
 msgstr ""
 
 msgid "Passphrase successfully changed."
+msgstr ""
+
+msgid "Change a textual metadata of a security token (OpenPGP smartcard)."
+msgstr ""
+
+msgid ""
+"By default, change the cardholder pseudonym (stored in « Login data », "
+"UTF-8, up to ~210 bytes), beside the OpenPGP Entity ID (u4=… or u5=…)."
+msgstr ""
+
+msgid ""
+"Admin code (usually 8 digits) protecting writes to security token metadata"
+msgstr ""
+
+msgid "Get admin code from first line of FILE"
+msgstr ""
+
+msgid ""
+"Change « Name of cardholder » instead, verifying the email is present (non-"
+"revoked) in the certificate."
+msgstr ""
+
+msgid ""
+"Change « URL of public key » instead, verifying the URL returns a "
+"certificate that holds the public counterparts of the token's three private "
+"subkeys (revoked and expired subkeys are accepted)."
+msgstr ""
+
+msgid "--email and --certurl are mutually exclusive; keeping the last one"
+msgstr ""
+
+msgid "No security token detected."
+msgstr ""
+
+msgid "(UTF-8, up to ~210 chars)"
+msgstr ""
+
+msgid "New cardholder pseudonym"
+msgstr ""
+
+msgid "Empty pseudonym, nothing to do."
+msgstr ""
+
+msgid "(ASCII only, up to 38 chars)"
+msgstr ""
+
+msgid "New cardholder email"
+msgstr ""
+
+msgid ""
+"Email '%s' exceeds 38 bytes (current GnuPG cap on DO 5B; spec allows 39)."
+msgstr ""
+
+msgid "Can't list emails of token's certificate."
+msgstr ""
+
+msgid "%s is not a usable email of the token's certificate."
+msgstr ""
+
+msgid "New URL to retrieve cardholder public certificate"
+msgstr ""
+
+msgid "--certurl must be an http(s) URL"
+msgstr ""
+
+msgid "Can't fetch a usable certificate from %s."
+msgstr ""
+
+msgid "Certificate at %s doesn't hold the token's subkeys: %s."
+msgstr ""
+
+msgid "(usually 8 digits)"
+msgstr ""
+
+msgid "Admin code"
+msgstr ""
+
+msgid "Admin code shorter than 8 digits."
+msgstr ""
+
+msgid "gpg --card-edit failed — wrong Admin code?"
+msgstr ""
+
+msgid "Wrote new value into the security token."
 msgstr ""
 
 msgid ""
