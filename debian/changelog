@@ -1,8 +1,23 @@
+bash-libs (0.3.13-1) unstable; urgency=medium
+
+  [ Mnème ]
+  * bl-pgpid: country names in native language/script (purely descriptive)
+  * bl-qrkey: new bl_qrkey_change_token_meta() action
+  * bl_pgpid_email(): new -c/--certs-count flag
+  * i18n: refresh .pot + fr translation
+
+  [ jjbrucker ]
+  * bl_qrkey_totoken() & bl_pgpid_token_check(): move optionnal username from «name» field to «login» field to push size limits and allow UTF-8
+  * bl_pgpid_email(): improve default trace + fix some trace output stdout → stderr
+  * bl_qrkey_change_token_meta(): refactor + 38-byte guard on --email
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Tue, 23 Jun 2026 14:31:18 +0200
+
 bash-libs (0.3.12-1) unstable; urgency=medium
 
-  * bl_pgpid_certify: improve UX when entering part of fingerprint
-  * bl_pgpid_print: Improve printed qrcode and include "&fingerprint=on" into the url
-  * bl_pgpid_print: Switch color as the important information is key fingerprint used to certify
+  * bl_pgpid_certify(): improve UX when entering part of fingerprint
+  * bl_pgpid_print(): Improve printed qrcode and include "&fingerprint=on" into the url
+  * bl_pgpid_print(): Switch color as the important information is key fingerprint used to certify
 
  -- jjbrucker <jjbrucker@foopgp.org>  Sun, 21 Jun 2026 09:52:55 +0200
 
