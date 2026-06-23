@@ -356,24 +356,22 @@ OPTIONS:
 bl_qrkey_change_token_meta() {
 	local name
 	((BL_QRKEY_isprogram)) && name="$BL_QRKEY_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... [NEW_NAME]"
+	local usage="Usage: $name [OPTIONS]... [NEW_METADATA]"
 	local helpmsg="
 "$"Change a textual metadata of a security token (OpenPGP smartcard).""
-"$"By default, change the cardholder pseudonym stored in DO 5E « Login data » (UTF-8, up to 254 bytes), keeping the OpenPGP ID prefix (u4=… or u5=…) intact.""
-"$"With --email, change DO 5B « Name of cardholder » instead, after verifying the email is present (non-revoked) in the certificate.""
-"$"With --certurl, change DO 5F50 « URL of public key » instead, after verifying the URL returns a certificate that holds the public counterparts of the token's three private subkeys (revoked and expired subkeys are accepted).""
+"$"By default, change the cardholder pseudonym (stored in « Login data », UTF-8, up to ~210 bytes), beside the OpenPGP Entity ID (u4=… or u5=…).""
 "$"Missing input will be asked interactively.""
 
 OPTIONS:
   -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
-  -A, --admincode CODE         "$"Admin code (8 digits) protecting writes to the security token""
+  -A, --admincode CODE         "$"Admin code (usually 8 digits) protecting writes to security token metadata""
   -p, --admincodefrom FILE     "$"Get admin code from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin)
-  -E, --email NEW_EMAIL        "$"Write NEW_EMAIL into DO 5B (Name of cardholder)"" - "$"mutually exclusive with --certurl""
-  -U, --certurl NEW_URL        "$"Write NEW_URL into DO 5F50 (URL of public key)"" - "$"mutually exclusive with --email""
+  -E, --email                  "$"Change « Name of cardholder » instead, verifying the email is present (non-revoked) in the certificate.""
+  -U, --certurl                "$"Change « URL of public key » instead, verifying the URL returns a certificate that holds the public counterparts of the token's three private subkeys (revoked and expired subkeys are accepted).""
 "
 	local gpghome=${GNUPGHOME:-~/.gnupg}
-	local admincode admincodegiven newname newemail newcerturl
-	local mode=""
+	local admincode admincodegiven newmeta
+	local subcmd="login"
 	for ((;$#;)) ; do
 		case "$1" in
 			-H|--homedir)
@@ -383,13 +381,11 @@ OPTIONS:
 			-p|--admincodefrom|--admin-code-from|--codefrom|--code-from)
 				shift ; admincodegiven=true ; admincode=$( head -n 1 < "$1" ) || return 1 ;;
 			-E|--email)
-				shift ; newemail=$1
-				[[ "$mode" == "certurl" ]] && printf "$FUNCNAME: Warning: "$"--email and --certurl are mutually exclusive; keeping the last one (--email).""\n" >&2
-				mode="email" ;;
+				[[ "$subcmd" == "url" ]] && printf "$FUNCNAME: Warning: "$"--email and --certurl are mutually exclusive; keeping the last one"" (--email).\n" >&2
+				subcmd="name" ;;
 			-U|--certurl|--url)
-				shift ; newcerturl=$1
-				[[ "$mode" == "email" ]] && printf "$FUNCNAME: Warning: "$"--email and --certurl are mutually exclusive; keeping the last one (--certurl).""\n" >&2
-				mode="certurl" ;;
+				[[ "$subcmd" == "name" ]] && printf "$FUNCNAME: Warning: "$"--email and --certurl are mutually exclusive; keeping the last one"" (--certurl).\n" >&2
+				subcmd="url" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -399,8 +395,7 @@ OPTIONS:
 		shift
 	done
 
-	[[ "$mode" ]] || mode="name"
-	[[ "$mode" != "name" ]] || newname=${1-}
+	newmeta=${1-}
 
 	# Pull token state — fingerprints (to verify --certurl), current login data
 	# (to preserve the eid prefix when changing the name), and the cardholder
@@ -410,51 +405,45 @@ OPTIONS:
 	[[ "${tinfo[token_MSN]}" ]] || { printf "$FUNCNAME: Error: "$"No security token detected.""\n" >&2 ; return 1 ;}
 
 	# Build the value to write into the chosen DO
-	local subcmd new_value
-	case "$mode" in
-		name)
-			[[ "$newname" ]] || newname=$(bl_input --text $"(UTF-8, up to ~250 chars)" $"New cardholder pseudonym")
-			[[ "$newname" ]] || { printf "$FUNCNAME: Error: "$"Empty pseudonym, nothing to do.""\n" >&2 ; return 2 ;}
-			# DO 5E content is "<eid> # <pseudonym>" by convention (cf. c3a8dd2 on
-			# bash-libs main). Pull the current login data and slice off
-			# everything starting at the magic " # " separator, then re-append
-			# the new pseudonym. If no eid is currently stored, fall back to
-			# the empty prefix — the magic separator still lets readers spot
-			# the pseudonym.
+	case "$subcmd" in
+		login)
+			[[ "$newmeta" ]] || newmeta=$(bl_input --text $"(UTF-8, up to ~210 chars)" $"New cardholder pseudonym")
+			[[ "$newmeta" ]] || { printf "$FUNCNAME: Error: "$"Empty pseudonym, nothing to do.""\n" >&2 ; return 2 ;}
+			# DO 5E content is "<eid> # <pseudonym>" by convention (cf. c3a8dd2 on bash-libs main). Pull the current login data and slice off
+			# everything starting at the magic " # " separator, then re-append the new pseudonym. If no eid is currently stored, fall back to
+			# the empty prefix — the magic separator still lets readers spot the pseudonym.
 			local current_login eid_prefix
 			current_login=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status 2>/dev/null |
 				sed -nE 's,^Login data\.+: ,,p')
 			[[ "$current_login" == "[not set]" ]] && current_login=""
 			eid_prefix=${current_login%% # *}
-			new_value="${eid_prefix} # $(LC_CTYPE=C.UTF-8 sed 's,[^[:print:]],,g' <<<"$newname")"
-			subcmd="login"
+			newmeta="${eid_prefix} # $(LC_CTYPE=C.UTF-8 sed 's,[^[:print:]],,g' <<<"$newmeta")"
 			;;
-		email)
-			[[ "$newemail" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "$FUNCNAME: Error: "$"Invalid email"" '%s'.\n" "$newemail" >&2 ; return 2 ;}
-			# Verify that the email actually exists (non-revoked) in the
-			# certificate matching the token's signing key. bl_pgpid_email
-			# without --add/--revoke prints one email per line, restricted to
-			# usable (non-revoked, non-expired) UIDs.
+		name)
+			[[ "$newmeta" ]] || newmeta=$(bl_input --text $"(ASCII only, up to 38 chars)" $"New cardholder email")
+			[[ "$newmeta" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "$FUNCNAME: Error: "$"Invalid email"" '%s'.\n" "$newmeta" >&2 ; return 2 ;}
+			# GnuPG caps DO 5B at 38 chars in `gpg --card-edit` (the spec allows 39 — cf. draft-foopgp-openpgp-id-00 § 6.4.1).
+			# Catch the overflow here with a clear message rather than let card-edit fail opaquely.
+			((${#newmeta} <= 38)) || { printf "$FUNCNAME: Error: "$"Email '%s' exceeds 38 bytes (current GnuPG cap on DO 5B; spec allows 39).""\n" "$newmeta" >&2 ; return 2 ;}
+			# Verify that the email actually exists (non-revoked) in the certificate matching the token's signing key. bl_pgpid_email
+			# without --add/--revoke prints one email per line, restricted to usable (non-revoked, non-expired) UIDs.
 			local cert_emails
 			cert_emails=$(bl_pgpid_email --homedir "$gpghome" -- "${tinfo[pgpid_Skeyfpr]}" 2>/dev/null) ||
 				{ printf "$FUNCNAME: Error: "$"Can't list emails of token's certificate.""\n" >&2 ; return 1 ;}
-			grep -qFx "$newemail" <<<"$cert_emails" ||
-				{ printf "$FUNCNAME: Error: "$"%s is not a usable email of the token's certificate.""\n" "$newemail" >&2 ; return 1 ;}
-			new_value="$newemail"
-			subcmd="name"
+			grep -qFx "$newmeta" <<<"$cert_emails" ||
+				{ printf "$FUNCNAME: Error: "$"%s is not a usable email of the token's certificate.""\n" "$newmeta" >&2 ; return 1 ;}
 			;;
-		certurl)
-			[[ "$newcerturl" =~ ^https?:// ]] || { printf "$FUNCNAME: Error: "$"--certurl must be an http(s) URL"" ('%s').\n" "$newcerturl" >&2 ; return 2 ;}
-			# Fetch the URL into a throw-away keyring, then verify the imported
-			# cert holds each of the token's three private subkey fingerprints.
-			# Revoked / expired subkeys are accepted (the user may legitimately
-			# want to point at an archived cert) — only presence is required.
+		url)
+			[[ "$newmeta" ]] || newmeta=$(bl_input $"New URL to retrieve cardholder public certificate")
+			[[ "$newmeta" =~ ^https?:// ]] || { printf "$FUNCNAME: Error: "$"--certurl must be an http(s) URL"" ('%s').\n" "$newmeta" >&2 ; return 2 ;}
+			# Fetch the URL into a throw-away keyring, then verify the imported cert holds each of the token's three private subkey fingerprints.
+			# Revoked / expired subkeys are accepted (the user may legitimately want to point at an archived cert) — only presence is required.
 			local tmpring
 			tmpring=$(mktemp --tmpdir --directory "$FUNCNAME".XXXXXX) || return 1
 			trap "rm -rf '$tmpring'" RETURN
-			curl --fail --silent --show-error --location "$newcerturl" 2>/tmp/.curl.err |
+			curl --fail --silent --show-error --location "$newmeta" 2>/tmp/.curl.err |
 				gpg --homedir "$tmpring" --batch --import 2>/dev/null ||
-				{ printf "$FUNCNAME: Error: "$"Can't fetch a usable certificate from %s.""\n" "$newcerturl" >&2 ; cat /tmp/.curl.err >&2 ; return 1 ;}
+				{ printf "$FUNCNAME: Error: "$"Can't fetch a usable certificate from %s.""\n" "$newmeta" >&2 ; cat /tmp/.curl.err >&2 ; return 1 ;}
 			local cert_fprs missing=()
 			cert_fprs=$(gpg --homedir "$tmpring" --with-colons --with-fingerprint --list-keys |
 				sed -nE 's,^fpr:::::::::([A-F0-9]+):.*,\1,p')
@@ -465,25 +454,21 @@ OPTIONS:
 				grep -qFx "$fpr" <<<"$cert_fprs" || missing+=("$k=$fpr")
 			done
 			if ((${#missing[@]})) ; then
-				printf "$FUNCNAME: Error: "$"Certificate at %s doesn't hold the token's subkeys: %s.""\n" "$newcerturl" "${missing[*]}" >&2
+				printf "$FUNCNAME: Error: "$"Certificate at %s doesn't hold the token's subkeys: %s.""\n" "$newmeta" "${missing[*]}" >&2
 				return 1
 			fi
-			new_value="$newcerturl"
-			subcmd="url"
 			;;
 	esac
 
 	# Admin code (PW3) is required to write any of these DOs
-	[[ "$admincodegiven" ]] || admincode=$(bl_input --password --text $"(8 digits)" $"Admin code")
+	[[ "$admincodegiven" ]] || admincode=$(bl_input --password --text $"(usually 8 digits)" $"Admin code")
 	[[ "$admincode" =~ ^[0-9]{8,}$ ]] || printf "$FUNCNAME: Warning: "$"Admin code shorter than 8 digits.""\n" >&2
 
-	# Pilot gpg --card-edit. For the "name" sub-command, gpg asks first for the
-	# surname then for the given names — we shove the whole value into surname
-	# and leave the given-names prompt empty (extra blank line).
+	# Pilot gpg --card-edit. For the "name" sub-command, gpg asks first for the surname then for the given names — we shove the whole value into surname.
 	local commands
 	case "$subcmd" in
-		login|url) commands="admin\n${subcmd}\n${new_value}\nquit\n" ;;
-		name)      commands="admin\nname\n${new_value}\n\nquit\n" ;;
+		login|url) commands="admin\n${subcmd}\n${newmeta}\nquit\n" ;;
+		name)      commands="admin\nname\n${newmeta}\n\nquit\n" ;;
 	esac
 
 	echo -e "$commands" |
@@ -563,7 +548,7 @@ OPTIONS:
 		return 1
 	fi
 
-	[[ "$ccodegiven" ]] || ccode=$(bl_input --password --text "(usually: $lPW digits)" "Current $ctype code")
+	[[ "$ccodegiven" ]] || ccode=$(bl_input --password --text "(usually $lPW digits)" "Current $ctype code")
 
 	[[ "$ccode" =~ ^[0-9]{$lPW}$ ]] || printf "$FUNCNAME: Warning: "$"Given %s code doesn't match %d digits.""\n" "$ctype" "$lPW" >&2
 
