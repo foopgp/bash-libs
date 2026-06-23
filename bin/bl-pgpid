@@ -1349,6 +1349,10 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		# and tags it with `!` when the signer's public key is in the keyring
 		# and the signature is cryptographically correct. Untaggable sigs
 		# ('?' = unknown signer, '-' = bad sig, '%' = error) don't count.
+		# Also drop non-exportable « local » signatures (sigclass ending in 'l',
+		# e.g. `10l`): they live in the holder's keyring only and don't count
+		# as a public certification (caught 2026-06-23 thanks to my own
+		# 2026-05-25 lsign of jjb's cert which inflated the count).
 		gpg --homedir "$gpghome" --with-colons --check-sigs "$user" 2>/dev/null |
 			awk -F: -v owner="${user: -16}" '
 				function flush_uid(    e, c) {
@@ -1367,7 +1371,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 					next
 				}
 				/^sig:!::/ {
-					if (cur_email != "" && $5 != owner) cur_count++
+					if (cur_email != "" && $5 != owner && $11 !~ /l$/) cur_count++
 				}
 				END {
 					flush_uid()
