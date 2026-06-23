@@ -1199,6 +1199,12 @@ msgstr "Nom commun ou pseudonyme associé au nouvel EMAIL."
 msgid "(Free to use part of) comment beside new EMAIL"
 msgstr "(Partie libre du) commentaire associé au nouvel EMAIL"
 
+msgid ""
+"Also output the count of external valid certifications per email (tab-"
+"separated). If an email appears in several UIDs, only the maximum count is "
+"kept."
+msgstr "Afficher aussi le nombre de certifications externes valides par email (séparé par tabulation). Si un email apparaît dans plusieurs UID, seul le décompte maximum est retenu."
+
 msgid "Increase verbosity"
 msgstr "Augmenter le niveau de verbosité"
 
@@ -1467,6 +1473,9 @@ msgstr ""
 msgid "Override the displayed name"
 msgstr "Surcharger le nom affiché"
 
+msgid " (default: guessed from OpenPGP certificate and email)"
+msgstr " (par défaut : déduit du certificat OpenPGP et de l'email)"
+
 msgid "Output in grayscale instead of color"
 msgstr "Sortie en niveaux de gris au lieu de couleur"
 
@@ -1617,6 +1626,98 @@ msgstr "Phrase de passe inchangée."
 
 msgid "Passphrase successfully changed."
 msgstr "Phrase de passe modifiée avec succès."
+
+msgid "Change a textual metadata of a security token (OpenPGP smartcard)."
+msgstr "Modifier une métadonnée textuelle d'une clé de sécurité (carte OpenPGP)."
+
+msgid ""
+"By default, change the cardholder pseudonym (stored in « Login data », "
+"UTF-8, up to ~210 bytes), beside the OpenPGP Entity ID (u4=… or u5=…)."
+msgstr ""
+"Par défaut, modifier le pseudonyme du titulaire (stocké dans « Login data », "
+"UTF-8, jusqu'à ~210 octets), à côté de l'OpenPGP Entity ID (u4=… ou u5=…)."
+
+msgid ""
+"Admin code (usually 8 digits) protecting writes to security token metadata"
+msgstr "Code Admin (en général 8 chiffres) protégeant l'écriture des métadonnées de la clé de sécurité"
+
+msgid "Get admin code from first line of FILE"
+msgstr "Lire le code Admin depuis la première ligne du FICHIER"
+
+msgid ""
+"Change « Name of cardholder » instead, verifying the email is present (non-"
+"revoked) in the certificate."
+msgstr ""
+"Modifier plutôt « Name of cardholder », après avoir vérifié que l'email est "
+"présent (non révoqué) dans le certificat."
+
+msgid ""
+"Change « URL of public key » instead, verifying the URL returns a "
+"certificate that holds the public counterparts of the token's three private "
+"subkeys (revoked and expired subkeys are accepted)."
+msgstr ""
+"Modifier plutôt « URL of public key », après avoir vérifié que l'URL "
+"retourne un certificat contenant les pendants publics des trois sous-clés "
+"privées de la clé de sécurité (les sous-clés révoquées ou expirées sont "
+"acceptées)."
+
+msgid "--email and --certurl are mutually exclusive; keeping the last one"
+msgstr "--email et --certurl s'excluent mutuellement ; conservation de la dernière option"
+
+msgid "No security token detected."
+msgstr "Aucune clé de sécurité détectée."
+
+msgid "(UTF-8, up to ~210 chars)"
+msgstr "(UTF-8, jusqu'à ~210 caractères)"
+
+msgid "New cardholder pseudonym"
+msgstr "Nouveau pseudonyme du titulaire"
+
+msgid "Empty pseudonym, nothing to do."
+msgstr "Pseudonyme vide, rien à faire."
+
+msgid "(ASCII only, up to 38 chars)"
+msgstr "(ASCII seulement, jusqu'à 38 caractères)"
+
+msgid "New cardholder email"
+msgstr "Nouvel email du titulaire"
+
+msgid ""
+"Email '%s' exceeds 38 bytes (current GnuPG cap on DO 5B; spec allows 39)."
+msgstr "L'email « %s » dépasse 38 octets (limite actuelle de GnuPG sur le DO 5B ; la spec autorise 39)."
+
+msgid "Can't list emails of token's certificate."
+msgstr "Impossible de lister les emails du certificat de la clé de sécurité."
+
+msgid "%s is not a usable email of the token's certificate."
+msgstr "%s n'est pas un email utilisable du certificat de la clé de sécurité."
+
+msgid "New URL to retrieve cardholder public certificate"
+msgstr "Nouvelle URL pour récupérer le certificat public du titulaire"
+
+msgid "--certurl must be an http(s) URL"
+msgstr "--certurl doit être une URL http(s)"
+
+msgid "Can't fetch a usable certificate from %s."
+msgstr "Impossible de récupérer un certificat utilisable depuis %s."
+
+msgid "Certificate at %s doesn't hold the token's subkeys: %s."
+msgstr "Le certificat à %s ne contient pas les sous-clés de la clé de sécurité : %s."
+
+msgid "(usually 8 digits)"
+msgstr "(en général 8 chiffres)"
+
+msgid "Admin code"
+msgstr "Code Admin"
+
+msgid "Admin code shorter than 8 digits."
+msgstr "Code Admin plus court que 8 chiffres."
+
+msgid "gpg --card-edit failed — wrong Admin code?"
+msgstr "Échec de gpg --card-edit — code Admin incorrect ?"
+
+msgid "Wrote new value into the security token."
+msgstr "Nouvelle valeur écrite sur la clé de sécurité."
 
 msgid ""
 "Check and change PIN (or Admin) code protecting use of a security token "

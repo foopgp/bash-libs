@@ -1,5 +1,5 @@
 <!--
-© 2021 Jean-Jacques Brucker <jjbrucker@foopgp.org>
+© 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 
 SPDX-License-Identifier: LGPL-3.0-only
 -->
@@ -8,38 +8,40 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-LOG
 section: 1
 header: User Commands
-footer: bash-libs
+footer: bash-libs 0.3.12
 ---
 
 # NAME
 
-bl-log - Wrapper for logger command, which also print pretty logs on stderr.
+bl-log - Wrapper for logger command, which also print pretty logs on
+stderr.
 
 # SYNOPSIS
 
-**bl-log** [*OPTIONS*]... *PRIORITY* [*MESSAGE*]...
+**bl-log** \[*OPTIONS*\]\... *PRIORITY *\[*MESSAGE*\]\...
 
 # DESCRIPTION
 
-This executable/library exposes only one exposed function: **bl_log()**. So it
-doesn't implement a function dispatcher and using **bl-log** as an executable is
-*almost* the same thing than using **bl_log()** function.
+Wrapper for logger command, which also print pretty logs on stderr.
+PRIORITY is a \"facility.level\" pair. The default facility is
+\[user\]=1. Levels: declare **-Ar** BL_LOGLEVELS=(\[warning\]=\"4\"
+\[error\]=\"3\" \[err\]=\"3\" \[info\]=\"6\" \[debug\]=\"7\"
+\[notice\]=\"5\" \[alert\]=\"1\" \[crit\]=\"2\" \[emerg\]=\"0\" ) If
+PRIORITY\'s level is under BL_LOGLEVEL=7, don\'t log anything. If
+PRIORITY\'s level name is more serious than BL_LOGEXITLNAME=emerg,
+exit(8+\'PRIORITY\'s level\') If there is no MESSAGE in command line,
+read it from stdin.
 
-"*Almost*" nuance: when sourcing **bl-log** (using it as a bash library), we may pass
-some options as arguments, which will be store in some environment variable.
-Then such options will remain for following calls of **bl_log()** (with no options
-passed as arguments).
-
-# OPTIONS
+## OPTIONS:
 
 **-l**, **\--log-level** LEVEL
 
 :   log level:
     emerg\<1=alert\<crit\<3=err\<warning\<5=notice\<info\<7=debug
-    (env var: BL_LOGLEVEL)
+    (current: 7)
 
 **-L**, **\--log-exit** LEVELNAME exit level:
-emerg\|alert\|crit\|err\|warning\|\... (env var: BL_LOGEXITLNAME)
+emerg\|alert\|crit\|err\|warning\|\... (current: emerg )
 
 **-q**, **\--quiet**
 
@@ -55,11 +57,11 @@ emerg\|alert\|crit\|err\|warning\|\... (env var: BL_LOGEXITLNAME)
 
 **-h**, **\--help**
 
-:   show this help and exit/return
+:   Show help and exit/return
 
 **-V**, **\--version**
 
-:   show version and exit/return
+:   Show version and exit/return
 
 ## Options forwarded to \'logger\':
 
@@ -145,58 +147,15 @@ emerg\|alert\|crit\|err\|warning\|\... (env var: BL_LOGEXITLNAME)
 
 :   write journald entry
 
+bl-log is also bash library, see: \$ source bl-log **\--help**
 
-# ENVIRONMENT VARIABLES
+# DIAGNOSTICS
 
-**BL_LOGLEVEL**     Set the level of message to be logged, see --log-level.
-
-**BL_LOGEXITLNAME** Set, by name, the level of message that will rise an exit (like err.h C standard). See --log-exit.
-
-# RETURN STATUS
-
-**0**    Successful execution.
-
-**2**    Misuse of arguments (options, parameters, etc.)
-
-# EXIT STATUS
-
-They have been choose to match priority numeric values and according to
-https://tldp.org/LDP/abs/html/exitcodes.html:
-
-**168**  When priority's level == 'emerg'
-
-**169**  When priority's level == 'alert', and --log-exit seriousness ≤ 'alert'
-
-**170**  When priority's level == 'crit', and --log-exit seriousness ≤ 'crit'
-
-**171**  When priority's level == 'err' (or deprecated 'error'), and --log-exit seriousness ≤ 'err'.
-
-**172**  When priority's level == 'warning', and --log-exit seriousness ≤ 'warning'.
-
-**173**  When priority's level == 'notice', and --log-exit seriousness ≤ 'notice'.
-
-**174**  When priority's level == 'info', and --log-exit seriousness ≤ 'info'.
-
-**175**  When priority's level == 'debug', and --log-exit seriousness = 'debug'.
-
-# EXAMPLES
-
-```bash
- . bl-log --no-act --log-level "6" --log-exit "crit"
- bl_log debug "$FUNCNAME: $@" # This won't be logged (debug <> 7)
- bl_log info "some informations" # This logs (info <> 6)
- bl_log crit "ouch" # This logs then exit(170).
-```
-
-```bash
- ./bl-log --help
- . ./bl-log --bash-completion
- ./bl-log --no-act syslog.notice "Nice log !"
-```
+Returns zero on normal operation, non-zero on errors.
 
 # SEE ALSO
 
-**logger**(1), [**bash-libs**](../README.md)(7), sys/syslog.h.
+[**bash-libs**](../README.md)(7).
 
 # AUTHORS
 

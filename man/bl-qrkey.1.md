@@ -59,6 +59,10 @@ change_passphrase
 
 :   Change GnuPG passphrase protecting secret parts of an OpenPGP key.
 
+change_token_meta
+
+:   Change a textual metadata of a security token (OpenPGP smartcard).
+
 change_token_code
 
 :   Check and change PIN (or Admin) code protecting use of a security
