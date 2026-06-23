@@ -1313,7 +1313,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			[[ "$pseudo" ]] || pseudo=${email%%@*}
 			commands=$(printf "adduid\n$pseudo\n$email\n${ids[0]}$extracomment\nsave\n")
 			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'$pseudo (${ids[0]}$extracomment) <$email>'" "$user" >&2
-			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^ *[A-Z«]" ) <<<"$commands" || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
+			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) <<<"$commands" || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
 		done
 	fi
 
@@ -1327,7 +1327,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			[[ "$commands" ]] || { printf "$FUNCNAME: Error: "$"No revokable %s inside certificate %s (in %s).""\n" "<$email>" "$user" "$gpghome" >&2 ; return 1 ; }
 
 			printf "$FUNCNAME: Notice: "$"Revoking %s inside %s certificate…""\n" "<$email>" "$user" >&2
-			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\[" | sort -u | sort -t'(' --key=2n ) <<<"$commands" || { echo "$FUNCNAME: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
+			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" | sort -u | sort -t'(' --key=2n >&2 ) <<<"$commands" || { echo "$FUNCNAME: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
 		done
 	fi
 
