@@ -8,12 +8,12 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-TEST
 section: 1
 header: User Commands
-footer: bash-libs 0.3.12
+footer: bash-libs 0.2.5
 ---
 
 # NAME
 
-bl-test - MAIN OPTIONS:
+bl-test - Main options:
 
 # SYNOPSIS
 
@@ -22,22 +22,25 @@ bl-test - MAIN OPTIONS:
 
 # DESCRIPTION
 
-## MAIN OPTIONS:
+## Main options:
 
 **-h**, **\--help**
 
-:   Show help and exit/return
+:   show help and exit/return
 
 **-V**, **\--version**
 
-:   Show version and exit/return
+:   show version and exit/return
 
-## ACTIONS:
+## Actions:
 
-> test\_\_version
+test\_\_version
+
+:   Test if \"COMMANDE \[ARG\]\... **\--version**\" matches GNU
+    standard.
 
  
-All actions support a **\--help** option, eg: \$ bl-test ACTION
+All actions support a **\--help** options, eg: \$ bl-test ACTION
 **\--help**
 
 bl-test is also bash library, see: \$ source bl-test **\--help**
