@@ -368,6 +368,7 @@ OPTIONS:
   -p, --admincodefrom FILE     "$"Get admin code from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin)
   -E, --email                  "$"Change « Name of cardholder » instead, verifying the email is present (non-revoked) in the certificate.""
   -U, --certurl                "$"Change « URL of public key » instead, verifying the URL returns a certificate that holds the public counterparts of the token's three private subkeys (revoked and expired subkeys are accepted).""
+  -L, --lang                   "$"Change « Language prefs » instead, only 2 letter code ISO 639-1 is accepted.
 "
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local admincode admincodegiven newmeta
@@ -381,11 +382,14 @@ OPTIONS:
 			-p|--admincodefrom|--admin-code-from|--codefrom|--code-from)
 				shift ; admincodegiven=true ; admincode=$( head -n 1 < "$1" ) || return 1 ;;
 			-E|--email)
-				[[ "$subcmd" == "url" ]] && printf "$FUNCNAME: Warning: "$"--email and --certurl are mutually exclusive; keeping the last one"" (--email).\n" >&2
+				[[ "$subcmd" == "login" ]] || printf "$FUNCNAME: Warning: "$"--email, --certurl and --lang are mutually exclusive; keeping the last one"" (--email).\n" >&2
 				subcmd="name" ;;
 			-U|--certurl|--url)
-				[[ "$subcmd" == "name" ]] && printf "$FUNCNAME: Warning: "$"--email and --certurl are mutually exclusive; keeping the last one"" (--certurl).\n" >&2
+				[[ "$subcmd" == "login" ]] || printf "$FUNCNAME: Warning: "$"--email, --certurl and --lang are mutually exclusive; keeping the last one"" (--certurl).\n" >&2
 				subcmd="url" ;;
+			-L|--lang)
+				[[ "$subcmd" == "login" ]] || printf "$FUNCNAME: Warning: "$"--email, --certurl and --lang are mutually exclusive; keeping the last one"" (--lang).\n" >&2
+				subcmd="lang" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -424,7 +428,7 @@ OPTIONS:
 			[[ "$newmeta" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "$FUNCNAME: Error: "$"Invalid email"" '%s'.\n" "$newmeta" >&2 ; return 2 ;}
 			# GnuPG caps DO 5B at 38 chars in `gpg --card-edit` (the spec allows 39 — cf. draft-foopgp-openpgp-id-00 § 6.4.1).
 			# Catch the overflow here with a clear message rather than let card-edit fail opaquely.
-			((${#newmeta} <= 38)) || { printf "$FUNCNAME: Error: "$"Email '%s' exceeds 38 bytes (current GnuPG cap on DO 5B; spec allows 39).""\n" "$newmeta" >&2 ; return 2 ;}
+			((${#newmeta} <= 38)) || { printf "$FUNCNAME: Error: "$"Email '%s' exceeds 38 bytes (OpenPGP smartcard cap).""\n" "$newmeta" >&2 ; return 2 ;}
 			# Verify that the email actually exists (non-revoked) in the certificate matching the token's signing key. bl_pgpid_email
 			# without --add/--revoke prints one email per line, restricted to usable (non-revoked, non-expired) UIDs.
 			local cert_emails
@@ -458,6 +462,12 @@ OPTIONS:
 				return 1
 			fi
 			;;
+		lang)
+			[[ "$newmeta" ]] || newmeta=$(bl_input --text $"(ISO 639-1 — 2 letter code)" $"New cardholder language preference")
+			newmeta=${newmeta,,}
+			[[ "$newmeta" =~ ^[acdefghijklmnopqrstuvwxyz]{2}$ ]] || { printf "$FUNCNAME: Error: "$"Invalid ISO 639-1 language code"" '%s'.\n" "$newmeta" >&2 ; return 2 ;}
+			;;
+
 	esac
 
 	# Admin code (PW3) is required to write any of these DOs
@@ -467,7 +477,7 @@ OPTIONS:
 	# Pilot gpg --card-edit. For the "name" sub-command, gpg asks first for the surname then for the given names — we shove the whole value into surname.
 	local commands
 	case "$subcmd" in
-		login|url) commands="admin\n${subcmd}\n${newmeta}\nquit\n" ;;
+		login|url|lang) commands="admin\n${subcmd}\n${newmeta}\nquit\n" ;;
 		name)      commands="admin\nname\n${newmeta}\n\nquit\n" ;;
 	esac
 
@@ -476,7 +486,7 @@ OPTIONS:
 			--passphrase "$admincode" --card-edit 2> >(grep ^gpg) ||
 		{ printf "$FUNCNAME: Error: "$"gpg --card-edit failed — wrong Admin code?""\n" >&2 ; return 1 ;}
 
-	printf "$FUNCNAME: Notice: "$"Wrote new value into the security token.""\n" >&2
+	printf "$FUNCNAME: Notice: "$"Wrote new value '%s' into the security token.""\n" "$newmeta" >&2
 }
 
 # gpg (GnuPG) 2.4.7 --batch can't do it, then we send direct APDU through gpg-connect-agent, see:
