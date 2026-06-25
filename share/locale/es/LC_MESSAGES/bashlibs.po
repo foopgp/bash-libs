@@ -1044,7 +1044,7 @@ msgstr ""
 msgid "No OpenPGP ID string (u4|u5) in %s certificate."
 msgstr ""
 
-msgid "supernumerary OpenPGP ID string"
+msgid "Supernumerary OpenPGP ID string (%s)."
 msgstr ""
 
 msgid "At least one email must be retained."
@@ -1117,7 +1117,7 @@ msgid ""
 "email, ...)"
 msgstr ""
 
-msgid "supernumerary emails, skipping"
+msgid "Supernumerary emails (%d), skipping %s …"
 msgstr ""
 
 msgid "Invalid OpenPGP ID token, missing:"
@@ -1424,7 +1424,13 @@ msgid ""
 "subkeys (revoked and expired subkeys are accepted)."
 msgstr ""
 
-msgid "--email and --certurl are mutually exclusive; keeping the last one"
+msgid ""
+"Change « Language prefs » instead, only 2 letter code ISO 639-1 is "
+"accepted.\n"
+msgstr ""
+
+msgid ""
+"--email, --certurl and --lang are mutually exclusive; keeping the last one"
 msgstr ""
 
 msgid "No security token detected."
@@ -1445,8 +1451,7 @@ msgstr ""
 msgid "New cardholder email"
 msgstr ""
 
-msgid ""
-"Email '%s' exceeds 38 bytes (current GnuPG cap on DO 5B; spec allows 39)."
+msgid "Email '%s' exceeds 38 bytes (OpenPGP smartcard cap)."
 msgstr ""
 
 msgid "Can't list emails of token's certificate."
@@ -1467,6 +1472,15 @@ msgstr ""
 msgid "Certificate at %s doesn't hold the token's subkeys: %s."
 msgstr ""
 
+msgid "(ISO 639-1 — 2 letter code)"
+msgstr ""
+
+msgid "New cardholder language preference"
+msgstr ""
+
+msgid "Invalid ISO 639-1 language code"
+msgstr ""
+
 msgid "(usually 8 digits)"
 msgstr ""
 
@@ -1479,7 +1493,7 @@ msgstr ""
 msgid "gpg --card-edit failed — wrong Admin code?"
 msgstr ""
 
-msgid "Wrote new value into the security token."
+msgid "Wrote new value '%s' into the security token."
 msgstr ""
 
 msgid ""
