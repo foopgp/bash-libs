@@ -1889,12 +1889,20 @@ OPTIONS:
 
 	# A4 landscape: default sticker 85×25mm → 3×7 = 21/page ; with --template (card-shaped) → 3×3 = 9/page.
 	# pdfjam tiles ONE page per --nup slot, so duplicate single.pdf N times first.
+	# --noautoscale true keeps the inputs at their natural 85×55mm card (or 85×25mm sticker)
+	# size instead of inflating them to fill each nup cell. On A4 landscape that lands a
+	# 3×3 card grid (255×165mm) with ~21mm side margins and ~22.5mm top/bottom margins,
+	# and a 3×7 sticker grid (255×175mm) with ~21mm side and ~17.5mm top/bottom — both
+	# comfortably inside any consumer printer's printable area. Without it the cards
+	# came out ~18% over the European business-card standard AND fully bled to the
+	# top/bottom edge of the sheet, so any printer with a non-zero unprintable margin
+	# clipped them.
 	local nup n i
 	[[ "$usetemplate" ]] && { nup="3x3" ; n=9 ; } || { nup="3x7" ; n=21 ; }
 	local -a copies=()
 	for ((i=0 ; i<n ; i++)) ; do copies+=("$tmpdir/single.pdf") ; done
 	pdfunite "${copies[@]}" "$tmpdir/duped.pdf" || return $?
-	pdfjam --quiet --paper a4paper --landscape --nup "$nup" --outfile "$tmpdir/page.pdf" "$tmpdir/duped.pdf" || return $?
+	pdfjam --quiet --paper a4paper --landscape --nup "$nup" --noautoscale true --outfile "$tmpdir/page.pdf" "$tmpdir/duped.pdf" || return $?
 
 	printf "$FUNCNAME: Notice: "$"Printing %s on %s…""\n" "${templatename%.svg}" "$printer" >&2
 	lpr -P "$printer" "$tmpdir/page.pdf"
