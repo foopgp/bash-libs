@@ -1306,7 +1306,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 		ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4=\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5=\1,p" <<<"$uids" | sort -u))
 		(( ${#ids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No OpenPGP ID string (u4|u5) in %s certificate.""\n" "$user" >&2 ; return 1 ;}
-		(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary OpenPGP ID string" "(${ids[*]})" >&2 ; return 1 ;}
+		(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary OpenPGP ID string (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
 
 		# Add emails
 		for email in "${toadd[@]}" ; do
@@ -1499,11 +1499,11 @@ OPTIONS:
 	((noCfpr)) || echo "${aaname[pgpid_Ckeyfpr]}"
 
 	aaname[pgpid_email]="${emails[0]}"
-	(( ${#emails[@]} < 2 )) || ((quiet)) || echo "$FUNCNAME: Notice:" $"supernumerary emails, skipping" "${emails[@]:1} ..." >&2
+	(( ${#emails[@]} < 2 )) || ((quiet)) || printf "$FUNCNAME: Notice: "$"Supernumerary emails (%d), skipping %s …""\n" ${#emails[@]} "${emails[@]:1}" >&2
 
 	# Should be in 'Login data' field, but who knows ? (yet...) 
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}" | sort -u))
-	(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary OpenPGP ID string" "(${ids[*]})" >&2 ; return 1 ;}
+	(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary OpenPGP ID string (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
 	aaname[pgpid_id]="${ids[0]}"
 
 	aaname[token_AVersion]="${ttype} ${tversion}"
@@ -1674,7 +1674,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	else
 		gpg --homedir "$gpghome" --local-user "$keyfpr" $oforce --quick-$signcmd-key "$targetfpr" "${uids[@]/#/=}" || return $?
 		printf "$FUNCNAME: Notice: "$"Successfully sign %d '%s' inside certificate %s.""\n" ${#uids[@]} "$targetid" "$targetfpr" >&2
-		gpg --homedir "$gpghome" --quick-set-ownertrust "$targetfpr" "${ownertrust:-marginal}" || return $?
+		gpg --homedir "$gpghome" --quick-set-ownertrust "$targetfpr" "${ownertrust:-marginal}" || true
 	fi
 
 	local ret=0
@@ -1889,12 +1889,20 @@ OPTIONS:
 
 	# A4 landscape: default sticker 85×25mm → 3×7 = 21/page ; with --template (card-shaped) → 3×3 = 9/page.
 	# pdfjam tiles ONE page per --nup slot, so duplicate single.pdf N times first.
+	# --noautoscale true keeps the inputs at their natural 85×55mm card (or 85×25mm sticker)
+	# size instead of inflating them to fill each nup cell. On A4 landscape that lands a
+	# 3×3 card grid (255×165mm) with ~21mm side margins and ~22.5mm top/bottom margins,
+	# and a 3×7 sticker grid (255×175mm) with ~21mm side and ~17.5mm top/bottom — both
+	# comfortably inside any consumer printer's printable area. Without it the cards
+	# came out ~18% over the European business-card standard AND fully bled to the
+	# top/bottom edge of the sheet, so any printer with a non-zero unprintable margin
+	# clipped them.
 	local nup n i
 	[[ "$usetemplate" ]] && { nup="3x3" ; n=9 ; } || { nup="3x7" ; n=21 ; }
 	local -a copies=()
 	for ((i=0 ; i<n ; i++)) ; do copies+=("$tmpdir/single.pdf") ; done
 	pdfunite "${copies[@]}" "$tmpdir/duped.pdf" || return $?
-	pdfjam --quiet --paper a4paper --landscape --nup "$nup" --outfile "$tmpdir/page.pdf" "$tmpdir/duped.pdf" || return $?
+	pdfjam --quiet --paper a4paper --landscape --nup "$nup" --noautoscale true --outfile "$tmpdir/page.pdf" "$tmpdir/duped.pdf" || return $?
 
 	printf "$FUNCNAME: Notice: "$"Printing %s on %s…""\n" "${templatename%.svg}" "$printer" >&2
 	lpr -P "$printer" "$tmpdir/page.pdf"
