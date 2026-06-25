@@ -1,3 +1,15 @@
+bash-libs (0.3.14-1) unstable; urgency=medium
+
+  [ jjbrucker ]
+  * bl_qrkey_change_token_meta new option '--lang' to change language preference
+  * bl_pgpid_token_check(): minor fix error messages
+  * bl_pgpid_certify(): bugfix: --quick-set-ownertrust is not mandatory → don't errexit if it fails
+
+  [ Mnème ]
+  * bl_pgpid_print: respect natural card/sticker size with pdfjam --noautoscale
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Thu, 25 Jun 2026 15:51:30 +0200
+
 bash-libs (0.3.13-1) unstable; urgency=medium
 
   [ Mnème ]
