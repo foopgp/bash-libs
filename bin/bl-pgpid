@@ -1674,7 +1674,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	else
 		gpg --homedir "$gpghome" --local-user "$keyfpr" $oforce --quick-$signcmd-key "$targetfpr" "${uids[@]/#/=}" || return $?
 		printf "$FUNCNAME: Notice: "$"Successfully sign %d '%s' inside certificate %s.""\n" ${#uids[@]} "$targetid" "$targetfpr" >&2
-		gpg --homedir "$gpghome" --quick-set-ownertrust "$targetfpr" "${ownertrust:-marginal}" || return $?
+		gpg --homedir "$gpghome" --quick-set-ownertrust "$targetfpr" "${ownertrust:-marginal}" || true
 	fi
 
 	local ret=0
