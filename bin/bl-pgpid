@@ -1306,7 +1306,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 		ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4=\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5=\1,p" <<<"$uids" | sort -u))
 		(( ${#ids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No OpenPGP ID string (u4|u5) in %s certificate.""\n" "$user" >&2 ; return 1 ;}
-		(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary OpenPGP ID string" "(${ids[*]})" >&2 ; return 1 ;}
+		(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary OpenPGP ID string (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
 
 		# Add emails
 		for email in "${toadd[@]}" ; do
@@ -1499,11 +1499,11 @@ OPTIONS:
 	((noCfpr)) || echo "${aaname[pgpid_Ckeyfpr]}"
 
 	aaname[pgpid_email]="${emails[0]}"
-	(( ${#emails[@]} < 2 )) || ((quiet)) || echo "$FUNCNAME: Notice:" $"supernumerary emails, skipping" "${emails[@]:1} ..." >&2
+	(( ${#emails[@]} < 2 )) || ((quiet)) || printf "$FUNCNAME: Notice: "$"Supernumerary emails (%d), skipping %s …""\n" ${#emails[@]} "${emails[@]:1}" >&2
 
 	# Should be in 'Login data' field, but who knows ? (yet...) 
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}" | sort -u))
-	(( ${#ids[@]} < 2 )) || { echo "$FUNCNAME: Error:" $"supernumerary OpenPGP ID string" "(${ids[*]})" >&2 ; return 1 ;}
+	(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary OpenPGP ID string (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
 	aaname[pgpid_id]="${ids[0]}"
 
 	aaname[token_AVersion]="${ttype} ${tversion}"
