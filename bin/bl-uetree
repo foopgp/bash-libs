@@ -65,9 +65,9 @@ readonly BL_UETREE_NAME BL_UETREE_VERSION BL_UETREE_FUNCTIONS
 
 [[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_UETREE_isprogram=1 || declare -r BL_UETREE_isprogram=0
 
-# uetree format versions this lib can read ; write always targets 1.2.
-declare -ar BL_UETREE_SUPPORTED_VERSIONS=("1.0" "1.1" "1.2")
-declare -r  BL_UETREE_WRITE_VERSION="1.2"
+# uetree format version. 1.0 and 1.1 were never deployed outside dev, so this
+# lib only reads and writes 1.2.
+declare -r BL_UETREE_FORMAT_VERSION="1.2"
 
 # Topology flags (.FORMAT at every node ; .ALIASES uses only * and -).
 #   .  non-leaf routing node        *  canonical leaf (holds entity.vcf)
@@ -127,16 +127,8 @@ _bl_uetree_parseoptions() {
 	BL_UETREE_NOPTIONS=$((npp-$#))
 }
 
-# Whether VERSION is one this lib can read.
-_bl_uetree_version_supported() {
-	local v
-	for v in "${BL_UETREE_SUPPORTED_VERSIONS[@]}" ; do [[ "$1" == "$v" ]] && return 0 ; done
-	return 1
-}
-
 # Read $1/.FORMAT into the assoc array named $2 (nameref) : keys
 #   type version flags path
-# For uetree 1.0/1.1 (no flag column) flags is left empty.
 # Returns 1 if absent or not a supported uetree node.
 _bl_uetree_read_format() {
 	local f="$1/$BL_UETREE_FORMAT"
@@ -146,7 +138,7 @@ _bl_uetree_read_format() {
 	local type version rest
 	read -r type version rest < "$f"
 	[[ "$type" == "uetree" ]] || return 1
-	_bl_uetree_version_supported "$version" || { printf "$FUNCNAME: Error: "$"unsupported uetree version"" '%s' (%s)\n" "$version" "$f" >&2 ; return 1 ; }
+	[[ "$version" == "$BL_UETREE_FORMAT_VERSION" ]] || { printf "$FUNCNAME: Error: "$"unsupported uetree version"" '%s' (%s)\n" "$version" "$f" >&2 ; return 1 ; }
 	_rf[type]="$type" ; _rf[version]="$version"
 	case "$version" in
 		1.0|1.1) _rf[flags]="" ; _rf[path]="$rest" ;;
@@ -172,13 +164,8 @@ _bl_uetree_branch_of_path() {
 # or _ALIAS). Idempotent. Reuses the root's declared version if present.
 _bl_uetree_write_format_chain() {
 	local root="$1" target="$2" leafflag="$3"
-	local -A rf
-	local ver="$BL_UETREE_WRITE_VERSION"
-	if _bl_uetree_read_format "$root" rf 2>/dev/null ; then
-		ver="${rf[version]}"
-	else
-		printf 'uetree %s %s /\n' "$ver" "$BL_UETREE_FLAG_NODE" > "$root/$BL_UETREE_FORMAT"
-	fi
+	local ver="$BL_UETREE_FORMAT_VERSION"
+	[[ -f "$root/$BL_UETREE_FORMAT" ]] || printf 'uetree %s %s /\n' "$ver" "$BL_UETREE_FLAG_NODE" > "$root/$BL_UETREE_FORMAT"
 	local rel="${target#$root}" ; rel="${rel#/}"
 	local cur="$root" acc="" segment want
 	local -a segs
@@ -308,7 +295,7 @@ _bl_uetree_aliases_emit() {
 	local -n _fl="$1" _pa="$2"
 	local i
 	for i in "${!_pa[@]}" ; do
-		printf 'uetree %s %s %s\n' "$BL_UETREE_WRITE_VERSION" "${_fl[$i]}" "${_pa[$i]}"
+		printf 'uetree %s %s %s\n' "$BL_UETREE_FORMAT_VERSION" "${_fl[$i]}" "${_pa[$i]}"
 	done
 }
 
