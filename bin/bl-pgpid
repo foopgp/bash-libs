@@ -1724,6 +1724,79 @@ _bl_pgpid_find_template() {
 	return 1
 }
 
+bl_pgpid_cert_check() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... NAME|EID|EMAIL|FPR..."
+	local helpmsg="
+"$"Tell whether each NAME|EID|EMAIL|FPR is WoT-certified — relative to the user's""
+"$"own trust (the mandatory, implicit anchor), optionally extended IN ORDER by one""
+"$"or more signed referents-ownertrust files. The chain is a delegation: each""
+"$"file's signer MUST already be valid before that file's ownertrust is honoured,""
+"$"otherwise the chain is broken and the command fails.""
+"$"Does not fetch — populate the keyring first with '$BL_PGPID_NAME get --recurse'.""
+"$"Prints one line per target ; exit status 0 iff every target is certified.""
+
+OPTIONS:
+  -R, --referents-ownertrust FILE  "$"Signed ownertrust file extending the trust (repeatable ; ORDER matters)""
+  -H, --homedir GNUPGHOME          "$"System GnuPG home to read keys & base ownertrust from (default: ~/.gnupg)""
+  -q, --quiet                      "$"No per-target line ; exit status only""
+"
+	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0
+	local -a otfiles=()
+	for ((;$#;)) ; do
+		case "$1" in
+			-R|--referents-ownertrust) shift ; otfiles+=("$1") ;;
+			-H|--homedir) shift ; syshome=${1:?} ;;
+			-q|--quiet)   quiet=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	[[ "$1" ]] || { printf "$usage\n" >&2 ; return 2 ; }
+	local -a targets=("$@")
+
+	# Isolated trust computation: copy the system public keys + base ownertrust into
+	# a throwaway homedir, so we never mutate the user's real trustdb.
+	local gtmp ; gtmp=$(mktemp -d) || return 1
+	trap 'rm -rf "$gtmp"' RETURN
+	local -a GPG=(gpg --homedir "$gtmp" --quiet --batch)
+	gpg --homedir "$syshome" --export           2>/dev/null | "${GPG[@]}" --import           2>/dev/null
+	gpg --homedir "$syshome" --export-ownertrust 2>/dev/null | "${GPG[@]}" --import-ownertrust 2>/dev/null
+
+	# Apply the ordered delegation chain. The anchor — the user's own keys — is
+	# inviolable: a referent may extend trust to others but not redefine how much the
+	# user trusts themselves, so we strip the user's own keys from each imported list.
+	local -a ownfprs ; readarray -t ownfprs < <(gpg --homedir "$syshome" --list-secret-keys --with-colons 2>/dev/null | awk -F: '$1=="fpr"{print $10}')
+	local otf content signer f
+	for otf in "${otfiles[@]}" ; do
+		content=$("${GPG[@]}" --status-fd 3 --decrypt "$otf" 3>"$gtmp/status" 2>/dev/null)
+		signer=$(awk '$2=="VALIDSIG"{print $3; exit}' "$gtmp/status")
+		[[ "$signer" ]] || { printf "$FUNCNAME: Error: "$"cannot verify the signature of %s (signer key missing?)""\n" "$otf" >&2 ; return 1 ; }
+		[[ "$("${GPG[@]}" --with-colons --list-keys "0x$signer" 2>/dev/null | awk -F: '$1=="uid" && ($2=="f"||$2=="u"){print 1; exit}')" ]] \
+			|| { printf "$FUNCNAME: Error: "$"delegation chain broken: the signer of %s is not (yet) valid""\n" "$otf" >&2 ; return 1 ; }
+		for f in "${ownfprs[@]}" ; do content=$(grep -v "^$f:" <<<"$content") ; done
+		printf '%s\n' "$content" | "${GPG[@]}" --import-ownertrust 2>/dev/null
+		"${GPG[@]}" --check-trustdb 2>/dev/null
+	done
+
+	# Verdict per target.
+	local t tfpr verdict rc=0
+	for t in "${targets[@]}" ; do
+		read -r tfpr verdict < <("${GPG[@]}" --with-colons --list-keys -- "$t" 2>/dev/null | awk -F: '
+			$1=="fpr" && !f { f=$10 }
+			$1=="uid" && ($2=="f"||$2=="u") { v=1 }
+			END { print (f?f:"-"), (v?"certified":"uncertified") }')
+		[[ "$verdict" == certified ]] || rc=1
+		((quiet)) || printf -- "%-12s%-42s%s\n" "$verdict" "$tfpr" "$t"
+	done
+	return $rc
+}
+
 bl_pgpid_print() (
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
