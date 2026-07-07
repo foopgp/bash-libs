@@ -632,6 +632,7 @@ OPTIONS:
   -s, --secret                "$"Search through local secret keys instead of public certificate."" - "$"Imply --no-fetch""
   -m, --errexit-g=1           "$"Return an error if there is more than one (1) entry."" - "$"You may replace '1' by an other number""
   -M, --max-from-keyserv MAX  "$"Set maximum matching certificates to receive from keyservers. "$"Default: ""$maxfromks
+  -r, --recurse[=NUM]         "$"Also fetch & display the certs signing the target(s), NUM levels deep (default 1, max 6)""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
   -K, --keyservers KEYSERVERS "$"Search and refresh certificates from this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
@@ -641,16 +642,19 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	local wkdcmd="gpg --auto-key-locate clear,wkd --locate-external-keys"
 	local errexit=$(getconf INT_MAX)
 	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local recurse=0 _recursing=0
+	local -a passopts=()                       # options propagated to --recurse self-calls
 	for ((;$#;)) ; do
 		case "$1" in
 			-F|--fpr|--fingerprint)
-				onlyfpr=1 onlymbox=0 ;;
+				onlyfpr=1 onlymbox=0 ; passopts+=(--fingerprint) ;;
 			-E|--mbox|--email)
-				onlyfpr=0 onlymbox=1 ;;
+				onlyfpr=0 onlymbox=1 ; passopts+=(--email) ;;
 			-s|--secret)
 				gpgaction="--list-secret-keys" ;&
 			-l|-f|--local|--no-fetch)
 				wkdcmd="true"
+				passopts+=(--no-fetch)
 				keyservs=() ;;
 			-m|--errexit|--errexit-g)
 				errexit=1 ;;
@@ -662,10 +666,15 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				[[ "$2" =~ ^[0-9]+$ ]] || { printf "$FUNCNAME: Error: "$"Option %s expect a number"".\n" "--max-from-keyserv" >&2 ; return 2 ; }
 				(($2 <= 100)) || printf "$FUNCNAME: Warning: "$"%s exceeds usual key server limit %s"".\n" "$2" "(100)" >&2
 				shift ; maxfromks=$1 ;;
+			-r|--recurse) recurse=1 ;;
+			--recurse=*)
+				recurse=${1#*=}
+				[[ "$recurse" =~ ^[0-6]$ ]] || { printf "$FUNCNAME: Error: "$"Option %s expects a number in 0..6"".\n" "--recurse=" >&2 ; return 2 ; } ;;
+			--_recursing) _recursing=1 ;;   # internal: this call is a --recurse descendant
 			-K|--keyservers)
-				shift ; keyservs=($1) ;;
+				shift ; keyservs=($1) ; passopts+=(--keyservers "$1") ;;
 			-H|--homedir)
-				shift ; gpghome=${1:?} ;;
+				shift ; gpghome=${1:?} ; passopts+=(--homedir "$gpghome") ;;
 			-v|--verify) verify=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
@@ -735,6 +744,20 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			fi
 			printf -- "%-80s${id}\n" "$cl"
 			prevfpr=$cfpr
+		done
+	fi
+
+	# --recurse[=NUM]: also fetch & display the certs signing the target(s), up to NUM levels deep.
+	# Self-recursion (DRY) ; BL_PGPID_GET_SEEN dedups signers over the whole walk (perf-safe on cyclic WoT).
+	if ((recurse > 0)) ; then
+		declare -gA BL_PGPID_GET_SEEN
+		((_recursing)) || BL_PGPID_GET_SEEN=()
+		local kid gf
+		for gf in "${fprs[@]}" ; do BL_PGPID_GET_SEEN[${gf: -16}]=1 ; done
+		for kid in $(gpg --homedir "$gpghome" --with-colons --list-sigs $(printf -- '0x%s ' "${fprs[@]}") 2>/dev/null | awk -F: '$1=="sig"{print $5}' | sort -u) ; do
+			[[ ! -v BL_PGPID_GET_SEEN[$kid] ]] || continue
+			BL_PGPID_GET_SEEN[$kid]=1
+			"$FUNCNAME" "${passopts[@]}" --_recursing --recurse=$((recurse-1)) "0x$kid" || true
 		done
 	fi
 
