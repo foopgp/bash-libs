@@ -376,6 +376,42 @@ _bl_uetree_trust_of() {
 	esac
 }
 
+# Project the full membership manifest of a canonical entity onto stdout.
+# $1 = canonical relpath (emitted first, flagged *) ; $2 = nameref to its
+# entity.vcf parsed by _bl_uetree_parse_vcf. Derived positions (by-email per
+# EMAIL, by-tel per TEL, by-name from FN) are flagged - ; the canonical's own
+# position is never re-emitted as a derived alias.
+_bl_uetree_project_positions() {
+	local canon="$1"
+	local -n _v="$2"
+	local ver="$BL_UETREE_FORMAT_VERSION" a="$BL_UETREE_FLAG_ALIAS"
+	printf 'uetree %s %s %s\n' "$ver" "$BL_UETREE_FLAG_CANONICAL" "$canon"
+	local x rp
+	if [[ "${_v[emails]}" ]] ; then
+		while IFS= read -r x ; do
+			[[ "$x" ]] || continue
+			rp=$(_bl_uetree_relpath_email "$x") || continue
+			[[ "$rp" != "$canon" ]] || continue
+			printf 'uetree %s %s %s\n' "$ver" "$a" "$rp"
+		done <<< "${_v[emails]//|||/$'\n'}"
+	fi
+	if [[ "${_v[tels]}" ]] ; then
+		while IFS= read -r x ; do
+			[[ "$x" ]] || continue
+			rp=$(_bl_uetree_relpath_tel "$x") || continue
+			[[ "$rp" != "$canon" ]] || continue
+			printf 'uetree %s %s %s\n' "$ver" "$a" "$rp"
+		done <<< "${_v[tels]//|||/$'\n'}"
+	fi
+	if [[ "${_v[fn]}" ]] ; then
+		local slug rp2
+		if slug=$(_bl_uetree_slugify "${_v[fn]}") ; then
+			rp2="/by-name/und/${slug:0:1}/${slug:0:2}/$slug/"
+			[[ "$rp2" == "$canon" ]] || printf 'uetree %s %s %s\n' "$ver" "$a" "$rp2"
+		fi
+	fi
+}
+
 ### public actions ###
 
 bl_uetree_check() {
@@ -600,6 +636,79 @@ OPTIONS:
 		[[ -z "$has" || -e "$dir/$has" ]] || continue
 		printf '%s\n' "$dir"
 	done < <(find "$root" -type f "${anchors[@]}" -printf '%h\n' | sort -u)
+}
+
+bl_uetree_aliases() {
+	local name
+	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [PATH]"
+	local helpmsg="
+"$"Regenerate or verify the .ALIASES membership manifests of the uetree at PATH""
+"$"(default: current directory) as a projection of each canonical entity.vcf.""
+"$"Every position of an entity carries the same manifest ; the canonical (holding""
+"$"entity.vcf) is flagged '*', derived positions (by-email/by-tel/by-name) '-'.""
+"$"One of --rebuild or --check is required.""
+
+OPTIONS:
+  -r, --rebuild            "$"Write the projected manifests (creating alias leaves)""
+  -c, --check              "$"Report positions whose manifest differs from the projection""
+  -n, --dry-run            "$"With --rebuild: print what would change, write nothing""
+"
+	local rebuild=0 do_check=0 dry=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-r|--rebuild) rebuild=1 ;;
+			-c|--check)   do_check=1 ;;
+			-n|--dry-run) dry=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_UETREE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	((rebuild || do_check)) || { printf "$FUNCNAME: Error: "$"one of --rebuild or --check is required""\n" >&2 ; return 2 ; }
+	local root="${1:-.}" ; root="${root%/}" ; [[ "$root" ]] || root="/"
+	local -A rrf
+	_bl_uetree_read_format "$root" rrf || { printf "$FUNCNAME: Error: "$"%s is not a uetree node""\n" "$root" >&2 ; return 1 ; }
+
+	local canleaf canon manifest diffs=0
+	local -A rf vc owner                          # owner[path]=canon → shared-position detection
+	while IFS= read -r canleaf ; do
+		_bl_uetree_read_format "$canleaf" rf || continue
+		canon="${rf[path]}"
+		_bl_uetree_parse_vcf "$canleaf/$BL_UETREE_RECORD" vc
+		manifest=$(_bl_uetree_project_positions "$canon" vc)
+		local type ver flag path dir wf
+		while read -r type ver flag path ; do
+			[[ "$type" == "uetree" ]] || continue
+			dir="$root$path"
+			if [[ -v owner[$path] && "${owner[$path]}" != "$canon" ]] ; then
+				printf "$name: Warning: %s\n" "$(printf $"%s claimed by both %s and %s (shared → needs a u5 or .HOMONYMS)" "$path" "${owner[$path]}" "$canon")" >&2
+				continue
+			fi
+			owner[$path]="$canon"
+			if ((do_check)) ; then
+				if [[ ! -f "$dir/$BL_UETREE_ALIASES" ]] || [[ "$(cat "$dir/$BL_UETREE_ALIASES" 2>/dev/null)" != "$manifest" ]] ; then
+					printf "$name: %s\n" "$(printf $"manifest missing or stale at %s" "$path")" >&2
+					diffs=$((diffs+1))
+				fi
+			fi
+			if ((rebuild)) ; then
+				if ((dry)) ; then
+					printf 'DRY: %s %s\n' "$flag" "$path"
+				else
+					wf="$BL_UETREE_FLAG_ALIAS" ; [[ "$flag" != "$BL_UETREE_FLAG_CANONICAL" ]] || wf="$BL_UETREE_FLAG_CANONICAL"
+					_bl_uetree_write_format_chain "$root" "$dir" "$wf"
+					printf '%s\n' "$manifest" > "$dir/$BL_UETREE_ALIASES"
+				fi
+			fi
+		done <<< "$manifest"
+	done < <(find "$root" -type f -name "$BL_UETREE_RECORD" -printf '%h\n' | sort -u)
+
+	if ((do_check)) ; then return $((diffs != 0)) ; fi
+	return 0
 }
 
 ### program dispatch ###
