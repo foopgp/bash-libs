@@ -1,61 +1,25 @@
 # © 2024 Henri GEIST <geist.henri@laposte.net>
+# © 2026 Mnèmê (u5=001777236237.945e_43.30_005.38) <mneme@foopgp.org>
 #
 # SPDX-License-Identifier: LGPL-3.0-only
+#
+# Plain bats runner. The reqflow / tappy requirement-traceability machinery was
+# dropped 2026-07-07 (heavy, uninstalled, and broke `make check`) — cf. JJB.
 
-TARGETS            := $(patsubst %.bats, %.tap, $(wildcard *.bats))
-SPECS_DIR          := ../specs
-RESULTS_DIR        := results
-
-SHELL              := /bin/sh
-REQFLOW            := reqflow stat -s
-TAP_CONSUMER       := tappy --verbose
-SHELLCHECK         := shellcheck
-
-BATS_FLAGS         := -F tap13
-REQFLOW_COMMON_OPT := -type        "txt"
-REQFLOW_COMMON_OPT += -sort        "alphanum"
-REQFLOW_SPECS_OPT  := $(REQFLOW_COMMON_OPT)
-REQFLOW_SPECS_OPT  += -start-after "^\\\s*== Requirements"
-REQFLOW_SPECS_OPT  += -req         "^\\\|\\\s*<<(F[pc]_[1-9]([0-9_]*[0-9])?)>>"
-REQFLOW_SPECS_OPT  += -end-req     "^\\\|==="
-REQFLOW_SPECS_OPT  += -stop-after  "^\\\s*== Rationals"
-REQFLOW_TESTS_OPT  := $(REQFLOW_COMMON_OPT)
-REQFLOW_TESTS_OPT  += -stop-after  "^Bail out!"
-REQFLOW_TESTS_OPT  += -req         "^((not )?ok\\\s+\\\d+)\\\s"
-REQFLOW_TESTS_OPT  += -end-req     "^1[.][.]"
-REQFLOW_TESTS_OPT  += -ref         "^[no][ok].*\\\s+\\\d+\\\stest_(F[pc]_[1-9]([0-9_]*[0-9])?)"
-REQFLOW_TESTS_OPT  += -nocov
+BATS       := bats
+SHELLCHECK := shellcheck
+SUITES     := $(wildcard *.bats)
 
 .POSIX:
-.SUFFIXES:
-.SECONDARY:
-.DELETE_ON_ERROR:
+.PHONY: all build check clean
 
 all: check
 
-build: $(addprefix $(RESULTS_DIR)/, $(TARGETS))
+build:
 
-check: $(patsubst %.tap, check_%, $(TARGETS))
-	$(SHELLCHECK)   $(TARGETS:.tap=.bats) setup_teardown.bash
-	$(TAP_CONSUMER) $(RESULTS_DIR)
+check:
+	@if command -v $(SHELLCHECK) >/dev/null ; then $(SHELLCHECK) setup_teardown.bash $(SUITES) ; else echo "note: $(SHELLCHECK) not installed, skipping lint" ; fi
+	$(BATS) $(SUITES)
 
 clean:
-	$(RM) $(addprefix $(RESULTS_DIR)/, $(TARGETS))
-	$(RM) $(TARGETS:.tap=.req)
-
-.PHONY: all build check clean phony
-
-$(foreach ITEM, $(TARGETS),$(eval check_$(ITEM:.tap=): $(RESULTS_DIR)/$(ITEM)))
-
-check_%: %.req phony
-	RESULT=$$($(REQFLOW) -c $< 2>&1) || (printf "%s\n" "$$RESULT" && exit 1)
-
-$(RESULTS_DIR)/%.tap: %.bats ../bin/% setup_teardown.bash ../.shellcheckrc Makefile | $(RESULTS_DIR)
-	-./$< $(BATS_FLAGS) > $@
-
-%.req: Makefile
-	echo 'document $(@:.req=-specs) -path   "$(SPECS_DIR)/$(@:.req=.adoc)" $(REQFLOW_SPECS_OPT)' >  $@
-	echo 'document $(@:.req=-tests) -path "$(RESULTS_DIR)/$(@:.req=.tap)"  $(REQFLOW_TESTS_OPT)' >> $@
-
-$(RESULTS_DIR):
-	mkdir -p $@
+	$(RM) -r results
