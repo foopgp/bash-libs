@@ -1013,7 +1013,8 @@ OPTIONS:
 		return 2
 	fi
 
-	num=$(bl_shrink_num --input-encoding base64url $((BL_PGPID_XUID_MAX - BL_PGPID_XUID_MIN)) <<<"$u4h") && echo $((num + BL_PGPID_XUID_MIN))
+	num=$(bl_shrink_num --input-encoding base64url $((BL_PGPID_XUID_MAX - BL_PGPID_XUID_MIN)) <<<"$u4h") || return $?
+	echo $((num + BL_PGPID_XUID_MIN))
 }
 
 bl_pgpid_gen_key() {
