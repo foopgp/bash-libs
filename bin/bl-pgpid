@@ -632,7 +632,6 @@ OPTIONS:
   -s, --secret                "$"Search through local secret keys instead of public certificate."" - "$"Imply --no-fetch""
   -m, --errexit-g=1           "$"Return an error if there is more than one (1) entry."" - "$"You may replace '1' by an other number""
   -M, --max-from-keyserv MAX  "$"Set maximum matching certificates to receive from keyservers. "$"Default: ""$maxfromks
-  -T, --ownertrust THRESHOLD  "$"Only output fingerprint with ownertrust greater or equal to THRESHOLD."" (Not implemented)
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
   -K, --keyservers KEYSERVERS "$"Search and refresh certificates from this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
@@ -663,8 +662,6 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				[[ "$2" =~ ^[0-9]+$ ]] || { printf "$FUNCNAME: Error: "$"Option %s expect a number"".\n" "--max-from-keyserv" >&2 ; return 2 ; }
 				(($2 <= 100)) || printf "$FUNCNAME: Warning: "$"%s exceeds usual key server limit %s"".\n" "$2" "(100)" >&2
 				shift ; maxfromks=$1 ;;
-			-T|--ownertrust)
-				printf "$FUNCNAME: Error: "$"Sorry, option %s not implemented yet.""\n" "$1" >&2 ; return 2 ;;
 			-K|--keyservers)
 				shift ; keyservs=($1) ;;
 			-H|--homedir)
