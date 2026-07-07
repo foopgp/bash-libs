@@ -173,7 +173,7 @@ _bl_uetree_write_format_chain() {
 	local i last=$((${#segs[@]}-1))
 	for i in "${!segs[@]}" ; do
 		segment="${segs[$i]}"
-		[[ -z "$segment" ]] && continue
+		[[ "$segment" ]] || continue
 		acc="${acc}/${segment}" ; cur="${cur}/${segment}"
 		mkdir -p "$cur"
 		if ((i == last)) ; then want="uetree ${ver} ${leafflag} ${acc}/"
@@ -311,7 +311,7 @@ _bl_uetree_aliases_validate() {
 	_bl_uetree_aliases_parse "$leaf/$BL_UETREE_ALIASES" fl pa || return 1
 	local i canon="" ncanon=0
 	for i in "${!fl[@]}" ; do
-		[[ "${fl[$i]}" == "$BL_UETREE_FLAG_CANONICAL" ]] && { canon="${pa[$i]}" ; ncanon=$((ncanon+1)) ; }
+		[[ "${fl[$i]}" != "$BL_UETREE_FLAG_CANONICAL" ]] || { canon="${pa[$i]}" ; ncanon=$((ncanon+1)) ; }
 	done
 	((ncanon == 1)) || { printf "$FUNCNAME: Error: "$"%s: canonical flag set %d times (expected 1)""\n" "$leaf/$BL_UETREE_ALIASES" "$ncanon" >&2 ; return 1 ; }
 	[[ -r "$root$canon/$BL_UETREE_RECORD" ]] || { printf "$FUNCNAME: Error: "$"%s: canonical leaf %s carries no %s""\n" "$leaf/$BL_UETREE_ALIASES" "$canon" "$BL_UETREE_RECORD" >&2 ; return 1 ; }
@@ -357,7 +357,7 @@ OPTIONS:
 		shift
 	done
 
-	local root="${1:-.}" ; root="${root%/}" ; [[ -z "$root" ]] && root="/"
+	local root="${1:-.}" ; root="${root%/}" ; [[ "$root" ]] || root="/"
 	local -A rrf
 	_bl_uetree_read_format "$root" rrf || { printf "$FUNCNAME: Error: "$"%s is not a uetree node""\n" "$root" >&2 ; return 1 ; }
 
@@ -380,14 +380,14 @@ OPTIONS:
 		[[ "$path" == "$actual" ]] || _ckerr "$(printf $"%s: .FORMAT path %s does not match actual %s" "$dir" "$path" "$actual")"
 
 		has_rec=0 has_ali=0 has_kids=0
-		[[ -f "$dir/$BL_UETREE_RECORD" ]]  && has_rec=1
-		[[ -f "$dir/$BL_UETREE_ALIASES" ]] && has_ali=1
-		[[ -n "$(find "$dir" -mindepth 1 -maxdepth 1 -type d -print -quit)" ]] && has_kids=1
+		[[ ! -f "$dir/$BL_UETREE_RECORD" ]]  || has_rec=1
+		[[ ! -f "$dir/$BL_UETREE_ALIASES" ]] || has_ali=1
+		[[ -z "$(find "$dir" -mindepth 1 -maxdepth 1 -type d -print -quit)" ]] || has_kids=1
 
 		case "$flag" in
 			"$BL_UETREE_FLAG_NODE")
-				((has_rec)) && _ckerr "$(printf $"%s: flagged non-leaf but holds %s" "$dir" "$BL_UETREE_RECORD")"
-				((has_ali)) && _ckerr "$(printf $"%s: flagged non-leaf but holds %s" "$dir" "$BL_UETREE_ALIASES")"
+				((! has_rec)) || _ckerr "$(printf $"%s: flagged non-leaf but holds %s" "$dir" "$BL_UETREE_RECORD")"
+				((! has_ali)) || _ckerr "$(printf $"%s: flagged non-leaf but holds %s" "$dir" "$BL_UETREE_ALIASES")"
 				((has_kids || has_rec || has_ali)) || _ckwarn "$(printf $"%s: dangling routing node (no children)" "$dir")" ;;
 			"$BL_UETREE_FLAG_CANONICAL")
 				nleaves=$((nleaves+1))
@@ -395,7 +395,7 @@ OPTIONS:
 			"$BL_UETREE_FLAG_ALIAS")
 				nleaves=$((nleaves+1))
 				((has_ali)) || _ckerr "$(printf $"%s: flagged alias but has no %s" "$dir" "$BL_UETREE_ALIASES")"
-				((has_rec)) && _ckwarn "$(printf $"%s: alias leaf carries an orphan %s" "$dir" "$BL_UETREE_RECORD")" ;;
+				((! has_rec)) || _ckwarn "$(printf $"%s: alias leaf carries an orphan %s" "$dir" "$BL_UETREE_RECORD")" ;;
 			*) _ckerr "$(printf $"%s: unknown topology flag '%s'" "$dir" "$flag")" ;;
 		esac
 
@@ -417,7 +417,7 @@ OPTIONS:
 			fi
 		fi
 
-		((verbose)) && ! ((quiet)) && printf "$name: Info: %s %s\n" "$flag" "$dir" >&2
+		if ((verbose)) && ! ((quiet)) ; then printf "$name: Info: %s %s\n" "$flag" "$dir" >&2 ; fi
 	done < <(find "$root" -name "$BL_UETREE_FORMAT" -type f)
 	unset -f _ckerr _ckwarn
 
