@@ -147,14 +147,13 @@ _bl_uetree_read_format() {
 	return 0
 }
 
-# Derive an entity's branch type (u4/u5/email/tel/name) from a .FORMAT path.
+# Derive an entity's branch (eid/email/tel/name) from a .FORMAT path.
 _bl_uetree_branch_of_path() {
 	case "$1" in
-		/by-eid/u4/*) echo u4 ;;
-		/by-eid/u5/*) echo u5 ;;
-		/by-email/*)  echo email ;;
-		/by-tel/*)    echo tel ;;
-		/by-name/*)   echo name ;;
+		/by-eid/*)   echo eid ;;
+		/by-email/*) echo email ;;
+		/by-tel/*)   echo tel ;;
+		/by-name/*)  echo name ;;
 		*) return 1 ;;
 	esac
 }
@@ -325,6 +324,58 @@ _bl_uetree_walk_entities() {
 	find "$1" -type f \( -name "$BL_UETREE_RECORD" -o -name "$BL_UETREE_ALIASES" \) -printf '%h\n' | sort -u
 }
 
+### identifier → position (fan-out) helpers ###
+
+# Relative path (from instance root, leading+trailing /) of the leaf indexing
+# an identifier. Echo the path ; return 1 if the value is malformed.
+# An optional u4=/u5=/udid4=/udid5= prefix on the eid is stripped.
+_bl_uetree_relpath_eid() {
+	local eid="${1#u*=}"
+	if [[ "$eid" =~ ^${BL_PGPID_U4_REGEX}$ ]] ; then
+		printf '/by-eid/u4/%s/%s/%s/\n' "${eid:0:2}" "${eid:0:4}" "$eid"
+	elif [[ "$eid" =~ ^${BL_PGPID_U5_REGEX}$ ]] ; then
+		local geo="${eid#*e}" rest lat lng
+		rest="${geo#_}" ; lat="${rest%%_*}" ; lng="${rest#*_}"
+		printf '/by-eid/u5/e_%s/e_%s_%s/%s/\n' "$lng" "$lat" "$lng" "$eid"
+	else
+		return 1
+	fi
+}
+_bl_uetree_relpath_email() {
+	[[ "$1" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || return 1
+	local domain="${1#*@}"
+	printf '/by-email/%s/%s/%s/\n' "${domain##*.}" "${domain,,}" "$1"
+}
+_bl_uetree_relpath_tel() {
+	[[ "$1" =~ ^${BL_UETREE_E164_REGEX}$ ]] || return 1
+	local cc first
+	case "${1:0:2}" in
+		+1) cc="+1" ;;
+		+7) cc="+7" ;;
+		*)  cc="${1:0:3}" ;;
+	esac
+	first="${1:${#cc}:1}"
+	printf '/by-tel/%s/%s/%s/\n' "$cc" "$first" "$1"
+}
+
+# Auto-detect the branch of an item (eid|email|tel|name).
+_bl_uetree_detect_branch() {
+	local bare="${1#u*=}"
+	if [[ "$1" =~ ^u(did)?[45]= ]] || [[ "$bare" =~ ^${BL_PGPID_EID_REGEX}$ ]] ; then echo eid
+	elif [[ "$1" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then echo email
+	elif [[ "$1" =~ ^${BL_UETREE_E164_REGEX}$ ]] ; then echo tel
+	else echo name
+	fi
+}
+
+# Trust level of a canonical relpath : certified under by-eid/, else claimed.
+_bl_uetree_trust_of() {
+	case "$1" in
+		/by-eid/*) echo certified ;;
+		*)         echo claimed ;;
+	esac
+}
+
 ### public actions ###
 
 bl_uetree_check() {
@@ -423,6 +474,132 @@ OPTIONS:
 
 	((quiet)) || printf "$name: %s\n" "$(printf $"%d node(s), %d leaf/leaves, %d error(s), %d warning(s)" "$nnodes" "$nleaves" "$errors" "$warnings")" >&2
 	((errors == 0))
+}
+
+bl_uetree_resolve() {
+	local name
+	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... ITEM"
+	local helpmsg="
+"$"Resolve ITEM (an eid, e-mail, phone or name) to the canonical entity leaf(s)""
+"$"of the uetree at --tree, following the .ALIASES membership manifest.""
+"$"One result per line: <trust> <leaf>, where <trust> is 'certified' (canonical""
+"$"under by-eid/) or 'claimed' (not yet promoted). Exit 141 if nothing matches.""
+
+OPTIONS:
+  -t, --tree PATH          "$"uetree instance root (default: current directory)""
+  -b, --branch BRANCH      "$"Force ITEM's branch: eid|email|tel|name (else auto)""
+  -a, --all                "$"Print every candidate (homonyms, shared), not just the first""
+  -q, --quiet              "$"Print only the leaf path, without the trust column""
+"
+	local root="." branch="" all=0 quiet=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-t|--tree)    shift ; root="$1" ;;
+			-b|--branch)  shift ; branch="$1" ;;
+			-a|--all)     all=1 ;;
+			-q|--quiet)   quiet=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_UETREE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local item="$1"
+	[[ "$item" ]] || { printf "$FUNCNAME: Error: "$"no ITEM given""\n" >&2 ; return 2 ; }
+	root="${root%/}" ; [[ "$root" ]] || root="/"
+	[[ "$branch" ]] || branch=$(_bl_uetree_detect_branch "$item")
+
+	local -a rels=()
+	local rp slug c1 c2 d
+	case "$branch" in
+		eid)   rp=$(_bl_uetree_relpath_eid   "$item") || { printf "$FUNCNAME: Error: "$"malformed eid"" '%s'\n" "$item" >&2 ; return 2 ; } ; rels+=("$rp") ;;
+		email) rp=$(_bl_uetree_relpath_email "$item") || { printf "$FUNCNAME: Error: "$"malformed e-mail"" '%s'\n" "$item" >&2 ; return 2 ; } ; rels+=("$rp") ;;
+		tel)   rp=$(_bl_uetree_relpath_tel   "$item") || { printf "$FUNCNAME: Error: "$"TEL is not E.164"" '%s'\n" "$item" >&2 ; return 2 ; } ; rels+=("$rp") ;;
+		name)  slug=$(_bl_uetree_slugify "$item") || { printf "$FUNCNAME: Error: "$"name too short to slug"" '%s'\n" "$item" >&2 ; return 2 ; }
+			c1="${slug:0:1}" ; c2="${slug:0:2}"
+			for d in "$root"/by-name/*/"$c1"/"$c2"/"$slug"/ ; do
+				[[ -d "$d" ]] || continue
+				rels+=("${d#$root}")
+			done ;;
+		*) printf "$FUNCNAME: Error: "$"unknown branch"" '%s'\n" "$branch" >&2 ; return 2 ;;
+	esac
+
+	local found=0 rel dir c trust out i
+	local -a fl pa canons
+	for rel in "${rels[@]}" ; do
+		dir="$root$rel"
+		[[ -d "$dir" ]] || continue
+		canons=()
+		if [[ -f "$dir/$BL_UETREE_ALIASES" ]] ; then
+			_bl_uetree_aliases_parse "$dir/$BL_UETREE_ALIASES" fl pa
+			for i in "${!fl[@]}" ; do
+				[[ "${fl[$i]}" == "$BL_UETREE_FLAG_CANONICAL" ]] || continue
+				canons+=("${pa[$i]}")
+			done
+		elif [[ -f "$dir/$BL_UETREE_RECORD" ]] ; then
+			canons+=("$rel")
+		elif [[ -f "$dir/$BL_UETREE_HOMONYMS" ]] ; then
+			_bl_uetree_aliases_parse "$dir/$BL_UETREE_HOMONYMS" fl pa
+			canons+=("${pa[@]}")
+		fi
+		for c in "${canons[@]}" ; do
+			trust=$(_bl_uetree_trust_of "$c")
+			((quiet)) && out="$root$c" || out="$trust	$root$c"
+			printf '%s\n' "$out"
+			found=$((found+1))
+			((all)) || return 0
+		done
+	done
+	((found)) || return 141
+	return 0
+}
+
+bl_uetree_leaves() {
+	local name
+	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [PATH]"
+	local helpmsg="
+"$"List the canonical entity leaves (those holding entity.vcf) of the uetree at""
+"$"PATH (default: current directory), one filesystem path per line.""
+
+OPTIONS:
+  -b, --branch BRANCH      "$"Only leaves on branch eid|email|tel|name""
+      --has FILE           "$"Only leaves that contain FILE""
+  -a, --aliases            "$"Also list alias leaves (those holding .ALIASES only)""
+"
+	local branch="" has="" aliases=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-b|--branch)  shift ; branch="$1" ;;
+			--has)        shift ; has="$1" ;;
+			-a|--aliases) aliases=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_UETREE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local root="${1:-.}" ; root="${root%/}" ; [[ "$root" ]] || root="/"
+	local -A rrf rf
+	_bl_uetree_read_format "$root" rrf || { printf "$FUNCNAME: Error: "$"%s is not a uetree node""\n" "$root" >&2 ; return 1 ; }
+
+	local -a anchors=( -name "$BL_UETREE_RECORD" )
+	((! aliases)) || anchors=( '(' -name "$BL_UETREE_RECORD" -o -name "$BL_UETREE_ALIASES" ')' )
+
+	local dir
+	while IFS= read -r dir ; do
+		if [[ "$branch" ]] ; then
+			_bl_uetree_read_format "$dir" rf || continue
+			[[ "$(_bl_uetree_branch_of_path "${rf[path]}")" == "$branch" ]] || continue
+		fi
+		[[ -z "$has" || -e "$dir/$has" ]] || continue
+		printf '%s\n' "$dir"
+	done < <(find "$root" -type f "${anchors[@]}" -printf '%h\n' | sort -u)
 }
 
 ### program dispatch ###
