@@ -325,6 +325,106 @@ _bl_uetree_walk_entities() {
 	find "$1" -type f \( -name "$BL_UETREE_RECORD" -o -name "$BL_UETREE_ALIASES" \) -printf '%h\n' | sort -u
 }
 
+### public actions ###
+
+bl_uetree_check() {
+	local name
+	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [PATH]"
+	local helpmsg="
+"$"Validate a uetree instance rooted at PATH (default: current directory).""
+
+"$"Reconciles each node's .FORMAT topology flag with reality, validates every""
+"$".ALIASES membership manifest (exactly one canonical, canonical holds the""
+"$"record, manifest replicated identically across the entity's positions), and""
+"$"requires FN in every entity.vcf. Exit 0 if clean, 1 if any error was found.""
+
+OPTIONS:
+  -v, --verbose            "$"Report every node checked, not only problems""
+  -q, --quiet              "$"Print only errors, suppress the summary""
+"
+	local verbose=0 quiet=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-v|--verbose) verbose=1 ;;
+			-q|--quiet)   quiet=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_UETREE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local root="${1:-.}" ; root="${root%/}" ; [[ -z "$root" ]] && root="/"
+	local -A rrf
+	_bl_uetree_read_format "$root" rrf || { printf "$FUNCNAME: Error: "$"%s is not a uetree node""\n" "$root" >&2 ; return 1 ; }
+
+	local errors=0 warnings=0 nnodes=0 nleaves=0
+	local -A alias_seen                              # canonical abs path → .ALIASES content (replication)
+	_ckerr()  { errors=$((errors+1)) ; printf "$name: Error: %s\n" "$*" >&2 ; }
+	_ckwarn() { warnings=$((warnings+1)) ; ((quiet)) || printf "$name: Warning: %s\n" "$*" >&2 ; }
+
+	local ff dir flag path actual rel canon content
+	local has_rec has_ali has_kids
+	local -A rf vc
+	while IFS= read -r ff ; do
+		dir="${ff%/$BL_UETREE_FORMAT}"
+		nnodes=$((nnodes+1))
+		if ! _bl_uetree_read_format "$dir" rf ; then _ckerr "$(printf $"%s: invalid or unsupported .FORMAT" "$dir")" ; continue ; fi
+		flag="${rf[flags]}" ; path="${rf[path]}"
+
+		rel="${dir#$root}" ; rel="${rel#/}"
+		[[ -z "$rel" ]] && actual="/" || actual="/$rel/"
+		[[ "$path" == "$actual" ]] || _ckerr "$(printf $"%s: .FORMAT path %s does not match actual %s" "$dir" "$path" "$actual")"
+
+		has_rec=0 has_ali=0 has_kids=0
+		[[ -f "$dir/$BL_UETREE_RECORD" ]]  && has_rec=1
+		[[ -f "$dir/$BL_UETREE_ALIASES" ]] && has_ali=1
+		[[ -n "$(find "$dir" -mindepth 1 -maxdepth 1 -type d -print -quit)" ]] && has_kids=1
+
+		case "$flag" in
+			"$BL_UETREE_FLAG_NODE")
+				((has_rec)) && _ckerr "$(printf $"%s: flagged non-leaf but holds %s" "$dir" "$BL_UETREE_RECORD")"
+				((has_ali)) && _ckerr "$(printf $"%s: flagged non-leaf but holds %s" "$dir" "$BL_UETREE_ALIASES")"
+				((has_kids || has_rec || has_ali)) || _ckwarn "$(printf $"%s: dangling routing node (no children)" "$dir")" ;;
+			"$BL_UETREE_FLAG_CANONICAL")
+				nleaves=$((nleaves+1))
+				((has_rec)) || _ckerr "$(printf $"%s: flagged canonical but has no %s" "$dir" "$BL_UETREE_RECORD")" ;;
+			"$BL_UETREE_FLAG_ALIAS")
+				nleaves=$((nleaves+1))
+				((has_ali)) || _ckerr "$(printf $"%s: flagged alias but has no %s" "$dir" "$BL_UETREE_ALIASES")"
+				((has_rec)) && _ckwarn "$(printf $"%s: alias leaf carries an orphan %s" "$dir" "$BL_UETREE_RECORD")" ;;
+			*) _ckerr "$(printf $"%s: unknown topology flag '%s'" "$dir" "$flag")" ;;
+		esac
+
+		if ((has_rec)) ; then
+			_bl_uetree_parse_vcf "$dir/$BL_UETREE_RECORD" vc
+			[[ "${vc[fn]}" ]] || _ckerr "$(printf $"%s: %s has no FN (required)" "$dir" "$BL_UETREE_RECORD")"
+		fi
+
+		if ((has_ali)) ; then
+			if canon=$(_bl_uetree_aliases_validate "$dir" "$root") ; then
+				content=$(cat "$dir/$BL_UETREE_ALIASES")
+				if [[ -v alias_seen[$canon] ]] ; then
+					[[ "${alias_seen[$canon]}" == "$content" ]] || _ckerr "$(printf $"%s: .ALIASES differs from another position of %s (must be identical)" "$dir" "$canon")"
+				else
+					alias_seen[$canon]="$content"
+				fi
+			else
+				errors=$((errors+1))             # aliases_validate already reported to stderr
+			fi
+		fi
+
+		((verbose)) && ! ((quiet)) && printf "$name: Info: %s %s\n" "$flag" "$dir" >&2
+	done < <(find "$root" -name "$BL_UETREE_FORMAT" -type f)
+	unset -f _ckerr _ckwarn
+
+	((quiet)) || printf "$name: %s\n" "$(printf $"%d node(s), %d leaf/leaves, %d error(s), %d warning(s)" "$nnodes" "$nleaves" "$errors" "$warnings")" >&2
+	((errors == 0))
+}
+
 ### program dispatch ###
 
 if ((BL_UETREE_isprogram)) ; then
