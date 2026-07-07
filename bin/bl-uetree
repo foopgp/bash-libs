@@ -711,6 +711,88 @@ OPTIONS:
 	return 0
 }
 
+bl_uetree_promote() {
+	local name
+	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... BY_EMAIL_LEAF"
+	local helpmsg="
+"$"Promote a by-email/ leaf to its certified canonical by-eid/ position: move the""
+"$"record (and the leaf's files), rewrite its UID (email→eid), and regenerate the""
+"$".ALIASES manifests. Pure filesystem — no git (use '$BL_UETREE_NAME gitsync' for that).""
+
+"$"Certification is delegated to '$BL_PGPID_NAME cert_check' (pass its""
+"$"--referents-ownertrust files here). Unless --no-fetch, the entity's WoT""
+"$"neighbourhood is first fetched with '$BL_PGPID_NAME get --recurse'.""
+
+OPTIONS:
+  -R, --referents-ownertrust FILE  "$"Passed to cert_check (repeatable ; ORDER matters)""
+  -f, --no-fetch                   "$"Trust the local keyring as-is (no keyserver/WKD fetch)""
+  -r, --recurse NUM                "$"Depth for the WoT fetch (default 2 ; see get --recurse)""
+  -n, --dry-run                    "$"Report what would move, change nothing""
+  -v, --verbose                    "$"Also report leaves left uncertified""
+"
+	local nofetch=0 dry=0 verbose=0 recurse=2
+	local -a otopts=()
+	for ((;$#;)) ; do
+		case "$1" in
+			-R|--referents-ownertrust) shift ; otopts+=(--referents-ownertrust "$1") ;;
+			-f|--no-fetch) nofetch=1 ;;
+			-r|--recurse)  shift ; recurse="$1" ;;
+			-n|--dry-run)  dry=1 ;;
+			-v|--verbose)  verbose=1 ;;
+			-h|--help)     printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version)  printf "%s %s\n" "$FUNCNAME" "$BL_UETREE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local leaf="${1%/}"
+	[[ "$leaf" ]] || { printf "$usage\n" >&2 ; return 2 ; }
+	local -A rf
+	_bl_uetree_read_format "$leaf" rf || { printf "$FUNCNAME: Error: "$"%s is not a uetree leaf""\n" "$leaf" >&2 ; return 1 ; }
+	[[ "${rf[path]}" == /by-email/* ]] || { printf "$FUNCNAME: Error: "$"promote operates on a by-email/ leaf, not %s""\n" "${rf[path]}" >&2 ; return 2 ; }
+	local root="${leaf%"${rf[path]%/}"}" ; root="${root%/}" ; [[ "$root" ]] || root="/"
+	local email="${rf[path]%/}" ; email="${email##*/}"
+
+	# 1. populate the WoT neighbourhood, then judge certification (delegated).
+	((nofetch)) || bl_pgpid_get --recurse="$recurse" -- "$email" >/dev/null 2>&1 || true
+	bl_pgpid_cert_check "${otopts[@]}" --quiet -- "$email" || {
+		((! verbose)) || printf "$FUNCNAME: Notice: "$"%s not certified, left in place""\n" "$email" >&2
+		return 0 ; }
+
+	# 2. resolve the certified cert's fingerprint and its eid.
+	local fpr eid
+	fpr=$(bl_pgpid_get --no-fetch --fingerprint -- "$email" 2>/dev/null | head -1)
+	[[ "$fpr" ]] || { printf "$FUNCNAME: Error: "$"certified but no local certificate for %s""\n" "$email" >&2 ; return 1 ; }
+	eid=$(gpg --with-colons --list-keys "0x$fpr" 2>/dev/null | sed -nE "s,^uid:[^re]:.*(u(did)?4=?${BL_PGPID_U4_REGEX}).*,\1,p ; s,^uid:[^re]:.*(u(did)?5=?${BL_PGPID_U5_REGEX}).*,\1,p" | head -1)
+	[[ "$eid" ]] || { printf "$FUNCNAME: Error: "$"%s is certified but carries no eid UID""\n" "$fpr" >&2 ; return 1 ; }
+	eid="${eid/udid/u}"                 # normalise the historical udid4/udid5 alias to u4/u5
+
+	local canonrel canondir
+	canonrel=$(_bl_uetree_relpath_eid "$eid") || { printf "$FUNCNAME: Error: "$"malformed eid %s""\n" "$eid" >&2 ; return 1 ; }
+	canondir="$root$canonrel"
+
+	if ((dry)) ; then
+		printf 'DRY: %s → %s (eid=%s fpr=%s)\n' "$leaf" "$canondir" "$eid" "$fpr"
+		return 0
+	fi
+
+	# 3. pure filesystem: move the record + leaf files to the canonical, rewrite UID, rebuild.
+	_bl_uetree_write_format_chain "$root" "$canondir" "$BL_UETREE_FLAG_CANONICAL"
+	local f
+	for f in "$leaf"/* ; do            # dotfiles (.FORMAT/.ALIASES) stay ; content files move
+		[[ -e "$f" ]] || continue
+		mv -n "$f" "$canondir/"
+	done
+	sed -i -E "s,^UID:.*,UID:urn:uetree:eid:${eid%%=*}:${eid#*=}," "$canondir/$BL_UETREE_RECORD"
+	bl_uetree_aliases --rebuild "$root" >/dev/null
+
+	((! verbose)) || printf "$FUNCNAME: Info: "$"promoted %s → %s""\n" "$email" "$canonrel" >&2
+	printf '%s\n' "$canondir"
+}
+
 ### program dispatch ###
 
 if ((BL_UETREE_isprogram)) ; then
