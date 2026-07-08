@@ -615,6 +615,18 @@ OPTIONS:
 
 ### public functions / program actions ###
 
+# Read `gpg --with-colons` output on stdin ; print the distinct OpenPGP IDs
+# (u4…/u5…, rendered like everywhere else) carried by its uid records, one per
+# line, sorted. $1, if given, is an ERE the uid validity field (colon column 2)
+# must fully match for that uid to be considered (default: any single validity).
+# Shared by 'get' and 'cert_check' so the eid extraction never diverges.
+_bl_pgpid_eids_of() {
+	local vf="${1:-.}"
+	awk -F: -v vf="$vf" '$1=="uid" && $2 ~ ("^(" vf ")$")' \
+		| sed --silent --regexp-extended "s,.*4=?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5=?(${BL_PGPID_U5_REGEX}).*,u5\1,p" \
+		| sort -u
+}
+
 bl_pgpid_get() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
@@ -736,7 +748,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		for cl in "${fprmboxs[@]}" ; do
 			cfpr=${cl%% *}
 			if [[ "$cfpr" != $prevfpr ]] ; then
-				id=" $(gpg --homedir "$gpghome" --with-colons $gpgaction "0x$cfpr" | sed --silent --regexp-extended "s,^uid:.*4=?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,^uid:.*5=?(${BL_PGPID_U5_REGEX}).*,u5\1,p" | sort -u)"
+				id=" $(gpg --homedir "$gpghome" --with-colons $gpgaction "0x$cfpr" | _bl_pgpid_eids_of)"
 				if [[ "$id" == *$'\n'* ]] ; then
 					printf "$FUNCNAME: Warning: "$"Certificate %s contain more than one OpenPGP ID string.""\n" "0x$cfpr" >&2
 					id=" -"
@@ -1737,18 +1749,28 @@ bl_pgpid_cert_check() {
 "$"file's signer MUST already be valid before that file's ownertrust is honoured,""
 "$"otherwise the chain is broken and the command fails.""
 "$"Does not fetch — populate the keyring first with '$BL_PGPID_NAME get --recurse'.""
-"$"Prints one line per target ; exit status 0 iff every target is certified.""
+
+"$"Output mirrors '$BL_PGPID_NAME get' with the verdict appended as field #4""
+"$"(one line per presentable uid) :  FINGERPRINT  EMAIL  EID  VERDICT""
+"$"where VERDICT is certified | uncertified | broken. A certificate is 'broken'""
+"$"when its non-revoked uids carry conflicting or no eid, or when no presentable""
+"$"uid carries an email.""
+"$"Exit status: 0 if all certified, 1 if any uncertified, 196 if any broken.""
 
 OPTIONS:
   -R, --referents-ownertrust FILE  "$"Signed ownertrust file extending the trust (repeatable ; ORDER matters)""
+  -F, --hide-email                 "$"Drop the email column (one line per certificate)""
+  -L, --no-check-eid               "$"Lazy/Legacy: don't require a consistent eid (certs not yet OpenPGP-ID aware)""
   -H, --homedir GNUPGHOME          "$"System GnuPG home to read keys & base ownertrust from (default: ~/.gnupg)""
-  -q, --quiet                      "$"No per-target line ; exit status only""
+  -q, --quiet                      "$"No per-line output ; exit status only""
 "
-	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0
+	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0 hidemail=0 checkeid=1
 	local -a otfiles=()
 	for ((;$#;)) ; do
 		case "$1" in
 			-R|--referents-ownertrust) shift ; otfiles+=("$1") ;;
+			-F|--hide-email)   hidemail=1 ;;
+			-L|--no-check-eid) checkeid=0 ;;
 			-H|--homedir) shift ; syshome=${1:?} ;;
 			-q|--quiet)   quiet=1 ;;
 			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -1767,7 +1789,9 @@ OPTIONS:
 	local gtmp ; gtmp=$(mktemp -d) || return 1
 	trap 'rm -rf "$gtmp"' RETURN
 	local -a GPG=(gpg --homedir "$gtmp" --quiet --batch)
-	gpg --homedir "$syshome" --export           2>/dev/null | "${GPG[@]}" --import           2>/dev/null
+	# Carry local (non-exportable) signatures too: the user's own lsign certifications
+	# are part of the mandatory anchor and must weigh on the computed validities.
+	gpg --homedir "$syshome" --export --export-options export-local-sigs 2>/dev/null | "${GPG[@]}" --import-options import-local-sigs --import 2>/dev/null
 	gpg --homedir "$syshome" --export-ownertrust 2>/dev/null | "${GPG[@]}" --import-ownertrust 2>/dev/null
 
 	# Apply the ordered delegation chain. The anchor — the user's own keys — is
@@ -1783,18 +1807,62 @@ OPTIONS:
 			|| { printf "$FUNCNAME: Error: "$"delegation chain broken: the signer of %s is not (yet) valid""\n" "$otf" >&2 ; return 1 ; }
 		for f in "${ownfprs[@]}" ; do content=$(grep -v "^$f:" <<<"$content") ; done
 		printf '%s\n' "$content" | "${GPG[@]}" --import-ownertrust 2>/dev/null
-		"${GPG[@]}" --check-trustdb 2>/dev/null
 	done
+	# Compute uid validities once (also covers the no-referent case: the user's own
+	# ultimate key is the mandatory anchor even with no -R file).
+	"${GPG[@]}" --check-trustdb 2>/dev/null
 
-	# Verdict per target.
-	local t tfpr verdict rc=0
-	for t in "${targets[@]}" ; do
-		read -r tfpr verdict < <("${GPG[@]}" --with-colons --list-keys -- "$t" 2>/dev/null | awk -F: '
-			$1=="fpr" && !f { f=$10 }
-			$1=="uid" && ($2=="f"||$2=="u") { v=1 }
-			END { print (f?f:"-"), (v?"certified":"uncertified") }')
-		[[ "$verdict" == certified ]] || rc=1
-		((quiet)) || printf -- "%-12s%-42s%s\n" "$verdict" "$tfpr" "$t"
+	# Resolve targets → primary fingerprints, deduplicated. Includes certs with no
+	# emailed uid (so a 'broken' one is still reported).
+	local -a fprs
+	readarray -t fprs < <("${GPG[@]}" --with-colons --list-keys -- "${targets[@]}" 2>/dev/null \
+		| awk -F: '$1=="pub"{p=1} $1=="fpr"&&p{print $10;p=0}' | sort -u)
+	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for"" '%s'...\n" "$targets" >&2 ; return 141 ; }
+
+	# Per-certificate verdict. broken=196 dominates uncertified=1 dominates certified=0.
+	local F colon eidfield verdict sev nNR cl rc=0
+	local -a nreids fueids mbox
+	for F in "${fprs[@]}" ; do
+		colon=$("${GPG[@]}" --with-colons --list-keys "0x$F" 2>/dev/null)
+		readarray -t nreids < <(_bl_pgpid_eids_of '[^r]' <<<"$colon")   # eids on non-revoked uids
+		readarray -t fueids < <(_bl_pgpid_eids_of '[fu]'  <<<"$colon")  # eids on fully-valid uids
+		nNR=${#nreids[@]}
+		# Display lines: one per emailed uid GnuPG deems presentable (validity ∉ i/d/r/e).
+		readarray -t mbox < <("${GPG[@]}" --list-options show-only-fpr-mbox --list-keys "0x$F" 2>/dev/null | sort -u)
+
+		# Field #3 : the single eid the non-revoked uids agree on, else '-'.
+		((nNR==1)) && eidfield="${nreids[0]}" || eidfield="-"
+
+		# Field #4 : the verdict.
+		if (( ${#mbox[@]} == 0 )) ; then
+			verdict=broken ; eidfield="-"                                # no live emailed uid (always fatal)
+		elif ((checkeid)) && ((nNR>=2)) ; then
+			verdict=broken ; eidfield="-"                                # conflicting eids on non-revoked uids
+		elif ((checkeid)) && ((nNR==0)) ; then
+			verdict=broken ; eidfield="-"                                # no eid at all
+		elif ((checkeid)) ; then
+			# nNR==1 : certified iff that eid is borne by a fully-valid (f/u) uid.
+			[[ " ${fueids[*]} " == *" ${nreids[0]} "* ]] && verdict=certified || verdict=uncertified
+		else
+			# --no-check-eid : certified iff any fully-valid (f/u) uid exists.
+			[[ "$(awk -F: '$1=="uid" && ($2=="f"||$2=="u"){print 1;exit}' <<<"$colon")" ]] \
+				&& verdict=certified || verdict=uncertified
+		fi
+
+		case $verdict in broken) sev=196 ;; uncertified) sev=1 ;; *) sev=0 ;; esac
+		((sev<=rc)) || rc=$sev
+
+		((quiet)) || {
+			if ((hidemail)) ; then
+				printf -- "%-42s%-40s%s\n" "$F" " $eidfield" "$verdict"
+			elif (( ${#mbox[@]} == 0 )) ; then
+				printf -- "%-80s%-40s%s\n" "$F" " $eidfield" "$verdict"
+			else
+				for cl in "${mbox[@]}" ; do
+					printf -- "%-80s%-40s%s\n" "$cl" " $eidfield" "$verdict"
+				done
+			fi
+		}
 	done
 	return $rc
 }
