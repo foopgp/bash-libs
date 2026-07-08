@@ -739,7 +739,9 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				id=" $(gpg --homedir "$gpghome" --with-colons $gpgaction "0x$cfpr" | sed --silent --regexp-extended "s,^uid:.*4=?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,^uid:.*5=?(${BL_PGPID_U5_REGEX}).*,u5\1,p" | sort -u)"
 				if [[ "$id" == *$'\n'* ]] ; then
 					printf "$FUNCNAME: Warning: "$"Certificate %s contain more than one OpenPGP ID string.""\n" "0x$cfpr" >&2
-					id=""
+					id=" -"
+				elif [[ "$id" == \  ]] ; then
+					id=" -"
 				fi
 			fi
 			printf -- "%-80s${id}\n" "$cl"
