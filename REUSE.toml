@@ -1,0 +1,25 @@
+version = 1
+
+# SPDX/REUSE annotations for files that are regenerated and therefore cannot
+# carry a stable inline header: xgettext/msgmerge rewrite the .pot/.po headers,
+# and tools/build_card.sh may regenerates card.svg from its sources.
+
+[[annotations]]
+path = [
+    "i18n/bashlibs.pot",
+    "share/locale/es/LC_MESSAGES/bashlibs.po",
+    "share/locale/fr/LC_MESSAGES/bashlibs.po",
+]
+SPDX-FileCopyrightText = [
+    "2026 Jean-Jacques Brucker (u4=sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76) <jjbrucker@foopgp.org>",
+    "2026 Mnèmê (u5=001777236237.945e_43.30_005.38) <mneme@foopgp.org>",
+]
+SPDX-License-Identifier = "LGPL-3.0-only"
+
+[[annotations]]
+path = "share/bash-libs/svg/card.svg"
+SPDX-FileCopyrightText = [
+    "2026 Jean-Jacques Brucker (u4=sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76) <jjbrucker@foopgp.org>",
+    "2026 Mnèmê (u5=001777236237.945e_43.30_005.38) <mneme@foopgp.org>",
+]
+SPDX-License-Identifier = "CC-BY-SA-4.0"

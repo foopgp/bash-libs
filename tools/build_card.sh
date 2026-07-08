@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# Copyright © 2026 Mnèmê (u5=001777236237.945e_43.30_005.38) <mneme@foopgp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-only
+#
 # Regenerate share/bash-libs/svg/card.svg from:
 #   foopgp-hugowebsite/resources/svg/foopgp_card_fr.svg  (top zone, 30mm — uniform scale)
 #   bin/bl-pgpid's inline BL_PGPID_STICKER_TEMPLATE      (bottom zone, 25mm verbatim)
