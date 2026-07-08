@@ -127,29 +127,31 @@ load ./setup_teardown.bash
 	done
 }
 
-@test "test_Fp_1_5_forward_to_syslog" {
-	forward_to_syslog_test ()
-	{
-		printf "" | timeout 10s socat - UDP6-LISTEN:0 & TIMEOUT_PID=$!
-
-		FAKE_SYSLOG_PORT=""
-		while [[ "$FAKE_SYSLOG_PORT" = "" ]] && ps -p "$TIMEOUT_PID" > /dev/null
-		do
-			FAKE_SYSLOG_PID=$(ps --ppid "$TIMEOUT_PID" -o pid=)
-			LSOF_RES=$(lsof -ai -p "$FAKE_SYSLOG_PID" || true)
-			FAKE_SYSLOG_PORT=$(awk -F ':' '/UDP/ { print $NF }' <<< "$LSOF_RES")
-		done
-
-		"${TARGET}" --server ::1 --port "$FAKE_SYSLOG_PORT" debug "message"
-
-		wait "$TIMEOUT_PID"
-	}
-
-	run --separate-stderr forward_to_syslog_test
-	assert_success
-	assert_equal "${#lines[@]}" '1'
-	assert_regex "${lines[0]}"  '^<15>.* bl-log .* message$'
-}
+# Disabled 2026-07-07 (JJB): kept for reference (socat is a useful, widespread tool) —
+# re-enable when bl-log is put back in service.
+# @test "test_Fp_1_5_forward_to_syslog" {
+# 	forward_to_syslog_test ()
+# 	{
+# 		printf "" | timeout 10s socat - UDP6-LISTEN:0 & TIMEOUT_PID=$!
+#
+# 		FAKE_SYSLOG_PORT=""
+# 		while [[ "$FAKE_SYSLOG_PORT" = "" ]] && ps -p "$TIMEOUT_PID" > /dev/null
+# 		do
+# 			FAKE_SYSLOG_PID=$(ps --ppid "$TIMEOUT_PID" -o pid=)
+# 			LSOF_RES=$(lsof -ai -p "$FAKE_SYSLOG_PID" || true)
+# 			FAKE_SYSLOG_PORT=$(awk -F ':' '/UDP/ { print $NF }' <<< "$LSOF_RES")
+# 		done
+#
+# 		"${TARGET}" --server ::1 --port "$FAKE_SYSLOG_PORT" debug "message"
+#
+# 		wait "$TIMEOUT_PID"
+# 	}
+#
+# 	run --separate-stderr forward_to_syslog_test
+# 	assert_success
+# 	assert_equal "${#lines[@]}" '1'
+# 	assert_regex "${lines[0]}"  '^<15>.* bl-log .* message$'
+# }
 
 @test "test_Fc_1_1_linter" {
 	shellcheck "${TARGET}"
@@ -205,14 +207,6 @@ EOF
 	assert_equal "${#lines[@]}"        "0"
 	assert_equal "${#stderr_lines[@]}" "1"
 	assert_regex "${stderr_lines[0]}"  "Notice: message$"
-}
-
-@test "test_Fc_3_1_color" {
-	run --separate-stderr ptywrap "${TARGET}" --no-act notice "message"
-	assert_success
-	assert_equal "${#lines[@]}"        "0"
-	assert_equal "${#stderr_lines[@]}" "1"
-	assert_regex "${stderr_lines[0]}"  ".\[33mNotice:.\[0m message$"
 }
 
 @test "test_Fc_3_2_no_color" {

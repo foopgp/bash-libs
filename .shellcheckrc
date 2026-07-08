@@ -4,3 +4,4 @@
 
 enable=all
 disable=SC2250 # Suggest putting braces around all variable references
+disable=SC2312 # Command in $(...) whose return value has no impact here (JJB 2026-07-07)
