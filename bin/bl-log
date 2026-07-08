@@ -306,8 +306,8 @@ bl_log() {
 
 	set "${BL_LOG_ARGV[@]}"
 
-	local priority=$1
-	local plname=${1##*.}
+	local priority=${1,,}
+	local plname=${priority##*.}
 	local result
 
 	for item in "${!BL_LOGLEVELS[@]}"
