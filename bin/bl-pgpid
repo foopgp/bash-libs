@@ -1789,9 +1789,9 @@ OPTIONS:
 	local gtmp ; gtmp=$(mktemp -d) || return 1
 	trap 'rm -rf "$gtmp"' RETURN
 	local -a GPG=(gpg --homedir "$gtmp" --quiet --batch)
-	# Carry local (non-exportable) signatures too: the user's own lsign certifications
-	# are part of the mandatory anchor and must weigh on the computed validities.
-	gpg --homedir "$syshome" --export --export-options export-local-sigs 2>/dev/null | "${GPG[@]}" --import-options import-local-sigs --import 2>/dev/null
+	# Only publicly-verifiable (exportable) certifications count — transparency: any
+	# third party must be able to reach the same verdict. Local signatures are ignored.
+	gpg --homedir "$syshome" --export           2>/dev/null | "${GPG[@]}" --import           2>/dev/null
 	gpg --homedir "$syshome" --export-ownertrust 2>/dev/null | "${GPG[@]}" --import-ownertrust 2>/dev/null
 
 	# Apply the ordered delegation chain. The anchor — the user's own keys — is

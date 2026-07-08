@@ -30,23 +30,24 @@ build_wot () {
 		gpg "${B[@]}" --homedir "$RH" --quick-generate-key "$1" ed25519 sign 0 >/dev/null 2>&1
 		RF=$(gpg --no-options --homedir "$RH" --with-colons -k | awk -F: '$1=="pub"{p=1} $1=="fpr"&&p{print $10;exit}')
 		shift ; for u in "$@" ; do gpg "${B[@]}" --homedir "$RH" --quick-add-uid "$RF" "$u" >/dev/null 2>&1 ; done ; }
-	_imp ()   { gpg --no-options --homedir "$1" --export "$2" 2>/dev/null | gpg --no-options --homedir "$HA" --import >/dev/null 2>&1 ; }
-	_lsign () { gpg "${B[@]}" --homedir "$HA" --yes --quick-lsign-key "$1" >/dev/null 2>&1 ; }
+	_imp ()  { gpg --no-options --homedir "$1" --export "$2" 2>/dev/null | gpg --no-options --homedir "$HA" --import >/dev/null 2>&1 ; }
+	# Exportable certification (not lsign): only public sigs count — cert_check ignores local ones.
+	_sign () { gpg "${B[@]}" --homedir "$HA" --yes --quick-sign-key "$1" >/dev/null 2>&1 ; }
 
 	gpg "${B[@]}" --homedir "$HA" --quick-generate-key "Anchor <anchor@example.org>" ed25519 sign 0 >/dev/null 2>&1
 
-	_gen "Alice (u4=$EID1) <alice@example.org>" ; T1=$RF ; _imp "$RH" "$T1" ; rm -rf "$RH" ; _lsign "$T1"
+	_gen "Alice (u4=$EID1) <alice@example.org>" ; T1=$RF ; _imp "$RH" "$T1" ; rm -rf "$RH" ; _sign "$T1"
 	_gen "Bob (u4=$EID1) <bob@example.org>"     ; T2=$RF ; _imp "$RH" "$T2" ; rm -rf "$RH"
 	_gen "Carol (u4=$EID1) <carol@example.org>" "Carol2 (u4=$EID2) <carol2@example.org>" ; T3=$RF ; _imp "$RH" "$T3" ; rm -rf "$RH"
 	_gen "Dan <dan@example.org>"                ; T4=$RF ; _imp "$RH" "$T4" ; rm -rf "$RH"
-	_gen "Dave <dave@example.org>"              ; T4s=$RF; _imp "$RH" "$T4s"; rm -rf "$RH" ; _lsign "$T4s"
+	_gen "Dave <dave@example.org>"              ; T4s=$RF; _imp "$RH" "$T4s"; rm -rf "$RH" ; _sign "$T4s"
 	_gen "Eve (u4=$EID1)"                        ; T5=$RF ; _imp "$RH" "$T5" ; rm -rf "$RH"
 
 	# T6 : eid on a NON-f/u uid ; the f/u uid (the plain one) has no eid.
 	_gen "Al6 (u4=$EID1) <a6@example.org>" "Plain6 <b6@example.org>" ; T6=$RF ; _imp "$RH" "$T6" ; rm -rf "$RH"
 	gpg "${B[@]}" --homedir "$HA" --command-fd 0 --edit-key "$T6" >/dev/null 2>&1 <<-EOF
 	uid 2
-	lsign
+	sign
 	y
 	save
 	EOF
