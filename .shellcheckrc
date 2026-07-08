@@ -1,7 +1,16 @@
 # © 2024 Henri GEIST <geist.henri@laposte.net>
+# © 2026 Jean-Jacques Brucker (u4=sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76) <jjbrucker@foopgp.org>
 #
 # SPDX-License-Identifier: CC0-1.0+
 
 enable=all
-disable=SC2250 # Suggest putting braces around all variable references
-disable=SC2312 # Command in $(...) whose return value has no impact here (JJB 2026-07-07)
+disable=SC2059 # (info): Don't use variables in the printf format string. Use printf '..%s..' "$foo".
+disable=SC2128 # (warning): Expanding an array without an index only gives the first element.
+disable=SC2248 # (style): Prefer double quoting even when variables don't contain special characters
+disable=SC2250 # (style): Prefer putting braces around variable references even when not strictly required.
+disable=SC2310 # (info): This function is invoked in an || condition so set -e will be disabled. Invoke separately if failures should cause the script to exit.
+disable=SC2311 # (info): Bash implicitly disabled set -e for this function invocation because it's inside a command substitution. Add set -e; before it or enable inherit_errexit.
+disable=SC2312 # (info): Consider invoking this command separately to avoid masking its return value (or use '|| true' to ignore).
+
+# Follow source statements (cf: -x, --external-sources)
+external-sources=true
