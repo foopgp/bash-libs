@@ -645,6 +645,8 @@ OPTIONS:
   -m, --errexit-g=1           "$"Return an error if there is more than one (1) entry."" - "$"You may replace '1' by an other number""
   -M, --max-from-keyserv MAX  "$"Set maximum matching certificates to receive from keyservers. "$"Default: ""$maxfromks
   -r, --recurse[=NUM]         "$"Also fetch & display the certs signing the target(s), NUM levels deep (default 1, max 6)""
+      --import-clean          "$"After import, remove any signatures from the certificate that are not usable, including from certificates that are not present on the keyring""
+      --import-minimal        "$"Import the smallest certificate possible, removing almost all signatures""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
   -K, --keyservers KEYSERVERS "$"Search and refresh certificates from this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
@@ -653,6 +655,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	local gpgaction="--list-keys"
 	local wkdcmd="gpg --auto-key-locate clear,wkd --locate-external-keys"
 	local errexit=$(getconf INT_MAX)
+	local importclean="no-import-clean" importminimal="no-import-minimal"
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local recurse=0 _recursing=0
 	local -a passopts=()                       # options propagated to --recurse self-calls
@@ -683,6 +686,10 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				recurse=${1#*=}
 				[[ "$recurse" =~ ^[0-6]$ ]] || { printf "$FUNCNAME: Error: "$"Option %s expects a number in 0..6"".\n" "--recurse=" >&2 ; return 2 ; } ;;
 			--_recursing) _recursing=1 ;;   # internal: this call is a --recurse descendant
+			--import-clean)
+				importclean="import-clean" ; passopts+=(--import-clean) ;;
+			--import-minimal)
+				importminimal="import-minimal" ; passopts+=(--import-minimal) ;;
 			-K|--keyservers)
 				shift ; keyservs=($1) ; passopts+=(--keyservers "$1") ;;
 			-H|--homedir)
@@ -723,17 +730,17 @@ $(printf -- "%80s\n" ${keyservs[@]})
 					printf "$FUNCNAME: Notice: "$"No certificate for %s on %s.""\n" "'$user'" "'$keyserv'" >&2
 					continue
 				elif ((${#ksfprs[@]} <= maxfromks )) ; then
-					curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import-options import-clean --import || true
+					curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import-options ${importclean},${importminimal} --import || true
 				else
 					local i
 					for ((i=0;i<maxfromks;i++)) ; do
-						curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=0x${ksfprs[i]}" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import
+						curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=0x${ksfprs[i]}" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import-options ${importclean},${importminimal} --import
 					done
 				fi
 			done
 		done
 	fi
-	$wkdcmd --homedir "$gpghome" $(grep -o --extended-regexp "$BL_INTERACTIVE_EMAIL_REGEX" <<<"${users[@]}") || true
+	$wkdcmd --homedir "$gpghome" --import-options ${importclean},${importminimal} $(grep -o --extended-regexp "$BL_INTERACTIVE_EMAIL_REGEX" <<<"${users[@]}") || true
 
 	local -a fprmboxs fprs
 	readarray -t fprmboxs < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction -- "${users[@]}" | sort -u )
@@ -1484,7 +1491,7 @@ OPTIONS:
 	[[ "${aaname[pgpid_certurl]}" != "[not set]" ]] || aaname[pgpid_certurl]=""
 	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
 		((quiet)) || printf "$FUNCNAME: Notice: "$"Getting pubkey from %s …""\n" "${aaname[pgpid_certurl]}" >&2
-		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import-options keep-ownertrust,import-clean --import ; then
+		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import ; then
 			cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 		fi
 	fi
@@ -1646,7 +1653,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	local targetid targetfpr keyfpr
 	for ((;$#;)) ; do
-		if [[ "$1" =~ (${BL_PGPID_U4_REGEX}|${BL_PGPID_U5_REGEX}) ]] ; then
+		if [[ "$1" =~ ${BL_PGPID_EID_REGEX} ]] ; then
 			targetid=${BASH_REMATCH[0]}
 		elif [[ "${1^^}" =~ ^[ABCDEF0-9]{40}$ ]] ; then
 			targetfpr=${BASH_REMATCH[0]}
