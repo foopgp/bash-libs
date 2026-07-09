@@ -1750,12 +1750,11 @@ bl_pgpid_cert_check() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... NAME|EID|EMAIL|FPR..."
 	local helpmsg="
-"$"Tell whether each NAME|EID|EMAIL|FPR is WoT-certified — relative to the user's""
-"$"own trust (the mandatory, implicit anchor), optionally extended IN ORDER by one""
-"$"or more signed referents-ownertrust files. The chain is a delegation: each""
-"$"file's signer MUST already be valid before that file's ownertrust is honoured,""
-"$"otherwise the chain is broken and the command fails.""
-"$"Does not fetch — populate the keyring first with '$BL_PGPID_NAME get --recurse'.""
+"$"Tell whether each NAME|EID|EMAIL|FPR is WoT-certified, reading the trust exactly""
+"$"as it currently stands in the GnuPG home: a pure query — it never fetches nor""
+"$"mutates. Populate the keyring first with '$BL_PGPID_NAME get --recurse', and""
+"$"extend the trust with signed delegations beforehand by running""
+"$"'$BL_PGPID_NAME update_trustdb' with the signed ownertrust files.""
 
 "$"Default output is one line per certificate :  FINGERPRINT  EID  VERDICT.  With""
 "$"--show-email it mirrors '$BL_PGPID_NAME get' : an EMAIL column is inserted as""
@@ -1766,17 +1765,14 @@ bl_pgpid_cert_check() {
 "$"Exit status: 0 if all certified, 1 if any uncertified, 196 if any broken.""
 
 OPTIONS:
-  -R, --referents-ownertrust FILE  "$"Signed ownertrust file extending the trust (repeatable ; ORDER matters)""
   -E, --show-email                 "$"Add the email column (one line per presentable uid ; default: one line per certificate)""
   -L, --no-check-eid               "$"Lazy/Legacy: don't require a consistent eid (certs not yet OpenPGP-ID aware)""
-  -H, --homedir GNUPGHOME          "$"System GnuPG home to read keys & base ownertrust from (default: ~/.gnupg)""
+  -H, --homedir GNUPGHOME          "$"GnuPG home to read keys & trust from (default: ~/.gnupg)""
   -q, --quiet                      "$"No per-line output ; exit status only""
 "
 	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0 showmail=0 checkeid=1
-	local -a otfiles=()
 	for ((;$#;)) ; do
 		case "$1" in
-			-R|--referents-ownertrust) shift ; otfiles+=("$1") ;;
 			-E|--show-email)   showmail=1 ;;
 			-L|--no-check-eid) checkeid=0 ;;
 			-H|--homedir) shift ; syshome=${1:?} ;;
@@ -1792,33 +1788,11 @@ OPTIONS:
 	[[ "$1" ]] || { printf "$usage\n" >&2 ; return 2 ; }
 	local -a targets=("$@")
 
-	# Isolated trust computation: copy the system public keys + base ownertrust into
-	# a throwaway homedir, so we never mutate the user's real trustdb.
-	local gtmp ; gtmp=$(mktemp -d) || return 1
-	trap 'rm -rf "$gtmp"' RETURN
-	local -a GPG=(gpg --homedir "$gtmp" --quiet --batch)
-	# Only publicly-verifiable (exportable) certifications count — transparency: any
-	# third party must be able to reach the same verdict. Local signatures are ignored.
-	gpg --homedir "$syshome" --export           2>/dev/null | "${GPG[@]}" --import           2>/dev/null
-	gpg --homedir "$syshome" --export-ownertrust 2>/dev/null | "${GPG[@]}" --import-ownertrust 2>/dev/null
-
-	# Apply the ordered delegation chain. The anchor — the user's own keys — is
-	# inviolable: a referent may extend trust to others but not redefine how much the
-	# user trusts themselves, so we strip the user's own keys from each imported list.
-	local -a ownfprs ; readarray -t ownfprs < <(gpg --homedir "$syshome" --list-secret-keys --with-colons 2>/dev/null | awk -F: '$1=="fpr"{print $10}')
-	local otf content signer f
-	for otf in "${otfiles[@]}" ; do
-		content=$("${GPG[@]}" --status-fd 3 --decrypt "$otf" 3>"$gtmp/status" 2>/dev/null)
-		signer=$(awk '$2=="VALIDSIG"{print $3; exit}' "$gtmp/status")
-		[[ "$signer" ]] || { printf "$FUNCNAME: Error: "$"cannot verify the signature of %s (signer key missing?)""\n" "$otf" >&2 ; return 1 ; }
-		[[ "$("${GPG[@]}" --with-colons --list-keys "0x$signer" 2>/dev/null | awk -F: '$1=="uid" && ($2=="f"||$2=="u"){print 1; exit}')" ]] \
-			|| { printf "$FUNCNAME: Error: "$"delegation chain broken: the signer of %s is not (yet) valid""\n" "$otf" >&2 ; return 1 ; }
-		for f in "${ownfprs[@]}" ; do content=$(grep -v "^$f:" <<<"$content") ; done
-		printf '%s\n' "$content" | "${GPG[@]}" --import-ownertrust 2>/dev/null
-	done
-	# Compute uid validities once (also covers the no-referent case: the user's own
-	# ultimate key is the mandatory anchor even with no -R file).
-	"${GPG[@]}" --check-trustdb 2>/dev/null
+	# Pure read: query the trust exactly as it currently stands in the real homedir —
+	# no throwaway copy, no import, no --check-trustdb. Extending the trust (and the
+	# only mutating step) belongs to '$BL_PGPID_NAME update_trustdb'. Local signatures,
+	# if any, count as GnuPG sees them.
+	local -a GPG=(gpg --homedir "$syshome" --quiet --batch)
 
 	# Resolve targets → primary fingerprints, deduplicated. Includes certs with no
 	# emailed uid (so a 'broken' one is still reported).
@@ -1873,6 +1847,132 @@ OPTIONS:
 		}
 	done
 	return $rc
+}
+
+bl_pgpid_update_trustdb() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [OWNERTRUST_FILE]..."
+	local helpmsg="
+"$"Recompute the GnuPG trustdb (like 'gpg --update-trustdb'), first extending the""
+"$"trust with each signed OWNERTRUST_FILE given, IN ORDER. Every file's signature is""
+"$"verified and its signer MUST already be valid, else the delegation chain is broken""
+"$"and nothing is applied. Applying MUTATES the real trustdb — a deliberate act: the""
+"$"current ownertrust is backed up first, the change is reported as a unified diff,""
+"$"and the exact command to restore the backup is printed.""
+
+"$"Without --batch the final recompute is the interactive 'gpg --update-trustdb',""
+"$"which lets you complete the ownertrust of the remaining keys ; with --batch it is""
+"$"the non-interactive 'gpg --check-trustdb'.""
+
+OPTIONS:
+  -H, --homedir GNUPGHOME  "$"GnuPG home to update (default: ~/.gnupg)""
+      --batch              "$"Non-interactive: recompute with 'gpg --check-trustdb', never prompt""
+  -q, --quiet              "$"Only Error/Warning output""
+"
+	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0 batch=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-H|--homedir) shift ; syshome=${1:?} ;;
+			--batch)      batch=1 ;;
+			-q|--quiet)   quiet=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local -a otfiles=("$@")
+
+	local -a GPG=(gpg --homedir "$syshome" --quiet --batch)
+
+	# Extend the trust with the given signed ownertrust files, if any.
+	if (( ${#otfiles[@]} > 0 )) ; then
+		# Anchor : the user's own keys are inviolable — a referent may extend trust to
+		# others but not redefine the user's trust in themselves, so we strip them out.
+		local -a ownfprs ; readarray -t ownfprs < <("${GPG[@]}" --list-secret-keys --with-colons 2>/dev/null | awk -F: '$1=="fpr"{print $10}')
+
+		# Verify every file's signature (needs no trust for that), reject an invalid one,
+		# collect its stripped ownertrust, and warn on an out-of-window signature — older
+		# than a year, or in the future (a future date usually means a wrong local clock).
+		local now oneyearago ; now=$(date +%s) ; oneyearago=$((now - 31536000))
+		local otf signer sigepoch content f i l ok
+		local -a otcontents=() otsigners=()
+		local statusf ; statusf=$(mktemp) || return 1
+		trap 'rm -f "$statusf"' RETURN
+		for otf in "${otfiles[@]}" ; do
+			if ! content=$("${GPG[@]}" --status-fd 3 --decrypt "$otf" 3>"$statusf" 2>/dev/null) ; then
+				printf "$FUNCNAME: Error: "$"cannot read or verify %s (missing, not signed, or bad signature?)""\n" "$otf" >&2 ; return 1
+			fi
+			signer=$(awk '$2=="VALIDSIG"{print $3; exit}' "$statusf")
+			sigepoch=$(awk '$2=="VALIDSIG"{print $5; exit}' "$statusf")
+			[[ "$signer" ]] || { printf "$FUNCNAME: Error: "$"%s carries no verifiable signature (signer key missing?)""\n" "$otf" >&2 ; return 1 ; }
+			if [[ "$sigepoch" =~ ^[0-9]+$ ]] && (( sigepoch > now )) ; then
+				printf "$FUNCNAME: Warning: "$"%s is signed in the future (%s) — is the local clock right?""\n" "$otf" "$(date --utc --date=@"$sigepoch" +%Y-%m-%d)" >&2
+			elif [[ "$sigepoch" =~ ^[0-9]+$ ]] && (( sigepoch < oneyearago )) ; then
+				printf "$FUNCNAME: Warning: "$"%s carries a delegation older than a year (%s)""\n" "$otf" "$(date --utc --date=@"$sigepoch" +%Y-%m-%d)" >&2
+			fi
+			# The raw content must actually be ownertrust ('FINGERPRINT:TRUST:' lines), else
+			# the file is not a delegation and we refuse it rather than silently ignore it.
+			# Validate BEFORE stripping the anchor, so a file that only trusts the anchor
+			# (legitimately stripped to nothing) is not mistaken for garbage.
+			ok=0
+			while IFS= read -r l ; do
+				[[ -n "$l" && "$l" != \#* ]] || continue
+				[[ "$l" =~ ^[0-9A-Fa-f]{16,}:[0-9]{1,3}: ]] || { ok=0 ; break ; }
+				ok=1
+			done <<<"$content"
+			((ok)) || { printf "$FUNCNAME: Error: "$"%s is not a valid ownertrust file""\n" "$otf" >&2 ; return 1 ; }
+			for f in "${ownfprs[@]}" ; do content=$(grep -v "^$f:" <<<"$content" || true) ; done
+			otcontents+=("$content") ; otsigners+=("$signer")
+		done
+
+		# Idempotence : compute the prospective ownertrust textually (later files override
+		# earlier ones, per fingerprint). Apply only if it differs from the current one.
+		local before after
+		before=$("${GPG[@]}" --export-ownertrust 2>/dev/null | grep -v '^#' | sort)
+		after=$( { printf '%s\n' "$before" ; printf '%s\n' "${otcontents[@]}" | grep -v '^#' ; } \
+			| awk -F: 'NF>=2 && $1 ~ /^[0-9A-Fa-f]+$/ {t[$1]=$2} END{for(k in t) print k":"t[k]":"}' | sort )
+		if [[ "$after" == "$before" ]] ; then
+			((quiet)) || printf "$FUNCNAME: Info: "$"the delegations are already applied — ownertrust left unchanged""\n" >&2
+		else
+			# Back up the current ownertrust before mutating, in a dedicated timestamped file.
+			local backupdir="$syshome/ownertrust-backups" backupf
+			mkdir -p "$backupdir" || return 1
+			backupf="$backupdir/ownertrust-$(date --utc +%Y%m%dT%H%M%SZ).txt"
+			"${GPG[@]}" --export-ownertrust > "$backupf" 2>/dev/null
+			printf "$FUNCNAME: Notice: "$"current ownertrust backed up in %s""\n" "$backupf" >&2
+
+			# Apply the ordered delegation chain : each file's signer must already be valid
+			# (GnuPG auto-recomputes on access, so file N+1 sees file N's effect).
+			for i in "${!otfiles[@]}" ; do
+				signer=${otsigners[i]}
+				[[ "$("${GPG[@]}" --with-colons --list-keys "0x$signer" 2>/dev/null | awk -F: '$1=="uid" && ($2=="f"||$2=="u"){print 1; exit}')" ]] \
+					|| { printf "$FUNCNAME: Error: "$"delegation chain broken: the signer of %s is not (yet) valid""\n" "${otfiles[i]}" >&2 ; return 1 ; }
+				printf '%s\n' "${otcontents[i]}" | "${GPG[@]}" --import-ownertrust 2>/dev/null
+			done
+
+			# Report the change as a human-readable unified diff of the sorted ownertrust,
+			# and how to undo it.
+			((quiet)) || {
+				after=$("${GPG[@]}" --export-ownertrust 2>/dev/null | grep -v '^#' | sort)
+				printf "$FUNCNAME: Info: "$"ownertrust changes:""\n" >&2
+				diff --unified --color=auto --label old-ownertrust --label new-ownertrust \
+					<(printf '%s\n' "$before") <(printf '%s\n' "$after") >&2 || true
+			}
+			printf "$FUNCNAME: Notice: "$"to restore the previous trust: ""gpg --homedir %s --import-ownertrust %s && gpg --homedir %s --batch --check-trustdb\n" "$syshome" "$backupf" "$syshome" >&2
+		fi
+	fi
+
+	# Recompute the trustdb : interactively complete the ownertrust of the remaining keys
+	# ('gpg --update-trustdb'), unless --batch selects the non-interactive 'gpg --check-trustdb'.
+	if ((batch)) ; then
+		gpg --homedir "$syshome" --batch --check-trustdb 2>/dev/null
+	else
+		gpg --homedir "$syshome" --update-trustdb
+	fi
 }
 
 bl_pgpid_print() (
