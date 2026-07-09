@@ -756,19 +756,18 @@ OPTIONS:
 	local root="${leaf%"${rf[path]%/}"}" ; root="${root%/}" ; [[ "$root" ]] || root="/"
 	local email="${rf[path]%/}" ; email="${email##*/}"
 
-	# 1. populate the WoT neighbourhood, then judge certification (delegated).
+	# 1. populate the WoT neighbourhood, then read the verdict AND the identity from
+	#    cert_check in one shot — single source of truth for the fingerprint, the eid
+	#    (already normalised to u4/u5) and the trust. Promote only a 'certified' cert.
 	((nofetch)) || bl_pgpid_get --recurse="$recurse" -- "$email" >/dev/null 2>&1 || true
-	bl_pgpid_cert_check "${otopts[@]}" --quiet -- "$email" || {
+	local fpr eid verdict
+	read -r fpr eid verdict < <(bl_pgpid_cert_check "${otopts[@]}" --hide-email -- "$email" 2>/dev/null | awk '$NF=="certified"{print;exit}')
+	if [[ "$verdict" != certified ]] ; then
 		((! verbose)) || printf "$FUNCNAME: Notice: "$"%s not certified, left in place""\n" "$email" >&2
-		return 0 ; }
-
-	# 2. resolve the certified cert's fingerprint and its eid.
-	local fpr eid
-	fpr=$(bl_pgpid_get --no-fetch --fingerprint -- "$email" 2>/dev/null | head -1)
-	[[ "$fpr" ]] || { printf "$FUNCNAME: Error: "$"certified but no local certificate for %s""\n" "$email" >&2 ; return 1 ; }
-	eid=$(gpg --with-colons --list-keys "0x$fpr" 2>/dev/null | sed -nE "s,^uid:[^re]:.*(u(did)?4=?${BL_PGPID_U4_REGEX}).*,\1,p ; s,^uid:[^re]:.*(u(did)?5=?${BL_PGPID_U5_REGEX}).*,\1,p" | head -1)
-	[[ "$eid" ]] || { printf "$FUNCNAME: Error: "$"%s is certified but carries no eid UID""\n" "$fpr" >&2 ; return 1 ; }
-	eid="${eid/udid/u}"                 # normalise the historical udid4/udid5 alias to u4/u5
+		return 0
+	fi
+	[[ "$eid" != - ]] || { printf "$FUNCNAME: Error: "$"%s is certified but carries no eid""\n" "$fpr" >&2 ; return 1 ; }
+	eid="${eid:0:2}=${eid:2}"           # cert_check renders u4value ; promote's paths/UID use u4=value
 
 	local canonrel canondir
 	canonrel=$(_bl_uetree_relpath_eid "$eid") || { printf "$FUNCNAME: Error: "$"malformed eid %s""\n" "$eid" >&2 ; return 1 ; }
