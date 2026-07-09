@@ -761,7 +761,7 @@ OPTIONS:
 	#    (already normalised to u4/u5) and the trust. Promote only a 'certified' cert.
 	((nofetch)) || bl_pgpid_get --recurse="$recurse" -- "$email" >/dev/null 2>&1 || true
 	local fpr eid verdict
-	read -r fpr eid verdict < <(bl_pgpid_cert_check "${otopts[@]}" --hide-email -- "$email" 2>/dev/null | awk '$NF=="certified"{print;exit}')
+	read -r fpr eid verdict < <(bl_pgpid_cert_check "${otopts[@]}" -- "$email" 2>/dev/null | awk '$NF=="certified"{print;exit}')
 	if [[ "$verdict" != certified ]] ; then
 		((! verbose)) || printf "$FUNCNAME: Notice: "$"%s not certified, left in place""\n" "$email" >&2
 		return 0

@@ -71,9 +71,9 @@ wot () { build_wot ; source "${BATS_RUN_TMPDIR}/pgpid-wot/fprs.env" ; }
 	assert_failure 2
 }
 
-@test "cert_check certified : anchor-signed, single eid+email" {
+@test "cert_check -E shows email : anchor-signed, single eid+email" {
 	wot
-	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T1"
+	run --separate-stderr "${TARGET}" cert_check -H "$HA" -E "0x$T1"
 	assert_success
 	assert_output --regexp "alice@example.org.* u4${EID1} +certified$"
 }
@@ -140,9 +140,9 @@ wot () { build_wot ; source "${BATS_RUN_TMPDIR}/pgpid-wot/fprs.env" ; }
 	assert_failure 196
 }
 
-@test "cert_check -F hides the email column (one line per cert)" {
+@test "cert_check hides the email column by default (one line per cert)" {
 	wot
-	run --separate-stderr "${TARGET}" cert_check -H "$HA" -F "0x$T1"
+	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T1"
 	assert_success
 	assert_equal "${#lines[@]}" "1"
 	refute_output --partial "alice@example.org"

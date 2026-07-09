@@ -1757,26 +1757,27 @@ bl_pgpid_cert_check() {
 "$"otherwise the chain is broken and the command fails.""
 "$"Does not fetch — populate the keyring first with '$BL_PGPID_NAME get --recurse'.""
 
-"$"Output mirrors '$BL_PGPID_NAME get' with the verdict appended as field #4""
-"$"(one line per presentable uid) :  FINGERPRINT  EMAIL  EID  VERDICT""
-"$"where VERDICT is certified | uncertified | broken. A certificate is 'broken'""
+"$"Default output is one line per certificate :  FINGERPRINT  EID  VERDICT.  With""
+"$"--show-email it mirrors '$BL_PGPID_NAME get' : an EMAIL column is inserted as""
+"$"field #2, with one line per presentable uid.""
+"$"VERDICT is certified | uncertified | broken. A certificate is 'broken'""
 "$"when its non-revoked uids carry conflicting or no eid, or when no presentable""
 "$"uid carries an email.""
 "$"Exit status: 0 if all certified, 1 if any uncertified, 196 if any broken.""
 
 OPTIONS:
   -R, --referents-ownertrust FILE  "$"Signed ownertrust file extending the trust (repeatable ; ORDER matters)""
-  -F, --hide-email                 "$"Drop the email column (one line per certificate)""
+  -E, --show-email                 "$"Add the email column (one line per presentable uid ; default: one line per certificate)""
   -L, --no-check-eid               "$"Lazy/Legacy: don't require a consistent eid (certs not yet OpenPGP-ID aware)""
   -H, --homedir GNUPGHOME          "$"System GnuPG home to read keys & base ownertrust from (default: ~/.gnupg)""
   -q, --quiet                      "$"No per-line output ; exit status only""
 "
-	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0 hidemail=0 checkeid=1
+	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0 showmail=0 checkeid=1
 	local -a otfiles=()
 	for ((;$#;)) ; do
 		case "$1" in
 			-R|--referents-ownertrust) shift ; otfiles+=("$1") ;;
-			-F|--hide-email)   hidemail=1 ;;
+			-E|--show-email)   showmail=1 ;;
 			-L|--no-check-eid) checkeid=0 ;;
 			-H|--homedir) shift ; syshome=${1:?} ;;
 			-q|--quiet)   quiet=1 ;;
@@ -1860,7 +1861,7 @@ OPTIONS:
 		((sev<=rc)) || rc=$sev
 
 		((quiet)) || {
-			if ((hidemail)) ; then
+			if ((! showmail)) ; then
 				printf -- "%-42s%-40s%s\n" "$F" " $eidfield" "$verdict"
 			elif (( ${#mbox[@]} == 0 )) ; then
 				printf -- "%-80s%-40s%s\n" "$F" " $eidfield" "$verdict"
