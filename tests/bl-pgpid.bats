@@ -149,6 +149,13 @@ wot () { build_wot ; source "${BATS_RUN_TMPDIR}/pgpid-wot/fprs.env" ; }
 	assert_output --regexp "certified$"
 }
 
+@test "cert_check -E renders the email column as '-' when no email is presentable" {
+	wot
+	run --separate-stderr "${TARGET}" cert_check -H "$HA" -E "0x$T5"
+	assert_failure 196
+	assert_output --regexp "^[0-9A-F]{40} -.*broken$"
+}
+
 @test "cert_check aggregate exit status: broken dominates (196)" {
 	wot
 	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T1" "0x$T3"

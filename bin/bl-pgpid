@@ -1838,7 +1838,7 @@ OPTIONS:
 			if ((! showmail)) ; then
 				printf -- "%-42s%-40s%s\n" "$F" " $eidfield" "$verdict"
 			elif (( ${#mbox[@]} == 0 )) ; then
-				printf -- "%-80s%-40s%s\n" "$F" " $eidfield" "$verdict"
+				printf -- "%-80s%-40s%s\n" "$F -" " $eidfield" "$verdict"    # no presentable email : keep the column, render it '-'
 			else
 				for cl in "${mbox[@]}" ; do
 					printf -- "%-80s%-40s%s\n" "$cl" " $eidfield" "$verdict"
