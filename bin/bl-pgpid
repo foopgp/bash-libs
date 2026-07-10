@@ -725,6 +725,8 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			fi
 			ksurl="http${scheme:3:1}://${serv}:${port}${path}/pks/lookup"
 			for user in "${users[@]}" ; do
+				# If input seems to be a KeyID (len=16) or v4 fpr (len=40) or v6 fpr (len=64) without is "0x" header, add it as keyserver use to need it.
+				! [[ "$user" =~ ^([0-9abcdefABCDEF]{24}){0,2}[0-9abcdefABCDEF]{16}$ ]] || user="0x$user"
 				ksfprs=($(curl --no-progress-meter --location --get --data-urlencode 'op=index' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | sed -n 's,^pub:\([[:xdigit:]]*\):.*,\1,p'))
 				if [[ -z "${ksfprs[@]}" ]] ; then
 					printf "$FUNCNAME: Notice: "$"No certificate for %s on %s.""\n" "'$user'" "'$keyserv'" >&2
