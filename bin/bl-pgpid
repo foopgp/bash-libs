@@ -1632,7 +1632,8 @@ OPTIONS:
 		| awk -F: '$1=="pub"{p=1} $1=="fpr"&&p{print $10;p=0}' | sort -u)
 	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for"" '%s'...\n" "$targets" >&2 ; return 141 ; }
 
-	# Per-certificate verdict. broken=196 dominates uncertified=1 dominates certified=0.
+	# Per-certificate verdict → severity feeding the --quiet exit code:
+	# broken=198 dominates revoked=197 dominates uncertified=196 dominates certified=0.
 	local F colon eidfield verdict sev nNR cl rc=0
 	local -a nreids fueids mbox
 	for F in "${fprs[@]}" ; do

@@ -52,7 +52,25 @@ build_wot () {
 	save
 	EOF
 
-	{ for v in HA T1 T2 T3 T4 T4s T5 T6 ; do printf '%s=%q\n' "$v" "${!v}" ; done ; } > "$WOT/fprs.env"
+	# T7 : primary key revoked (pub:r), via 'revkey' in its own homedir before import.
+	# The 'revoked' verdict is reached only with --no-check-eid : in default mode a
+	# revoked key's uids show validity 'r', so it classifies 'broken' (no non-revoked eid).
+	_gen "Rev7 (u4=$EID1) <rev7@example.org>" ; T7=$RF
+	gpg "${B[@]}" --homedir "$RH" --command-fd 0 --edit-key "$T7" >/dev/null 2>&1 <<-EOF
+	revkey
+	y
+	0
+
+	y
+	save
+	EOF
+	_imp "$RH" "$T7" ; rm -rf "$RH"
+
+	# cert_check is a pure read : settle the trustdb once here (as a real caller would
+	# via update_trustdb) so verdicts don't ride on GnuPG's throttled auto-recompute.
+	gpg "${B[@]}" --homedir "$HA" --check-trustdb >/dev/null 2>&1
+
+	{ for v in HA T1 T2 T3 T4 T4s T5 T6 T7 ; do printf '%s=%q\n' "$v" "${!v}" ; done ; } > "$WOT/fprs.env"
 }
 
 # Load only the fingerprints/HA path into the test shell (NOT the lib: sourcing it
@@ -81,42 +99,42 @@ wot () { build_wot ; source "${BATS_RUN_TMPDIR}/pgpid-wot/fprs.env" ; }
 @test "cert_check uncertified : unsigned, single eid+email" {
 	wot
 	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T2"
-	assert_failure 1
+	assert_success
 	assert_output --regexp "u4${EID1} +uncertified$"
 }
 
 @test "cert_check broken : conflicting eids on non-revoked uids" {
 	wot
 	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T3"
-	assert_failure 196
+	assert_success
 	assert_output --regexp " - +broken$"
 }
 
 @test "cert_check broken : no eid at all" {
 	wot
 	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T4"
-	assert_failure 196
+	assert_success
 	assert_output --regexp " - +broken$"
 }
 
 @test "cert_check broken : no email on any presentable uid" {
 	wot
 	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T5"
-	assert_failure 196
+	assert_success
 	assert_output --regexp " - +broken$"
 }
 
 @test "cert_check eid on a non-f/u uid → uncertified (default)" {
 	wot
 	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T6"
-	assert_failure 1
+	assert_success
 	assert_output --regexp "uncertified$"
 }
 
 @test "cert_check --no-check-eid : no-eid unsigned stays uncertified" {
 	wot
 	run --separate-stderr "${TARGET}" cert_check -H "$HA" -L "0x$T4"
-	assert_failure 1
+	assert_success
 	assert_output --regexp "uncertified$"
 }
 
@@ -137,7 +155,8 @@ wot () { build_wot ; source "${BATS_RUN_TMPDIR}/pgpid-wot/fprs.env" ; }
 @test "cert_check --no-check-eid still breaks on missing email" {
 	wot
 	run --separate-stderr "${TARGET}" cert_check -H "$HA" -L "0x$T5"
-	assert_failure 196
+	assert_success
+	assert_output --regexp "broken$"
 }
 
 @test "cert_check hides the email column by default (one line per cert)" {
@@ -152,14 +171,47 @@ wot () { build_wot ; source "${BATS_RUN_TMPDIR}/pgpid-wot/fprs.env" ; }
 @test "cert_check -E renders the email column as '-' when no email is presentable" {
 	wot
 	run --separate-stderr "${TARGET}" cert_check -H "$HA" -E "0x$T5"
-	assert_failure 196
+	assert_success
 	assert_output --regexp "^[0-9A-F]{40} -.*broken$"
 }
 
-@test "cert_check aggregate exit status: broken dominates (196)" {
+@test "cert_check -q : no per-line output, exit code 0 when certified" {
 	wot
-	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T1" "0x$T3"
+	run --separate-stderr "${TARGET}" cert_check -q -H "$HA" "0x$T1"
+	assert_success
+	refute_output --partial "certified"
+}
+
+@test "cert_check -q : uncertified is exit code 196" {
+	wot
+	run --separate-stderr "${TARGET}" cert_check -q -H "$HA" "0x$T2"
 	assert_failure 196
+}
+
+@test "cert_check -q : aggregate exit code, broken (198) dominates" {
+	wot
+	run --separate-stderr "${TARGET}" cert_check -q -H "$HA" "0x$T1" "0x$T3"
+	assert_failure 198
+}
+
+@test "cert_check : a revoked key classifies broken by default (uids show 'r')" {
+	wot
+	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T7"
+	assert_success
+	assert_output --regexp "broken$"
+}
+
+@test "cert_check -L : a revoked key is 'revoked'" {
+	wot
+	run --separate-stderr "${TARGET}" cert_check -H "$HA" -L "0x$T7"
+	assert_success
+	assert_output --regexp "revoked$"
+}
+
+@test "cert_check -q -L : revoked is exit code 197" {
+	wot
+	run --separate-stderr "${TARGET}" cert_check -q -L -H "$HA" "0x$T7"
+	assert_failure 197
 }
 
 # --- update_trustdb ---------------------------------------------------------
@@ -198,7 +250,9 @@ utdb_home () {
 }
 
 # update_trustdb writes everything to stderr : merge it so assert_output sees it.
-ut () { "${TARGET}" update_trustdb "$@" 2>&1 ; }
+# Force the C locale : these tests assert the English (source) messages, which are
+# translated at runtime on a localized host once the .mo files are installed.
+ut () { LC_ALL=C "${TARGET}" update_trustdb "$@" 2>&1 ; }
 
 @test "update_trustdb help exits 0" {
 	run --separate-stderr "${TARGET}" update_trustdb --help
