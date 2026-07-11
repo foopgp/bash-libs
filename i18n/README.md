@@ -145,3 +145,8 @@ bet there is no existent case on this planet (and before I wrote this !).
 
 Does bash developers agree ?
 
+---
+
+They did: this led to `shopt -s noexpand_translation` (Chet Ramey, bash 5.2) —
+<https://www.mail-archive.com/bug-bash@gnu.org/msg26965.html>
+
