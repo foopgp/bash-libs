@@ -99,9 +99,9 @@ if ((BL_UETREE_isprogram)) ; then
 fi
 
 BL_UETREE_chelpmsg="
-"$"Manage a uetree instance — a filesystem-native registry of entities keyed
-by self-certifying OpenPGP identifiers, cross-indexed by email, phone and name.""
-"$"The canonical record of an entity is a vCard 4.0 file (entity.vcf).""
+"$"Manage a uetree, a filesystem-native registry of self-certifying entities.""
+"$"Each entity is keyed by an OpenPGP identifier and cross-indexed by email, phone
+and name ; its canonical record is a vCard 4.0 file (entity.vcf).""
 
 MAIN OPTIONS:"
 
@@ -518,8 +518,8 @@ bl_uetree_resolve() {
 	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... ITEM"
 	local helpmsg="
-"$"Resolve ITEM (an eid, e-mail, phone or name) to the canonical entity leaf(s)
-of the uetree at --tree, following the .ALIASES membership manifest.""
+"$"Resolve ITEM (an eid, e-mail, phone or name) to its canonical entity leaf(s).""
+"$"Searches the uetree at --tree, following the .ALIASES membership manifest.""
 "$"One result per line: <trust> <leaf>, where <trust> is 'certified' (canonical
 under by-eid/) or 'claimed' (not yet promoted).""
 "$"Exit 141 if nothing matches.""
@@ -600,8 +600,8 @@ bl_uetree_leaves() {
 	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [PATH]"
 	local helpmsg="
-"$"List the canonical entity leaves (those holding entity.vcf) of the uetree at
-PATH (default: current directory), one filesystem path per line.""
+"$"List a uetree's canonical entity leaves (those holding entity.vcf).""
+"$"Reads the uetree at PATH (default: current directory), one filesystem path per line.""
 
 OPTIONS:
   -b, --branch BRANCH      "$"Only leaves on branch eid|email|tel|name""
@@ -645,8 +645,9 @@ bl_uetree_aliases() {
 	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [PATH]"
 	local helpmsg="
-"$"Regenerate or verify the .ALIASES membership manifests of the uetree at PATH
-(default: current directory) as a projection of each canonical entity.vcf.""
+"$"Regenerate or verify a uetree's .ALIASES membership manifests.""
+"$"Each manifest projects a canonical entity.vcf across the uetree at PATH
+(default: current directory).""
 "$"Every position of an entity carries the same manifest ; the canonical (holding
 entity.vcf) is flagged '*', derived positions (by-email/by-tel/by-name) '-'.""
 "$"One of --rebuild or --check is required.""
@@ -718,16 +719,13 @@ bl_uetree_promote() {
 	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... BY_EMAIL_LEAF"
 	local helpmsg="
-"$"Promote a by-email/ leaf to its certified canonical by-eid/ position: move the
-record (and the leaf's files), rewrite its UID (email→eid), and regenerate the
-.ALIASES manifests.""
-"$"Pure filesystem — no git (use '$BL_UETREE_NAME gitsync' for that).""
+"$"Promote a by-email/ leaf to its certified canonical by-eid/ position.""
+"$"Moves the record and the leaf's files, rewrites its UID (email→eid) and
+regenerates the .ALIASES manifests — pure filesystem, no git.""
 
-"$"Certification is delegated to '$BL_PGPID_NAME cert_check' (a read-only query).""
-"$"To extend the trust with signed delegations first, run '$BL_PGPID_NAME
-update_trustdb' with the signed ownertrust files.""
-"$"Unless --no-fetch, the entity's WoT neighbourhood is first fetched with
-'$BL_PGPID_NAME get --recurse'.""
+"$"Certification is delegated to a read-only WoT query, so set the trust up first, e.g.:""
+$ $BL_PGPID_NAME get --recurse EMAIL             # "$"populate the WoT neighbourhood (unless --no-fetch)""
+$ $BL_PGPID_NAME update_trustdb OWNERTRUST.GPG…  # "$"apply your signed ownertrust delegations""
 
 OPTIONS:
   -f, --no-fetch                   "$"Trust the local keyring as-is (no keyserver/WKD fetch)""
