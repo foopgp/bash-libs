@@ -1,8 +1,7 @@
 Source: bash-libs
 Section: utils
 Priority: optional
-Maintainer: piseb <piseb@mailo.com>
-Uploaders: Jean-Jacques Brucker <jjbrucker@foopgp.org>
+Maintainer: Jean-Jacques Brucker <jjbrucker@foopgp.org>
 Build-Depends: debhelper-compat (= 13), pandoc
 Standards-Version: 4.5.1
 Homepage: https://foopgp.org
@@ -51,7 +50,7 @@ Package: bashlibs-pgpid
 Architecture: all
 Depends: bashlibs-common, gpg, xxd, adduser, passwd, curl, qrencode, graphicsmagick,
          libgfshare-bin, pandoc, texlive-extra-utils, cups-client, cups-bsd, zbar-tools,
-         texlive-latex-recommended, scdaemon, librsvg2-bin,
+         texlive-latex-recommended, scdaemon, librsvg2-bin, diffutils,
          ${misc:Depends}
 Recommends: bash-completion
 Description: bash-libs: set of bash executables which may also be sourced as libraries.
@@ -61,10 +60,13 @@ Description: bash-libs: set of bash executables which may also be sourced as lib
  universal and decentralized civil status to secure your digital life
  (emails, git, ssh, avatar, sso, etc.).
  .
- bl-djibian: System tools for the Debian blend « Djibian ».
+ bl-djibian: System tools for the Debian blend « Djibian ». Mainly to manage users.
  .
  bl-qrkey: Backup or restore OpenPGP ID using printed QR codes and Shamir's secret
  sharing. Configure Yubikeys or Nitrokeys for OpenPGP ID.
+ .
+ bl-uetree: Manage "universal entities tree", filesystem-native registry of entities.
+ Entities are well defined contacts using certified OpenPGP ID.
 
 Package: bashlibs-dji
 Architecture: all

@@ -1,3 +1,27 @@
+bash-libs (0.3.15-1) unstable; urgency=medium
+
+  [ Mnème ]
+  * bl-uetree: new experimental bash-lib to manage "universal entities tree", filesystem-native registry of entities (contacts).
+  * bl-pgpid get: remove never-implemented -T/--ownertrust option
+  * bl-pgpid get: new --recurse[=NUM] — fetch & display signer certs NUM levels deep (self-recursion, dedup, max 6)
+  * bl-pgpid: new cert_check action — WoT verdict via ordered signed referents-ownertrust delegation chain (anchor-preserving, no fetch)
+  * tests: reqflow cleanup à fond — drop specs/ + root Makefile refs, drop ptywrap tests, comment out socat test, disable SC2312 repo-wide (per JJB)
+  * bl-pgpid: get gains --import-clean/--import-minimal (opt-in, default off), propagated to --recurse and applied to every fetch path (keyserver ≤/> maxfromks + WKD); token_check imports plainly; certify uses BL_PGPID_EID_REGEX umbrella
+  * i18n: French pass — translate get/cert_check/update_trustdb/uetree strings, refresh pot (fr: 0 untranslated, 0 fuzzy)
+  * bl-uetree: humanize help — one gettext string per sentence, not per display line (lesson from ff66ed1); split trailing sentences (Exit …)
+
+  [ jjbrucker ]
+  * Update .shellcheckrc to prepare being able to use shellcheck again
+  * make bl-log's *priority* case-insensitive
+  * Clean test. Now *make check* returns no errors
+  * bl_pgpig_get(): always output a field #3. If there is no eid, output '-'
+  * bl_pgpid: improve code for print() + move functions + rewrite cert_check helpmsg + new verdict : revoked
+  * bl_pgpi_get(): automatically add missing '0x' header when looking for fpr or KeyId
+  * humanize new help messages.
+  * help2man.sh -v 0.3.15
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Sat, 11 Jul 2026 14:41:39 +0200
+
 bash-libs (0.3.14-1) unstable; urgency=medium
 
   [ jjbrucker ]
