@@ -6,7 +6,7 @@ TARGETS               := $(wildcard bin/*)
 
 SHELL                 := /bin/sh
 LICENCES_CHECKER      := reuse lint
-SUB_MAKE_DIRS         := specs man tests
+SUB_MAKE_DIRS         := man tests
 
 prefix                ?= /usr/local
 exec_prefix           ?= $(prefix)
@@ -42,13 +42,9 @@ check_licenses:
 check: check_licenses build
 
 check clean:
-	$(MAKE) -C specs $@
 	$(MAKE) -C man   $@
 	$(MAKE) -C tests $@
 	$(MAKE) -C i18n $@
-
-html pdf docbook markdown:
-	$(MAKE) -C specs $@
 
 install: $(addprefix $(BINDIR)/, $(notdir $(TARGETS))) $(addprefix $(SVGDIR)/, $(notdir $(SVG_TEMPLATES)))
 	$(MAKE) -C man   $@

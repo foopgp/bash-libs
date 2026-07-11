@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs 0.3.14
+footer: bash-libs 0.3.15
 ---
 
 # NAME
@@ -85,9 +85,18 @@ token_check
 :   Check if security token is correctly configured for OpenPGP ID ; may
     output informations.
 
+cert_check
+
+:   Check WoT-validity of certificate(s) identified by
+    NAME\|EID\|EMAIL\|FPR (or all if none).
+
 certify
 
 :   Certify somebody else, identified by its OpenPGP ID TARGET_U4.
+
+update_trustdb
+
+:   Recompute the GnuPG trustdb using given ownertrust delegations.
 
 print
 

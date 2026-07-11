@@ -1,0 +1,846 @@
+#!/bin/bash
+#
+# Bash library and executable for uetree instances — format universel
+# d'arborescence d'entités numériquement vivantes (uetree 1.2).
+#
+# This file provides only the SOCLE (scaffold + internal primitives):
+# .FORMAT read/write with topology flag, Unicode slug, vCard 4.0 record
+# parsing, and the .ALIASES membership-manifest read/validate/project.
+# Public actions (check, resolve, leaves, promote, aliases, …) come in
+# subsequent commits.
+#
+# Copyright © 2026 Jean-Jacques Brucker (u4=sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76) <jjbrucker@foopgp.org>
+# Copyright © 2026 Mnèmê (u5=001777236237.945e_43.30_005.38) <mneme@foopgp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-only
+#
+# Status : ÉBAUCHE 2026-07-06 (réécriture post-note-de-conception v4).
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_tmp_a=$("${BASH_SOURCE[0]}" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_uetree_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version) return 0 ;;
+		esac
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions" -- $cur ) )
+				return 0 ;;
+		esac
+		grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" || COMPREPLY=( $(compgen -W "$actions" -- $cur ) )
+		return 0
+	}'
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_uetree_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	return 0
+fi
+
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_uetree_parseoptions)" == function ]] ; then
+	_bl_uetree_parseoptions "$@"
+	return $?
+fi
+
+### Constants ###
+
+BL_UETREE_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+BL_UETREE_VERSION=$(git describe --dirty --broken --always 2>/dev/null || echo "0.0.1-wip")
+BL_UETREE_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_UETREE_NAME BL_UETREE_VERSION BL_UETREE_FUNCTIONS
+
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_UETREE_isprogram=1 || declare -r BL_UETREE_isprogram=0
+
+# uetree format version. 1.0 and 1.1 were never deployed outside dev, so this
+# lib only reads and writes 1.2.
+declare -r BL_UETREE_FORMAT_VERSION="1.2"
+
+# Topology flags (.FORMAT at every node ; .ALIASES uses only * and -).
+#   .  non-leaf routing node        *  canonical leaf (holds entity.vcf)
+#   -  alias leaf (holds .ALIASES only)
+declare -r BL_UETREE_FLAG_NODE="."
+declare -r BL_UETREE_FLAG_CANONICAL="*"
+declare -r BL_UETREE_FLAG_ALIAS="-"
+
+# Canonical record file (a real vCard 4.0 on disk) and pointer files.
+declare -r BL_UETREE_RECORD="entity.vcf"
+declare -r BL_UETREE_ALIASES=".ALIASES"
+declare -r BL_UETREE_HOMONYMS=".HOMONYMS"
+declare -r BL_UETREE_FORMAT=".FORMAT"
+
+# Minimum length (in characters) of a by-name slug. Below → no by-name.
+declare -r BL_UETREE_MIN_SLUG_LEN=2
+
+# E.164 (max 15 digits after +, first not zero). ITU-T E.164 / RFC 3966.
+declare -r BL_UETREE_E164_REGEX='\+[1-9][0-9]{1,14}'
+# OpenPGP V4 fingerprint (40 hex uppercase, gpg --list-keys default).
+declare -r BL_UETREE_FPR_REGEX='[A-F0-9]{40}'
+
+### Others Globals ###
+
+if ((BL_UETREE_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_UETREE_chelpmsg="
+"$"Manage a uetree, a filesystem-native registry of self-certifying entities.""
+"$"Each entity is keyed by an OpenPGP identifier and cross-indexed by email, phone
+and name ; its canonical record is a vCard 4.0 file (entity.vcf).""
+
+MAIN OPTIONS:"
+
+### external functions ###
+
+source "$(dirname "$BASH_SOURCE")"/bl-interactive --
+source "$(dirname "$BASH_SOURCE")"/bl-pgpid --
+
+### internal functions ###
+
+_bl_uetree_parseoptions() {
+	local npp=$#
+	for ((;$#;)) ; do
+		case "$1" in
+			-h|--help) printf "%s\n%s%s" "$BL_UETREE_usage" "$BL_UETREE_chelpmsg" "$BL_UETREE_shelpmsg" ; return 1 ;;
+			-V|--version) printf "%s %s\n" "$BL_UETREE_NAME" "$BL_UETREE_VERSION" ; return 1 ;;
+			--) shift ; break ;;
+			-*) printf "%s: Error: "$"Unrecognized option"" '%s'.\n\n"$"Try '%s --help' for more information"".\n" "$BL_UETREE_NAME" "$1" "$BL_UETREE_NAME" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	BL_UETREE_NOPTIONS=$((npp-$#))
+}
+
+# Read $1/.FORMAT into the assoc array named $2 (nameref) : keys
+#   type version flags path
+# Returns 1 if absent or not a supported uetree node.
+_bl_uetree_read_format() {
+	local f="$1/$BL_UETREE_FORMAT"
+	local -n _rf="$2"
+	_rf=()
+	[[ -r "$f" ]] || return 1
+	local type version rest
+	read -r type version rest < "$f"
+	[[ "$type" == "uetree" ]] || return 1
+	[[ "$version" == "$BL_UETREE_FORMAT_VERSION" ]] || { printf "$FUNCNAME: Error: "$"unsupported uetree version"" '%s' (%s)\n" "$version" "$f" >&2 ; return 1 ; }
+	_rf[type]="$type" ; _rf[version]="$version"
+	case "$version" in
+		1.0|1.1) _rf[flags]="" ; _rf[path]="$rest" ;;
+		*)       _rf[flags]="${rest%% *}" ; _rf[path]="${rest#* }" ;;
+	esac
+	return 0
+}
+
+# Derive an entity's branch (eid/email/tel/name) from a .FORMAT path.
+_bl_uetree_branch_of_path() {
+	case "$1" in
+		/by-eid/*)   echo eid ;;
+		/by-email/*) echo email ;;
+		/by-tel/*)   echo tel ;;
+		/by-name/*)  echo name ;;
+		*) return 1 ;;
+	esac
+}
+
+# Write the chain of .FORMAT files from $1 (root) down to $2 (target leaf).
+# Intermediate nodes get flag '.', the leaf gets $3 (BL_UETREE_FLAG_CANONICAL
+# or _ALIAS). Idempotent. Reuses the root's declared version if present.
+_bl_uetree_write_format_chain() {
+	local root="$1" target="$2" leafflag="$3"
+	local ver="$BL_UETREE_FORMAT_VERSION"
+	[[ -f "$root/$BL_UETREE_FORMAT" ]] || printf 'uetree %s %s /\n' "$ver" "$BL_UETREE_FLAG_NODE" > "$root/$BL_UETREE_FORMAT"
+	local rel="${target#$root}" ; rel="${rel#/}"
+	local cur="$root" acc="" segment want
+	local -a segs
+	IFS='/' read -ra segs <<< "$rel"
+	local i last=$((${#segs[@]}-1))
+	for i in "${!segs[@]}" ; do
+		segment="${segs[$i]}"
+		[[ "$segment" ]] || continue
+		acc="${acc}/${segment}" ; cur="${cur}/${segment}"
+		mkdir -p "$cur"
+		if ((i == last)) ; then want="uetree ${ver} ${leafflag} ${acc}/"
+		else                    want="uetree ${ver} ${BL_UETREE_FLAG_NODE} ${acc}/" ; fi
+		[[ -f "$cur/$BL_UETREE_FORMAT" && "$(cat "$cur/$BL_UETREE_FORMAT")" == "$want" ]] || printf '%s\n' "$want" > "$cur/$BL_UETREE_FORMAT"
+	done
+}
+
+# Slugify a name for /by-name/. Unicode-preserving (emojis kept — cf. note
+# de conception R7) : lowercase, collapse whitespace and path separators to
+# '-', trim. Echoes the slug ; returns 1 if shorter than the minimum length.
+# NB: exact separator policy is a spec point still open — refine here.
+_bl_uetree_slugify() {
+	local s
+	s=$(printf '%s' "${1,,}" | sed -E 's/[[:space:]]+/-/g ; s@[/\\]+@-@g ; s/-+/-/g ; s/^-+// ; s/-+$//')
+	[[ ${#s} -ge $BL_UETREE_MIN_SLUG_LEN ]] || return 1
+	printf '%s' "$s"
+}
+
+# Normalize a phone to strict E.164 (+<cc><subscriber>). $2 = optional default
+# country code (eg '+33') when the input starts with a single 0. Echoes the
+# E.164 on success ; returns 1 on failure.
+_bl_uetree_e164_normalize() {
+	local input="$1" default_cc="$2" clean candidate
+	clean=$(printf '%s' "$input" | tr -cd '+0-9')
+	case "$clean" in
+		+*)  candidate="$clean" ;;
+		00*) candidate="+${clean:2}" ;;
+		0*)  [[ "$default_cc" =~ ^\+[1-9][0-9]+$ ]] || return 1 ; candidate="${default_cc}${clean:1}" ;;
+		*)   return 1 ;;
+	esac
+	[[ "$candidate" =~ ^${BL_UETREE_E164_REGEX}$ ]] || return 1
+	printf '%s' "$candidate"
+}
+
+### vCard 4.0 record (entity.vcf) helpers ###
+
+# Fold a logical vCard line to 75 octets per RFC 6350 §3.2 (CRLF + space).
+_bl_uetree_vcf_fold() {
+	awk 'BEGIN{ORS="\r\n"} { while (length($0) > 75) { print substr($0,1,75); $0 = " " substr($0,76) } print }'
+}
+
+# Escape / unescape a vCard TEXT value per RFC 6350 §3.4 (\\ , \; \, \n).
+_bl_uetree_vcf_escape() {
+	sed 's/\\/\\\\/g ; s/,/\\,/g ; s/;/\\;/g' | sed ':a;N;$!ba;s/\n/\\n/g'
+}
+_bl_uetree_vcf_unescape() {
+	sed 's/\\\\/\x01/g ; s/\\,/,/g ; s/\\;/;/g ; s/\\[nN]/\n/g ; s/\x01/\\/g'
+}
+
+# Parse an entity.vcf ($1) into the assoc array named $2 (nameref). Multi-value
+# properties are joined with '|||'. Keys populated when present :
+#   fn kind uid emails tels key_uri key_data photos
+# Property parameters (EMAIL;PREF=1) are stripped ; folded lines are unfolded.
+_bl_uetree_parse_vcf() {
+	local file="$1"
+	local -n _c="$2"
+	_c=()
+	[[ -r "$file" ]] || return 1
+	local line pending="" key val
+	_bl_uetree_flush_vcf_line() {
+		[[ "$pending" ]] || return 0
+		case "$pending" in
+			BEGIN:VCARD|END:VCARD|VERSION:*) ;;
+			*:*)
+				key="${pending%%:*}" ; val="${pending#*:}"
+				key="${key%%;*}"                            # strip params
+				val=$(printf '%s' "$val" | _bl_uetree_vcf_unescape)
+				case "$key" in
+					FN)    _c[fn]="$val" ;;
+					KIND)  _c[kind]="$val" ;;
+					UID)   _c[uid]="$val" ;;
+					EMAIL) _c[emails]="${_c[emails]:+${_c[emails]}|||}$val" ;;
+					TEL)   _c[tels]="${_c[tels]:+${_c[tels]}|||}$val" ;;
+					PHOTO) _c[photos]="${_c[photos]:+${_c[photos]}|||}$val" ;;
+					KEY)
+						case "$val" in
+							data:*) _c[key_data]="$val" ;;
+							*)      _c[key_uri]="${_c[key_uri]:+${_c[key_uri]}|||}$val" ;;
+						esac ;;
+				esac ;;
+		esac
+		pending=""
+	}
+	while IFS= read -r line ; do
+		line="${line%$'\r'}"
+		if [[ "$line" =~ ^[[:space:]] ]] ; then
+			pending="${pending}${line:1}"                   # RFC 6350 §3.2 continuation
+		else
+			_bl_uetree_flush_vcf_line
+			pending="$line"
+		fi
+	done < "$file"
+	_bl_uetree_flush_vcf_line
+	unset -f _bl_uetree_flush_vcf_line
+	return 0
+}
+
+### .ALIASES membership manifest (uetree 1.2) ###
+
+# Parse an .ALIASES file ($1) into two indexed arrays named $2 (flags) and $3
+# (paths), by nameref. Each line : "uetree <ver> <flags> <path>".
+_bl_uetree_aliases_parse() {
+	local file="$1"
+	local -n _fl="$2" _pa="$3"
+	_fl=() ; _pa=()
+	[[ -r "$file" ]] || return 1
+	local type ver flags path
+	while read -r type ver flags path ; do
+		[[ "$type" == "uetree" ]] || continue
+		_fl+=("$flags") ; _pa+=("$path")
+	done < "$file"
+	return 0
+}
+
+# Emit an .ALIASES manifest on stdout from parallel flags ($1 nameref) and
+# paths ($2 nameref) arrays, at the write version.
+_bl_uetree_aliases_emit() {
+	local -n _fl="$1" _pa="$2"
+	local i
+	for i in "${!_pa[@]}" ; do
+		printf 'uetree %s %s %s\n' "$BL_UETREE_FORMAT_VERSION" "${_fl[$i]}" "${_pa[$i]}"
+	done
+}
+
+# Validate the manifest at leaf $1 against the reachable canonical record.
+# Rules (cf. note de conception §4.6) :
+#   - exactly one '*' flag              → else Error (return 1)
+#   - the '*'-flagged path holds entity.vcf (relative to instance root $2)
+#                                       → else Error (return 1)
+# Echoes the canonical (absolute) path on success.
+_bl_uetree_aliases_validate() {
+	local leaf="$1" root="$2"
+	local -a fl pa
+	_bl_uetree_aliases_parse "$leaf/$BL_UETREE_ALIASES" fl pa || return 1
+	local i canon="" ncanon=0
+	for i in "${!fl[@]}" ; do
+		[[ "${fl[$i]}" != "$BL_UETREE_FLAG_CANONICAL" ]] || { canon="${pa[$i]}" ; ncanon=$((ncanon+1)) ; }
+	done
+	((ncanon == 1)) || { printf "$FUNCNAME: Error: "$"%s: canonical flag set %d times (expected 1)""\n" "$leaf/$BL_UETREE_ALIASES" "$ncanon" >&2 ; return 1 ; }
+	[[ -r "$root$canon/$BL_UETREE_RECORD" ]] || { printf "$FUNCNAME: Error: "$"%s: canonical leaf %s carries no %s""\n" "$leaf/$BL_UETREE_ALIASES" "$canon" "$BL_UETREE_RECORD" >&2 ; return 1 ; }
+	printf '%s\n' "$root$canon"
+}
+
+### entity walking ###
+
+# Emit each entity leaf directory (one holding entity.vcf OR .ALIASES).
+_bl_uetree_walk_entities() {
+	find "$1" -type f \( -name "$BL_UETREE_RECORD" -o -name "$BL_UETREE_ALIASES" \) -printf '%h\n' | sort -u
+}
+
+### identifier → position (fan-out) helpers ###
+
+# Relative path (from instance root, leading+trailing /) of the leaf indexing
+# an identifier. Echo the path ; return 1 if the value is malformed.
+# An optional u4=/u5=/udid4=/udid5= prefix on the eid is stripped.
+_bl_uetree_relpath_eid() {
+	local eid="${1#u*=}"
+	if [[ "$eid" =~ ^${BL_PGPID_U4_REGEX}$ ]] ; then
+		printf '/by-eid/u4/%s/%s/%s/\n' "${eid:0:2}" "${eid:0:4}" "$eid"
+	elif [[ "$eid" =~ ^${BL_PGPID_U5_REGEX}$ ]] ; then
+		local geo="${eid#*e}" rest lat lng
+		rest="${geo#_}" ; lat="${rest%%_*}" ; lng="${rest#*_}"
+		printf '/by-eid/u5/e_%s/e_%s_%s/%s/\n' "$lng" "$lat" "$lng" "$eid"
+	else
+		return 1
+	fi
+}
+_bl_uetree_relpath_email() {
+	[[ "$1" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || return 1
+	local domain="${1#*@}"
+	printf '/by-email/%s/%s/%s/\n' "${domain##*.}" "${domain,,}" "$1"
+}
+_bl_uetree_relpath_tel() {
+	[[ "$1" =~ ^${BL_UETREE_E164_REGEX}$ ]] || return 1
+	local cc first
+	case "${1:0:2}" in
+		+1) cc="+1" ;;
+		+7) cc="+7" ;;
+		*)  cc="${1:0:3}" ;;
+	esac
+	first="${1:${#cc}:1}"
+	printf '/by-tel/%s/%s/%s/\n' "$cc" "$first" "$1"
+}
+
+# Auto-detect the branch of an item (eid|email|tel|name).
+_bl_uetree_detect_branch() {
+	local bare="${1#u*=}"
+	if [[ "$1" =~ ^u(did)?[45]= ]] || [[ "$bare" =~ ^${BL_PGPID_EID_REGEX}$ ]] ; then echo eid
+	elif [[ "$1" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then echo email
+	elif [[ "$1" =~ ^${BL_UETREE_E164_REGEX}$ ]] ; then echo tel
+	else echo name
+	fi
+}
+
+# Trust level of a canonical relpath : certified under by-eid/, else claimed.
+_bl_uetree_trust_of() {
+	case "$1" in
+		/by-eid/*) echo certified ;;
+		*)         echo claimed ;;
+	esac
+}
+
+# Project the full membership manifest of a canonical entity onto stdout.
+# $1 = canonical relpath (emitted first, flagged *) ; $2 = nameref to its
+# entity.vcf parsed by _bl_uetree_parse_vcf. Derived positions (by-email per
+# EMAIL, by-tel per TEL, by-name from FN) are flagged - ; the canonical's own
+# position is never re-emitted as a derived alias.
+_bl_uetree_project_positions() {
+	local canon="$1"
+	local -n _v="$2"
+	local ver="$BL_UETREE_FORMAT_VERSION" a="$BL_UETREE_FLAG_ALIAS"
+	printf 'uetree %s %s %s\n' "$ver" "$BL_UETREE_FLAG_CANONICAL" "$canon"
+	local x rp
+	if [[ "${_v[emails]}" ]] ; then
+		while IFS= read -r x ; do
+			[[ "$x" ]] || continue
+			rp=$(_bl_uetree_relpath_email "$x") || continue
+			[[ "$rp" != "$canon" ]] || continue
+			printf 'uetree %s %s %s\n' "$ver" "$a" "$rp"
+		done <<< "${_v[emails]//|||/$'\n'}"
+	fi
+	if [[ "${_v[tels]}" ]] ; then
+		while IFS= read -r x ; do
+			[[ "$x" ]] || continue
+			rp=$(_bl_uetree_relpath_tel "$x") || continue
+			[[ "$rp" != "$canon" ]] || continue
+			printf 'uetree %s %s %s\n' "$ver" "$a" "$rp"
+		done <<< "${_v[tels]//|||/$'\n'}"
+	fi
+	if [[ "${_v[fn]}" ]] ; then
+		local slug rp2
+		if slug=$(_bl_uetree_slugify "${_v[fn]}") ; then
+			rp2="/by-name/und/${slug:0:1}/${slug:0:2}/$slug/"
+			[[ "$rp2" == "$canon" ]] || printf 'uetree %s %s %s\n' "$ver" "$a" "$rp2"
+		fi
+	fi
+}
+
+### public actions ###
+
+bl_uetree_check() {
+	local name
+	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [PATH]"
+	local helpmsg="
+"$"Validate a uetree instance rooted at PATH (default: current directory).""
+
+"$"Reconciles each node's .FORMAT topology flag with reality, validates every
+.ALIASES membership manifest (exactly one canonical, canonical holds the record,
+manifest replicated identically across the entity's positions), and requires FN
+in every entity.vcf.""
+"$"Exit 0 if clean, 1 if any error was found.""
+
+OPTIONS:
+  -v, --verbose            "$"Report every node checked, not only problems""
+  -q, --quiet              "$"Print only errors, suppress the summary""
+"
+	local verbose=0 quiet=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-v|--verbose) verbose=1 ;;
+			-q|--quiet)   quiet=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_UETREE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local root="${1:-.}" ; root="${root%/}" ; [[ "$root" ]] || root="/"
+	local -A rrf
+	_bl_uetree_read_format "$root" rrf || { printf "$FUNCNAME: Error: "$"%s is not a uetree node""\n" "$root" >&2 ; return 1 ; }
+
+	local errors=0 warnings=0 nnodes=0 nleaves=0
+	local -A alias_seen                              # canonical abs path → .ALIASES content (replication)
+	_ckerr()  { errors=$((errors+1)) ; printf "$name: Error: %s\n" "$*" >&2 ; }
+	_ckwarn() { warnings=$((warnings+1)) ; ((quiet)) || printf "$name: Warning: %s\n" "$*" >&2 ; }
+
+	local ff dir flag path actual rel canon content
+	local has_rec has_ali has_kids
+	local -A rf vc
+	while IFS= read -r ff ; do
+		dir="${ff%/$BL_UETREE_FORMAT}"
+		nnodes=$((nnodes+1))
+		if ! _bl_uetree_read_format "$dir" rf ; then _ckerr "$(printf $"%s: invalid or unsupported .FORMAT" "$dir")" ; continue ; fi
+		flag="${rf[flags]}" ; path="${rf[path]}"
+
+		rel="${dir#$root}" ; rel="${rel#/}"
+		[[ -z "$rel" ]] && actual="/" || actual="/$rel/"
+		[[ "$path" == "$actual" ]] || _ckerr "$(printf $"%s: .FORMAT path %s does not match actual %s" "$dir" "$path" "$actual")"
+
+		has_rec=0 has_ali=0 has_kids=0
+		[[ ! -f "$dir/$BL_UETREE_RECORD" ]]  || has_rec=1
+		[[ ! -f "$dir/$BL_UETREE_ALIASES" ]] || has_ali=1
+		[[ -z "$(find "$dir" -mindepth 1 -maxdepth 1 -type d -print -quit)" ]] || has_kids=1
+
+		case "$flag" in
+			"$BL_UETREE_FLAG_NODE")
+				((! has_rec)) || _ckerr "$(printf $"%s: flagged non-leaf but holds %s" "$dir" "$BL_UETREE_RECORD")"
+				((! has_ali)) || _ckerr "$(printf $"%s: flagged non-leaf but holds %s" "$dir" "$BL_UETREE_ALIASES")"
+				((has_kids || has_rec || has_ali)) || _ckwarn "$(printf $"%s: dangling routing node (no children)" "$dir")" ;;
+			"$BL_UETREE_FLAG_CANONICAL")
+				nleaves=$((nleaves+1))
+				((has_rec)) || _ckerr "$(printf $"%s: flagged canonical but has no %s" "$dir" "$BL_UETREE_RECORD")" ;;
+			"$BL_UETREE_FLAG_ALIAS")
+				nleaves=$((nleaves+1))
+				((has_ali)) || _ckerr "$(printf $"%s: flagged alias but has no %s" "$dir" "$BL_UETREE_ALIASES")"
+				((! has_rec)) || _ckwarn "$(printf $"%s: alias leaf carries an orphan %s" "$dir" "$BL_UETREE_RECORD")" ;;
+			*) _ckerr "$(printf $"%s: unknown topology flag '%s'" "$dir" "$flag")" ;;
+		esac
+
+		if ((has_rec)) ; then
+			_bl_uetree_parse_vcf "$dir/$BL_UETREE_RECORD" vc
+			[[ "${vc[fn]}" ]] || _ckerr "$(printf $"%s: %s has no FN (required)" "$dir" "$BL_UETREE_RECORD")"
+		fi
+
+		if ((has_ali)) ; then
+			if canon=$(_bl_uetree_aliases_validate "$dir" "$root") ; then
+				content=$(cat "$dir/$BL_UETREE_ALIASES")
+				if [[ -v alias_seen[$canon] ]] ; then
+					[[ "${alias_seen[$canon]}" == "$content" ]] || _ckerr "$(printf $"%s: .ALIASES differs from another position of %s (must be identical)" "$dir" "$canon")"
+				else
+					alias_seen[$canon]="$content"
+				fi
+			else
+				errors=$((errors+1))             # aliases_validate already reported to stderr
+			fi
+		fi
+
+		if ((verbose)) && ! ((quiet)) ; then printf "$name: Info: %s %s\n" "$flag" "$dir" >&2 ; fi
+	done < <(find "$root" -name "$BL_UETREE_FORMAT" -type f)
+	unset -f _ckerr _ckwarn
+
+	((quiet)) || printf "$name: %s\n" "$(printf $"%d node(s), %d leaf/leaves, %d error(s), %d warning(s)" "$nnodes" "$nleaves" "$errors" "$warnings")" >&2
+	((errors == 0))
+}
+
+bl_uetree_resolve() {
+	local name
+	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... ITEM"
+	local helpmsg="
+"$"Resolve ITEM (an eid, e-mail, phone or name) to its canonical entity leaf(s).""
+"$"Searches the uetree at --tree, following the .ALIASES membership manifest.""
+"$"One result per line: <trust> <leaf>, where <trust> is 'certified' (canonical
+under by-eid/) or 'claimed' (not yet promoted).""
+"$"Exit 141 if nothing matches.""
+
+OPTIONS:
+  -t, --tree PATH          "$"uetree instance root (default: current directory)""
+  -b, --branch BRANCH      "$"Force ITEM's branch: eid|email|tel|name (else auto)""
+  -a, --all                "$"Print every candidate (homonyms, shared), not just the first""
+  -q, --quiet              "$"Print only the leaf path, without the trust column""
+"
+	local root="." branch="" all=0 quiet=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-t|--tree)    shift ; root="$1" ;;
+			-b|--branch)  shift ; branch="$1" ;;
+			-a|--all)     all=1 ;;
+			-q|--quiet)   quiet=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_UETREE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local item="$1"
+	[[ "$item" ]] || { printf "$FUNCNAME: Error: "$"no ITEM given""\n" >&2 ; return 2 ; }
+	root="${root%/}" ; [[ "$root" ]] || root="/"
+	[[ "$branch" ]] || branch=$(_bl_uetree_detect_branch "$item")
+
+	local -a rels=()
+	local rp slug c1 c2 d
+	case "$branch" in
+		eid)   rp=$(_bl_uetree_relpath_eid   "$item") || { printf "$FUNCNAME: Error: "$"malformed eid"" '%s'\n" "$item" >&2 ; return 2 ; } ; rels+=("$rp") ;;
+		email) rp=$(_bl_uetree_relpath_email "$item") || { printf "$FUNCNAME: Error: "$"malformed e-mail"" '%s'\n" "$item" >&2 ; return 2 ; } ; rels+=("$rp") ;;
+		tel)   rp=$(_bl_uetree_relpath_tel   "$item") || { printf "$FUNCNAME: Error: "$"TEL is not E.164"" '%s'\n" "$item" >&2 ; return 2 ; } ; rels+=("$rp") ;;
+		name)  slug=$(_bl_uetree_slugify "$item") || { printf "$FUNCNAME: Error: "$"name too short to slug"" '%s'\n" "$item" >&2 ; return 2 ; }
+			c1="${slug:0:1}" ; c2="${slug:0:2}"
+			for d in "$root"/by-name/*/"$c1"/"$c2"/"$slug"/ ; do
+				[[ -d "$d" ]] || continue
+				rels+=("${d#$root}")
+			done ;;
+		*) printf "$FUNCNAME: Error: "$"unknown branch"" '%s'\n" "$branch" >&2 ; return 2 ;;
+	esac
+
+	local found=0 rel dir c trust out i
+	local -a fl pa canons
+	for rel in "${rels[@]}" ; do
+		dir="$root$rel"
+		[[ -d "$dir" ]] || continue
+		canons=()
+		if [[ -f "$dir/$BL_UETREE_ALIASES" ]] ; then
+			_bl_uetree_aliases_parse "$dir/$BL_UETREE_ALIASES" fl pa
+			for i in "${!fl[@]}" ; do
+				[[ "${fl[$i]}" == "$BL_UETREE_FLAG_CANONICAL" ]] || continue
+				canons+=("${pa[$i]}")
+			done
+		elif [[ -f "$dir/$BL_UETREE_RECORD" ]] ; then
+			canons+=("$rel")
+		elif [[ -f "$dir/$BL_UETREE_HOMONYMS" ]] ; then
+			_bl_uetree_aliases_parse "$dir/$BL_UETREE_HOMONYMS" fl pa
+			canons+=("${pa[@]}")
+		fi
+		for c in "${canons[@]}" ; do
+			trust=$(_bl_uetree_trust_of "$c")
+			((quiet)) && out="$root$c" || out="$trust	$root$c"
+			printf '%s\n' "$out"
+			found=$((found+1))
+			((all)) || return 0
+		done
+	done
+	((found)) || return 141
+	return 0
+}
+
+bl_uetree_leaves() {
+	local name
+	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [PATH]"
+	local helpmsg="
+"$"List a uetree's canonical entity leaves (those holding entity.vcf).""
+"$"Reads the uetree at PATH (default: current directory), one filesystem path per line.""
+
+OPTIONS:
+  -b, --branch BRANCH      "$"Only leaves on branch eid|email|tel|name""
+      --has FILE           "$"Only leaves that contain FILE""
+  -a, --aliases            "$"Also list alias leaves (those holding .ALIASES only)""
+"
+	local branch="" has="" aliases=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-b|--branch)  shift ; branch="$1" ;;
+			--has)        shift ; has="$1" ;;
+			-a|--aliases) aliases=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_UETREE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local root="${1:-.}" ; root="${root%/}" ; [[ "$root" ]] || root="/"
+	local -A rrf rf
+	_bl_uetree_read_format "$root" rrf || { printf "$FUNCNAME: Error: "$"%s is not a uetree node""\n" "$root" >&2 ; return 1 ; }
+
+	local -a anchors=( -name "$BL_UETREE_RECORD" )
+	((! aliases)) || anchors=( '(' -name "$BL_UETREE_RECORD" -o -name "$BL_UETREE_ALIASES" ')' )
+
+	local dir
+	while IFS= read -r dir ; do
+		if [[ "$branch" ]] ; then
+			_bl_uetree_read_format "$dir" rf || continue
+			[[ "$(_bl_uetree_branch_of_path "${rf[path]}")" == "$branch" ]] || continue
+		fi
+		[[ -z "$has" || -e "$dir/$has" ]] || continue
+		printf '%s\n' "$dir"
+	done < <(find "$root" -type f "${anchors[@]}" -printf '%h\n' | sort -u)
+}
+
+bl_uetree_aliases() {
+	local name
+	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [PATH]"
+	local helpmsg="
+"$"Regenerate or verify a uetree's .ALIASES membership manifests.""
+"$"Each manifest projects a canonical entity.vcf across the uetree at PATH
+(default: current directory).""
+"$"Every position of an entity carries the same manifest ; the canonical (holding
+entity.vcf) is flagged '*', derived positions (by-email/by-tel/by-name) '-'.""
+"$"One of --rebuild or --check is required.""
+
+OPTIONS:
+  -r, --rebuild            "$"Write the projected manifests (creating alias leaves)""
+  -c, --check              "$"Report positions whose manifest differs from the projection""
+  -n, --dry-run            "$"With --rebuild: print what would change, write nothing""
+"
+	local rebuild=0 do_check=0 dry=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-r|--rebuild) rebuild=1 ;;
+			-c|--check)   do_check=1 ;;
+			-n|--dry-run) dry=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_UETREE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	((rebuild || do_check)) || { printf "$FUNCNAME: Error: "$"one of --rebuild or --check is required""\n" >&2 ; return 2 ; }
+	local root="${1:-.}" ; root="${root%/}" ; [[ "$root" ]] || root="/"
+	local -A rrf
+	_bl_uetree_read_format "$root" rrf || { printf "$FUNCNAME: Error: "$"%s is not a uetree node""\n" "$root" >&2 ; return 1 ; }
+
+	local canleaf canon manifest diffs=0
+	local -A rf vc owner                          # owner[path]=canon → shared-position detection
+	while IFS= read -r canleaf ; do
+		_bl_uetree_read_format "$canleaf" rf || continue
+		canon="${rf[path]}"
+		_bl_uetree_parse_vcf "$canleaf/$BL_UETREE_RECORD" vc
+		manifest=$(_bl_uetree_project_positions "$canon" vc)
+		local type ver flag path dir wf
+		while read -r type ver flag path ; do
+			[[ "$type" == "uetree" ]] || continue
+			dir="$root$path"
+			if [[ -v owner[$path] && "${owner[$path]}" != "$canon" ]] ; then
+				printf "$name: Warning: %s\n" "$(printf $"%s claimed by both %s and %s (shared → needs a u5 or .HOMONYMS)" "$path" "${owner[$path]}" "$canon")" >&2
+				continue
+			fi
+			owner[$path]="$canon"
+			if ((do_check)) ; then
+				if [[ ! -f "$dir/$BL_UETREE_ALIASES" ]] || [[ "$(cat "$dir/$BL_UETREE_ALIASES" 2>/dev/null)" != "$manifest" ]] ; then
+					printf "$name: %s\n" "$(printf $"manifest missing or stale at %s" "$path")" >&2
+					diffs=$((diffs+1))
+				fi
+			fi
+			if ((rebuild)) ; then
+				if ((dry)) ; then
+					printf 'DRY: %s %s\n' "$flag" "$path"
+				else
+					wf="$BL_UETREE_FLAG_ALIAS" ; [[ "$flag" != "$BL_UETREE_FLAG_CANONICAL" ]] || wf="$BL_UETREE_FLAG_CANONICAL"
+					_bl_uetree_write_format_chain "$root" "$dir" "$wf"
+					printf '%s\n' "$manifest" > "$dir/$BL_UETREE_ALIASES"
+				fi
+			fi
+		done <<< "$manifest"
+	done < <(find "$root" -type f -name "$BL_UETREE_RECORD" -printf '%h\n' | sort -u)
+
+	if ((do_check)) ; then return $((diffs != 0)) ; fi
+	return 0
+}
+
+bl_uetree_promote() {
+	local name
+	((BL_UETREE_isprogram)) && name="$BL_UETREE_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... BY_EMAIL_LEAF"
+	local helpmsg="
+"$"Promote a by-email/ leaf to its certified canonical by-eid/ position.""
+"$"Moves the record and the leaf's files, rewrites its UID (email→eid) and
+regenerates the .ALIASES manifests — pure filesystem, no git.""
+
+"$"Certification is delegated to a read-only WoT query, so set the trust up first, e.g.:""
+$ $BL_PGPID_NAME get --recurse EMAIL             # "$"populate the WoT neighbourhood (unless --no-fetch)""
+$ $BL_PGPID_NAME update_trustdb OWNERTRUST.GPG…  # "$"apply your signed ownertrust delegations""
+
+OPTIONS:
+  -f, --no-fetch                   "$"Trust the local keyring as-is (no keyserver/WKD fetch)""
+  -r, --recurse NUM                "$"Depth for the WoT fetch (default 2 ; see get --recurse)""
+  -n, --dry-run                    "$"Report what would move, change nothing""
+  -v, --verbose                    "$"Also report leaves left uncertified""
+"
+	local nofetch=0 dry=0 verbose=0 recurse=2
+	for ((;$#;)) ; do
+		case "$1" in
+			-f|--no-fetch) nofetch=1 ;;
+			-r|--recurse)  shift ; recurse="$1" ;;
+			-n|--dry-run)  dry=1 ;;
+			-v|--verbose)  verbose=1 ;;
+			-h|--help)     printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version)  printf "%s %s\n" "$FUNCNAME" "$BL_UETREE_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local leaf="${1%/}"
+	[[ "$leaf" ]] || { printf "$usage\n" >&2 ; return 2 ; }
+	local -A rf
+	_bl_uetree_read_format "$leaf" rf || { printf "$FUNCNAME: Error: "$"%s is not a uetree leaf""\n" "$leaf" >&2 ; return 1 ; }
+	[[ "${rf[path]}" == /by-email/* ]] || { printf "$FUNCNAME: Error: "$"promote operates on a by-email/ leaf, not %s""\n" "${rf[path]}" >&2 ; return 2 ; }
+	local root="${leaf%"${rf[path]%/}"}" ; root="${root%/}" ; [[ "$root" ]] || root="/"
+	local email="${rf[path]%/}" ; email="${email##*/}"
+
+	# 1. populate the WoT neighbourhood, then read the verdict AND the identity from
+	#    cert_check in one shot — single source of truth for the fingerprint, the eid
+	#    (already normalised to u4/u5) and the trust. Promote only a 'certified' cert.
+	#    cert_check is a pure read : extend the trust beforehand with 'update_trustdb'.
+	((nofetch)) || bl_pgpid_get --recurse="$recurse" -- "$email" >/dev/null 2>&1 || true
+	local fpr eid verdict
+	read -r fpr eid verdict < <(bl_pgpid_cert_check -- "$email" 2>/dev/null | awk '$NF=="certified"{print;exit}')
+	if [[ "$verdict" != certified ]] ; then
+		((! verbose)) || printf "$FUNCNAME: Notice: "$"%s not certified, left in place""\n" "$email" >&2
+		return 0
+	fi
+	[[ "$eid" != - ]] || { printf "$FUNCNAME: Error: "$"%s is certified but carries no eid""\n" "$fpr" >&2 ; return 1 ; }
+	eid="${eid:0:2}=${eid:2}"           # cert_check renders u4value ; promote's paths/UID use u4=value
+
+	local canonrel canondir
+	canonrel=$(_bl_uetree_relpath_eid "$eid") || { printf "$FUNCNAME: Error: "$"malformed eid %s""\n" "$eid" >&2 ; return 1 ; }
+	canondir="$root$canonrel"
+
+	if ((dry)) ; then
+		printf 'DRY: %s → %s (eid=%s fpr=%s)\n' "$leaf" "$canondir" "$eid" "$fpr"
+		return 0
+	fi
+
+	# 3. pure filesystem: move the record + leaf files to the canonical, rewrite UID, rebuild.
+	_bl_uetree_write_format_chain "$root" "$canondir" "$BL_UETREE_FLAG_CANONICAL"
+	local f
+	for f in "$leaf"/* ; do            # dotfiles (.FORMAT/.ALIASES) stay ; content files move
+		[[ -e "$f" ]] || continue
+		mv -n "$f" "$canondir/"
+	done
+	sed -i -E "s,^UID:.*,UID:urn:uetree:eid:${eid%%=*}:${eid#*=}," "$canondir/$BL_UETREE_RECORD"
+	bl_uetree_aliases --rebuild "$root" >/dev/null
+
+	((! verbose)) || printf "$FUNCNAME: Info: "$"promoted %s → %s""\n" "$email" "$canonrel" >&2
+	printf '%s\n' "$canondir"
+}
+
+### program dispatch ###
+
+if ((BL_UETREE_isprogram)) ; then
+	BL_UETREE_usage="Usage: $BL_UETREE_NAME [MAIN_OPTIONS]... ACTION [ARGS]..."
+	BL_UETREE_shelpmsg="
+  -h, --help              "$"Show this help and exit""
+  -V, --version           "$"Show version and exit""
+
+ACTIONS:
+$(for f in "${BL_UETREE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "${f:10}" "$($f --help 2>/dev/null | sed -n '/^$/{n;p;q}')" ; done)
+
+"$"All actions support a --help option, eg:""
+$ $BL_UETREE_NAME ${BL_UETREE_FUNCTIONS:10} --help
+
+$BL_UETREE_NAME "$"is also a bash library, see:""
+$ source $BASH_SOURCE --help
+"
+else
+	BL_UETREE_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
+	BL_UETREE_shelpmsg="
+      --bash-completion    "$"set completion for the program and return""
+
+Functions:
+$(for f in "${BL_UETREE_FUNCTIONS[@]}" ; do printf "   %-19s%s\n" "$f" "$($f --help 2>/dev/null | sed -n '/^$/{n;p;q}')" ; done)
+"
+fi
+
+_BL_UETREE_RETVAL=0
+_bl_uetree_parseoptions "$@" || _BL_UETREE_RETVAL=$?
+
+[[ "$BASH_SOURCE" == "$0" ]] || return $_BL_UETREE_RETVAL
+
+[[ "$_BL_UETREE_RETVAL" != "1" ]] || exit 0
+(( _BL_UETREE_RETVAL < 2 )) || exit $_BL_UETREE_RETVAL
+
+### Run ###
+set -e
+shift $BL_UETREE_NOPTIONS
+if [[ $# -eq 0 ]] ; then
+	printf "$BL_UETREE_NAME: Error: "$"no action given""\n\n"$"Try '%s --help' for more information""\n" "$BL_UETREE_NAME" >&2
+	exit 2
+fi
+if function=$(grep -o "\<bl_uetree_$1\>" <<< "${BL_UETREE_FUNCTIONS[@]}") ; then
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "$BL_UETREE_NAME: Error: "$"unrecognized action"" '%s'.\n" "$1" >&2
+	exit 2
+fi

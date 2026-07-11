@@ -796,7 +796,18 @@ msgstr ""
 msgid "Set maximum matching certificates to receive from keyservers. "
 msgstr ""
 
-msgid "Only output fingerprint with ownertrust greater or equal to THRESHOLD."
+msgid ""
+"Also fetch & display the certs signing the target(s), NUM levels deep "
+"(default 1, max 6)"
+msgstr ""
+
+msgid ""
+"After import, remove any signatures from the certificate that are not "
+"usable, including from certificates that are not present on the keyring"
+msgstr ""
+
+msgid ""
+"Import the smallest certificate possible, removing almost all signatures"
 msgstr ""
 
 msgid "GnuPG home directory (default: ~/.gnupg). "
@@ -814,7 +825,7 @@ msgstr ""
 msgid "%s exceeds usual key server limit %s"
 msgstr ""
 
-msgid "Sorry, option %s not implemented yet."
+msgid "Option %s expects a number in 0..6"
 msgstr ""
 
 msgid "Non RFC3986 URI, skipping  %s."
@@ -1126,6 +1137,46 @@ msgstr ""
 msgid "Valid OpenPGP ID token"
 msgstr ""
 
+msgid ""
+"Check WoT-validity of certificate(s) identified by NAME|EID|EMAIL|FPR (or "
+"all if none)."
+msgstr ""
+
+msgid "Before that you may run:"
+msgstr ""
+
+msgid "To populate the keyring"
+msgstr ""
+
+msgid "To set your Web-of-Trust configuration"
+msgstr ""
+
+msgid "Default output is one line per certificate: FINGERPRINT  EID  VERDICT"
+msgstr ""
+
+msgid "VERDICT's possible values:"
+msgstr ""
+
+msgid ""
+"A certificate is 'broken' when its non-revoked uids carry conflicting or no "
+"entity\n"
+"identifier (EID), or when no presentable uid carries an email."
+msgstr ""
+
+msgid "Insert the email column #2 (one line per presentable uid)"
+msgstr ""
+
+msgid "Legacy: don't require a consistent eid (certs not yet OpenPGP-ID aware)"
+msgstr ""
+
+msgid "GnuPG home to read keys & trust from (default: ~/.gnupg)"
+msgstr ""
+
+msgid ""
+"No per-line output. Exit code hold verdict: 0 if all certified, 196 if any "
+"uncertified, 197 if any revoked, 198 if any broken."
+msgstr ""
+
 msgid "Certify somebody else, identified by its OpenPGP ID TARGET_U4."
 msgstr ""
 
@@ -1246,6 +1297,63 @@ msgstr ""
 msgid "Successfully sign %d '%s' inside certificate %s."
 msgstr ""
 
+msgid "Recompute the GnuPG trustdb using given ownertrust delegations."
+msgstr ""
+
+msgid ""
+"This is like 'gpg --update-trustdb', but importing first ownertrust defined "
+"in\n"
+"given OWNERTRUST.GPG file(s), IN ORDER."
+msgstr ""
+
+msgid ""
+"Every file MUST be OpenPGP signed message and its signer MUST already be "
+"valid,\n"
+"else the delegation chain is broken."
+msgstr ""
+
+msgid "That is why OWNERTRUST.GPG order is important."
+msgstr ""
+
+msgid "GnuPG home to update (default: ~/.gnupg)"
+msgstr ""
+
+msgid "Non-interactive: recompute with 'gpg --check-trustdb', never prompt"
+msgstr ""
+
+msgid "Only Error/Warning output"
+msgstr ""
+
+msgid "cannot read or verify %s (missing, not signed, or bad signature?)"
+msgstr ""
+
+msgid "%s carries no verifiable signature (signer key missing?)"
+msgstr ""
+
+msgid "%s is signed in the future (%s) — is the local clock right?"
+msgstr ""
+
+msgid "%s carries a delegation older than a year (%s)"
+msgstr ""
+
+msgid "%s is not a valid ownertrust file"
+msgstr ""
+
+msgid "the delegations are already applied — ownertrust left unchanged"
+msgstr ""
+
+msgid "current ownertrust backed up in %s"
+msgstr ""
+
+msgid "delegation chain broken: the signer of %s is not (yet) valid"
+msgstr ""
+
+msgid "ownertrust changes:"
+msgstr ""
+
+msgid "to restore the previous trust: "
+msgstr ""
+
 msgid "Produce or print an OpenPGP ID stamp or business card."
 msgstr ""
 
@@ -1287,10 +1395,10 @@ msgstr ""
 msgid "Picking most recent email %s."
 msgstr ""
 
-msgid "Template %s is not readable, falling back to default card template."
+msgid "Card template %s is not readable, falling back to default %s."
 msgstr ""
 
-msgid "SVG template %s not found."
+msgid "Default card.svg template not found."
 msgstr ""
 
 msgid "Friends of OpenPGP"
@@ -1305,7 +1413,7 @@ msgstr ""
 msgid "Where to print ?"
 msgstr ""
 
-msgid "Printing %s on %s…"
+msgid "Printing %s %s on %s…"
 msgstr ""
 
 msgid ""
@@ -1798,4 +1906,246 @@ msgid "Unrecognized encoding"
 msgstr ""
 
 msgid "All actions support a --help option, eg:"
+msgstr ""
+
+msgid ""
+"Manage a uetree, a filesystem-native registry of self-certifying entities."
+msgstr ""
+
+msgid ""
+"Each entity is keyed by an OpenPGP identifier and cross-indexed by email, "
+"phone\n"
+"and name ; its canonical record is a vCard 4.0 file (entity.vcf)."
+msgstr ""
+
+msgid "unsupported uetree version"
+msgstr ""
+
+msgid "%s: canonical flag set %d times (expected 1)"
+msgstr ""
+
+msgid "%s: canonical leaf %s carries no %s"
+msgstr ""
+
+msgid "Validate a uetree instance rooted at PATH (default: current directory)."
+msgstr ""
+
+msgid ""
+"Reconciles each node's .FORMAT topology flag with reality, validates every\n"
+".ALIASES membership manifest (exactly one canonical, canonical holds the "
+"record,\n"
+"manifest replicated identically across the entity's positions), and requires "
+"FN\n"
+"in every entity.vcf."
+msgstr ""
+
+msgid "Exit 0 if clean, 1 if any error was found."
+msgstr ""
+
+msgid "Report every node checked, not only problems"
+msgstr ""
+
+msgid "Print only errors, suppress the summary"
+msgstr ""
+
+msgid "%s is not a uetree node"
+msgstr ""
+
+msgid "%s: invalid or unsupported .FORMAT"
+msgstr ""
+
+msgid "%s: .FORMAT path %s does not match actual %s"
+msgstr ""
+
+msgid "%s: flagged non-leaf but holds %s"
+msgstr ""
+
+msgid "%s: dangling routing node (no children)"
+msgstr ""
+
+msgid "%s: flagged canonical but has no %s"
+msgstr ""
+
+msgid "%s: flagged alias but has no %s"
+msgstr ""
+
+msgid "%s: alias leaf carries an orphan %s"
+msgstr ""
+
+msgid "%s: unknown topology flag '%s'"
+msgstr ""
+
+msgid "%s: %s has no FN (required)"
+msgstr ""
+
+msgid "%s: .ALIASES differs from another position of %s (must be identical)"
+msgstr ""
+
+msgid "%d node(s), %d leaf/leaves, %d error(s), %d warning(s)"
+msgstr ""
+
+msgid ""
+"Resolve ITEM (an eid, e-mail, phone or name) to its canonical entity leaf(s)."
+msgstr ""
+
+msgid ""
+"Searches the uetree at --tree, following the .ALIASES membership manifest."
+msgstr ""
+
+msgid ""
+"One result per line: <trust> <leaf>, where <trust> is 'certified' "
+"(canonical\n"
+"under by-eid/) or 'claimed' (not yet promoted)."
+msgstr ""
+
+msgid "Exit 141 if nothing matches."
+msgstr ""
+
+msgid "uetree instance root (default: current directory)"
+msgstr ""
+
+msgid "Force ITEM's branch: eid|email|tel|name (else auto)"
+msgstr ""
+
+msgid "Print every candidate (homonyms, shared), not just the first"
+msgstr ""
+
+msgid "Print only the leaf path, without the trust column"
+msgstr ""
+
+msgid "no ITEM given"
+msgstr ""
+
+msgid "malformed eid"
+msgstr ""
+
+msgid "malformed e-mail"
+msgstr ""
+
+msgid "TEL is not E.164"
+msgstr ""
+
+msgid "name too short to slug"
+msgstr ""
+
+msgid "unknown branch"
+msgstr ""
+
+msgid "List a uetree's canonical entity leaves (those holding entity.vcf)."
+msgstr ""
+
+msgid ""
+"Reads the uetree at PATH (default: current directory), one filesystem path "
+"per line."
+msgstr ""
+
+msgid "Only leaves on branch eid|email|tel|name"
+msgstr ""
+
+msgid "Only leaves that contain FILE"
+msgstr ""
+
+msgid "Also list alias leaves (those holding .ALIASES only)"
+msgstr ""
+
+msgid "Regenerate or verify a uetree's .ALIASES membership manifests."
+msgstr ""
+
+msgid ""
+"Each manifest projects a canonical entity.vcf across the uetree at PATH\n"
+"(default: current directory)."
+msgstr ""
+
+msgid ""
+"Every position of an entity carries the same manifest ; the canonical "
+"(holding\n"
+"entity.vcf) is flagged '*', derived positions (by-email/by-tel/by-name) '-'."
+msgstr ""
+
+msgid "One of --rebuild or --check is required."
+msgstr ""
+
+msgid "Write the projected manifests (creating alias leaves)"
+msgstr ""
+
+msgid "Report positions whose manifest differs from the projection"
+msgstr ""
+
+msgid "With --rebuild: print what would change, write nothing"
+msgstr ""
+
+msgid "one of --rebuild or --check is required"
+msgstr ""
+
+msgid "%s claimed by both %s and %s (shared → needs a u5 or .HOMONYMS)"
+msgstr ""
+
+msgid "manifest missing or stale at %s"
+msgstr ""
+
+msgid "Promote a by-email/ leaf to its certified canonical by-eid/ position."
+msgstr ""
+
+msgid ""
+"Moves the record and the leaf's files, rewrites its UID (email→eid) and\n"
+"regenerates the .ALIASES manifests — pure filesystem, no git."
+msgstr ""
+
+msgid ""
+"Certification is delegated to a read-only WoT query, so set the trust up "
+"first, e.g.:"
+msgstr ""
+
+msgid "populate the WoT neighbourhood (unless --no-fetch)"
+msgstr ""
+
+msgid "apply your signed ownertrust delegations"
+msgstr ""
+
+msgid "Trust the local keyring as-is (no keyserver/WKD fetch)"
+msgstr ""
+
+msgid "Depth for the WoT fetch (default 2 ; see get --recurse)"
+msgstr ""
+
+msgid "Report what would move, change nothing"
+msgstr ""
+
+msgid "Also report leaves left uncertified"
+msgstr ""
+
+msgid "%s is not a uetree leaf"
+msgstr ""
+
+msgid "promote operates on a by-email/ leaf, not %s"
+msgstr ""
+
+msgid "%s not certified, left in place"
+msgstr ""
+
+msgid "%s is certified but carries no eid"
+msgstr ""
+
+msgid "malformed eid %s"
+msgstr ""
+
+msgid "promoted %s → %s"
+msgstr ""
+
+msgid "Show this help and exit"
+msgstr ""
+
+msgid "Show version and exit"
+msgstr ""
+
+msgid "is also a bash library, see:"
+msgstr ""
+
+msgid "set completion for the program and return"
+msgstr ""
+
+msgid "no action given"
+msgstr ""
+
+msgid "unrecognized action"
 msgstr ""

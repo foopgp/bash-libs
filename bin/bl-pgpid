@@ -613,12 +613,24 @@ OPTIONS:
 	echo "${keyid%% *}"
 }
 
+# Read `gpg --with-colons` output on stdin ; print the distinct OpenPGP IDs
+# (u4…/u5…, rendered like everywhere else) carried by its uid records, one per
+# line, sorted. $1, if given, is an ERE the uid validity field (colon column 2)
+# must fully match for that uid to be considered (default: any single validity).
+_bl_pgpid_eids_of() {
+	local vf="${1:-.}"
+	awk -F: -v vf="$vf" '$1=="uid" && $2 ~ ("^(" vf ")$")' \
+		| sed --silent --regexp-extended "s,.*4=?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5=?(${BL_PGPID_U5_REGEX}).*,u5\1,p" \
+		| sort -u
+}
+
+
 ### public functions / program actions ###
 
 bl_pgpid_get() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... NAME|U4|U5|EMAIL"
+	local usage="Usage: $name [OPTIONS]... NAME|U4|U5|EMAIL..."
 	local maxfromks=100
 	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 	local helpmsg="
@@ -632,7 +644,9 @@ OPTIONS:
   -s, --secret                "$"Search through local secret keys instead of public certificate."" - "$"Imply --no-fetch""
   -m, --errexit-g=1           "$"Return an error if there is more than one (1) entry."" - "$"You may replace '1' by an other number""
   -M, --max-from-keyserv MAX  "$"Set maximum matching certificates to receive from keyservers. "$"Default: ""$maxfromks
-  -T, --ownertrust THRESHOLD  "$"Only output fingerprint with ownertrust greater or equal to THRESHOLD."" (Not implemented)
+  -r, --recurse[=NUM]         "$"Also fetch & display the certs signing the target(s), NUM levels deep (default 1, max 6)""
+      --import-clean          "$"After import, remove any signatures from the certificate that are not usable, including from certificates that are not present on the keyring""
+      --import-minimal        "$"Import the smallest certificate possible, removing almost all signatures""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
   -K, --keyservers KEYSERVERS "$"Search and refresh certificates from this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
@@ -641,17 +655,21 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	local gpgaction="--list-keys"
 	local wkdcmd="gpg --auto-key-locate clear,wkd --locate-external-keys"
 	local errexit=$(getconf INT_MAX)
+	local importclean="no-import-clean" importminimal="no-import-minimal"
 	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local recurse=0 _recursing=0
+	local -a passopts=()                       # options propagated to --recurse self-calls
 	for ((;$#;)) ; do
 		case "$1" in
 			-F|--fpr|--fingerprint)
-				onlyfpr=1 onlymbox=0 ;;
+				onlyfpr=1 onlymbox=0 ; passopts+=(--fingerprint) ;;
 			-E|--mbox|--email)
-				onlyfpr=0 onlymbox=1 ;;
+				onlyfpr=0 onlymbox=1 ; passopts+=(--email) ;;
 			-s|--secret)
 				gpgaction="--list-secret-keys" ;&
 			-l|-f|--local|--no-fetch)
 				wkdcmd="true"
+				passopts+=(--no-fetch)
 				keyservs=() ;;
 			-m|--errexit|--errexit-g)
 				errexit=1 ;;
@@ -663,12 +681,19 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				[[ "$2" =~ ^[0-9]+$ ]] || { printf "$FUNCNAME: Error: "$"Option %s expect a number"".\n" "--max-from-keyserv" >&2 ; return 2 ; }
 				(($2 <= 100)) || printf "$FUNCNAME: Warning: "$"%s exceeds usual key server limit %s"".\n" "$2" "(100)" >&2
 				shift ; maxfromks=$1 ;;
-			-T|--ownertrust)
-				printf "$FUNCNAME: Error: "$"Sorry, option %s not implemented yet.""\n" "$1" >&2 ; return 2 ;;
+			-r|--recurse) recurse=1 ;;
+			--recurse=*)
+				recurse=${1#*=}
+				[[ "$recurse" =~ ^[0-6]$ ]] || { printf "$FUNCNAME: Error: "$"Option %s expects a number in 0..6"".\n" "--recurse=" >&2 ; return 2 ; } ;;
+			--_recursing) _recursing=1 ;;   # internal: this call is a --recurse descendant
+			--import-clean)
+				importclean="import-clean" ; passopts+=(--import-clean) ;;
+			--import-minimal)
+				importminimal="import-minimal" ; passopts+=(--import-minimal) ;;
 			-K|--keyservers)
-				shift ; keyservs=($1) ;;
+				shift ; keyservs=($1) ; passopts+=(--keyservers "$1") ;;
 			-H|--homedir)
-				shift ; gpghome=${1:?} ;;
+				shift ; gpghome=${1:?} ; passopts+=(--homedir "$gpghome") ;;
 			-v|--verify) verify=1 ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
@@ -700,22 +725,24 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			fi
 			ksurl="http${scheme:3:1}://${serv}:${port}${path}/pks/lookup"
 			for user in "${users[@]}" ; do
+				# If input seems to be a KeyID (len=16) or v4 fpr (len=40) or v6 fpr (len=64) without is "0x" header, add it as keyserver use to need it.
+				! [[ "$user" =~ ^([0-9abcdefABCDEF]{24}){0,2}[0-9abcdefABCDEF]{16}$ ]] || user="0x$user"
 				ksfprs=($(curl --no-progress-meter --location --get --data-urlencode 'op=index' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | sed -n 's,^pub:\([[:xdigit:]]*\):.*,\1,p'))
 				if [[ -z "${ksfprs[@]}" ]] ; then
 					printf "$FUNCNAME: Notice: "$"No certificate for %s on %s.""\n" "'$user'" "'$keyserv'" >&2
 					continue
 				elif ((${#ksfprs[@]} <= maxfromks )) ; then
-					curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import-options import-clean --import || true
+					curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import-options ${importclean},${importminimal} --import || true
 				else
 					local i
 					for ((i=0;i<maxfromks;i++)) ; do
-						curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=0x${ksfprs[i]}" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import
+						curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=0x${ksfprs[i]}" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import-options ${importclean},${importminimal} --import
 					done
 				fi
 			done
 		done
 	fi
-	$wkdcmd --homedir "$gpghome" $(grep -o --extended-regexp "$BL_INTERACTIVE_EMAIL_REGEX" <<<"${users[@]}") || true
+	$wkdcmd --homedir "$gpghome" --import-options ${importclean},${importminimal} $(grep -o --extended-regexp "$BL_INTERACTIVE_EMAIL_REGEX" <<<"${users[@]}") || true
 
 	local -a fprmboxs fprs
 	readarray -t fprmboxs < <(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox $gpgaction -- "${users[@]}" | sort -u )
@@ -730,14 +757,30 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		for cl in "${fprmboxs[@]}" ; do
 			cfpr=${cl%% *}
 			if [[ "$cfpr" != $prevfpr ]] ; then
-				id=" $(gpg --homedir "$gpghome" --with-colons $gpgaction "0x$cfpr" | sed --silent --regexp-extended "s,^uid:.*4=?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,^uid:.*5=?(${BL_PGPID_U5_REGEX}).*,u5\1,p" | sort -u)"
+				id=" $(gpg --homedir "$gpghome" --with-colons $gpgaction "0x$cfpr" | _bl_pgpid_eids_of)"
 				if [[ "$id" == *$'\n'* ]] ; then
 					printf "$FUNCNAME: Warning: "$"Certificate %s contain more than one OpenPGP ID string.""\n" "0x$cfpr" >&2
-					id=""
+					id=" -"
+				elif [[ "$id" == \  ]] ; then
+					id=" -"
 				fi
 			fi
 			printf -- "%-80s${id}\n" "$cl"
 			prevfpr=$cfpr
+		done
+	fi
+
+	# --recurse[=NUM]: also fetch & display the certs signing the target(s), up to NUM levels deep.
+	# Self-recursion (DRY) ; BL_PGPID_GET_SEEN dedups signers over the whole walk (perf-safe on cyclic WoT).
+	if ((recurse > 0)) ; then
+		declare -gA BL_PGPID_GET_SEEN
+		((_recursing)) || BL_PGPID_GET_SEEN=()
+		local kid gf
+		for gf in "${fprs[@]}" ; do BL_PGPID_GET_SEEN[${gf: -16}]=1 ; done
+		for kid in $(gpg --homedir "$gpghome" --with-colons --list-sigs $(printf -- '0x%s ' "${fprs[@]}") 2>/dev/null | awk -F: '$1=="sig"{print $5}' | sort -u) ; do
+			[[ ! -v BL_PGPID_GET_SEEN[$kid] ]] || continue
+			BL_PGPID_GET_SEEN[$kid]=1
+			"$FUNCNAME" "${passopts[@]}" --_recursing --recurse=$((recurse-1)) "0x$kid" || true
 		done
 	fi
 
@@ -993,7 +1036,8 @@ OPTIONS:
 		return 2
 	fi
 
-	num=$(bl_shrink_num --input-encoding base64url $((BL_PGPID_XUID_MAX - BL_PGPID_XUID_MIN)) <<<"$u4h") && echo $((num + BL_PGPID_XUID_MIN))
+	num=$(bl_shrink_num --input-encoding base64url $((BL_PGPID_XUID_MAX - BL_PGPID_XUID_MIN)) <<<"$u4h") || return $?
+	echo $((num + BL_PGPID_XUID_MIN))
 }
 
 bl_pgpid_gen_key() {
@@ -1449,7 +1493,7 @@ OPTIONS:
 	[[ "${aaname[pgpid_certurl]}" != "[not set]" ]] || aaname[pgpid_certurl]=""
 	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
 		((quiet)) || printf "$FUNCNAME: Notice: "$"Getting pubkey from %s …""\n" "${aaname[pgpid_certurl]}" >&2
-		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import-options keep-ownertrust,import-clean --import ; then
+		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import ; then
 			cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 		fi
 	fi
@@ -1535,6 +1579,110 @@ OPTIONS:
 	return 0
 }
 
+bl_pgpid_cert_check() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [NAME|EID|EMAIL|FPR]..."
+	local helpmsg="
+"$"Check WoT-validity of certificate(s) identified by NAME|EID|EMAIL|FPR (or all if none).""
+
+"$"Before that you may run:""
+$ $BL_PGPID_NAME get --recurse …    # "$"To populate the keyring""
+$ $BL_PGPID_NAME update_trustdb …   # "$"To set your Web-of-Trust configuration""
+
+"$"Default output is one line per certificate: FINGERPRINT  EID  VERDICT""
+"$"VERDICT's possible values:"" certified | uncertified | revoked | broken""
+
+"$"A certificate is 'broken' when its non-revoked uids carry conflicting or no entity
+identifier (EID), or when no presentable uid carries an email.""
+
+OPTIONS:
+  -E, --show-email         "$"Insert the email column #2 (one line per presentable uid)""
+  -L, --no-check-eid       "$"Legacy: don't require a consistent eid (certs not yet OpenPGP-ID aware)""
+  -H, --homedir GNUPGHOME  "$"GnuPG home to read keys & trust from (default: ~/.gnupg)""
+  -q, --quiet              "$"No per-line output. Exit code hold verdict: 0 if all certified, 196 if any uncertified, 197 if any revoked, 198 if any broken.""
+"
+	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0 showmail=0 checkeid=1
+	for ((;$#;)) ; do
+		case "$1" in
+			-E|--show-email)   showmail=1 ;;
+			-L|--no-check-eid) checkeid=0 ;;
+			-H|--homedir) shift ; syshome=${1:?} ;;
+			-q|--quiet)   quiet=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local -a targets=("$@")
+
+	# Pure read: query the trust exactly as it currently stands in the real homedir —
+	# no throwaway copy, no import, no --check-trustdb. Extending the trust (and the
+	# only mutating step) belongs to '$BL_PGPID_NAME update_trustdb'. Local signatures,
+	# if any, count as GnuPG sees them.
+	local -a GPG=(gpg --homedir "$syshome" --quiet --batch)
+
+	# Resolve targets → primary fingerprints, deduplicated. Includes certs with no
+	# emailed uid (so a 'broken' one is still reported).
+	local -a fprs
+	readarray -t fprs < <("${GPG[@]}" --with-colons --list-keys -- "${targets[@]}" 2>/dev/null \
+		| awk -F: '$1=="pub"{p=1} $1=="fpr"&&p{print $10;p=0}' | sort -u)
+	(( ${#fprs[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No certificate for"" '%s'...\n" "$targets" >&2 ; return 141 ; }
+
+	# Per-certificate verdict → severity feeding the --quiet exit code:
+	# broken=198 dominates revoked=197 dominates uncertified=196 dominates certified=0.
+	local F colon eidfield verdict sev nNR cl rc=0
+	local -a nreids fueids mbox
+	for F in "${fprs[@]}" ; do
+		colon=$("${GPG[@]}" --with-colons --list-keys "0x$F" 2>/dev/null)
+		readarray -t nreids < <(_bl_pgpid_eids_of '[^r]' <<<"$colon")   # eids on non-revoked uids
+		readarray -t fueids < <(_bl_pgpid_eids_of '[fu]'  <<<"$colon")  # eids on fully-valid uids
+		nNR=${#nreids[@]}
+		# Display lines: one per emailed uid GnuPG deems presentable (validity ∉ i/d/r/e).
+		readarray -t mbox < <("${GPG[@]}" --list-options show-only-fpr-mbox --list-keys "0x$F" 2>/dev/null | sort -u)
+
+		# Field #3 : the single eid the non-revoked uids agree on, else '-'.
+		((nNR==1)) && eidfield="${nreids[0]}" || eidfield="-"
+
+		# Field #4 : the verdict.
+		if (( ${#mbox[@]} == 0 )) ; then
+			verdict=broken ; eidfield="-"                                # no live emailed uid (always fatal)
+		elif ((checkeid)) && ((nNR>=2)) ; then
+			verdict=broken ; eidfield="-"                                # conflicting eids on non-revoked uids
+		elif ((checkeid)) && ((nNR==0)) ; then
+			verdict=broken ; eidfield="-"                                # no eid at all
+		elif grep --quiet -m1 "^pub:r" <<<"$colon" ; then
+			verdict=revoked
+		elif ((checkeid)) ; then
+			# nNR==1 : certified iff that eid is borne by a fully-valid (f/u) uid.
+			[[ " ${fueids[*]} " == *" ${nreids[0]} "* ]] && verdict=certified || verdict=uncertified
+		else
+			# --no-check-eid : certified if any fully-valid (f/u) uid exists.
+			[[ "$(awk -F: '$1=="uid" && ($2=="f"||$2=="u"){print 1;exit}' <<<"$colon")" ]] \
+				&& verdict=certified || verdict=uncertified
+		fi
+
+		case $verdict in broken) sev=198 ;; revoked) sev=197 ;; uncertified) sev=196 ;; *) sev=0 ;; esac
+		((sev<=rc)) || rc=$sev
+
+		((quiet)) || {
+			if ((! showmail)) ; then
+				printf -- "%-42s%-40s%s\n" "$F" " $eidfield" "$verdict"
+			elif (( ${#mbox[@]} == 0 )) ; then
+				printf -- "%-80s%-40s%s\n" "$F -" " $eidfield" "$verdict"    # no presentable email : keep the column, render it '-'
+			else
+				for cl in "${mbox[@]}" ; do
+					printf -- "%-80s%-40s%s\n" "$cl" " $eidfield" "$verdict"
+				done
+			fi
+		}
+	done
+	((quiet)) && return $rc || return 0
+}
+
 bl_pgpid_certify() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
@@ -1611,7 +1759,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	local targetid targetfpr keyfpr
 	for ((;$#;)) ; do
-		if [[ "$1" =~ (${BL_PGPID_U4_REGEX}|${BL_PGPID_U5_REGEX}) ]] ; then
+		if [[ "$1" =~ ${BL_PGPID_EID_REGEX} ]] ; then
 			targetid=${BASH_REMATCH[0]}
 		elif [[ "${1^^}" =~ ^[ABCDEF0-9]{40}$ ]] ; then
 			targetfpr=${BASH_REMATCH[0]}
@@ -1684,23 +1832,127 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	return $ret
 }
 
-_bl_pgpid_find_template() {
-	# Output first readable path for the given template basename, by trying:
-	#   $BL_PGPID_TEMPLATEDIR — explicit override, useful for tests
-	#   ../share/bash-libs/svg — relative to script (dev install)
-	#   XDG / system paths
-	local n=${1:?} d
-	for d in \
-		"${BL_PGPID_TEMPLATEDIR:-}" \
-		"$(dirname "$(readlink -f "$BASH_SOURCE")")/../share/bash-libs/svg" \
-		"${XDG_DATA_HOME:-$HOME/.local/share}/bash-libs/svg" \
-		/usr/local/share/bash-libs/svg \
-		/usr/share/bash-libs/svg ; do
-		[[ "$d" && -r "$d/$n" ]] || continue
-		printf -- "%s\n" "$d/$n"
-		return 0
+bl_pgpid_update_trustdb() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [OWNERTRUST.GPG]..."
+	local helpmsg="
+"$"Recompute the GnuPG trustdb using given ownertrust delegations.""
+
+"$"This is like 'gpg --update-trustdb', but importing first ownertrust defined in
+given OWNERTRUST.GPG file(s), IN ORDER.""
+"$"Every file MUST be OpenPGP signed message and its signer MUST already be valid,
+else the delegation chain is broken.""
+"$"That is why OWNERTRUST.GPG order is important.""
+
+OPTIONS:
+  -H, --homedir GNUPGHOME  "$"GnuPG home to update (default: ~/.gnupg)""
+      --batch              "$"Non-interactive: recompute with 'gpg --check-trustdb', never prompt""
+  -q, --quiet              "$"Only Error/Warning output""
+"
+	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0 batch=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-H|--homedir) shift ; syshome=${1:?} ;;
+			--batch)      batch=1 ;;
+			-q|--quiet)   quiet=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
 	done
-	return 1
+	local -a otfiles=("$@")
+
+	local -a GPG=(gpg --homedir "$syshome" --quiet --batch)
+
+	# Extend the trust with the given signed ownertrust files, if any.
+	if (( ${#otfiles[@]} > 0 )) ; then
+		# Anchor : the user's own keys are inviolable — a referent may extend trust to
+		# others but not redefine the user's trust in themselves, so we strip them out.
+		local -a ownfprs ; readarray -t ownfprs < <("${GPG[@]}" --list-secret-keys --with-colons 2>/dev/null | awk -F: '$1=="fpr"{print $10}')
+
+		# Verify every file's signature (needs no trust for that), reject an invalid one,
+		# collect its stripped ownertrust, and warn on an out-of-window signature — older
+		# than a year, or in the future (a future date usually means a wrong local clock).
+		local now oneyearago ; now=$(date +%s) ; oneyearago=$((now - 31536000))
+		local otf signer sigepoch content f i l ok
+		local -a otcontents=() otsigners=()
+		local statusf ; statusf=$(mktemp) || return 1
+		trap 'rm -f "$statusf"' RETURN
+		for otf in "${otfiles[@]}" ; do
+			if ! content=$("${GPG[@]}" --status-fd 3 --decrypt "$otf" 3>"$statusf" 2>/dev/null) ; then
+				printf "$FUNCNAME: Error: "$"cannot read or verify %s (missing, not signed, or bad signature?)""\n" "$otf" >&2 ; return 1
+			fi
+			signer=$(awk '$2=="VALIDSIG"{print $3; exit}' "$statusf")
+			sigepoch=$(awk '$2=="VALIDSIG"{print $5; exit}' "$statusf")
+			[[ "$signer" ]] || { printf "$FUNCNAME: Error: "$"%s carries no verifiable signature (signer key missing?)""\n" "$otf" >&2 ; return 1 ; }
+			if [[ "$sigepoch" =~ ^[0-9]+$ ]] && (( sigepoch > now )) ; then
+				printf "$FUNCNAME: Warning: "$"%s is signed in the future (%s) — is the local clock right?""\n" "$otf" "$(date --utc --date=@"$sigepoch" +%Y-%m-%d)" >&2
+			elif [[ "$sigepoch" =~ ^[0-9]+$ ]] && (( sigepoch < oneyearago )) ; then
+				printf "$FUNCNAME: Warning: "$"%s carries a delegation older than a year (%s)""\n" "$otf" "$(date --utc --date=@"$sigepoch" +%Y-%m-%d)" >&2
+			fi
+			# The raw content must actually be ownertrust ('FINGERPRINT:TRUST:' lines), else
+			# the file is not a delegation and we refuse it rather than silently ignore it.
+			# Validate BEFORE stripping the anchor, so a file that only trusts the anchor
+			# (legitimately stripped to nothing) is not mistaken for garbage.
+			ok=0
+			while IFS= read -r l ; do
+				[[ -n "$l" && "$l" != \#* ]] || continue
+				[[ "$l" =~ ^[0-9A-Fa-f]{16,}:[0-9]{1,3}: ]] || { ok=0 ; break ; }
+				ok=1
+			done <<<"$content"
+			((ok)) || { printf "$FUNCNAME: Error: "$"%s is not a valid ownertrust file""\n" "$otf" >&2 ; return 1 ; }
+			for f in "${ownfprs[@]}" ; do content=$(grep -v "^$f:" <<<"$content" || true) ; done
+			otcontents+=("$content") ; otsigners+=("$signer")
+		done
+
+		# Idempotence : compute the prospective ownertrust textually (later files override
+		# earlier ones, per fingerprint). Apply only if it differs from the current one.
+		local before after
+		before=$("${GPG[@]}" --export-ownertrust 2>/dev/null | grep -v '^#' | sort)
+		after=$( { printf '%s\n' "$before" ; printf '%s\n' "${otcontents[@]}" | grep -v '^#' ; } \
+			| awk -F: 'NF>=2 && $1 ~ /^[0-9A-Fa-f]+$/ {t[$1]=$2} END{for(k in t) print k":"t[k]":"}' | sort )
+		if [[ "$after" == "$before" ]] ; then
+			((quiet)) || printf "$FUNCNAME: Info: "$"the delegations are already applied — ownertrust left unchanged""\n" >&2
+		else
+			# Back up the current ownertrust before mutating, in a dedicated timestamped file.
+			local backupdir="$syshome/ownertrust-backups" backupf
+			mkdir -p "$backupdir" || return 1
+			backupf="$backupdir/ownertrust-$(date --utc +%Y%m%dT%H%M%SZ).txt"
+			"${GPG[@]}" --export-ownertrust > "$backupf" 2>/dev/null
+			printf "$FUNCNAME: Notice: "$"current ownertrust backed up in %s""\n" "$backupf" >&2
+
+			# Apply the ordered delegation chain : each file's signer must already be valid
+			# (GnuPG auto-recomputes on access, so file N+1 sees file N's effect).
+			for i in "${!otfiles[@]}" ; do
+				signer=${otsigners[i]}
+				[[ "$("${GPG[@]}" --with-colons --list-keys "0x$signer" 2>/dev/null | awk -F: '$1=="uid" && ($2=="f"||$2=="u"){print 1; exit}')" ]] \
+					|| { printf "$FUNCNAME: Error: "$"delegation chain broken: the signer of %s is not (yet) valid""\n" "${otfiles[i]}" >&2 ; return 1 ; }
+				printf '%s\n' "${otcontents[i]}" | "${GPG[@]}" --import-ownertrust 2>/dev/null
+			done
+
+			# Report the change as a human-readable unified diff of the sorted ownertrust,
+			# and how to undo it.
+			((quiet)) || {
+				after=$("${GPG[@]}" --export-ownertrust 2>/dev/null | grep -v '^#' | sort)
+				printf "$FUNCNAME: Info: "$"ownertrust changes:""\n" >&2
+				diff --unified --color=auto --label old-ownertrust --label new-ownertrust \
+					<(printf '%s\n' "$before") <(printf '%s\n' "$after") >&2 || true
+			}
+			printf "$FUNCNAME: Notice: "$"to restore the previous trust: ""gpg --homedir %s --import-ownertrust %s && gpg --homedir %s --batch --check-trustdb\n" "$syshome" "$backupf" "$syshome" >&2
+		fi
+	fi
+
+	# Recompute the trustdb : interactively complete the ownertrust of the remaining keys
+	# ('gpg --update-trustdb'), unless --batch selects the non-interactive 'gpg --check-trustdb'.
+	if ((batch)) ; then
+		gpg --homedir "$syshome" --batch --check-trustdb 2>/dev/null
+	else
+		gpg --homedir "$syshome" --update-trustdb
+	fi
 }
 
 bl_pgpid_print() (
@@ -1720,12 +1972,12 @@ OPTIONS:
   -H, --homedir GNUPGHOME       "$"GnuPG home directory (default: ~/.gnupg). "$"Environment variable: ""\$GNUPGHOME
 "
 
-	local nocolor=0 print usename usetemplate
+	local nocolor=0 printer usename usetemplate
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
 			-P|--print|--printer)
-				shift ; print=$1 ;;
+				shift ; printer=$1 ;;
 			-t|--template)
 				shift ; usetemplate=${1:?} ;;
 			-g|--no-color|--gray|--grayscale)
@@ -1823,22 +2075,18 @@ OPTIONS:
 	# Resolve template:
 	#   no --template  → default inline sticker (single line in tmpdir)
 	#   --template FILE → use FILE if readable, else warn and fall back to card.svg
-	local template templatename
+	local template
 	if [[ "$usetemplate" ]] ; then
 		if [[ -r "$usetemplate" ]] ; then
 			template=$usetemplate
-			templatename=$(basename -- "$usetemplate")
 		else
-			printf "$FUNCNAME: Warning: "$"Template %s is not readable, falling back to default card template.""\n" "$usetemplate" >&2
-			template=$(_bl_pgpid_find_template "card.svg") || {
-				printf "$FUNCNAME: Error: "$"SVG template %s not found.""\n" "card.svg" >&2 ; return 1
-			}
-			templatename="card.svg"
+			template="$(dirname "$(readlink -f "$BASH_SOURCE")")/../share/bash-libs/svg/card.svg"
+			printf "$FUNCNAME: Warning: "$"Card template %s is not readable, falling back to default %s.""\n" "${usetemplate@Q}" "${template@Q}" >&2
+			[[ -r "$template" ]] || { printf "$FUNCNAME: Error: "$"Default card.svg template not found.""\n" >&2 ; return 1 ;}
 		fi
 	else
 		template="$tmpdir/sticker.svg"
 		printf '%s' "$BL_PGPID_STICKER_TEMPLATE" > "$template" || return $?
-		templatename="sticker.svg"
 	fi
 
 	# QR code (sticker AND card — card embeds the sticker block verbatim).
@@ -1870,14 +2118,13 @@ OPTIONS:
 	fi
 
 	# Output to file if asked
-	if [[ "$print" == *.svg ]] ; then
-		cp -- "$tmpdir/render.svg" "$print" || return $?
-		printf "$FUNCNAME: Notice: "$"Wrote SVG to %s.""\n" "$print" >&2
+	if [[ "$printer" == *.svg ]] ; then
+		cp -- "$tmpdir/render.svg" "$printer" || return $?
+		printf "$FUNCNAME: Notice: "$"Wrote SVG to %s.""\n" "$printer" >&2
 		return 0
 	fi
 
 	# Else: render to PDF, multi-up on A4, send to printer
-	local printer=$print
 	if [[ -z "$printer" ]] ; then
 		local -a printers
 		printers=($(LANG= lpstat -p | sed -n 's,^printer \([^ ]*\).*,\1,p'))
@@ -1904,7 +2151,7 @@ OPTIONS:
 	pdfunite "${copies[@]}" "$tmpdir/duped.pdf" || return $?
 	pdfjam --quiet --paper a4paper --landscape --nup "$nup" --noautoscale true --outfile "$tmpdir/page.pdf" "$tmpdir/duped.pdf" || return $?
 
-	printf "$FUNCNAME: Notice: "$"Printing %s on %s…""\n" "${templatename%.svg}" "$printer" >&2
+	printf "$FUNCNAME: Notice: "$"Printing %s %s on %s…""\n" "$nup" "$(basename -- "$template")" "$printer" >&2
 	lpr -P "$printer" "$tmpdir/page.pdf"
 )
 
