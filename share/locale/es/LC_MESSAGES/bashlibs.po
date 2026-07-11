@@ -1159,10 +1159,8 @@ msgstr ""
 
 msgid ""
 "A certificate is 'broken' when its non-revoked uids carry conflicting or no "
-"entity"
-msgstr ""
-
-msgid "identifier (EID), or when no presentable uid carries an email."
+"entity\n"
+"identifier (EID), or when no presentable uid carries an email."
 msgstr ""
 
 msgid "Insert the email column #2 (one line per presentable uid)"
@@ -1299,45 +1297,22 @@ msgstr ""
 msgid "Successfully sign %d '%s' inside certificate %s."
 msgstr ""
 
-msgid ""
-"Recompute the GnuPG trustdb (like 'gpg --update-trustdb'), first extending "
-"the"
+msgid "Recompute the GnuPG trustdb using given ownertrust delegations."
 msgstr ""
 
 msgid ""
-"trust with each signed OWNERTRUST_FILE given, IN ORDER. Every file's "
-"signature is"
+"This is like 'gpg --update-trustdb', but importing first ownertrust defined "
+"in\n"
+"given OWNERTRUST.GPG file(s), IN ORDER."
 msgstr ""
 
 msgid ""
-"verified and its signer MUST already be valid, else the delegation chain is "
-"broken"
+"Every file MUST be OpenPGP signed message and its signer MUST already be "
+"valid,\n"
+"else the delegation chain is broken."
 msgstr ""
 
-msgid ""
-"and nothing is applied. Applying MUTATES the real trustdb — a deliberate "
-"act: the"
-msgstr ""
-
-msgid ""
-"current ownertrust is backed up first, the change is reported as a unified "
-"diff,"
-msgstr ""
-
-msgid "and the exact command to restore the backup is printed."
-msgstr ""
-
-msgid ""
-"Without --batch the final recompute is the interactive 'gpg --update-"
-"trustdb',"
-msgstr ""
-
-msgid ""
-"which lets you complete the ownertrust of the remaining keys ; with --batch "
-"it is"
-msgstr ""
-
-msgid "the non-interactive 'gpg --check-trustdb'."
+msgid "That is why OWNERTRUST.GPG order is important."
 msgstr ""
 
 msgid "GnuPG home to update (default: ~/.gnupg)"
@@ -1934,10 +1909,7 @@ msgid "All actions support a --help option, eg:"
 msgstr ""
 
 msgid ""
-"Manage a uetree instance — a filesystem-native registry of entities keyed"
-msgstr ""
-
-msgid ""
+"Manage a uetree instance — a filesystem-native registry of entities keyed\n"
 "by self-certifying OpenPGP identifiers, cross-indexed by email, phone and "
 "name."
 msgstr ""
@@ -1958,19 +1930,15 @@ msgid "Validate a uetree instance rooted at PATH (default: current directory)."
 msgstr ""
 
 msgid ""
-"Reconciles each node's .FORMAT topology flag with reality, validates every"
+"Reconciles each node's .FORMAT topology flag with reality, validates every\n"
+".ALIASES membership manifest (exactly one canonical, canonical holds the "
+"record,\n"
+"manifest replicated identically across the entity's positions), and requires "
+"FN\n"
+"in every entity.vcf."
 msgstr ""
 
-msgid ""
-".ALIASES membership manifest (exactly one canonical, canonical holds the"
-msgstr ""
-
-msgid ""
-"record, manifest replicated identically across the entity's positions), and"
-msgstr ""
-
-msgid ""
-"requires FN in every entity.vcf. Exit 0 if clean, 1 if any error was found."
+msgid "Exit 0 if clean, 1 if any error was found."
 msgstr ""
 
 msgid "Report every node checked, not only problems"
@@ -2016,18 +1984,18 @@ msgid "%d node(s), %d leaf/leaves, %d error(s), %d warning(s)"
 msgstr ""
 
 msgid ""
-"Resolve ITEM (an eid, e-mail, phone or name) to the canonical entity leaf(s)"
-msgstr ""
-
-msgid "of the uetree at --tree, following the .ALIASES membership manifest."
-msgstr ""
-
-msgid ""
-"One result per line: <trust> <leaf>, where <trust> is 'certified' (canonical"
+"Resolve ITEM (an eid, e-mail, phone or name) to the canonical entity "
+"leaf(s)\n"
+"of the uetree at --tree, following the .ALIASES membership manifest."
 msgstr ""
 
 msgid ""
-"under by-eid/) or 'claimed' (not yet promoted). Exit 141 if nothing matches."
+"One result per line: <trust> <leaf>, where <trust> is 'certified' "
+"(canonical\n"
+"under by-eid/) or 'claimed' (not yet promoted)."
+msgstr ""
+
+msgid "Exit 141 if nothing matches."
 msgstr ""
 
 msgid "uetree instance root (default: current directory)"
@@ -2061,10 +2029,9 @@ msgid "unknown branch"
 msgstr ""
 
 msgid ""
-"List the canonical entity leaves (those holding entity.vcf) of the uetree at"
-msgstr ""
-
-msgid "PATH (default: current directory), one filesystem path per line."
+"List the canonical entity leaves (those holding entity.vcf) of the uetree "
+"at\n"
+"PATH (default: current directory), one filesystem path per line."
 msgstr ""
 
 msgid "Only leaves on branch eid|email|tel|name"
@@ -2077,19 +2044,14 @@ msgid "Also list alias leaves (those holding .ALIASES only)"
 msgstr ""
 
 msgid ""
-"Regenerate or verify the .ALIASES membership manifests of the uetree at PATH"
-msgstr ""
-
-msgid ""
+"Regenerate or verify the .ALIASES membership manifests of the uetree at "
+"PATH\n"
 "(default: current directory) as a projection of each canonical entity.vcf."
 msgstr ""
 
 msgid ""
 "Every position of an entity carries the same manifest ; the canonical "
-"(holding"
-msgstr ""
-
-msgid ""
+"(holding\n"
 "entity.vcf) is flagged '*', derived positions (by-email/by-tel/by-name) '-'."
 msgstr ""
 
@@ -2116,17 +2078,13 @@ msgstr ""
 
 msgid ""
 "Promote a by-email/ leaf to its certified canonical by-eid/ position: move "
-"the"
-msgstr ""
-
-msgid ""
+"the\n"
 "record (and the leaf's files), rewrite its UID (email→eid), and regenerate "
-"the"
+"the\n"
+".ALIASES manifests."
 msgstr ""
 
-msgid ""
-".ALIASES manifests. Pure filesystem — no git (use '$BL_UETREE_NAME gitsync' "
-"for that)."
+msgid "Pure filesystem — no git (use '$BL_UETREE_NAME gitsync' for that)."
 msgstr ""
 
 msgid ""
@@ -2134,15 +2092,14 @@ msgid ""
 "query)."
 msgstr ""
 
-msgid "To extend the trust with signed delegations first, run '$BL_PGPID_NAME"
+msgid ""
+"To extend the trust with signed delegations first, run '$BL_PGPID_NAME\n"
+"update_trustdb' with the signed ownertrust files."
 msgstr ""
 
 msgid ""
-"update_trustdb' with the signed ownertrust files. Unless --no-fetch, the "
-"entity's"
-msgstr ""
-
-msgid "WoT neighbourhood is first fetched with '$BL_PGPID_NAME get --recurse'."
+"Unless --no-fetch, the entity's WoT neighbourhood is first fetched with\n"
+"'$BL_PGPID_NAME get --recurse'."
 msgstr ""
 
 msgid "Trust the local keyring as-is (no keyserver/WKD fetch)"

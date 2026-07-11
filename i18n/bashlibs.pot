@@ -40,15 +40,15 @@ msgstr ""
 #: ../bin/bl-pgpid:598 ../bin/bl-pgpid:701 ../bin/bl-pgpid:894
 #: ../bin/bl-pgpid:1009 ../bin/bl-pgpid:1092 ../bin/bl-pgpid:1197
 #: ../bin/bl-pgpid:1320 ../bin/bl-pgpid:1475 ../bin/bl-pgpid:1615
-#: ../bin/bl-pgpid:1754 ../bin/bl-pgpid:1865 ../bin/bl-pgpid:1995
+#: ../bin/bl-pgpid:1754 ../bin/bl-pgpid:1862 ../bin/bl-pgpid:1992
 #: ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420
 #: ../bin/bl-qrkey:122 ../bin/bl-qrkey:148 ../bin/bl-qrkey:267
 #: ../bin/bl-qrkey:319 ../bin/bl-qrkey:396 ../bin/bl-qrkey:543
 #: ../bin/bl-qrkey:686 ../bin/bl-qrkey:845 ../bin/bl-qrkey:1042
 #: ../bin/bl-security:142 ../bin/bl-security:176 ../bin/bl-security:231
 #: ../bin/bl-security:296 ../bin/bl-security:345 ../bin/bl-test:144
-#: ../bin/bl-uetree:122 ../bin/bl-uetree:441 ../bin/bl-uetree:541
-#: ../bin/bl-uetree:618 ../bin/bl-uetree:666 ../bin/bl-uetree:744
+#: ../bin/bl-uetree:122 ../bin/bl-uetree:442 ../bin/bl-uetree:543
+#: ../bin/bl-uetree:620 ../bin/bl-uetree:668 ../bin/bl-uetree:748
 msgid "Unrecognized option"
 msgstr ""
 
@@ -69,7 +69,7 @@ msgstr ""
 #: ../bin/bl-pgpid:701 ../bin/bl-pgpid:894 ../bin/bl-pgpid:1009
 #: ../bin/bl-pgpid:1092 ../bin/bl-pgpid:1197 ../bin/bl-pgpid:1320
 #: ../bin/bl-pgpid:1475 ../bin/bl-pgpid:1754 ../bin/bl-pgpid:1767
-#: ../bin/bl-pgpid:1995 ../bin/bl-pgpid:2208 ../bin/bl-qif:162
+#: ../bin/bl-pgpid:1992 ../bin/bl-pgpid:2205 ../bin/bl-qif:162
 #: ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420 ../bin/bl-qif:609
 #: ../bin/bl-qrkey:122 ../bin/bl-qrkey:148 ../bin/bl-qrkey:160
 #: ../bin/bl-qrkey:267 ../bin/bl-qrkey:319 ../bin/bl-qrkey:396
@@ -78,7 +78,7 @@ msgstr ""
 #: ../bin/bl-security:176 ../bin/bl-security:231 ../bin/bl-security:296
 #: ../bin/bl-security:345 ../bin/bl-security:365 ../bin/bl-security:391
 #: ../bin/bl-security:440 ../bin/bl-test:144 ../bin/bl-test:198
-#: ../bin/bl-uetree:122 ../bin/bl-uetree:833
+#: ../bin/bl-uetree:122 ../bin/bl-uetree:837
 msgid "Try '%s --help' for more information"
 msgstr ""
 
@@ -161,13 +161,13 @@ msgstr ""
 
 #: ../bin/bl-dji:523 ../bin/bl-djibian:431 ../bin/bl-foopgp:639
 #: ../bin/bl-interactive:495 ../bin/bl-json:361 ../bin/bl-markdown:273
-#: ../bin/bl-pgpid:2166 ../bin/bl-qrkey:1144 ../bin/bl-security:400
+#: ../bin/bl-pgpid:2163 ../bin/bl-qrkey:1144 ../bin/bl-security:400
 msgid "Show help and exit."
 msgstr ""
 
 #: ../bin/bl-dji:524 ../bin/bl-djibian:432 ../bin/bl-foopgp:640
 #: ../bin/bl-interactive:496 ../bin/bl-json:362 ../bin/bl-markdown:274
-#: ../bin/bl-pgpid:2167 ../bin/bl-qrkey:1145 ../bin/bl-security:401
+#: ../bin/bl-pgpid:2164 ../bin/bl-qrkey:1145 ../bin/bl-security:401
 msgid "Show version and exit."
 msgstr ""
 
@@ -181,7 +181,7 @@ msgstr ""
 
 #: ../bin/bl-dji:565 ../bin/bl-djibian:473 ../bin/bl-foopgp:681
 #: ../bin/bl-interactive:535 ../bin/bl-json:401 ../bin/bl-markdown:315
-#: ../bin/bl-pgpid:2208 ../bin/bl-qif:609 ../bin/bl-qrkey:1186
+#: ../bin/bl-pgpid:2205 ../bin/bl-qif:609 ../bin/bl-qrkey:1186
 #: ../bin/bl-security:440 ../bin/bl-test:198
 msgid "Unrecognized action"
 msgstr ""
@@ -196,7 +196,7 @@ msgid "Select a frontend program"
 msgstr ""
 
 #: ../bin/bl-djibian:93 ../bin/bl-interactive:87 ../bin/bl-interactive:88
-#: ../bin/bl-pgpid:397 ../bin/bl-pgpid:1975 ../bin/bl-qrkey:104
+#: ../bin/bl-pgpid:397 ../bin/bl-pgpid:1972 ../bin/bl-qrkey:104
 #: ../bin/bl-qrkey:249 ../bin/bl-qrkey:296 ../bin/bl-qrkey:366
 #: ../bin/bl-qrkey:510 ../bin/bl-qrkey:654 ../bin/bl-qrkey:825
 #: ../bin/bl-qrkey:1000 ../bin/bl-security:93
@@ -1135,7 +1135,7 @@ msgid ""
 msgstr ""
 
 #: ../bin/bl-pgpid:650 ../bin/bl-pgpid:1064 ../bin/bl-pgpid:1170
-#: ../bin/bl-pgpid:1287 ../bin/bl-pgpid:1446 ../bin/bl-pgpid:1975
+#: ../bin/bl-pgpid:1287 ../bin/bl-pgpid:1446 ../bin/bl-pgpid:1972
 msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr ""
 
@@ -1345,7 +1345,7 @@ msgstr ""
 msgid "Extract or add image inside OpenPGP certificate."
 msgstr ""
 
-#: ../bin/bl-pgpid:1161 ../bin/bl-pgpid:1277 ../bin/bl-pgpid:1967
+#: ../bin/bl-pgpid:1161 ../bin/bl-pgpid:1277 ../bin/bl-pgpid:1964
 msgid ""
 "Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or "
 "interactively ask KEYID of secret key."
@@ -1592,11 +1592,8 @@ msgstr ""
 #: ../bin/bl-pgpid:1596
 msgid ""
 "A certificate is 'broken' when its non-revoked uids carry conflicting or no "
-"entity"
-msgstr ""
-
-#: ../bin/bl-pgpid:1597
-msgid "identifier (EID), or when no presentable uid carries an email."
+"entity\n"
+"identifier (EID), or when no presentable uid carries an email."
 msgstr ""
 
 #: ../bin/bl-pgpid:1600
@@ -1776,185 +1773,157 @@ msgid "Successfully sign %d '%s' inside certificate %s."
 msgstr ""
 
 #: ../bin/bl-pgpid:1840
-msgid ""
-"Recompute the GnuPG trustdb (like 'gpg --update-trustdb'), first extending "
-"the"
-msgstr ""
-
-#: ../bin/bl-pgpid:1841
-msgid ""
-"trust with each signed OWNERTRUST_FILE given, IN ORDER. Every file's "
-"signature is"
+msgid "Recompute the GnuPG trustdb using given ownertrust delegations."
 msgstr ""
 
 #: ../bin/bl-pgpid:1842
 msgid ""
-"verified and its signer MUST already be valid, else the delegation chain is "
-"broken"
-msgstr ""
-
-#: ../bin/bl-pgpid:1843
-msgid ""
-"and nothing is applied. Applying MUTATES the real trustdb — a deliberate "
-"act: the"
+"This is like 'gpg --update-trustdb', but importing first ownertrust defined "
+"in\n"
+"given OWNERTRUST.GPG file(s), IN ORDER."
 msgstr ""
 
 #: ../bin/bl-pgpid:1844
 msgid ""
-"current ownertrust is backed up first, the change is reported as a unified "
-"diff,"
+"Every file MUST be OpenPGP signed message and its signer MUST already be "
+"valid,\n"
+"else the delegation chain is broken."
 msgstr ""
 
-#: ../bin/bl-pgpid:1845
-msgid "and the exact command to restore the backup is printed."
-msgstr ""
-
-#: ../bin/bl-pgpid:1847
-msgid ""
-"Without --batch the final recompute is the interactive 'gpg --update-"
-"trustdb',"
-msgstr ""
-
-#: ../bin/bl-pgpid:1848
-msgid ""
-"which lets you complete the ownertrust of the remaining keys ; with --batch "
-"it is"
+#: ../bin/bl-pgpid:1846
+msgid "That is why OWNERTRUST.GPG order is important."
 msgstr ""
 
 #: ../bin/bl-pgpid:1849
-msgid "the non-interactive 'gpg --check-trustdb'."
-msgstr ""
-
-#: ../bin/bl-pgpid:1852
 msgid "GnuPG home to update (default: ~/.gnupg)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1853
+#: ../bin/bl-pgpid:1850
 msgid "Non-interactive: recompute with 'gpg --check-trustdb', never prompt"
 msgstr ""
 
-#: ../bin/bl-pgpid:1854
+#: ../bin/bl-pgpid:1851
 msgid "Only Error/Warning output"
 msgstr ""
 
-#: ../bin/bl-pgpid:1890
+#: ../bin/bl-pgpid:1887
 msgid "cannot read or verify %s (missing, not signed, or bad signature?)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1894
+#: ../bin/bl-pgpid:1891
 msgid "%s carries no verifiable signature (signer key missing?)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1896
+#: ../bin/bl-pgpid:1893
 msgid "%s is signed in the future (%s) — is the local clock right?"
 msgstr ""
 
-#: ../bin/bl-pgpid:1898
+#: ../bin/bl-pgpid:1895
 msgid "%s carries a delegation older than a year (%s)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1910
+#: ../bin/bl-pgpid:1907
 msgid "%s is not a valid ownertrust file"
 msgstr ""
 
-#: ../bin/bl-pgpid:1922
+#: ../bin/bl-pgpid:1919
 msgid "the delegations are already applied — ownertrust left unchanged"
 msgstr ""
 
-#: ../bin/bl-pgpid:1929
+#: ../bin/bl-pgpid:1926
 msgid "current ownertrust backed up in %s"
 msgstr ""
 
-#: ../bin/bl-pgpid:1936
+#: ../bin/bl-pgpid:1933
 msgid "delegation chain broken: the signer of %s is not (yet) valid"
 msgstr ""
 
-#: ../bin/bl-pgpid:1944
+#: ../bin/bl-pgpid:1941
 msgid "ownertrust changes:"
 msgstr ""
 
-#: ../bin/bl-pgpid:1948
+#: ../bin/bl-pgpid:1945
 msgid "to restore the previous trust: "
 msgstr ""
 
-#: ../bin/bl-pgpid:1966
+#: ../bin/bl-pgpid:1963
 msgid "Produce or print an OpenPGP ID stamp or business card."
 msgstr ""
 
-#: ../bin/bl-pgpid:1968
+#: ../bin/bl-pgpid:1965
 msgid ""
 "A single email appears on the output: if the argument is an email it is used "
 "verbatim; otherwise the most recent non-revoked email of the certificate is "
 "picked."
 msgstr ""
 
-#: ../bin/bl-pgpid:1971
+#: ../bin/bl-pgpid:1968
 msgid "Printer name to send to, or output SVG file if it ends with '.svg'"
 msgstr ""
 
-#: ../bin/bl-pgpid:1972
+#: ../bin/bl-pgpid:1969
 msgid ""
 "Use this template to produce business card (eg: …/share/bash-libs/svg/"
 "card.svg)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1973
+#: ../bin/bl-pgpid:1970
 msgid "Override the displayed name"
 msgstr ""
 
-#: ../bin/bl-pgpid:1973
+#: ../bin/bl-pgpid:1970
 msgid " (default: guessed from OpenPGP certificate and email)"
 msgstr ""
 
-#: ../bin/bl-pgpid:1974
+#: ../bin/bl-pgpid:1971
 msgid "Output in grayscale instead of color"
 msgstr ""
 
-#: ../bin/bl-pgpid:2013
+#: ../bin/bl-pgpid:2010
 msgid "Select certificate to print"
 msgstr ""
 
-#: ../bin/bl-pgpid:2032
+#: ../bin/bl-pgpid:2029
 msgid "No usable certificate for %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:2033
+#: ../bin/bl-pgpid:2030
 msgid "Email %s matches several non-revoked certificates (%d)."
 msgstr ""
 
-#: ../bin/bl-pgpid:2051
+#: ../bin/bl-pgpid:2048
 msgid "No usable (non-revoked) email in certificate %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:2052
+#: ../bin/bl-pgpid:2049
 msgid "Picking most recent email %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:2087
+#: ../bin/bl-pgpid:2084
 msgid "Card template %s is not readable, falling back to default %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:2088
+#: ../bin/bl-pgpid:2085
 msgid "Default card.svg template not found."
 msgstr ""
 
-#: ../bin/bl-pgpid:2104
+#: ../bin/bl-pgpid:2101
 msgid "Friends of OpenPGP"
 msgstr ""
 
-#: ../bin/bl-pgpid:2126
+#: ../bin/bl-pgpid:2123
 msgid "Wrote SVG to %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:2134
+#: ../bin/bl-pgpid:2131
 msgid "No printer detected."
 msgstr ""
 
-#: ../bin/bl-pgpid:2135
+#: ../bin/bl-pgpid:2132
 msgid "Where to print ?"
 msgstr ""
 
-#: ../bin/bl-pgpid:2157
+#: ../bin/bl-pgpid:2154
 msgid "Printing %s %s on %s…"
 msgstr ""
 
@@ -2596,17 +2565,13 @@ msgstr ""
 msgid "Unrecognized encoding"
 msgstr ""
 
-#: ../bin/bl-security:406 ../bin/bl-uetree:805
+#: ../bin/bl-security:406 ../bin/bl-uetree:809
 msgid "All actions support a --help option, eg:"
 msgstr ""
 
 #: ../bin/bl-uetree:102
 msgid ""
-"Manage a uetree instance — a filesystem-native registry of entities keyed"
-msgstr ""
-
-#: ../bin/bl-uetree:103
-msgid ""
+"Manage a uetree instance — a filesystem-native registry of entities keyed\n"
 "by self-certifying OpenPGP identifiers, cross-indexed by email, phone and "
 "name."
 msgstr ""
@@ -2633,307 +2598,284 @@ msgstr ""
 
 #: ../bin/bl-uetree:424
 msgid ""
-"Reconciles each node's .FORMAT topology flag with reality, validates every"
+"Reconciles each node's .FORMAT topology flag with reality, validates every\n"
+".ALIASES membership manifest (exactly one canonical, canonical holds the "
+"record,\n"
+"manifest replicated identically across the entity's positions), and requires "
+"FN\n"
+"in every entity.vcf."
 msgstr ""
 
-#: ../bin/bl-uetree:425
-msgid ""
-".ALIASES membership manifest (exactly one canonical, canonical holds the"
-msgstr ""
-
-#: ../bin/bl-uetree:426
-msgid ""
-"record, manifest replicated identically across the entity's positions), and"
-msgstr ""
-
-#: ../bin/bl-uetree:427
-msgid ""
-"requires FN in every entity.vcf. Exit 0 if clean, 1 if any error was found."
-msgstr ""
-
-#: ../bin/bl-uetree:430
-msgid "Report every node checked, not only problems"
+#: ../bin/bl-uetree:428
+msgid "Exit 0 if clean, 1 if any error was found."
 msgstr ""
 
 #: ../bin/bl-uetree:431
+msgid "Report every node checked, not only problems"
+msgstr ""
+
+#: ../bin/bl-uetree:432
 msgid "Print only errors, suppress the summary"
 msgstr ""
 
-#: ../bin/bl-uetree:449 ../bin/bl-uetree:625 ../bin/bl-uetree:674
+#: ../bin/bl-uetree:450 ../bin/bl-uetree:627 ../bin/bl-uetree:676
 msgid "%s is not a uetree node"
 msgstr ""
 
-#: ../bin/bl-uetree:462
+#: ../bin/bl-uetree:463
 msgid "%s: invalid or unsupported .FORMAT"
 msgstr ""
 
-#: ../bin/bl-uetree:467
+#: ../bin/bl-uetree:468
 msgid "%s: .FORMAT path %s does not match actual %s"
 msgstr ""
 
-#: ../bin/bl-uetree:476 ../bin/bl-uetree:477
+#: ../bin/bl-uetree:477 ../bin/bl-uetree:478
 msgid "%s: flagged non-leaf but holds %s"
 msgstr ""
 
-#: ../bin/bl-uetree:478
+#: ../bin/bl-uetree:479
 msgid "%s: dangling routing node (no children)"
 msgstr ""
 
-#: ../bin/bl-uetree:481
+#: ../bin/bl-uetree:482
 msgid "%s: flagged canonical but has no %s"
 msgstr ""
 
-#: ../bin/bl-uetree:484
+#: ../bin/bl-uetree:485
 msgid "%s: flagged alias but has no %s"
 msgstr ""
 
-#: ../bin/bl-uetree:485
+#: ../bin/bl-uetree:486
 msgid "%s: alias leaf carries an orphan %s"
 msgstr ""
 
-#: ../bin/bl-uetree:486
+#: ../bin/bl-uetree:487
 msgid "%s: unknown topology flag '%s'"
 msgstr ""
 
-#: ../bin/bl-uetree:491
+#: ../bin/bl-uetree:492
 msgid "%s: %s has no FN (required)"
 msgstr ""
 
-#: ../bin/bl-uetree:498
+#: ../bin/bl-uetree:499
 msgid "%s: .ALIASES differs from another position of %s (must be identical)"
 msgstr ""
 
-#: ../bin/bl-uetree:511
+#: ../bin/bl-uetree:512
 msgid "%d node(s), %d leaf/leaves, %d error(s), %d warning(s)"
 msgstr ""
 
-#: ../bin/bl-uetree:520
-msgid ""
-"Resolve ITEM (an eid, e-mail, phone or name) to the canonical entity leaf(s)"
-msgstr ""
-
 #: ../bin/bl-uetree:521
-msgid "of the uetree at --tree, following the .ALIASES membership manifest."
-msgstr ""
-
-#: ../bin/bl-uetree:522
 msgid ""
-"One result per line: <trust> <leaf>, where <trust> is 'certified' (canonical"
+"Resolve ITEM (an eid, e-mail, phone or name) to the canonical entity "
+"leaf(s)\n"
+"of the uetree at --tree, following the .ALIASES membership manifest."
 msgstr ""
 
 #: ../bin/bl-uetree:523
 msgid ""
-"under by-eid/) or 'claimed' (not yet promoted). Exit 141 if nothing matches."
+"One result per line: <trust> <leaf>, where <trust> is 'certified' "
+"(canonical\n"
+"under by-eid/) or 'claimed' (not yet promoted)."
 msgstr ""
 
-#: ../bin/bl-uetree:526
-msgid "uetree instance root (default: current directory)"
-msgstr ""
-
-#: ../bin/bl-uetree:527
-msgid "Force ITEM's branch: eid|email|tel|name (else auto)"
+#: ../bin/bl-uetree:525
+msgid "Exit 141 if nothing matches."
 msgstr ""
 
 #: ../bin/bl-uetree:528
-msgid "Print every candidate (homonyms, shared), not just the first"
+msgid "uetree instance root (default: current directory)"
 msgstr ""
 
 #: ../bin/bl-uetree:529
+msgid "Force ITEM's branch: eid|email|tel|name (else auto)"
+msgstr ""
+
+#: ../bin/bl-uetree:530
+msgid "Print every candidate (homonyms, shared), not just the first"
+msgstr ""
+
+#: ../bin/bl-uetree:531
 msgid "Print only the leaf path, without the trust column"
 msgstr ""
 
-#: ../bin/bl-uetree:547
+#: ../bin/bl-uetree:549
 msgid "no ITEM given"
 msgstr ""
 
-#: ../bin/bl-uetree:554
+#: ../bin/bl-uetree:556
 msgid "malformed eid"
 msgstr ""
 
-#: ../bin/bl-uetree:555
+#: ../bin/bl-uetree:557
 msgid "malformed e-mail"
 msgstr ""
 
-#: ../bin/bl-uetree:556
+#: ../bin/bl-uetree:558
 msgid "TEL is not E.164"
 msgstr ""
 
-#: ../bin/bl-uetree:557
+#: ../bin/bl-uetree:559
 msgid "name too short to slug"
 msgstr ""
 
-#: ../bin/bl-uetree:563
+#: ../bin/bl-uetree:565
 msgid "unknown branch"
 msgstr ""
 
-#: ../bin/bl-uetree:601
+#: ../bin/bl-uetree:603
 msgid ""
-"List the canonical entity leaves (those holding entity.vcf) of the uetree at"
-msgstr ""
-
-#: ../bin/bl-uetree:602
-msgid "PATH (default: current directory), one filesystem path per line."
-msgstr ""
-
-#: ../bin/bl-uetree:605
-msgid "Only leaves on branch eid|email|tel|name"
-msgstr ""
-
-#: ../bin/bl-uetree:606
-msgid "Only leaves that contain FILE"
+"List the canonical entity leaves (those holding entity.vcf) of the uetree "
+"at\n"
+"PATH (default: current directory), one filesystem path per line."
 msgstr ""
 
 #: ../bin/bl-uetree:607
+msgid "Only leaves on branch eid|email|tel|name"
+msgstr ""
+
+#: ../bin/bl-uetree:608
+msgid "Only leaves that contain FILE"
+msgstr ""
+
+#: ../bin/bl-uetree:609
 msgid "Also list alias leaves (those holding .ALIASES only)"
-msgstr ""
-
-#: ../bin/bl-uetree:646
-msgid ""
-"Regenerate or verify the .ALIASES membership manifests of the uetree at PATH"
-msgstr ""
-
-#: ../bin/bl-uetree:647
-msgid ""
-"(default: current directory) as a projection of each canonical entity.vcf."
 msgstr ""
 
 #: ../bin/bl-uetree:648
 msgid ""
-"Every position of an entity carries the same manifest ; the canonical "
-"(holding"
-msgstr ""
-
-#: ../bin/bl-uetree:649
-msgid ""
-"entity.vcf) is flagged '*', derived positions (by-email/by-tel/by-name) '-'."
+"Regenerate or verify the .ALIASES membership manifests of the uetree at "
+"PATH\n"
+"(default: current directory) as a projection of each canonical entity.vcf."
 msgstr ""
 
 #: ../bin/bl-uetree:650
+msgid ""
+"Every position of an entity carries the same manifest ; the canonical "
+"(holding\n"
+"entity.vcf) is flagged '*', derived positions (by-email/by-tel/by-name) '-'."
+msgstr ""
+
+#: ../bin/bl-uetree:652
 msgid "One of --rebuild or --check is required."
 msgstr ""
 
-#: ../bin/bl-uetree:653
+#: ../bin/bl-uetree:655
 msgid "Write the projected manifests (creating alias leaves)"
 msgstr ""
 
-#: ../bin/bl-uetree:654
+#: ../bin/bl-uetree:656
 msgid "Report positions whose manifest differs from the projection"
 msgstr ""
 
-#: ../bin/bl-uetree:655
+#: ../bin/bl-uetree:657
 msgid "With --rebuild: print what would change, write nothing"
 msgstr ""
 
-#: ../bin/bl-uetree:671
+#: ../bin/bl-uetree:673
 msgid "one of --rebuild or --check is required"
 msgstr ""
 
-#: ../bin/bl-uetree:688
+#: ../bin/bl-uetree:690
 msgid "%s claimed by both %s and %s (shared → needs a u5 or .HOMONYMS)"
 msgstr ""
 
-#: ../bin/bl-uetree:694
+#: ../bin/bl-uetree:696
 msgid "manifest missing or stale at %s"
-msgstr ""
-
-#: ../bin/bl-uetree:719
-msgid ""
-"Promote a by-email/ leaf to its certified canonical by-eid/ position: move "
-"the"
-msgstr ""
-
-#: ../bin/bl-uetree:720
-msgid ""
-"record (and the leaf's files), rewrite its UID (email→eid), and regenerate "
-"the"
 msgstr ""
 
 #: ../bin/bl-uetree:721
 msgid ""
-".ALIASES manifests. Pure filesystem — no git (use '$BL_UETREE_NAME gitsync' "
-"for that)."
+"Promote a by-email/ leaf to its certified canonical by-eid/ position: move "
+"the\n"
+"record (and the leaf's files), rewrite its UID (email→eid), and regenerate "
+"the\n"
+".ALIASES manifests."
 msgstr ""
 
-#: ../bin/bl-uetree:723
+#: ../bin/bl-uetree:724
+msgid "Pure filesystem — no git (use '$BL_UETREE_NAME gitsync' for that)."
+msgstr ""
+
+#: ../bin/bl-uetree:726
 msgid ""
 "Certification is delegated to '$BL_PGPID_NAME cert_check' (a read-only "
 "query)."
 msgstr ""
 
-#: ../bin/bl-uetree:724
-msgid "To extend the trust with signed delegations first, run '$BL_PGPID_NAME"
-msgstr ""
-
-#: ../bin/bl-uetree:725
+#: ../bin/bl-uetree:727
 msgid ""
-"update_trustdb' with the signed ownertrust files. Unless --no-fetch, the "
-"entity's"
-msgstr ""
-
-#: ../bin/bl-uetree:726
-msgid "WoT neighbourhood is first fetched with '$BL_PGPID_NAME get --recurse'."
+"To extend the trust with signed delegations first, run '$BL_PGPID_NAME\n"
+"update_trustdb' with the signed ownertrust files."
 msgstr ""
 
 #: ../bin/bl-uetree:729
+msgid ""
+"Unless --no-fetch, the entity's WoT neighbourhood is first fetched with\n"
+"'$BL_PGPID_NAME get --recurse'."
+msgstr ""
+
+#: ../bin/bl-uetree:733
 msgid "Trust the local keyring as-is (no keyserver/WKD fetch)"
 msgstr ""
 
-#: ../bin/bl-uetree:730
+#: ../bin/bl-uetree:734
 msgid "Depth for the WoT fetch (default 2 ; see get --recurse)"
 msgstr ""
 
-#: ../bin/bl-uetree:731
+#: ../bin/bl-uetree:735
 msgid "Report what would move, change nothing"
 msgstr ""
 
-#: ../bin/bl-uetree:732
+#: ../bin/bl-uetree:736
 msgid "Also report leaves left uncertified"
 msgstr ""
 
-#: ../bin/bl-uetree:752
+#: ../bin/bl-uetree:756
 msgid "%s is not a uetree leaf"
 msgstr ""
 
-#: ../bin/bl-uetree:753
+#: ../bin/bl-uetree:757
 msgid "promote operates on a by-email/ leaf, not %s"
 msgstr ""
 
-#: ../bin/bl-uetree:765
+#: ../bin/bl-uetree:769
 msgid "%s not certified, left in place"
 msgstr ""
 
-#: ../bin/bl-uetree:768
+#: ../bin/bl-uetree:772
 msgid "%s is certified but carries no eid"
 msgstr ""
 
-#: ../bin/bl-uetree:772
+#: ../bin/bl-uetree:776
 msgid "malformed eid %s"
 msgstr ""
 
-#: ../bin/bl-uetree:790
+#: ../bin/bl-uetree:794
 msgid "promoted %s → %s"
 msgstr ""
 
-#: ../bin/bl-uetree:799
+#: ../bin/bl-uetree:803
 msgid "Show this help and exit"
 msgstr ""
 
-#: ../bin/bl-uetree:800
+#: ../bin/bl-uetree:804
 msgid "Show version and exit"
 msgstr ""
 
-#: ../bin/bl-uetree:808
+#: ../bin/bl-uetree:812
 msgid "is also a bash library, see:"
 msgstr ""
 
-#: ../bin/bl-uetree:814
+#: ../bin/bl-uetree:818
 msgid "set completion for the program and return"
 msgstr ""
 
-#: ../bin/bl-uetree:833
+#: ../bin/bl-uetree:837
 msgid "no action given"
 msgstr ""
 
-#: ../bin/bl-uetree:841
+#: ../bin/bl-uetree:845
 msgid "unrecognized action"
 msgstr ""
