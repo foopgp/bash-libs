@@ -1593,8 +1593,8 @@ $ $BL_PGPID_NAME update_trustdb …   # "$"To set your Web-of-Trust configuratio
 "$"Default output is one line per certificate: FINGERPRINT  EID  VERDICT""
 "$"VERDICT's possible values:"" certified | uncertified | revoked | broken""
 
-"$"A certificate is 'broken' when its non-revoked uids carry conflicting or no entity""
-"$"identifier (EID), or when no presentable uid carries an email.""
+"$"A certificate is 'broken' when its non-revoked uids carry conflicting or no entity
+identifier (EID), or when no presentable uid carries an email.""
 
 OPTIONS:
   -E, --show-email         "$"Insert the email column #2 (one line per presentable uid)""
@@ -1835,18 +1835,15 @@ $(printf -- "%80s\n" ${keyservs[@]})
 bl_pgpid_update_trustdb() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name [OPTIONS]... [OWNERTRUST_FILE]..."
+	local usage="Usage: $name [OPTIONS]... [OWNERTRUST.GPG]..."
 	local helpmsg="
-"$"Recompute the GnuPG trustdb (like 'gpg --update-trustdb'), first extending the""
-"$"trust with each signed OWNERTRUST_FILE given, IN ORDER. Every file's signature is""
-"$"verified and its signer MUST already be valid, else the delegation chain is broken""
-"$"and nothing is applied. Applying MUTATES the real trustdb — a deliberate act: the""
-"$"current ownertrust is backed up first, the change is reported as a unified diff,""
-"$"and the exact command to restore the backup is printed.""
+"$"Recompute the GnuPG trustdb using given ownertrust delegations.""
 
-"$"Without --batch the final recompute is the interactive 'gpg --update-trustdb',""
-"$"which lets you complete the ownertrust of the remaining keys ; with --batch it is""
-"$"the non-interactive 'gpg --check-trustdb'.""
+"$"This is like 'gpg --update-trustdb', but importing first ownertrust defined in
+given OWNERTRUST.GPG file(s), IN ORDER.""
+"$"Every file MUST be OpenPGP signed message and its signer MUST already be valid,
+else the delegation chain is broken.""
+"$"That is why OWNERTRUST.GPG order is important.""
 
 OPTIONS:
   -H, --homedir GNUPGHOME  "$"GnuPG home to update (default: ~/.gnupg)""
