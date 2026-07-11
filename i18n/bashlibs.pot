@@ -48,7 +48,7 @@ msgstr ""
 #: ../bin/bl-security:142 ../bin/bl-security:176 ../bin/bl-security:231
 #: ../bin/bl-security:296 ../bin/bl-security:345 ../bin/bl-test:144
 #: ../bin/bl-uetree:122 ../bin/bl-uetree:442 ../bin/bl-uetree:543
-#: ../bin/bl-uetree:620 ../bin/bl-uetree:668 ../bin/bl-uetree:748
+#: ../bin/bl-uetree:620 ../bin/bl-uetree:669 ../bin/bl-uetree:746
 msgid "Unrecognized option"
 msgstr ""
 
@@ -78,7 +78,7 @@ msgstr ""
 #: ../bin/bl-security:176 ../bin/bl-security:231 ../bin/bl-security:296
 #: ../bin/bl-security:345 ../bin/bl-security:365 ../bin/bl-security:391
 #: ../bin/bl-security:440 ../bin/bl-test:144 ../bin/bl-test:198
-#: ../bin/bl-uetree:122 ../bin/bl-uetree:837
+#: ../bin/bl-uetree:122 ../bin/bl-uetree:835
 msgid "Try '%s --help' for more information"
 msgstr ""
 
@@ -2565,19 +2565,20 @@ msgstr ""
 msgid "Unrecognized encoding"
 msgstr ""
 
-#: ../bin/bl-security:406 ../bin/bl-uetree:809
+#: ../bin/bl-security:406 ../bin/bl-uetree:807
 msgid "All actions support a --help option, eg:"
 msgstr ""
 
 #: ../bin/bl-uetree:102
 msgid ""
-"Manage a uetree instance — a filesystem-native registry of entities keyed\n"
-"by self-certifying OpenPGP identifiers, cross-indexed by email, phone and "
-"name."
+"Manage a uetree, a filesystem-native registry of self-certifying entities."
 msgstr ""
 
-#: ../bin/bl-uetree:104
-msgid "The canonical record of an entity is a vCard 4.0 file (entity.vcf)."
+#: ../bin/bl-uetree:103
+msgid ""
+"Each entity is keyed by an OpenPGP identifier and cross-indexed by email, "
+"phone\n"
+"and name ; its canonical record is a vCard 4.0 file (entity.vcf)."
 msgstr ""
 
 #: ../bin/bl-uetree:141
@@ -2618,7 +2619,7 @@ msgstr ""
 msgid "Print only errors, suppress the summary"
 msgstr ""
 
-#: ../bin/bl-uetree:450 ../bin/bl-uetree:627 ../bin/bl-uetree:676
+#: ../bin/bl-uetree:450 ../bin/bl-uetree:627 ../bin/bl-uetree:677
 msgid "%s is not a uetree node"
 msgstr ""
 
@@ -2668,9 +2669,12 @@ msgstr ""
 
 #: ../bin/bl-uetree:521
 msgid ""
-"Resolve ITEM (an eid, e-mail, phone or name) to the canonical entity "
-"leaf(s)\n"
-"of the uetree at --tree, following the .ALIASES membership manifest."
+"Resolve ITEM (an eid, e-mail, phone or name) to its canonical entity leaf(s)."
+msgstr ""
+
+#: ../bin/bl-uetree:522
+msgid ""
+"Searches the uetree at --tree, following the .ALIASES membership manifest."
 msgstr ""
 
 #: ../bin/bl-uetree:523
@@ -2725,10 +2729,13 @@ msgid "unknown branch"
 msgstr ""
 
 #: ../bin/bl-uetree:603
+msgid "List a uetree's canonical entity leaves (those holding entity.vcf)."
+msgstr ""
+
+#: ../bin/bl-uetree:604
 msgid ""
-"List the canonical entity leaves (those holding entity.vcf) of the uetree "
-"at\n"
-"PATH (default: current directory), one filesystem path per line."
+"Reads the uetree at PATH (default: current directory), one filesystem path "
+"per line."
 msgstr ""
 
 #: ../bin/bl-uetree:607
@@ -2744,138 +2751,134 @@ msgid "Also list alias leaves (those holding .ALIASES only)"
 msgstr ""
 
 #: ../bin/bl-uetree:648
-msgid ""
-"Regenerate or verify the .ALIASES membership manifests of the uetree at "
-"PATH\n"
-"(default: current directory) as a projection of each canonical entity.vcf."
+msgid "Regenerate or verify a uetree's .ALIASES membership manifests."
 msgstr ""
 
-#: ../bin/bl-uetree:650
+#: ../bin/bl-uetree:649
+msgid ""
+"Each manifest projects a canonical entity.vcf across the uetree at PATH\n"
+"(default: current directory)."
+msgstr ""
+
+#: ../bin/bl-uetree:651
 msgid ""
 "Every position of an entity carries the same manifest ; the canonical "
 "(holding\n"
 "entity.vcf) is flagged '*', derived positions (by-email/by-tel/by-name) '-'."
 msgstr ""
 
-#: ../bin/bl-uetree:652
+#: ../bin/bl-uetree:653
 msgid "One of --rebuild or --check is required."
 msgstr ""
 
-#: ../bin/bl-uetree:655
+#: ../bin/bl-uetree:656
 msgid "Write the projected manifests (creating alias leaves)"
 msgstr ""
 
-#: ../bin/bl-uetree:656
+#: ../bin/bl-uetree:657
 msgid "Report positions whose manifest differs from the projection"
 msgstr ""
 
-#: ../bin/bl-uetree:657
+#: ../bin/bl-uetree:658
 msgid "With --rebuild: print what would change, write nothing"
 msgstr ""
 
-#: ../bin/bl-uetree:673
+#: ../bin/bl-uetree:674
 msgid "one of --rebuild or --check is required"
 msgstr ""
 
-#: ../bin/bl-uetree:690
+#: ../bin/bl-uetree:691
 msgid "%s claimed by both %s and %s (shared → needs a u5 or .HOMONYMS)"
 msgstr ""
 
-#: ../bin/bl-uetree:696
+#: ../bin/bl-uetree:697
 msgid "manifest missing or stale at %s"
 msgstr ""
 
-#: ../bin/bl-uetree:721
-msgid ""
-"Promote a by-email/ leaf to its certified canonical by-eid/ position: move "
-"the\n"
-"record (and the leaf's files), rewrite its UID (email→eid), and regenerate "
-"the\n"
-".ALIASES manifests."
+#: ../bin/bl-uetree:722
+msgid "Promote a by-email/ leaf to its certified canonical by-eid/ position."
 msgstr ""
 
-#: ../bin/bl-uetree:724
-msgid "Pure filesystem — no git (use '$BL_UETREE_NAME gitsync' for that)."
+#: ../bin/bl-uetree:723
+msgid ""
+"Moves the record and the leaf's files, rewrites its UID (email→eid) and\n"
+"regenerates the .ALIASES manifests — pure filesystem, no git."
 msgstr ""
 
 #: ../bin/bl-uetree:726
 msgid ""
-"Certification is delegated to '$BL_PGPID_NAME cert_check' (a read-only "
-"query)."
+"Certification is delegated to a read-only WoT query, so set the trust up "
+"first, e.g.:"
 msgstr ""
 
 #: ../bin/bl-uetree:727
-msgid ""
-"To extend the trust with signed delegations first, run '$BL_PGPID_NAME\n"
-"update_trustdb' with the signed ownertrust files."
+msgid "populate the WoT neighbourhood (unless --no-fetch)"
 msgstr ""
 
-#: ../bin/bl-uetree:729
-msgid ""
-"Unless --no-fetch, the entity's WoT neighbourhood is first fetched with\n"
-"'$BL_PGPID_NAME get --recurse'."
+#: ../bin/bl-uetree:728
+msgid "apply your signed ownertrust delegations"
 msgstr ""
 
-#: ../bin/bl-uetree:733
+#: ../bin/bl-uetree:731
 msgid "Trust the local keyring as-is (no keyserver/WKD fetch)"
 msgstr ""
 
-#: ../bin/bl-uetree:734
+#: ../bin/bl-uetree:732
 msgid "Depth for the WoT fetch (default 2 ; see get --recurse)"
 msgstr ""
 
-#: ../bin/bl-uetree:735
+#: ../bin/bl-uetree:733
 msgid "Report what would move, change nothing"
 msgstr ""
 
-#: ../bin/bl-uetree:736
+#: ../bin/bl-uetree:734
 msgid "Also report leaves left uncertified"
 msgstr ""
 
-#: ../bin/bl-uetree:756
+#: ../bin/bl-uetree:754
 msgid "%s is not a uetree leaf"
 msgstr ""
 
-#: ../bin/bl-uetree:757
+#: ../bin/bl-uetree:755
 msgid "promote operates on a by-email/ leaf, not %s"
 msgstr ""
 
-#: ../bin/bl-uetree:769
+#: ../bin/bl-uetree:767
 msgid "%s not certified, left in place"
 msgstr ""
 
-#: ../bin/bl-uetree:772
+#: ../bin/bl-uetree:770
 msgid "%s is certified but carries no eid"
 msgstr ""
 
-#: ../bin/bl-uetree:776
+#: ../bin/bl-uetree:774
 msgid "malformed eid %s"
 msgstr ""
 
-#: ../bin/bl-uetree:794
+#: ../bin/bl-uetree:792
 msgid "promoted %s → %s"
 msgstr ""
 
-#: ../bin/bl-uetree:803
+#: ../bin/bl-uetree:801
 msgid "Show this help and exit"
 msgstr ""
 
-#: ../bin/bl-uetree:804
+#: ../bin/bl-uetree:802
 msgid "Show version and exit"
 msgstr ""
 
-#: ../bin/bl-uetree:812
+#: ../bin/bl-uetree:810
 msgid "is also a bash library, see:"
 msgstr ""
 
-#: ../bin/bl-uetree:818
+#: ../bin/bl-uetree:816
 msgid "set completion for the program and return"
 msgstr ""
 
-#: ../bin/bl-uetree:837
+#: ../bin/bl-uetree:835
 msgid "no action given"
 msgstr ""
 
-#: ../bin/bl-uetree:845
+#: ../bin/bl-uetree:843
 msgid "unrecognized action"
 msgstr ""
