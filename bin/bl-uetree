@@ -100,9 +100,9 @@ if ((BL_UETREE_isprogram)) ; then
 fi
 
 BL_UETREE_chelpmsg="
-"$"Manage a uetree, a filesystem-native registry of self-certifying entities.""
-"$"Each entity is keyed by an OpenPGP identifier and cross-indexed by email, phone
-and name ; its canonical record is a vCard 4.0 file (entity.vcf).""
+"$"Manage a \"universal entities tree\", a filesystem-native registry of entities.""
+"$"Entities are well defined contacts when using certified OpenPGP ID.""
+"$"Each entity is cross-indexed by email, phone, name, eid, …""
 
 MAIN OPTIONS:"
 
