@@ -1,0 +1,682 @@
+#!/bin/bash
+#
+# Bash library and executable to manage vCard 4.0 (RFC 6350) contact records,
+# filed inside a uetree (by-name/ at this stage — far from promotion).
+#
+# Copyright © 2026 Jean-Jacques Brucker (u4=sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76) <jjbrucker@foopgp.org>
+# Copyright © 2026 Mnêmê (u5=001777236237.945e_43.30_005.38) <mneme@foopgp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-only
+#
+# Status : ÉBAUCHE 2026-07-14 (première version d'après la spec orale de JJB du
+# 2026-07-13 au soir — new/check/checknfix/properties ; l'articulation avec
+# bl-uetree (et la déduplication de ses helpers _bl_uetree_vcf_*) viendra plus
+# tard, avec la promotion).
+
+# shellcheck disable=SC2034 # variable appears unused
+# shellcheck disable=SC2046 # Quote this to prevent word splitting
+# shellcheck disable=SC2086 # Double quote warning
+# shellcheck disable=SC2128 # expanding array without index warning
+
+if [[ "$1" == --bash-completion ]] ; then
+	BL_tmp_a=$("${BASH_SOURCE[0]}" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
+	BL_tmp_o=$(for a in $BL_tmp_a ; do
+		echo "[$a]=\"$(eval echo $("$BASH_SOURCE" $a --help | sed -n 's,^  ... \(--[a-z_-]\+[^ ]*\).*,\1,p' | sed 's_<_{_ ; s_|_,_g ; s_>_}_ '))\""
+	done)
+
+	eval '_bl_contact_completion()
+	{
+		local cur coptions="--help --version"
+		local a actions="'$BL_tmp_a'"
+		local -A aoptions=('$BL_tmp_o')
+
+		COMPREPLY=()
+		cur=${COMP_WORDS[COMP_CWORD]}
+
+		case ${COMP_WORDS[COMP_CWORD-1]} in
+			--help|--version) return 0 ;;
+			-p|--path)
+				compopt -o plusdirs
+				COMPREPLY=( $(compgen -A directory -- $cur) )
+				return 0 ;;
+		esac
+		case $cur in
+			-*)
+				if a=$(grep -o "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}") ; then
+					COMPREPLY=( $(compgen -W "$coptions ${aoptions[$a]}" -- $cur ) )
+					return 0
+				fi
+				COMPREPLY=( $(compgen -W "$coptions --frontend" -- $cur ) )
+				return 0 ;;
+		esac
+		if ! grep -q "\<\('${BL_tmp_a//$'\n'/\\|}'\)\>" <<< "${COMP_WORDS[@]}" ; then
+			compopt -o plusdirs
+			COMPREPLY=( $(compgen -W "$actions" -A file -- $cur ) )
+		fi
+		return 0
+	}'
+	unset BL_tmp_a BL_tmp_o
+	complete -F _bl_contact_completion "$(basename "$BASH_SOURCE")" "$BASH_SOURCE"
+	return 0
+fi
+
+# If sourcing while _bl_contact_parseoptions is already set, execute the function and return without reloading rest of file.
+if [[ "$BASH_SOURCE" != "$0" ]] && [[ "$(type -t _bl_contact_parseoptions)" == function ]] ; then
+	_bl_contact_parseoptions "$@"
+	return $?
+fi
+
+### Constants ###
+
+BL_CONTACT_NAME="$(basename "$(readlink -f "$BASH_SOURCE")" )"
+BL_CONTACT_VERSION=$(git describe --dirty --broken --always)
+BL_CONTACT_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
+readonly BL_CONTACT_NAME BL_CONTACT_VERSION BL_CONTACT_FUNCTIONS
+
+# Property line, once unfolded: [group.]NAME[;params]:value — params may hold
+# quoted strings (which may hold ':' or ';').
+declare -r BL_CONTACT_PROP_REGEX='^([A-Za-z0-9-]+\.)?[A-Za-z0-9-]+(;([^":;]|"[^"]*"|;)*)?:'
+
+[[ "$BASH_SOURCE" == "$0" ]] && declare -r BL_CONTACT_isprogram=1 || declare -r BL_CONTACT_isprogram=0
+
+### Others Globals ###
+
+# Default uetree instance holding the contact records.
+[[ "$BL_CONTACT_TREE" ]] || BL_CONTACT_TREE="${XDG_DATA_HOME:-$HOME/.local/share}/bash-libs/contacts"
+
+if ((BL_CONTACT_isprogram)) ; then
+	TEXTDOMAIN="bashlibs"
+	TEXTDOMAINDIR="$(dirname "$(readlink -f "$BASH_SOURCE")" )/../share/locale"
+	# Require Bash 5.2. - https://www.kurokatta.org/grumble/2023/11/bash-translated-strings#fnref3
+	shopt -s noexpand_translation
+fi
+
+BL_CONTACT_chelpmsg="
+"$"Create, check, fix and edit vCard 4.0 contact records (RFC 6350), filed inside a uetree.""
+
+MAIN OPTIONS:
+  -f, --frontend PROGRAM  "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND
+"
+
+### external functions ###
+
+source "$(dirname "$BASH_SOURCE")"/bl-interactive --
+source "$(dirname "$BASH_SOURCE")"/bl-pgpid --
+
+### internal functions ###
+
+_bl_contact_parseoptions() {
+	local npp=$# frontend
+	for ((;$#;)) ; do
+		case "$1" in
+			-f|--frontend) shift; frontend="$1";; # Will be passed to bl-interactive
+			-h|--help) printf "%s\n%s%s" "$BL_CONTACT_usage" "$BL_CONTACT_chelpmsg" "$BL_CONTACT_shelpmsg" ; return 1 ;;
+			-V|--version) printf "%s %s\n" "$BL_CONTACT_NAME" "$BL_CONTACT_VERSION" ; return 1 ;;
+			--) shift ; break ;;
+			-*) printf -- "$BL_CONTACT_NAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	BL_CONTACT_NOPTIONS=$((npp-$#))
+	if [[ "$frontend" ]] ; then
+		source "$(dirname "$BASH_SOURCE")"/bl-interactive --frontend "$frontend" --
+	fi
+}
+
+# Escape / unescape a vCard TEXT value per RFC 6350 §3.4 (\\ then \, \; ; newline → \n).
+_bl_contact_escape() {
+	sed 's/\\/\\\\/g ; s/,/\\,/g ; s/;/\\;/g' | sed ':a;N;$!ba;s/\n/\\n/g'
+}
+_bl_contact_unescape() {
+	sed 's/\\\\/\x01/g ; s/\\,/,/g ; s/\\;/;/g ; s/\\[nN]/\n/g ; s/\x01/\\/g'
+}
+
+# Fold logical lines (LF input) into physical CRLF lines of at most 75 octets
+# (RFC 6350 §3.2). Lengths are counted in OCTETS — hence the function-local
+# LC_ALL=C — but a fold MUST NOT split a multi-octet UTF-8 character, so the
+# cut point backs off over continuation bytes (0x80-0xBF).
+_bl_contact_fold() {
+	local LC_ALL=C
+	local line n
+	while IFS= read -r line ; do
+		while ((${#line} > 75)) ; do
+			n=75
+			while ((n > 1)) && [[ "${line:n:1}" == [$'\x80'-$'\xbf'] ]] ; do
+				n=$((n-1))
+			done
+			printf '%s\r\n' "${line:0:n}"
+			line=" ${line:n}"
+		done
+		printf '%s\r\n' "$line"
+	done
+}
+
+# Unfold physical lines (CRLF or LF) into logical lines (LF): a line starting
+# with SPACE or HTAB continues the previous one (RFC 6350 §3.2).
+_bl_contact_unfold() {
+	awk '{ sub(/\r$/,"") }
+		NR==1 { buf=$0 ; next }
+		/^[ \t]/ { buf = buf substr($0,2) ; next }
+		{ print buf ; buf=$0 }
+		END { if (NR) print buf }'
+}
+
+# Escape a string for inclusion inside a JSON double-quoted value.
+_bl_contact_json_str() {
+	sed 's/\\/\\\\/g ; s/"/\\"/g ; s/\t/\\t/g' | sed ':a;N;$!ba;s/\n/\\n/g'
+}
+
+# Normalize an eid input ($1): strip an optional u4=/u5=/udid4= prefix, check
+# against the bl-pgpid regexes, and echo "u4 VALUE" or "u5 VALUE".
+_bl_contact_eid_norm() {
+	local bare=${1#u4=} ; bare=${bare#u5=} ; bare=${bare#udid4=}
+	if [[ "$bare" =~ ^${BL_PGPID_U4_REGEX}$ ]] ; then
+		echo "u4 $bare"
+	elif [[ "$bare" =~ ^${BL_PGPID_U5_REGEX}$ ]] ; then
+		echo "u5 $bare"
+	else
+		return 2
+	fi
+}
+
+# From an eid value ($1), echo the GEO property value (geo:LAT,LON — RFC 5870)
+# derived from its coord14 suffix. '_' = positive, '-' = negative.
+_bl_contact_eid_geo() {
+	[[ "$1" =~ e([_-])([0-9]{2}\.[0-9]{2})([_-])([01][0-9]{2}\.[0-9]{2})$ ]] || return 1
+	local lat=${BASH_REMATCH[2]#0} lon=${BASH_REMATCH[4]}
+	lon=$(sed -E 's/^0+([0-9])/\1/' <<<"$lon")
+	[[ "${BASH_REMATCH[1]}" == "_" ]] || lat="-$lat"
+	[[ "${BASH_REMATCH[3]}" == "_" ]] || lon="-$lon"
+	echo "geo:$lat,$lon"
+}
+
+### public functions ###
+
+bl_contact_new() {
+	local name
+	((BL_CONTACT_isprogram)) && name="$BL_CONTACT_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [NAME]"
+	local helpmsg="
+"$"Create a new vCard 4.0 contact record inside a uetree, filed under by-name/.""
+"$"Missing NAME => ask interactively.""
+"$"Output the path of the created entity.vcf (or entity.json).""
+"$"KIND (u4 => individual) and GEO (u5 => coord14) are inferred from the eid.""
+
+OPTIONS:
+  -e, --eid U4|U5             "$"OpenPGP entity identifier - else asked interactively when possible (empty allowed: no UID property)""
+  -p, --path UETREE           "$"File into this uetree instead of the default one"" - "$"Environment variable: ""BL_CONTACT_TREE
+  -j, --json                  "$"Generate a jCard (RFC 7095) entity.json instead of entity.vcf""
+  -E, --email EMAIL           "$"Add an EMAIL property (may be used more than once)""
+  -A, --adr ADR               "$"Add an ADR property: 7 ';'-separated components (may be used more than once)""
+  -U, --url URL               "$"Add a URL property (may be used more than once)""
+"
+	local eid="" eidgiven=0 tree=$BL_CONTACT_TREE json=0
+	local -a emails=() adrs=() urls=()
+	for ((;$#;)) ; do
+		case "$1" in
+			-e|--eid)
+				shift ; eid=${1:?} eidgiven=1 ;;
+			-p|--path)
+				shift ; tree=${1:?} ;;
+			-j|--json)  json=1 ;;
+			-E|--email)
+				[[ "$2" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "$FUNCNAME: Error: "$"Invalid email"" '%s'.\n" "$2" >&2 ; return 2 ;}
+				shift ; emails+=("$1") ;;
+			-A|--adr)
+				shift ; adrs+=("${1:?}") ;;
+			-U|--url)
+				shift ; urls+=("${1:?}") ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_CONTACT_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	local fn="$*"
+	if [[ -z "$fn" ]] ; then
+		fn=$(bl_input $"Name of the contact (FN)") || return $?
+	fi
+	[[ "$fn" ]] || { printf "$FUNCNAME: Error: "$"A contact needs a name (FN is a required vCard 4.0 property)"".\n" >&2 ; return 2 ; }
+	[[ "$fn" != */* ]] || { printf "$FUNCNAME: Error: "$"Invalid character '/' in name"" '%s'.\n" "$fn" >&2 ; return 2 ; }
+
+	# eid: given, else asked interactively (only on a terminal — scripts get a
+	# record without UID). Note: 'bl-pgpid mrz_to_u4' generates a u4 from a
+	# passport MRZ ; a broader interactive u4/u5 generator is still missing in
+	# bl-pgpid.
+	if ((! eidgiven)) && [[ -t 0 ]] ; then
+		eid=$(bl_input $"OpenPGP entity identifier (u4 or u5, empty for none)") || true
+	fi
+	local eidtype="" norm
+	if [[ "$eid" ]] ; then
+		# NB: a $( ) failure would be swallowed by read <<<"$( )" — check it apart.
+		norm=$(_bl_contact_eid_norm "$eid") \
+			|| { printf "$FUNCNAME: Error: "$"No OpenPGP ID (u4 or u5) found in '%s'""...\n" "${eid: 0:50}" >&2 ; return 2 ; }
+		read -r eidtype eid <<<"$norm"
+	fi
+
+	local dir="$tree/by-name/$fn" file
+	((json)) && file="$dir/entity.json" || file="$dir/entity.vcf"
+	[[ ! -e "$file" ]] || { printf "$FUNCNAME: Error: "$"File already exists:"" %s\n" "$file" >&2 ; return 17 ; }
+	mkdir -p "$dir" || return 1
+
+	local geo=""
+	[[ "$eidtype" != "u5" ]] || geo=$(_bl_contact_eid_geo "$eid")
+
+	local adr email url
+	if ((json)) ; then
+		{
+		printf '["vcard",[["version",{},"text","4.0"]'
+		printf ',["fn",{},"text","%s"]' "$(printf '%s' "$fn" | _bl_contact_json_str)"
+		[[ -z "$eid" ]] || printf ',["uid",{},"uri","urn:eid:%s%s"]' "$eidtype" "$eid"
+		[[ "$eidtype" != "u4" ]] || printf ',["kind",{},"text","individual"]'
+		[[ -z "$geo" ]] || printf ',["geo",{},"uri","%s"]' "$geo"
+		for email in "${emails[@]}" ; do
+			printf ',["email",{},"text","%s"]' "$(printf '%s' "$email" | _bl_contact_json_str)"
+		done
+		for adr in "${adrs[@]}" ; do
+			# jCard ADR value is an array of the 7 components.
+			printf ',["adr",{},"text",['
+			local -a comp
+			IFS=';' read -ra comp <<<"$adr;;;;;;;"
+			printf '"%s",' "$(printf '%s' "${comp[0]}" | _bl_contact_json_str)" \
+				"$(printf '%s' "${comp[1]}" | _bl_contact_json_str)" \
+				"$(printf '%s' "${comp[2]}" | _bl_contact_json_str)" \
+				"$(printf '%s' "${comp[3]}" | _bl_contact_json_str)" \
+				"$(printf '%s' "${comp[4]}" | _bl_contact_json_str)" \
+				"$(printf '%s' "${comp[5]}" | _bl_contact_json_str)"
+			printf '"%s"]]' "$(printf '%s' "${comp[6]}" | _bl_contact_json_str)"
+		done
+		for url in "${urls[@]}" ; do
+			printf ',["url",{},"uri","%s"]' "$(printf '%s' "$url" | _bl_contact_json_str)"
+		done
+		printf ']]\n'
+		} > "$file"
+	else
+		{
+		echo "BEGIN:VCARD"
+		echo "VERSION:4.0"
+		echo "FN:$(printf '%s' "$fn" | _bl_contact_escape)"
+		[[ -z "$eid" ]] || echo "UID:urn:eid:$eidtype$eid"   # standard glued form
+		[[ "$eidtype" != "u4" ]] || echo "KIND:individual"
+		[[ -z "$geo" ]] || echo "GEO:$geo"
+		for email in "${emails[@]}" ; do
+			echo "EMAIL:$(printf '%s' "$email" | _bl_contact_escape)"
+		done
+		for adr in "${adrs[@]}" ; do
+			# ADR is structured: the given ';' separate its 7 components and
+			# are kept verbatim (escape ',' and '\' inside a component yourself).
+			echo "ADR:$adr"
+		done
+		for url in "${urls[@]}" ; do
+			echo "URL:$url"
+		done
+		echo "END:VCARD"
+		} | _bl_contact_fold > "$file"
+	fi
+
+	echo "$file"
+}
+
+bl_contact_check() {
+	local name fname=$FUNCNAME
+	((BL_CONTACT_isprogram)) && name="$BL_CONTACT_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [VCARD]"
+	local helpmsg="
+"$"Check vCard contact record(s), read from VCARD file or standard input.""
+"$"Warnings and errors are reported on stderr.""
+"$"Default output is one line per vCard: UID  VALIDITY  VERSION  FN""
+"$"UID shows the urn:eid:… value, else '-'.""
+"$"VALIDITY's possible values:"" valid | invalid | unsupported""
+"$"Only vCard version 4.0 is checked; other versions (and jCard for now) report 'unsupported'.""
+
+OPTIONS:
+  -q, --quiet              "$"No per-line output. Exit code hold validity: 0 if all valid, 196 if any unsupported, 197 if any invalid""
+"
+	local quiet=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-q|--quiet)   quiet=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_CONTACT_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local input=${1:-/dev/stdin}
+	[[ -r "$input" ]] || { printf "$FUNCNAME: Error: "$"Can't read"" '%s'.\n" "$input" >&2 ; return 2 ; }
+
+	local data
+	data=$(cat -- "$input")
+
+	# jCard (RFC 7095)? Report the summary fields we can cheaply reach, but its
+	# checking is not implemented yet.
+	if [[ "$data" =~ ^[[:space:]]*[\[\{] ]] ; then
+		local jfn juid jver
+		jver=$(grep -oE '"version",\{\},"text","[^"]*"' <<<"$data" | head -1 | sed 's/.*,"//;s/"$//')
+		jfn=$(grep -oE '"fn",\{\},"text","[^"]*"' <<<"$data" | head -1 | sed 's/.*,"//;s/"$//')
+		juid=$(grep -oE '"uid",\{\},"uri","urn:eid:[^"]*"' <<<"$data" | head -1 | sed 's/.*"urn:eid:/urn:eid:/;s/"$//')
+		printf "$FUNCNAME: Warning: "$"jCard checking is not implemented yet"".\n" >&2
+		((quiet)) || printf '%-50s%-13s%-9s%s\n' "${juid:--}" "unsupported" "${jver:--}" "$jfn"
+		((quiet)) && return 196 || return 0
+	fi
+
+	# vCard text: unfold then walk a small state machine, one summary per card.
+	local line in=0 ncard=0 rc=0 sev
+	local ver fn uid uidfield validity nerr
+	_bl_contact_check_flush() {
+		ncard=$((ncard+1))
+		validity="valid"
+		if [[ -z "$ver" ]] ; then
+			printf "$fname: Error: "$"vCard #%u misses the VERSION property"".\n" "$ncard" >&2
+			validity="invalid"
+		elif [[ "$ver" != "4.0" ]] ; then
+			printf "$fname: Warning: "$"vCard #%u version '%s' is not checked (only 4.0 is)"".\n" "$ncard" "$ver" >&2
+			validity="unsupported"
+		fi
+		if [[ -z "$fn" ]] && [[ "$validity" == "valid" ]] ; then
+			printf "$fname: Error: "$"vCard #%u misses the required FN property"".\n" "$ncard" >&2
+			validity="invalid"
+		fi
+		((nerr == 0)) || validity="invalid"
+		uidfield="-"
+		if [[ "$uid" =~ ^urn:eid:u(did)?[45] ]] ; then
+			uidfield="$uid"
+		elif [[ "$uid" ]] ; then
+			printf "$fname: Warning: "$"vCard #%u UID is not an urn:eid:… one:"" %s\n" "$ncard" "$uid" >&2
+		fi
+		((quiet)) || printf '%-50s%-13s%-9s%s\n' "$uidfield" "$validity" "${ver:--}" "$fn"
+		case "$validity" in
+			invalid)     sev=197 ;;
+			unsupported) sev=196 ;;
+			*)           sev=0 ;;
+		esac
+		((sev <= rc)) || rc=$sev
+	}
+	while IFS= read -r line ; do
+		if ((! in)) ; then
+			case "$line" in
+				BEGIN:VCARD) in=1 ver="" fn="" uid="" nerr=0 ;;
+				"") ;;
+				*)
+					printf "$FUNCNAME: Warning: "$"Skipping line outside BEGIN:VCARD…END:VCARD:"" %s\n" "${line: 0:60}" >&2 ;;
+			esac
+			continue
+		fi
+		case "$line" in
+			END:VCARD)
+				in=0
+				_bl_contact_check_flush ;;
+			BEGIN:VCARD)
+				printf "$FUNCNAME: Error: "$"Nested BEGIN:VCARD"".\n" >&2
+				nerr=$((nerr+1)) ;;
+			VERSION:*) ver=${line#VERSION:} ;;
+			FN:*|FN\;*) fn=$(printf '%s' "${line#*:}" | _bl_contact_unescape) ;;
+			UID:*|UID\;*) uid=${line#*:} ;;
+			*)
+				if ! [[ "$line" =~ $BL_CONTACT_PROP_REGEX ]] ; then
+					printf "$FUNCNAME: Error: "$"Malformed content line:"" %s\n" "${line: 0:60}" >&2
+					nerr=$((nerr+1))
+				fi ;;
+		esac
+	done < <(_bl_contact_unfold <<<"$data")
+	if ((in)) ; then
+		printf "$FUNCNAME: Error: "$"Unterminated vCard (missing END:VCARD)"".\n" >&2
+		nerr=$((nerr+1))
+		_bl_contact_check_flush
+	fi
+	((ncard > 0)) || { printf "$FUNCNAME: Error: "$"No vCard found in"" '%s'.\n" "$input" >&2 ; return 141 ; }
+
+	((quiet)) && return $rc || return 0
+}
+
+bl_contact_checknfix() {
+	local name fname=$FUNCNAME
+	((BL_CONTACT_isprogram)) && name="$BL_CONTACT_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [VCARD]..."
+	local helpmsg="
+"$"Repair common defects of vCard record(s) and output the result, best effort.""
+"$"Read from the VCARD file or standard input; repaired vCards go to standard output.""
+"$"Fixed defects: line endings, missing VERSION, vCard 3.0 => 4.0 (bare TYPE parameters, dropped CHARSET), FN synthesized from N.""
+"$"Unfixable cards are reported on stderr and the function fails.""
+
+OPTIONS:
+  -i, --in-place           "$"VCARD arguments are repaired in place (instead of stdin/stdout)""
+"
+	local inplace=0
+	for ((;$#;)) ; do
+		case "$1" in
+			-i|--in-place) inplace=1 ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_CONTACT_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	# Repair one unfolded stream (stdin → stdout). Returns non-zero if some
+	# card remains invalid.
+	_bl_contact_fix_stream() {
+		local line in=0 ver haveFN haveN nfield rc=0
+		local -a card
+		_bl_contact_fix_flushcard() {
+			local l out=()
+			# missing VERSION → 4.0 ; 3.0 (or 2.1) → upgrade to 4.0
+			[[ "$ver" ]] || printf "$fname: Notice: "$"Adding missing VERSION:4.0"".\n" >&2
+			out+=("BEGIN:VCARD" "VERSION:4.0")
+			if [[ -z "$haveFN" ]] ; then
+				if [[ "$haveN" ]] ; then
+					# FN from N components: Family;Given;Middle;Prefix;Suffix
+					local -a n
+					IFS=';' read -ra n <<<"$haveN;;;;"
+					local fnval=$(sed 's/^ *// ; s/ *$//' <<<"${n[1]} ${n[0]}")
+					printf "$fname: Notice: "$"Synthesizing FN from N:"" %s\n" "$fnval" >&2
+					out+=("FN:$fnval")
+				else
+					printf "$fname: Error: "$"Can't fix a vCard without FN nor N"".\n" >&2
+					rc=1
+				fi
+			fi
+			out+=("${card[@]}" "END:VCARD")
+			printf '%s\n' "${out[@]}" | _bl_contact_fold
+		}
+		while IFS= read -r line ; do
+			# strip a possible BOM on first line
+			line=${line#$'\xef\xbb\xbf'}
+			if ((! in)) ; then
+				[[ "$line" != "BEGIN:VCARD" ]] || { in=1 ver="" haveFN="" haveN="" card=() ; }
+				continue
+			fi
+			case "$line" in
+				END:VCARD)
+					in=0
+					_bl_contact_fix_flushcard ;;
+				VERSION:*) ver=${line#VERSION:} ;;
+				*)
+					if [[ "$line" =~ ^(([A-Za-z0-9-]+\.)?[A-Za-z0-9-]+)(\;[^:]*)?:(.*)$ ]] ; then
+						local pname=${BASH_REMATCH[1]} params=${BASH_REMATCH[3]} value=${BASH_REMATCH[4]}
+						if [[ "$params" ]] ; then
+							# vCard 3.0 bare TYPE parameters → TYPE=lowercase ;
+							# CHARSET is meaningless in 4.0 (UTF-8 only) → dropped.
+							params=$(sed -E ' s/;(HOME|WORK|CELL|VOICE|FAX|PAGER|MSG|TEXT|VIDEO|INTERNET)\>/;TYPE=\L\1/gI
+								s/;PREF\>/;PREF=1/gI
+								s/;CHARSET=[^;:]*//gI ' <<<"$params")
+						fi
+						case "${pname^^}" in
+							FN)  haveFN=$value ;;
+							N)   haveN=$value ;;
+						esac
+						card+=("$pname$params:$value")
+					else
+						printf "$fname: Warning: "$"Dropping malformed content line:"" %s\n" "${line: 0:60}" >&2
+					fi ;;
+			esac
+		done
+		if ((in)) ; then
+			printf "$fname: Notice: "$"Adding missing END:VCARD"".\n" >&2
+			_bl_contact_fix_flushcard
+		fi
+		return $rc
+	}
+
+	if ((! inplace)) ; then
+		local input=${1:-/dev/stdin}
+		[[ -r "$input" ]] || { printf "$FUNCNAME: Error: "$"Can't read"" '%s'.\n" "$input" >&2 ; return 2 ; }
+		_bl_contact_unfold < "$input" | _bl_contact_fix_stream
+		return $?
+	fi
+
+	(($#)) || { printf "$FUNCNAME: Error: "$"--in-place requires VCARD file arguments"".\n" >&2 ; return 2 ; }
+	local file tmp rc=0
+	for file in "$@" ; do
+		[[ -w "$file" ]] || { printf "$FUNCNAME: Error: "$"Can't write"" '%s'.\n" "$file" >&2 ; rc=1 ; continue ; }
+		tmp=$(mktemp "$file.XXXXXX") || return 1
+		if _bl_contact_unfold < "$file" | _bl_contact_fix_stream > "$tmp" ; then
+			mv -- "$tmp" "$file"
+		else
+			printf "$FUNCNAME: Error: "$"Left unrepaired:"" %s\n" "$file" >&2
+			rm -f -- "$tmp"
+			rc=1
+		fi
+	done
+	return $rc
+}
+
+bl_contact_properties() {
+	local name
+	((BL_CONTACT_isprogram)) && name="$BL_CONTACT_NAME ${FUNCNAME:11}" || name="$FUNCNAME"
+	local usage="Usage: $name [OPTIONS]... [VCARD]"
+	local helpmsg="
+"$"Display, add or remove properties of vCard record(s).""
+"$"Read from the VCARD file or standard input.""
+"$"Default output is the unfolded property lines (BEGIN/END excluded).""
+"$"With --add or --remove: edit VCARD in place when given, else write the whole stream to standard output.""
+
+OPTIONS:
+  -a, --add LINE           "$"Add this property content line, eg 'TEL;TYPE=cell:+33612345678' (may be used more than once)""
+  -r, --remove PROP[:VAL]  "$"Remove every PROP property, or only those whose raw value is VAL (may be used more than once)""
+"
+	local -a toadd=() torem=()
+	for ((;$#;)) ; do
+		case "$1" in
+			-a|--add)
+				[[ "$2" =~ $BL_CONTACT_PROP_REGEX ]] || { printf "$FUNCNAME: Error: "$"Malformed content line:"" %s\n" "$2" >&2 ; return 2 ;}
+				shift ; toadd+=("$1") ;;
+			-r|--remove|--rm)
+				shift ; torem+=("${1:?}") ;;
+			-h|--help)    printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_CONTACT_VERSION" ; return ;;
+			--) shift ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '%s'\n" "$1" >&2 ; return 2 ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local input=${1:-/dev/stdin}
+	[[ -r "$input" ]] || { printf "$FUNCNAME: Error: "$"Can't read"" '%s'.\n" "$input" >&2 ; return 2 ; }
+
+	# Does a logical line match one of the --remove specs?
+	_bl_contact_prop_match() {
+		local line=$1 spec pname pval
+		for spec in "${torem[@]}" ; do
+			pname=${spec%%:*}
+			[[ "$spec" == *:* ]] && pval=${spec#*:} || pval=""
+			shopt -s nocasematch
+			if [[ "$line" =~ ^(${pname})(\;[^:]*)?: ]] ; then
+				shopt -u nocasematch
+				[[ -z "$pval" ]] || [[ "${line#*:}" == "$pval" ]] || continue
+				return 0
+			fi
+			shopt -u nocasematch
+		done
+		return 1
+	}
+
+	if ((${#toadd[@]} == 0)) && ((${#torem[@]} == 0)) ; then
+		_bl_contact_unfold < "$input" | grep -v '^\(BEGIN\|END\):VCARD$'
+		return 0
+	fi
+
+	local line removed=0
+	local outstream
+	outstream=$(
+		while IFS= read -r line ; do
+			case "$line" in
+				END:VCARD)
+					# NB: printf '%s\n' with an empty array would still emit
+					# one (empty, thus malformed) line.
+					((${#toadd[@]} == 0)) || printf '%s\n' "${toadd[@]}"
+					echo "$line" ;;
+				*)
+					if ((${#torem[@]})) && _bl_contact_prop_match "$line" ; then
+						printf "$FUNCNAME: Notice: "$"Removing:"" %s\n" "${line: 0:60}" >&2
+					else
+						echo "$line"
+					fi ;;
+			esac
+		done < <(_bl_contact_unfold < "$input")
+	)
+	if [[ "$input" != /dev/stdin ]] ; then
+		printf '%s\n' "$outstream" | _bl_contact_fold > "$input"
+	else
+		printf '%s\n' "$outstream" | _bl_contact_fold
+	fi
+}
+
+### Init ###
+
+if ((BL_CONTACT_isprogram)) ; then
+	BL_CONTACT_usage="Usage: $BL_CONTACT_NAME [MAIN_OPTIONS]... ACTION [OPTIONS]... [ARGUMENTS]..."
+	BL_CONTACT_shelpmsg="
+  -h, --help              "$"Show help and exit.""
+  -V, --version           "$"Show version and exit.""
+
+ACTIONS:
+$(for f in "${BL_CONTACT_FUNCTIONS[@]}" ; do printf "   %-19s %s\n" "${f:11}" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+All actions support a --help option, eg:
+$ $BASH_SOURCE ${BL_CONTACT_FUNCTIONS:11} --help
+
+$BL_CONTACT_NAME is also bash library, see:
+$ source $BASH_SOURCE --help
+"
+else
+	BL_CONTACT_usage="Usage: source $BASH_SOURCE [MAIN_OPTIONS]..."
+	BL_CONTACT_shelpmsg="
+      --bash-completion    "$"set completion for the program and return""
+
+Functions:
+$(for f in "${BL_CONTACT_FUNCTIONS[@]}" ; do printf "   %-22s %s\n" "$f" "$($f --help | sed -n '/^$/{n;p;q}')" ; done)
+
+Reminder: when used as a library, all functions calls share the same environment variables, i.e. the same global options.
+"
+fi
+
+# Parse Options
+_BL_CONTACT_RETVAL=0
+_bl_contact_parseoptions "$@" || _BL_CONTACT_RETVAL=$?
+
+# Do nothing else if sourced
+[[ "$BASH_SOURCE" == "$0" ]] || return $_BL_CONTACT_RETVAL
+
+[[ "$_BL_CONTACT_RETVAL" != "1"  ]] || exit 0
+[[ "$_BL_CONTACT_RETVAL" < 2 ]] || exit $_BL_CONTACT_RETVAL
+
+### Run ###
+set -e
+shift $BL_CONTACT_NOPTIONS
+if function=$(grep -o "\<bl_contact_$1\>" <<< "${BL_CONTACT_FUNCTIONS[@]}") ; then
+	shift
+	$function "$@"
+	exit $?
+else
+	printf "$BL_CONTACT_NAME: Error: "$"Unrecognized action"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$BASH_SOURCE" >&2
+	exit 2
+fi
