@@ -13,10 +13,6 @@
 # bl-uetree (et la déduplication de ses helpers _bl_uetree_vcf_*) viendra plus
 # tard, avec la promotion).
 
-# shellcheck disable=SC2034 # variable appears unused
-# shellcheck disable=SC2046 # Quote this to prevent word splitting
-# shellcheck disable=SC2086 # Double quote warning
-# shellcheck disable=SC2128 # expanding array without index warning
 
 if [[ "$1" == --bash-completion ]] ; then
 	BL_tmp_a=$("${BASH_SOURCE[0]}" --help | sed -nE 's:^ {2,4}([a-z0-9_]+\>).*:\1:p')
@@ -667,7 +663,7 @@ _bl_contact_parseoptions "$@" || _BL_CONTACT_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_CONTACT_RETVAL
 
 [[ "$_BL_CONTACT_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_CONTACT_RETVAL" < 2 ]] || exit $_BL_CONTACT_RETVAL
+[[ "$_BL_CONTACT_RETVAL" -lt 2 ]] || exit $_BL_CONTACT_RETVAL
 
 ### Run ###
 set -e

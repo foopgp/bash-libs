@@ -427,7 +427,7 @@ _bl_security_parseoptions "$@" || _BL_SECURITY_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_SECURITY_RETVAL
 
 [[ "$_BL_SECURITY_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_SECURITY_RETVAL" < 2 ]] || exit $_BL_SECURITY_RETVAL
+[[ "$_BL_SECURITY_RETVAL" -lt 2 ]] || exit $_BL_SECURITY_RETVAL
 
 ### Run ###
 set -e

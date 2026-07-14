@@ -2200,7 +2200,7 @@ _bl_pgpid_parseoptions "$@" || _BL_PGPID_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_PGPID_RETVAL
 
 [[ "$_BL_PGPID_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_PGPID_RETVAL" < 2 ]] || exit $_BL_PGPID_RETVAL
+[[ "$_BL_PGPID_RETVAL" -lt 2 ]] || exit $_BL_PGPID_RETVAL
 
 ### Run ###
 set -e

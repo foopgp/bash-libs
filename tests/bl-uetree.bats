@@ -9,6 +9,11 @@
 
 load ./setup_teardown.bash
 
+@test "linter: shellcheck clean under the global .shellcheckrc" {
+	# lint the repo source: the .shellcheckrc lookup starts from the script dir
+	shellcheck -x "${BATS_TEST_DIRNAME}/../bin/$(basename "${TARGET}")"
+}
+
 U4=sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76
 
 # Build a minimal instance holding one canonical by-eid/ leaf (record only, no

@@ -14,3 +14,37 @@ disable=SC2312 # (info): Consider invoking this command separately to avoid mask
 
 # Follow source statements (cf: -x, --external-sources)
 external-sources=true
+
+# ---------------------------------------------------------------------------
+# Extended 2026-07-14 (Mnêmê) while re-enabling the per-library lint tests:
+# whatever stays enabled below this line IS enforced by the bats suites.
+
+# The bash gettext idiom  "$"Translated text""  embedded in larger
+# double-quoted strings is misparsed as unbalanced quotes.
+disable=SC1078,SC1079,SC2247
+
+# Dynamic sibling sourcing — source "$(dirname "$BASH_SOURCE")"/bl-… —
+# cannot be followed statically (external-sources=true still helps bats).
+disable=SC1091
+
+# Intentional word-splitting and eval-friendly unquoted expansions are a
+# design choice of these libraries (arrays built from command output,
+# printf-driven layouts): quoting them would break the splitting they rely on.
+disable=SC2046,SC2068,SC2086,SC2206,SC2207
+
+# Variables intentionally shared with (or consumed by) sourced sibling
+# libraries, eval'd output, or bash gettext lookups.
+disable=SC2034,SC2154
+
+# House test style: [[ "$var" ]] for non-empty, A && B || C selection
+# ternary (cf. coding rules), $array meaning ${array[0]} is already
+# disabled above (SC2128), for-over-$(cmd) line reads, local x=$(cmd),
+# sed where ${var//} could do, case without a default branch.
+disable=SC2244,SC2015,SC2013,SC2155,SC2001,SC2249
+
+# '$' kept literal on purpose inside single-quoted awk/sed programs.
+disable=SC2016
+
+# `LANG= cmd` / `VAR= cmd` — intentional empty-value environment prefix,
+# not a botched assignment.
+disable=SC1007

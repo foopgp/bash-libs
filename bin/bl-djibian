@@ -6,11 +6,6 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 #
-# shellcheck disable=SC2013 # To read lines rather than words
-# shellcheck disable=SC2034 # variable appears unused
-# shellcheck disable=SC2046 # Quote this to prevent word splitting
-# shellcheck disable=SC2086 # Double quote warning
-# shellcheck disable=SC2128 # expanding array without index warning
 
 
 if [[ "$1" == --bash-completion ]] ; then
@@ -204,7 +199,7 @@ for OpenPGP usages, see: ""$BL_DJIBIAN_NAME confhome4pgp --help
 		keyfpr=${cardinfo[pgpid_Skeyfpr]}
 	elif [[ "$keyfpr" ]] ; then
 		local fprmbox=$(bl_pgpid_get --errexit-g=1 "0x$keyfpr") || return $1
-		read keyfpr email identifier <<<"$fprmbox"
+		read -r keyfpr email identifier <<<"$fprmbox"
 	fi
 
 	if [[ "$identifier" ]] ; then
@@ -270,7 +265,7 @@ for OpenPGP usages, see: ""$BL_DJIBIAN_NAME confhome4pgp --help
 	local group groups
 	printf "$FUNCNAME: Info: "$"Check system groups.""..\n" >&2
 	for group in $BL_DJIBIAN_EXTRA_GROUPS $extragroups ; do
-		if $(getent group $group > >(sed 's,^, ,' >&2) ) ; then
+		if getent group $group > >(sed 's,^, ,' >&2) ; then
 			groups+="$group,"
 		else
 			printf " Notice: "$"No %s group."" (getent -> $?)\n" "'$group'" >&2
@@ -405,7 +400,7 @@ OPTIONS:
 		fi
 		local user
 		for user in $toremove ; do
-			if [[ "$user" != ${SUDO_USER:-$USER} ]] ; then
+			if [[ "$user" != "${SUDO_USER:-$USER}" ]] ; then
 				gpasswd --delete "$user" sudo >&2 || ((ret+=$?))
 			else
 				printf "$FUNCNAME: Warning: $user: "$"No one can remove himself from admin group"" (sudo).\n" >&2
@@ -418,7 +413,7 @@ OPTIONS:
 
 	fi
 	getent group sudo | sed -E ' s,^[^:]*:[^:]*:[^:]*:([^:]*),\1, ; s:,: :g '
-	ret=$((ret+${PIPESTATUS[0]}))
+	ret=$((ret+PIPESTATUS[0]))
 
 	return "$ret"
 }
@@ -460,7 +455,7 @@ _bl_djibian_parseoptions "$@" || _BL_DJIBIAN_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_DJIBIAN_RETVAL
 
 [[ "$_BL_DJIBIAN_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_DJIBIAN_RETVAL" < 2 ]] || exit $_BL_DJIBIAN_RETVAL
+[[ "$_BL_DJIBIAN_RETVAL" -lt 2 ]] || exit $_BL_DJIBIAN_RETVAL
 
 ### Run ###
 set -e

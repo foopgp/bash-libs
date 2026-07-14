@@ -1173,7 +1173,7 @@ _bl_qrkey_parseoptions "$@" || _BL_QRKEY_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_QRKEY_RETVAL
 
 [[ "$_BL_QRKEY_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_QRKEY_RETVAL" < 2 ]] || exit $_BL_QRKEY_RETVAL
+[[ "$_BL_QRKEY_RETVAL" -lt 2 ]] || exit $_BL_QRKEY_RETVAL
 
 ### Run ###
 set -e

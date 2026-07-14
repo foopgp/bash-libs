@@ -388,7 +388,7 @@ _bl_json_parseoptions "$@" || _BL_JSON_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_JSON_RETVAL
 
 [[ "$_BL_JSON_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_JSON_RETVAL" < 2 ]] || exit $_BL_JSON_RETVAL
+[[ "$_BL_JSON_RETVAL" -lt 2 ]] || exit $_BL_JSON_RETVAL
 
 ### Run ###
 set -e

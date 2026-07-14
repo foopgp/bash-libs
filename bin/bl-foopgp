@@ -668,7 +668,7 @@ _bl_foopgp_parseoptions "$@" || _BL_FOOPGP_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_FOOPGP_RETVAL
 
 [[ "$_BL_FOOPGP_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_FOOPGP_RETVAL" < 2 ]] || exit $_BL_FOOPGP_RETVAL
+[[ "$_BL_FOOPGP_RETVAL" -lt 2 ]] || exit $_BL_FOOPGP_RETVAL
 
 ### Run ###
 set -e

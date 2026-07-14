@@ -9,6 +9,11 @@
 
 load ./setup_teardown.bash
 
+@test "linter: shellcheck clean under the global .shellcheckrc" {
+	# lint the repo source: the .shellcheckrc lookup starts from the script dir
+	shellcheck -x "${BATS_TEST_DIRNAME}/../bin/$(basename "${TARGET}")"
+}
+
 U4=sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76
 U5=001777236237.945e_43.30_005.38
 
