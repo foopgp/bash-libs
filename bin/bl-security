@@ -307,7 +307,7 @@ OPTIONS:
 	preamble=$(printf $"Retype %s" "$question")
 	while true ; do
 		passwd=$(bl_input --password --text "$preamble" "$question") || return $?
-		[[ "$passwd2" != $passwd ]] || break
+		[[ "$passwd2" != "$passwd" ]] || break
 		preamble=$"Passwords do not match. Please retype"
 		passwd2=$passwd
 	done
@@ -365,7 +365,7 @@ OPTIONS:
 			printf "$FUNCNAME: Error: "$"Unrecognized encoding"" '$ienc'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 	esac
 
-	while read offset hex char; do
+	while read -r offset hex char; do
 		#printf "%016X\n" $((0x$hex))
 		dec=$((0x$hex ^ dec))
 		#printf "%016X\n" $((dec))
