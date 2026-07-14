@@ -362,7 +362,7 @@ _bl_uetree_relpath_tel() {
 # Auto-detect the branch of an item (eid|email|tel|name).
 _bl_uetree_detect_branch() {
 	local bare="${1#u*=}"
-	if [[ "$1" =~ ^u(did)?[45]= ]] || [[ "$bare" =~ ^${BL_PGPID_EID_REGEX}$ ]] ; then echo eid
+	if [[ "$1" =~ ^u(did)?[45]= ]] || [[ "$bare" =~ ^${BL_PGPID_UX_REGEX}$ ]] ; then echo eid
 	elif [[ "$1" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then echo email
 	elif [[ "$1" =~ ^${BL_UETREE_E164_REGEX}$ ]] ; then echo tel
 	else echo name
