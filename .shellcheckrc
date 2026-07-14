@@ -48,3 +48,8 @@ disable=SC2016
 # `LANG= cmd` / `VAR= cmd` — intentional empty-value environment prefix,
 # not a botched assignment.
 disable=SC1007
+
+# Cleanup traps deliberately capture the CURRENT value of a local path
+# (double quotes) — at EXIT/RETURN the local scope is already gone, so
+# late expansion (single quotes) would see an empty variable.
+disable=SC2064
