@@ -1114,14 +1114,14 @@ OPTIONS:
 #TODO (also): check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.2.27 libgcrypt 1.8.8)
 
 	if [[ "$pgpidu" =~ ${BL_PGPID_U4_REGEX} ]] ; then
-		pgpidu="u4=${BASH_REMATCH[0]}"
+		pgpidu="u4${BASH_REMATCH[0]}"
 	elif [[ "$pgpidu" =~ ${BL_PGPID_U5_REGEX} ]] ; then
-		pgpidu="u5=${BASH_REMATCH[0]}"
+		pgpidu="u5${BASH_REMATCH[0]}"
 	elif [[ "$pgpidugiven" ]] ; then
 		printf "%s: Error: No OpenPGP ID string in given '%s'.\n" "$FUNCNAME" "$pgpidu" >&2
 		return 2
 	else
-		pgpidu="u4=$(bl_pgpid_gen_u4 --verify)"
+		pgpidu="u4$(bl_pgpid_gen_u4 --verify)"
 	fi
 
 	[[ "$pseudo" ]] || pseudo=${email%%@*}
@@ -1129,6 +1129,10 @@ OPTIONS:
 	[[ "$passphrase" ]] || passphrase=$(bl_new_password "Passphrase")
 	[[ "$passphrase" ]] || { printf "%s: Error: Passphrase can't be empty at this stage.\n" "$FUNCNAME" >&2 ; return 2 ;}
 
+	# The certificate is born with a single, self-certified identity UID: the
+	# eid URN (Section 4.5 of draft-foopgp-urn-eid). Name, email and any note
+	# are then added as separate vCard-property UIDs (FN:, EMAIL:, NOTE:), each
+	# certifiable and revocable on its own — see bl-contacts / the PGP ID spec.
 	cat <<-EOF | gpg --homedir "$gpghome" --batch --generate-key --allow-freeform-uid || return $?
 		%echo Generating OpenPGP key for ${email}
 		Key-Type: eddsa
@@ -1137,9 +1141,7 @@ OPTIONS:
 		Subkey-Type: ecdh
 		Subkey-Curve: Curve25519
 		Subkey-Usage: encrypt
-		Name-Real: ${pseudo}
-		Name-Comment: ${pgpidu} ${extracomment}
-		Name-Email: ${email}
+		Name-Real: UID:urn:eid:${pgpidu}
 		Expire-Date: $(date -I -d "+$expire years")
 		Passphrase: ${passphrase}
 		Keyserver: ${keyserv}
@@ -1147,12 +1149,21 @@ OPTIONS:
 		%commit
 	EOF
 
-	# get first 2 fprs
-	local fprs
-	fprs=($(gpg --homedir "$gpghome" --list-secret-keys --with-colons "$email" | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p')) || return $?
+	# Look the fresh key up by its exact eid UID ('=' prefix = exact match), the
+	# only UID it has at this point.
+	local fpr
+	fpr=$(gpg --homedir "$gpghome" --list-secret-keys --with-colons "=UID:urn:eid:${pgpidu}" | awk -F: '$1=="fpr"{print $10;exit}') || return $?
+	[[ "$fpr" ]] || { printf "$FUNCNAME: Error: "$"Freshly generated key not found by its eid UID"" (%s).\n" "$pgpidu" >&2 ; return 1 ; }
+
+	# Add the vCard-property UIDs. EMAIL keeps its angle brackets with a space
+	# before '<' (what GnuPG/gpgme/WKD/MUAs and OpenKeychain all parse).
+	local -a GQ=(gpg --homedir "$gpghome" --batch --passphrase "${passphrase}" --pinentry-mode loopback)
+	"${GQ[@]}" --quick-add-uid "$fpr" "FN:${pseudo}" || return $?
+	"${GQ[@]}" --quick-add-uid "$fpr" "EMAIL: <${email}>" || return $?
+	[[ -z "${extracomment// }" ]] || "${GQ[@]}" --quick-add-uid "$fpr" "NOTE:${extracomment# }" || return $?
 
 	# Generate and add auth key...
-	gpg --homedir "$gpghome" --batch --passphrase "${passphrase}" --pinentry-mode loopback --quick-add-key ${fprs[0]} ed25519 auth ${expire}y || return $?
+	"${GQ[@]}" --quick-add-key "$fpr" ed25519 auth ${expire}y || return $?
 
 	# output all (3) fingerprints, first fingerprint should be the one of the main key
 	gpg --homedir "$gpghome" --list-secret-keys --with-colons "$email" | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'
@@ -1356,16 +1367,18 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	if [[ "$toadd" ]] ; then
 		local ids
 
-		ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4=\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5=\1,p" <<<"$uids" | sort -u))
+		# Sanity: the certificate must already carry exactly one eid (its own
+		# UID:urn:eid:… since the vCard-uid process ; a UID comment before that).
+		ids=($(_bl_pgpid_eids_of <<<"$uids"))
 		(( ${#ids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No OpenPGP ID string (u4|u5) in %s certificate.""\n" "$user" >&2 ; return 1 ;}
 		(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary OpenPGP ID string (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
+		[[ -z "$pseudo$extracomment" ]] || printf "$FUNCNAME: Notice: "$"vCard-property uids carry name/comment separately (FN:/NOTE:) — --name/--extra-comment are ignored when adding an EMAIL""\n" >&2
 
-		# Add emails
+		# Add each email as its own vCard-property UID. --quick-add-uid (not the
+		# --edit-key 'adduid' prompt, which rejects '<' in its name field).
 		for email in "${toadd[@]}" ; do
-			[[ "$pseudo" ]] || pseudo=${email%%@*}
-			commands=$(printf "adduid\n$pseudo\n$email\n${ids[0]}$extracomment\nsave\n")
-			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'$pseudo (${ids[0]}$extracomment) <$email>'" "$user" >&2
-			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) <<<"$commands" || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
+			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'EMAIL: <$email>'" "$user" >&2
+			gpg --homedir "$gpghome" --batch --quick-add-uid "$user" "EMAIL: <$email>" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
 		done
 	fi
 
@@ -1375,11 +1388,20 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			nbemails=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | wc -l)
 			((nbemails>1)) || { printf "$FUNCNAME: Error: "$"At least one email must be retained.""\n" >&2 ; return 1 ; }
 
-			commands=$(awk "/^uid:[^r].*<$email>/ "'{ printf "uid "NR"\nrevuid\ny\n4\n\ny\nsave\n" }' <<<"$uids")
-			[[ "$commands" ]] || { printf "$FUNCNAME: Error: "$"No revokable %s inside certificate %s (in %s).""\n" "<$email>" "$user" "$gpghome" >&2 ; return 1 ; }
+			# The exact UID string(s) carrying <email> (colon field 10), so we
+			# can revoke each with --quick-revoke-uid whatever their shape
+			# (EMAIL: <addr>, or an old name-addr uid).
+			local -a ruids ; readarray -t ruids < <(awk -F: "/^uid:[^r]:.*<$email>/ {print \$10}" <<<"$uids")
+			(( ${#ruids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No revokable %s inside certificate %s (in %s).""\n" "<$email>" "$user" "$gpghome" >&2 ; return 1 ; }
 
-			printf "$FUNCNAME: Notice: "$"Revoking %s inside %s certificate…""\n" "<$email>" "$user" >&2
-			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" | sort -u | sort -t'(' --key=2n >&2 ) <<<"$commands" || { echo "$FUNCNAME: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
+			local ruid
+			for ruid in "${ruids[@]}" ; do
+				# --with-colons escapes ':' (and '\\', control bytes) as \\xNN in
+				# field 10 ; --quick-revoke-uid needs the real UID string back.
+				ruid=$(printf '%b' "$ruid")
+				printf "$FUNCNAME: Notice: "$"Revoking %s inside %s certificate…""\n" "$ruid" "$user" >&2
+				gpg --homedir "$gpghome" --batch --quick-revoke-uid "$user" "$ruid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || { echo "$FUNCNAME: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
+			done
 		done
 	fi
 
@@ -2057,22 +2079,37 @@ OPTIONS:
 		printf "$FUNCNAME: Notice: "$"Picking most recent email %s.""\n" "$email" >&2
 	fi
 
-	# Pretty name: --name overrides ; otherwise pulled from the uid attached to that email, falling back to the local-part.
+	# Pretty name: --name overrides ; else a FN: vCard-property uid (the vCard-uid
+	# process) ; else the name part of an old name-addr uid attached to the email ;
+	# else the email local-part. --with-colons escapes ':' as \\xNN in field 10,
+	# so each candidate is decoded before matching.
 	local pname=$usename
-	[[ "$pname" ]] || pname=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null |
-		awk -F: -v EM="<$email>" '/^uid:[^r]:/ {
-			if (index($10, EM)) {
-				n = $10
-				sub(/ *\([^)]*\) *<[^>]+>$/, "", n); sub(/ *<[^>]+>$/, "", n)
-				print n ; exit
-			}
-		}')
+	local _u
+	if [[ -z "$pname" ]] ; then
+		while read -r _u ; do
+			_u=$(printf '%b' "$_u")
+			[[ "$_u" == FN:* ]] || continue
+			pname=${_u#FN:} ; break
+		done < <(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null | awk -F: '/^uid:[^r]:/{print $10}')
+	fi
+	if [[ -z "$pname" ]] ; then
+		pname=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null |
+			awk -F: -v EM="<$email>" '/^uid:[^r]:/ {
+				if (index($10, EM)) {
+					n = $10
+					sub(/ *\([^)]*\) *<[^>]+>$/, "", n); sub(/ *<[^>]+>$/, "", n)
+					print n ; exit
+				}
+			}')
+		pname=$(printf '%b' "$pname")
+		# A vCard property prefix (from an email-only uid) is not a display name.
+		[[ ! "$pname" =~ ^(EMAIL|UID|NOTE|FN): ]] || pname=""
+	fi
 	[[ "$pname" ]] || pname=${email%%@*}
 
-	# OpenPGP ID (u4 or u5), if present in the certificate
+	# eid (u4 or u5) in its standard glued form, if present in the certificate
 	local pgpid
-	pgpid=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null |
-		sed -nE "s,.*4=?(${BL_PGPID_U4_REGEX}).*,u4=\\1,p ; s,.*5=?(${BL_PGPID_U5_REGEX}).*,u5=\\1,p" | sort -u | head -n1)
+	pgpid=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null | _bl_pgpid_eids_of | head -n1)
 
 	# Format fingerprint as 2 lines of 5 groups of 4 hex
 	local fprspaced fprline1 fprline2
