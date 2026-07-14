@@ -377,7 +377,7 @@ bl_foopgp_update_input() {
 	local outcontent outfile="EUR-input.log"
 	local format etc f csvversion line date debit credit lib solde ecriture ref
 
-	read format etc < "$indexdir/.FORMAT" || { echo "$FUNCNAME: Error: "$"Unexpected dji directory tree." >&2 ; return 2 ; }
+	read -r format etc < "$indexdir/.FORMAT" || { echo "$FUNCNAME: Error: "$"Unexpected dji directory tree." >&2 ; return 2 ; }
 
 	[[ "$format" == 1.0 ]] || { printf "$FUNCNAME: Error: "$"Unsupported format %s.""\n" "($format)" >&2 ; return 2 ; }
 
@@ -385,11 +385,11 @@ bl_foopgp_update_input() {
 		[[ "$(basename $f)" =~ ^([0-9]{4}).*.csv$ ]] || { printf "$FUNCNAME: Warning: "$"Skipping invalid filename %s.""\n" "'$f'" >&2 ; continue ; }
 		csvversion=${BASH_REMATCH[1]}
 
-		while read line ; do
+		while read -r line ; do
 			if ((csvversion < 2026)) ; then
-				IFS='|' read date debit credit lib solde ecriture ref etc <<<"$line"
+				IFS='|' read -r date debit credit lib solde ecriture ref etc <<<"$line"
 			else
-				IFS='|' read ecriture date debit credit lib solde ref etc <<<"$line"
+				IFS='|' read -r ecriture date debit credit lib solde ref etc <<<"$line"
 			fi
 			if [[ "$credit" =~ [0-9,]+ ]] ; then
 				credit=${BASH_REMATCH[0]}
@@ -456,11 +456,12 @@ bl_foopgp_update_contribs() (
 
 	[[ "$1" ]] || set "."
 
-	find "$@" -name EUR-input.log | while read file ; do
+	find "$@" -name EUR-input.log | while read -r file ; do
 		path="$(dirname "$file")"
 		t=0 ; g=0 ; n=0
 		mapfile -t Tcontrib < <( bl_md_arraytobash -d Econtrib < "$path/contributions.md" )
-		bl_md_arraytobash date EUR <"$file" | while read line ; do
+		# shellcheck disable=SC2030 # entry[] is consumed inside this same pipeline subshell
+		bl_md_arraytobash date EUR <"$file" | while read -r line ; do
 			eval "${Tcontrib[$n]}"
 			eval "$line"
 
@@ -520,7 +521,7 @@ OPTIONS:
 
 	local file email domain tld i
 	printf -- $"Creating symlinks from"" 'by-id/' ...\n" >&2
-	find by-id/u4/*/*/*/emails/ -type f | while read file
+	find by-id/u4/*/*/*/emails/ -type f | while read -r file
 	do
 		email=${file##*\/}
 		[[ "$email" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { echo "$FUNCNAME: Error: "$"Invalid email"" '$email'." >&2 ; return 1 ;}
@@ -593,7 +594,8 @@ OPTIONS:
 		## For the moment, certification level is just the number of certification. In the futur this level should also depend on the quality of the issuers/certifiers, an on the age of certifications.
 		[[ -f "$dir/certifications.log" ]] && certlvl=$(wc -l < "$dir/certifications.log") || certlvl=0
 
-		while read line ; do
+		# shellcheck disable=SC2031 # entry[] is consumed inside this same pipeline subshell
+		while read -r line ; do
 			#grep -q '\[date\]=\"2025-' <<<"$line" && continue # To Dismiss 2025 Inputs
 			eval "$line"
 			totEURbyid=$(bc -l <<<"${totEURbyid}+${entry[EUR]/,/.}")
@@ -602,6 +604,7 @@ OPTIONS:
 		done < <(bl_md_arraytobash  < "$file")
 
 		if ((users)) ; then
+			# shellcheck disable=SC2031 # the while above is fed by < <(...), same shell; entry persists
 			statid=$(printf "|    ${entry[date]} | %-39s | %11d | %16s € | %11s Ɉ | %17s | %8s |\n"  "${id}" "$nbcontribs" "$totEURbyid" "$totDJIbyid" "$certlvl" "$(bc -l <<<"scale=0;sqrt(${totDJIbyid/./})")")
 			output+=("$statid")
 		fi
