@@ -1,6 +1,220 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8\n"
 
+msgid ""
+"Create, check, fix and edit vCard 4.0 contact records (RFC 6350), filed "
+"inside a uetree."
+msgstr ""
+
+msgid "Select a frontend program"
+msgstr ""
+
+msgid "Environment variable: "
+msgstr ""
+
+msgid "Unrecognized option"
+msgstr ""
+
+msgid "Try '%s --help' for more information"
+msgstr ""
+
+msgid ""
+"Create a new vCard 4.0 contact record inside a uetree, filed under by-name/."
+msgstr ""
+
+msgid "Missing NAME => ask interactively."
+msgstr ""
+
+msgid "Output the path of the created entity.vcf (or entity.json)."
+msgstr ""
+
+msgid ""
+"KIND (u4 => individual) and GEO (u5 => coord14) are inferred from the eid."
+msgstr ""
+
+msgid ""
+"OpenPGP entity identifier - else asked interactively when possible (empty "
+"allowed: no UID property)"
+msgstr ""
+
+msgid "File into this uetree instead of the default one"
+msgstr ""
+
+msgid "Generate a jCard (RFC 7095) entity.json instead of entity.vcf"
+msgstr ""
+
+msgid "Add an EMAIL property (may be used more than once)"
+msgstr ""
+
+msgid ""
+"Add an ADR property: 7 ';'-separated components (may be used more than once)"
+msgstr ""
+
+msgid "Add a URL property (may be used more than once)"
+msgstr ""
+
+msgid "Invalid email"
+msgstr ""
+
+msgid "Name of the contact (FN)"
+msgstr ""
+
+msgid "A contact needs a name (FN is a required vCard 4.0 property)"
+msgstr ""
+
+msgid "Invalid character '/' in name"
+msgstr ""
+
+msgid "OpenPGP entity identifier (u4 or u5, empty for none)"
+msgstr ""
+
+msgid "No OpenPGP ID (u4 or u5) found in '%s'"
+msgstr ""
+
+msgid "File already exists:"
+msgstr ""
+
+msgid "Check vCard contact record(s), read from VCARD file or standard input."
+msgstr ""
+
+msgid "Warnings and errors are reported on stderr."
+msgstr ""
+
+msgid "Default output is one line per vCard: UID  VALIDITY  VERSION  FN"
+msgstr ""
+
+msgid "UID shows the urn:eid:… value, else '-'."
+msgstr ""
+
+msgid "VALIDITY's possible values:"
+msgstr ""
+
+msgid ""
+"Only vCard version 4.0 is checked; other versions (and jCard for now) report "
+"'unsupported'."
+msgstr ""
+
+msgid ""
+"No per-line output. Exit code hold validity: 0 if all valid, 196 if any "
+"unsupported, 197 if any invalid"
+msgstr ""
+
+msgid "Can't read"
+msgstr ""
+
+msgid "jCard checking is not implemented yet"
+msgstr ""
+
+msgid "vCard #%u misses the VERSION property"
+msgstr ""
+
+msgid "vCard #%u version '%s' is not checked (only 4.0 is)"
+msgstr ""
+
+msgid "vCard #%u misses the required FN property"
+msgstr ""
+
+msgid "vCard #%u UID is not an urn:eid:… one:"
+msgstr ""
+
+msgid "Skipping line outside BEGIN:VCARD…END:VCARD:"
+msgstr ""
+
+msgid "Nested BEGIN:VCARD"
+msgstr ""
+
+msgid "Malformed content line:"
+msgstr ""
+
+msgid "Unterminated vCard (missing END:VCARD)"
+msgstr ""
+
+msgid "No vCard found in"
+msgstr ""
+
+msgid ""
+"Repair common defects of vCard record(s) and output the result, best effort."
+msgstr ""
+
+msgid ""
+"Read from the VCARD file or standard input; repaired vCards go to standard "
+"output."
+msgstr ""
+
+msgid ""
+"Fixed defects: line endings, missing VERSION, vCard 3.0 => 4.0 (bare TYPE "
+"parameters, dropped CHARSET), FN synthesized from N."
+msgstr ""
+
+msgid "Unfixable cards are reported on stderr and the function fails."
+msgstr ""
+
+msgid "VCARD arguments are repaired in place (instead of stdin/stdout)"
+msgstr ""
+
+msgid "Adding missing VERSION:4.0"
+msgstr ""
+
+msgid "Synthesizing FN from N:"
+msgstr ""
+
+msgid "Can't fix a vCard without FN nor N"
+msgstr ""
+
+msgid "Dropping malformed content line:"
+msgstr ""
+
+msgid "Adding missing END:VCARD"
+msgstr ""
+
+msgid "--in-place requires VCARD file arguments"
+msgstr ""
+
+msgid "Can't write"
+msgstr ""
+
+msgid "Left unrepaired:"
+msgstr ""
+
+msgid "Display, add or remove properties of vCard record(s)."
+msgstr ""
+
+msgid "Read from the VCARD file or standard input."
+msgstr ""
+
+msgid "Default output is the unfolded property lines (BEGIN/END excluded)."
+msgstr ""
+
+msgid ""
+"With --add or --remove: edit VCARD in place when given, else write the whole "
+"stream to standard output."
+msgstr ""
+
+msgid ""
+"Add this property content line, eg 'TEL;TYPE=cell:+33612345678' (may be used "
+"more than once)"
+msgstr ""
+
+msgid ""
+"Remove every PROP property, or only those whose raw value is VAL (may be "
+"used more than once)"
+msgstr ""
+
+msgid "Removing:"
+msgstr ""
+
+msgid "Show help and exit."
+msgstr ""
+
+msgid "Show version and exit."
+msgstr ""
+
+msgid "set completion for the program and return"
+msgstr ""
+
+msgid "Unrecognized action"
+msgstr ""
+
 msgid "Manage djis (Ɉ), also known as foopgp tokens."
 msgstr ""
 
@@ -19,12 +233,6 @@ msgid ""
 msgstr ""
 
 msgid "Values with too much decimals will be truncated instead of rounded"
-msgstr ""
-
-msgid "Unrecognized option"
-msgstr ""
-
-msgid "Try '%s --help' for more information"
 msgstr ""
 
 msgid ""
@@ -87,27 +295,12 @@ msgid ""
 "Don't remove any grain from wallet FILE, but output grains to be removed"
 msgstr ""
 
-msgid "Show help and exit."
-msgstr ""
-
-msgid "Show version and exit."
-msgstr ""
-
 msgid ""
 "Reminder: when used as a library, all functions calls share the same "
 "environment variables, i.e. the same global options."
 msgstr ""
 
-msgid "Unrecognized action"
-msgstr ""
-
 msgid "System tools for Djibian GNU/Linux. Mainly to manage users."
-msgstr ""
-
-msgid "Select a frontend program"
-msgstr ""
-
-msgid "Environment variable: "
 msgstr ""
 
 msgid "Add user to this djibian system"
@@ -437,9 +630,6 @@ msgstr ""
 msgid "Creating symlinks from"
 msgstr ""
 
-msgid "Invalid email"
-msgstr ""
-
 msgid ""
 "Calculate total contributions and total djis (Ɉ) created by contributions."
 msgstr ""
@@ -764,6 +954,12 @@ msgstr ""
 msgid "Choosing the only one editable OpenPGP certificate (%s)"
 msgstr ""
 
+msgid "Revoking %s inside %s certificate…"
+msgstr ""
+
+msgid "Can't revoke - good PIN ?."
+msgstr ""
+
 msgid ""
 "Output fingerprints, emails and OpenPGP IDentifier of certificates matching "
 "NAME|U4|U5|EMAIL."
@@ -920,9 +1116,6 @@ msgstr ""
 msgid "Option %s overide given argument '%s'"
 msgstr ""
 
-msgid "No OpenPGP ID (u4 or u5) found in '%s'"
-msgstr ""
-
 msgid ""
 "Generate an OpenPGP key pair (public and secret) according to OpenPGP ID "
 "standards."
@@ -946,10 +1139,10 @@ msgstr ""
 msgid "first part of email"
 msgstr ""
 
-msgid "First part of comment field MUST be a OpenPGP ID string."
+msgid "Entity ID. Worldwide and decentralised entity identifier."
 msgstr ""
 
-msgid "Comment (second part of comment field, free to use)"
+msgid "Supplemental information or comment associated with the entity."
 msgstr ""
 
 msgid ""
@@ -964,6 +1157,9 @@ msgid "Number of years before certificate expiration. "
 msgstr ""
 
 msgid "Prefered OpenPGP certificate server. "
+msgstr ""
+
+msgid "Freshly generated key not found by its eid UID"
 msgstr ""
 
 msgid "Extract or add image inside OpenPGP certificate."
@@ -1037,12 +1233,6 @@ msgstr ""
 msgid "Add EMAIL. Enable --name and --extra-comment options"
 msgstr ""
 
-msgid "Common name or pseudonym beside new EMAIL. "
-msgstr ""
-
-msgid "(Free to use part of) comment beside new EMAIL"
-msgstr ""
-
 msgid ""
 "Also output the count of external valid certifications per email (tab-"
 "separated). If an email appears in several UIDs, only the maximum count is "
@@ -1058,16 +1248,87 @@ msgstr ""
 msgid "Supernumerary OpenPGP ID string (%s)."
 msgstr ""
 
+msgid ""
+"vCard-property uids carry name/comment separately (FN:/NOTE:) — --name/--"
+"extra-comment are ignored when adding an EMAIL"
+msgstr ""
+
 msgid "At least one email must be retained."
 msgstr ""
 
 msgid "No revokable %s inside certificate %s (in %s)."
 msgstr ""
 
-msgid "Revoking %s inside %s certificate…"
+msgid ""
+"Display and add or revoke vCard-property uids inside OpenPGP certificate."
 msgstr ""
 
-msgid "Can't revoke - good PIN ?."
+msgid "PROPERTY is one of:"
+msgstr ""
+
+msgid ""
+"Without modification options, output the usable (non-revoked and non-"
+"expired) PROPERTY values, ready to be evaluated in bash."
+msgstr ""
+
+msgid ""
+"Add a PROPERTY uid - a new {name,note} revokes the previous one (may be used "
+"more than once)"
+msgstr ""
+
+msgid "Revoke the PROPERTY uid carrying VALUE (may be used more than once)"
+msgstr ""
+
+msgid "Revoke every usable PROPERTY uid - all but the newest for {name,email}"
+msgstr ""
+
+msgid ""
+"Display every vCard-property uid of the certificate, including its identity "
+"eid (UID:)"
+msgstr ""
+
+msgid "Also display revoked or expired uids"
+msgstr ""
+
+msgid ""
+"Display raw uid strings (vCard parameters kept), separated by empty lines"
+msgstr ""
+
+msgid "Unrecognized property"
+msgstr ""
+
+msgid "Missing PROPERTY argument"
+msgstr ""
+
+msgid "Modification options need a PROPERTY argument"
+msgstr ""
+
+msgid ""
+"Only one --add at a time for {name,note} (the new value revokes the previous "
+"one)"
+msgstr ""
+
+msgid "Invalid %s value"
+msgstr ""
+
+msgid "%s certificate already carries %s"
+msgstr ""
+
+msgid "At least one %s must be retained."
+msgstr ""
+
+msgid "Nothing to revoke."
+msgstr ""
+
+msgid "Can't set the primary uid back to"
+msgstr ""
+
+msgid ""
+"No identity eid uid (UID:urn:eid:...) inside %s certificate - primary uid "
+"left as is."
+msgstr ""
+
+msgid "Some non-vCard uids were skipped - use --raw to display them."
 msgstr ""
 
 msgid ""
@@ -1428,7 +1689,7 @@ msgstr ""
 
 msgid ""
 "Note: OpenPGP ID is a specific OpenPGP configuration managed by bl-pgpid. "
-"Using bl-qrkey with other OpenPGP configuration should cause unexpected "
+"Using bl-pgpkey with other OpenPGP configuration should cause unexpected "
 "issues."
 msgstr ""
 
@@ -1909,13 +2170,14 @@ msgid "All actions support a --help option, eg:"
 msgstr ""
 
 msgid ""
-"Manage a uetree, a filesystem-native registry of self-certifying entities."
+"Manage a \\\"universal entities tree\\\", a filesystem-native registry of "
+"entities."
 msgstr ""
 
-msgid ""
-"Each entity is keyed by an OpenPGP identifier and cross-indexed by email, "
-"phone\n"
-"and name ; its canonical record is a vCard 4.0 file (entity.vcf)."
+msgid "Entities are well defined contacts when using certified OpenPGP ID."
+msgstr ""
+
+msgid "Each entity is cross-indexed by email, phone, name, eid, …"
 msgstr ""
 
 msgid "unsupported uetree version"
@@ -2139,9 +2401,6 @@ msgid "Show version and exit"
 msgstr ""
 
 msgid "is also a bash library, see:"
-msgstr ""
-
-msgid "set completion for the program and return"
 msgstr ""
 
 msgid "no action given"

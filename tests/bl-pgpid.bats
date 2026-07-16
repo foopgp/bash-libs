@@ -319,3 +319,125 @@ ut () { LC_ALL=C "${TARGET}" update_trustdb "$@" 2>&1 ; }
 	run ut -H "$UH" </dev/null                          # nothing left undefined → no prompt
 	assert_success
 }
+
+# --- property : vCard-property uids (FN/NOTE/ADR/TEL/URL/LANG/GEO/EMAIL) ---
+
+vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
+	VH="$BATS_TEST_TMPDIR/vh" ; mkdir -p "$VH" ; chmod 700 "$VH"
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH")
+	"${B[@]}" --allow-freeform-uid --quick-generate-key "UID:urn:eid:u4$EID1" ed25519 cert 0 2>/dev/null
+	VFPR=$(gpg --no-options --homedir "$VH" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
+	"${B[@]}" --quick-add-uid "$VFPR" 'FN:Alice Test' 2>/dev/null
+	"${B[@]}" --quick-add-uid "$VFPR" 'EMAIL: <alice@example.org>' 2>/dev/null
+	"${B[@]}" --quick-add-uid "$VFPR" 'TEL;TYPE=home:+33612345678' 2>/dev/null
+}
+
+@test "property help exits 0" {
+	run --separate-stderr "${TARGET}" property --help
+	assert_success
+	assert_line --index 0 --regexp "^Usage: "
+}
+
+@test "property unknown property is error 2" {
+	run "${TARGET}" property bogus 0xDEADBEEF
+	assert_failure 2
+}
+
+@test "property email : eval-friendly output" {
+	vkey
+	run --separate-stderr "${TARGET}" property email -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_EMAIL[0]='<alice@example.org>'"
+}
+
+@test "property phone : vCard parameters ignored, kept under --raw" {
+	vkey
+	run --separate-stderr "${TARGET}" property phone -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_TEL[0]='+33612345678'"
+	run --separate-stderr "${TARGET}" property phone --raw -H "$VH" "0x$VFPR"
+	assert_success
+	assert_line --index 0 "TEL;TYPE=home:+33612345678"
+}
+
+@test "property --show-all : every property and the identity eid uid" {
+	vkey
+	run --separate-stderr "${TARGET}" property --show-all -H "$VH" "0x$VFPR"
+	assert_success
+	assert_line "pgpid_UID='urn:eid:u4$EID1'"
+	assert_line "pgpid_FN='Alice Test'"
+	assert_line "pgpid_EMAIL[0]='<alice@example.org>'"
+	assert_line "pgpid_TEL[0]='+33612345678'"
+}
+
+@test "property name --add : mono, previous FN revoked, eid uid stays primary" {
+	vkey
+	run --separate-stderr "${TARGET}" property name -A 'Alice Renamed' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_FN='Alice Renamed'"
+	sleep 1
+	run --separate-stderr "${TARGET}" property name --show-revoked -H "$VH" "0x$VFPR"
+	assert_success
+	assert_line "pgpid_FN_REVOKED[0]='Alice Test'"
+	assert_line "pgpid_FN='Alice Renamed'"
+	# set-primary pinned the eid uid back : gpg lists the primary uid first
+	run bash -c "gpg --no-options --homedir '$VH' -k 2>/dev/null | grep -m1 '^uid'"
+	assert_output --partial "UID:urn:eid:u4$EID1"
+}
+
+@test "property email --revoke : the last usable email is retained" {
+	vkey
+	run --separate-stderr "${TARGET}" property email -R alice@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_failure 1
+	[[ "$stderr" == *"must be retained"* ]]
+}
+
+@test "property email : add then revoke roundtrip (bracketed input accepted)" {
+	vkey
+	run --separate-stderr "${TARGET}" property email -A bob@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_line "pgpid_EMAIL[1]='<bob@example.org>'"
+	sleep 1
+	run --separate-stderr "${TARGET}" property email -R '<alice@example.org>' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_EMAIL[0]='<bob@example.org>'"
+}
+
+@test "property phone --revoke-all : no keeper, then 'Nothing to revoke' warning" {
+	vkey
+	run --separate-stderr "${TARGET}" property phone --revoke-all -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	refute_output --partial "pgpid_TEL["
+	run --separate-stderr "${TARGET}" property phone --revoke-all -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	[[ "$stderr" == *"Nothing to revoke"* ]]
+}
+
+@test "property email --revoke-all keeps the newest" {
+	vkey
+	"${TARGET}" property email -A bob@example.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	sleep 1
+	run --separate-stderr "${TARGET}" property email --revoke-all -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_EMAIL[0]='<bob@example.org>'"
+}
+
+@test "property : invalid values and a double mono --add are rejected with error 2" {
+	vkey
+	local bad
+	for bad in "email -A not-an-email" "phone -A 12345" "url -A notaurl" "lang -A x" "geo -A geo:abc" "name -A One -A Two" ; do
+		run "${TARGET}" property $bad -K '' -H "$VH" "0x$VFPR"
+		assert_failure 2
+	done
+}
+
+@test "property note : a colon inside the value survives the x3a escaping roundtrip" {
+	vkey
+	run --separate-stderr "${TARGET}" property note -A 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_NOTE='see: https://foopgp.org'"
+	sleep 1
+	run --separate-stderr "${TARGET}" property note -R 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	refute_output --partial "pgpid_NOTE="
+}
