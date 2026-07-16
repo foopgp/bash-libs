@@ -795,7 +795,7 @@ OPTIONS:
 
 			## PGPID SECRET (/${thresn}) - FRAGMENT ${i}/${splitn}
 
-			$(gpg --homedir "$gpghome" --with-colons --list-keys "$keyfpr" | awk -F: '$1=="uid" { print $10"\n" }')
+			$(gpg --homedir "$gpghome" --with-colons --list-keys "$keyfpr" | awk -F: '$1=="uid" { gsub(/\\x3a/,":",$10) ; print $10"\n" }')
 			\`\`\`
 			    ${keyfpr: 0:4} ${keyfpr: 4:4} ${keyfpr: 8:4} ${keyfpr: 12:4} ${keyfpr: 16:4} ${keyfpr: 20:4} ${keyfpr: 24:4} ${keyfpr: 28:4} ${keyfpr: 32:4} ${keyfpr: 36:4}
 			\`\`\`

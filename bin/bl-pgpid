@@ -2007,13 +2007,13 @@ OPTIONS:
 	for ((;$#;)) ; do
 		case "$1" in
 			-P|--print|--printer)
-				shift ; printer=$1 ;;
+				shift ; printer=${1:?} ;;
 			-t|--template)
 				shift ; usetemplate=${1:?} ;;
 			-g|--no-color|--gray|--grayscale)
 				nocolor=1 ;;
 			-N|--usename|--name)
-				shift ; usename=${1:?} ;;
+				shift ; usename=${1:-} ;;
 			-H|--homedir)
 				shift ; gpghome=${1:?} ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
