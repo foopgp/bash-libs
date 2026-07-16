@@ -1063,8 +1063,8 @@ bl_pgpid_gen_key() {
 
 OPTIONS:
   -N, --name PSEUDONYM             "$"Common name or pseudonym. "$"Default: "$"first part of email"".
-  -c, --comment U4|U5              "$"First part of comment field MUST be a OpenPGP ID string."$" See: ""\$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
-  -C, --extra-comment COMMENT      "$"Comment (second part of comment field, free to use)""
+  -E, --eid U4|U5                  "$"Entity ID. Worlwide and decentralised entity identifier."$" See: ""\$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
+  -C, --extra-comment NOTE         "$"Supplemental information or comment associated with the entity.""
   -p, --passphrase PASSPHRASE      "$"Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage)""
   -P, --passfrom FILE              "$"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin …)""
   -e, --expiration YEARS           "$"Number of years before certificate expiration. "$"Default: ""11 -> $(date -I -d "+11 years"))
@@ -1078,8 +1078,8 @@ OPTIONS:
 	for ((;$#;)) ; do
 		case "$1" in
 			-n|-N|--name*)
-				shift ; pseudo=$1 ;;
-			-c|--comment)
+				shift ; pseudo=${1:-} ;;
+			-c|-E|--comment|--eid)
 				shift ; pgpidu=$1 ; pgpidugiven="." ;;
 			-C|--extracomment|--extra-comment)
 				shift ; extracomment=$1 ;;
@@ -1299,8 +1299,6 @@ bl_pgpid_email() {
 OPTIONS:
   -R, --revoke EMAIL          "$"Revoke existing EMAIL (may be used more than once)""
   -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options""
-  -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL. "$"Default: "$"first part of email""
-  -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL""
   -c, --certs-count           "$"Also output the count of external valid certifications per email (tab-separated). If an email appears in several UIDs, only the maximum count is kept.""
   -v, --verbose               "$"Increase verbosity""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
