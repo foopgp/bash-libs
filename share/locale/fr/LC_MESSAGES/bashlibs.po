@@ -1114,6 +1114,16 @@ msgid "Can't revoke - good PIN ?."
 msgstr "Impossible de révoquer – PIN correct ?"
 
 msgid ""
+"Upgrading %s certificate to the vCard-uid process (legacy uids kept : the "
+"web of trust rests on them)…"
+msgstr ""
+"Mise à niveau du certificat %s vers le processus vCard-uid (uids historiques "
+"conservés : la toile de confiance repose dessus)…"
+
+msgid "Can't set the primary uid back to"
+msgstr "Impossible de repositionner l’uid primaire sur"
+
+msgid ""
 "Output fingerprints, emails and OpenPGP IDentifier of certificates matching "
 "NAME|U4|U5|EMAIL."
 msgstr ""
@@ -1543,9 +1553,6 @@ msgid ""
 msgstr ""
 "Pas d’uid eid d’identité (UID:urn:eid:...) dans le certificat %s - uid "
 "primaire laissé tel quel."
-
-msgid "Can't set the primary uid back to"
-msgstr "Impossible de repositionner l’uid primaire sur"
 
 msgid "Some non-vCard uids were skipped - use --raw to display them."
 msgstr "Des uids non-vCard ont été sautés - utiliser --raw pour les afficher."

@@ -639,6 +639,50 @@ _bl_pgpid_revoke_uid() {
 	gpg --homedir "$gpghome" --batch --quick-revoke-uid "$user" "$ruid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || { echo "${FUNCNAME[1]}: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
 }
 
+_bl_pgpid_upgrade_uids() {
+	# Upgrade a legacy certificate to the vCard-uid process : mint its identity
+	# uid UID:urn:eid:<eid>, an FN: (name part of the first legacy uid) and one
+	# EMAIL: <…> per legacy email, then pin the primary on the identity.
+	# Legacy uids are NOT revoked : the web of trust still rests on their
+	# certifications. No-op without the secret key, without a single consistent
+	# legacy eid, or when the identity uid already exists.
+	local gpghome=$1 user=$2 gpgfilter=${3:-false}
+	local rawu u fn eiduid email
+	local -a uids=() ids emails=()
+	while IFS= read -r rawu ; do
+		u=$(printf '%b' "$rawu")
+		[[ ! "$u" =~ ^UID:urn:eid: ]] || return 0	# already vCard-uid shaped
+		uids+=("$u")
+	done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" 2>/dev/null \
+		| awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" { i+=1 } $1=="uid" && $2 !~ /[re]/ { print $10 }')
+	(( ${#uids[@]} )) || return 0	# no secret key or no usable uid : not ours to upgrade
+	ids=($(printf '%s\n' "${uids[@]}" | sed --silent --regexp-extended "s,.*${BL_PGPID_EID_DEPRECATED_REGEX}.*,u\3\5,p" | sort -u))
+	(( ${#ids[@]} == 1 )) || return 0	# no (or conflicting) legacy eid : nothing to upgrade
+
+	printf "${FUNCNAME[1]}: Notice: "$"Upgrading %s certificate to the vCard-uid process (legacy uids kept : the web of trust rests on them)…""\n" "$user" >&2
+	local -a GQ=(gpg --homedir "$gpghome" --batch)
+	eiduid="UID:urn:eid:${ids[0]}"
+	printf "%s: Notice: Adding %s into %s certificate...\n" "${FUNCNAME[1]}" "'$eiduid'" "$user" >&2
+	"${GQ[@]}" --quick-add-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "${FUNCNAME[1]}" "adduid" >&2 ; return 1 ;}
+
+	# Name part of the first legacy uid (its comment and email stripped).
+	fn=${uids[0]%%\ \(*} ; fn=${fn%%\ \<*} ; fn=${fn# } ; fn=${fn% }
+	if [[ "$fn" && "$fn" != *\<* ]] ; then
+		printf "%s: Notice: Adding %s into %s certificate...\n" "${FUNCNAME[1]}" "'FN:${fn}'" "$user" >&2
+		"${GQ[@]}" --quick-add-uid "$user" "FN:${fn}" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "${FUNCNAME[1]}" "adduid" >&2 ; return 1 ;}
+	fi
+
+	for u in "${uids[@]}" ; do
+		[[ ! "$u" =~ \<([^>]+)\> ]] || { [[ " ${emails[*]} " == *" ${BASH_REMATCH[1]} "* ]] || emails+=(${BASH_REMATCH[1]}) ; }
+	done
+	for email in "${emails[@]}" ; do
+		printf "%s: Notice: Adding %s into %s certificate...\n" "${FUNCNAME[1]}" "'EMAIL: <${email}>'" "$user" >&2
+		"${GQ[@]}" --quick-add-uid "$user" "EMAIL: <${email}>" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "${FUNCNAME[1]}" "adduid" >&2 ; return 1 ;}
+	done
+
+	"${GQ[@]}" --quick-set-primary-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || printf "${FUNCNAME[1]}: Warning: "$"Can't set the primary uid back to"" %s.\n" "'$eiduid'" >&2
+}
+
 
 ### public functions / program actions ###
 
@@ -1565,6 +1609,9 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	if (( ${#toadd[@]} + ${#torev[@]} + revokeall )) ; then
 		local uids uidstr rawu u v dup created keep i eiduid firstuid
 		local -a prevuids curuids matched curcreated
+		# Legacy certificate ? Mint its vCard-uid shape first (identity uid,
+		# FN:, EMAIL:s - legacy uids kept), so the operations below see it.
+		_bl_pgpid_upgrade_uids "$gpghome" "$user" "$gpgfilter" || return 1
 		# Get all uid/uat (from first keyring only)
 		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 ; print }')
 		[[ "$uids" ]] || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "$user" "$gpghome" >&2 ; return 1 ; }
@@ -1827,6 +1874,13 @@ OPTIONS:
 	# Signature key on token may differs from main key, aka Certification key.
 	aaname[pgpid_Ckeyfpr]=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "${aaname[pgpid_Skeyfpr]:- ${aaname[pgpid_Ekeyfpr]:- ${aaname[pgpid_Akeyfpr]}}}" | grep -o -m1 "\<[0-9ABCDEF]\{40\}\>") || echo "$FUNCNAME: Warning:" $"No known certification key. Please share or get certificate (keyserver, by email, ...)" >&2
 	((noCfpr)) || echo "${aaname[pgpid_Ckeyfpr]}"
+
+	# Legacy certificate ? Mint its vCard-uid shape (the connected token holds
+	# the secret key). Skipped in --quiet mode : a metadata check must not
+	# unexpectedly ask for a PIN.
+	if ((! quiet)) && [[ "${aaname[pgpid_Ckeyfpr]}" ]] ; then
+		_bl_pgpid_upgrade_uids "$gpghome" "${aaname[pgpid_Ckeyfpr]}" || true
+	fi
 
 	aaname[pgpid_email]="${emails[0]}"
 	(( ${#emails[@]} < 2 )) || ((quiet)) || printf "$FUNCNAME: Notice: "$"Supernumerary emails (%d), skipping %s …""\n" ${#emails[@]} "${emails[@]:1}" >&2
@@ -2095,9 +2149,16 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	[[ "$targetfpr" != "$keyfpr" ]] || { echo "$FUNCNAME: Warning: "$"Self-certification is not innovative! ;-)" >&2 ; return 142 ;}
 	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 143 ;}
 
-	# Get full uids containing $targetid (cf. /usr/share/doc/gnupg/DETAILS.gz ; from first keyring only)
-	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:.*'"$targetid"'/ { i+=1 ; print $10 }')
+	# Sign ONLY the identity uid when the certificate is vCard-uid shaped :
+	# FN: may be a pseudonym, and EMAIL: would deserve its own challenge.
+	# Else (legacy) : every uid containing $targetid, as before.
+	# (cf. /usr/share/doc/gnupg/DETAILS.gz ; from first keyring only)
+	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*UID.x3aurn.x3aeid.x3a.*'"$targetid"'/ { i+=1 ; print $10 }')
+	(( ${#uids[@]} )) || readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:.*'"$targetid"'/ { i+=1 ; print $10 }')
 	[[ "$uids" ]] || { echo "$FUNCNAME: Crit: "$"No uid. Certificate is probably corrupted." >&2 ; return 1 ;}
+	# Field 10 escapes ':' (and '\\', control bytes) as \\xNN : gpg wants the
+	# real uid string back after the '=' exact-match prefix.
+	local iu ; for ((iu=0 ; iu<${#uids[@]} ; iu++)) ; do uids[iu]=$(printf '%b' "${uids[iu]}") ; done
 
 	if ((revoke)) ; then
 		[[ -z "$ownertrust" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--ownertrust" >&2

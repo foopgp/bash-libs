@@ -961,6 +961,14 @@ msgid "Can't revoke - good PIN ?."
 msgstr ""
 
 msgid ""
+"Upgrading %s certificate to the vCard-uid process (legacy uids kept : the "
+"web of trust rests on them)…"
+msgstr ""
+
+msgid "Can't set the primary uid back to"
+msgstr ""
+
+msgid ""
 "Output fingerprints, emails and OpenPGP IDentifier of certificates matching "
 "NAME|U4|U5|EMAIL."
 msgstr ""
@@ -1320,9 +1328,6 @@ msgstr ""
 msgid ""
 "No identity eid uid (UID:urn:eid:...) inside %s certificate - primary uid "
 "left as is."
-msgstr ""
-
-msgid "Can't set the primary uid back to"
 msgstr ""
 
 msgid "Some non-vCard uids were skipped - use --raw to display them."

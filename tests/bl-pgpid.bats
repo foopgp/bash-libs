@@ -458,3 +458,49 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	assert_failure 1
 	[[ "$stderr" == *"must be retained"* ]]
 }
+
+lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
+	LH="$BATS_TEST_TMPDIR/lh" ; mkdir -p "$LH" ; chmod 700 "$LH"
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$LH")
+	"${B[@]}" --quick-generate-key "Alice Legacy (u4=$EID1) <alice@example.org>" ed25519 cert 0 2>/dev/null
+	LFPR=$(gpg --no-options --homedir "$LH" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
+	"${B[@]}" --quick-add-uid "$LFPR" "Alice Legacy (u4=$EID1) <alice.pro@example.org>" 2>/dev/null
+}
+
+@test "property --add upgrades a legacy certificate first : vCard uids minted, legacy uids kept" {
+	lkey
+	run --separate-stderr "${TARGET}" property email -A carol@example.org -K '' -H "$LH" "0x$LFPR"
+	assert_success
+	assert_line "pgpid_EMAIL[0]='<alice.pro@example.org>'"
+	assert_line "pgpid_EMAIL[1]='<alice@example.org>'"
+	assert_line "pgpid_EMAIL[2]='<carol@example.org>'"
+	run --separate-stderr "${TARGET}" property --show-all -H "$LH" "0x$LFPR"
+	assert_line "pgpid_UID='urn:eid:u4$EID1'"
+	assert_line "pgpid_FN='Alice Legacy'"
+	# the legacy uids are NOT revoked (the web of trust rests on them)
+	run bash -c "gpg --no-options --homedir '$LH' --with-colons -k 2>/dev/null | grep -c '^uid:u:.*Alice Legacy (u4='"
+	assert_output "2"
+	# the identity eid uid took the primary flag (listed first)
+	run bash -c "gpg --no-options --homedir '$LH' -k 2>/dev/null | grep -m1 '^uid'"
+	assert_output --partial "UID:urn:eid:u4$EID1"
+}
+
+@test "certify signs only the identity uid of a vCard-uid certificate" {
+	local CH="$BATS_TEST_TMPDIR/ch" TH2="$BATS_TEST_TMPDIR/th2"
+	mkdir -p "$CH" "$TH2" ; chmod 700 "$CH" "$TH2"
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '')
+	"${B[@]}" --homedir "$TH2" --allow-freeform-uid --quick-generate-key "UID:urn:eid:u4$EID1" ed25519 sign 0 2>/dev/null
+	local TF=$(gpg --no-options --homedir "$TH2" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
+	"${B[@]}" --homedir "$TH2" --quick-add-uid "$TF" 'FN:Bob' 2>/dev/null
+	"${B[@]}" --homedir "$TH2" --quick-add-uid "$TF" 'EMAIL: <bob@example.org>' 2>/dev/null
+	"${B[@]}" --homedir "$CH" --quick-generate-key 'Anchor <anchor@example.org>' ed25519 sign 0 2>/dev/null
+	local AF=$(gpg --no-options --homedir "$CH" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
+	gpg --no-options --homedir "$TH2" --export "$TF" 2>/dev/null | gpg --no-options --homedir "$CH" --import 2>/dev/null
+	run --separate-stderr "${TARGET}" certify -u "$AF" -K '' -H "$CH" "$EID1" "$TF" </dev/null
+	assert_success
+	# exactly one uid signed by the anchor : the UID:urn:eid: one
+	run bash -c "gpg --no-options --homedir '$CH' --with-colons --check-sigs '0x$TF' 2>/dev/null | awk -F: -v a='${AF: -16}' '\$1==\"uid\"{u=\$10} \$1==\"sig\" && \$5==a {print u}'"
+	assert_output --partial "UID\x3aurn\x3aeid\x3au4$EID1"
+	refute_output --partial "FN"
+	refute_output --partial "EMAIL"
+}
