@@ -387,7 +387,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 
 @test "property email --revoke : the last usable email is retained" {
 	vkey
-	run --separate-stderr "${TARGET}" property email -R alice@example.org -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr env LC_ALL=C "${TARGET}" property email -R alice@example.org -K '' -H "$VH" "0x$VFPR"
 	assert_failure 1
 	[[ "$stderr" == *"must be retained"* ]]
 }
@@ -405,10 +405,10 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 
 @test "property phone --revoke-all : no keeper, then 'Nothing to revoke' warning" {
 	vkey
-	run --separate-stderr "${TARGET}" property phone --revoke-all -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr env LC_ALL=C "${TARGET}" property phone --revoke-all -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	refute_output --partial "pgpid_TEL["
-	run --separate-stderr "${TARGET}" property phone --revoke-all -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr env LC_ALL=C "${TARGET}" property phone --revoke-all -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	[[ "$stderr" == *"Nothing to revoke"* ]]
 }
@@ -440,4 +440,21 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	run --separate-stderr "${TARGET}" property note -R 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	refute_output --partial "pgpid_NOTE="
+}
+
+@test "email --add delegates to property : both emails listed, eid uid stays primary" {
+	vkey
+	run --separate-stderr "${TARGET}" email -A bob@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_line "alice@example.org"
+	assert_line "bob@example.org"
+	run bash -c "gpg --no-options --homedir '$VH' -k 2>/dev/null | grep -m1 '^uid'"
+	assert_output --partial "UID:urn:eid:u4$EID1"
+}
+
+@test "email --revoke delegates to property : keep-one guard applies" {
+	vkey
+	run --separate-stderr env LC_ALL=C "${TARGET}" email -R alice@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_failure 1
+	[[ "$stderr" == *"must be retained"* ]]
 }

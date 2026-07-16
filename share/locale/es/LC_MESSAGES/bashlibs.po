@@ -1253,12 +1253,6 @@ msgid ""
 "extra-comment are ignored when adding an EMAIL"
 msgstr ""
 
-msgid "At least one email must be retained."
-msgstr ""
-
-msgid "No revokable %s inside certificate %s (in %s)."
-msgstr ""
-
 msgid ""
 "Display and add or revoke vCard-property uids inside OpenPGP certificate."
 msgstr ""
@@ -1314,18 +1308,21 @@ msgstr ""
 msgid "%s certificate already carries %s"
 msgstr ""
 
+msgid "No revokable %s inside certificate %s (in %s)."
+msgstr ""
+
 msgid "At least one %s must be retained."
 msgstr ""
 
 msgid "Nothing to revoke."
 msgstr ""
 
-msgid "Can't set the primary uid back to"
-msgstr ""
-
 msgid ""
 "No identity eid uid (UID:urn:eid:...) inside %s certificate - primary uid "
 "left as is."
+msgstr ""
+
+msgid "Can't set the primary uid back to"
 msgstr ""
 
 msgid "Some non-vCard uids were skipped - use --raw to display them."

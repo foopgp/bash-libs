@@ -1458,12 +1458,6 @@ msgstr ""
 "Les uids de propriété vCard portent le nom et le commentaire séparément (FN:/"
 "NOTE:) — --name/--extra-comment sont ignorés à l’ajout d’un EMAIL"
 
-msgid "At least one email must be retained."
-msgstr "Au moins une adresse de courriel doit être conservée."
-
-msgid "No revokable %s inside certificate %s (in %s)."
-msgstr "Pas de %s révoquable dans le certificat %s (dans %s)"
-
 msgid ""
 "Display and add or revoke vCard-property uids inside OpenPGP certificate."
 msgstr ""
@@ -1534,14 +1528,14 @@ msgstr "Valeur %s invalide"
 msgid "%s certificate already carries %s"
 msgstr "Le certificat %s porte déjà %s"
 
+msgid "No revokable %s inside certificate %s (in %s)."
+msgstr "Pas de %s révoquable dans le certificat %s (dans %s)"
+
 msgid "At least one %s must be retained."
 msgstr "Au moins un %s doit être conservé."
 
 msgid "Nothing to revoke."
 msgstr "Rien à révoquer."
-
-msgid "Can't set the primary uid back to"
-msgstr "Impossible de repositionner l’uid primaire sur"
 
 msgid ""
 "No identity eid uid (UID:urn:eid:...) inside %s certificate - primary uid "
@@ -1549,6 +1543,9 @@ msgid ""
 msgstr ""
 "Pas d’uid eid d’identité (UID:urn:eid:...) dans le certificat %s - uid "
 "primaire laissé tel quel."
+
+msgid "Can't set the primary uid back to"
+msgstr "Impossible de repositionner l’uid primaire sur"
 
 msgid "Some non-vCard uids were skipped - use --raw to display them."
 msgstr "Des uids non-vCard ont été sautés - utiliser --raw pour les afficher."
@@ -2836,6 +2833,9 @@ msgstr "aucune action fournie"
 
 msgid "unrecognized action"
 msgstr "action non reconnue"
+
+#~ msgid "At least one email must be retained."
+#~ msgstr "Au moins une adresse de courriel doit être conservée."
 
 #~ msgid "First part of comment field MUST be a OpenPGP ID string."
 #~ msgstr ""

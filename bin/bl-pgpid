@@ -1362,15 +1362,11 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --no-fetch -- "$user")) || return $?
 	user=${fprs[0]}
 
-	if [[ "$torev" || "$toadd" ]] ; then
-		local uids email commands
+	if [[ "$toadd" ]] ; then
+		local uids ids
 		# Get all uid/uat (from first keyring only)
 		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 ; print }')
 		[[ "$uids" ]] || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "$user" "$gpghome" >&2 ; return 1 ; }
-	fi
-
-	if [[ "$toadd" ]] ; then
-		local ids
 
 		# Sanity: the certificate must already carry exactly one eid (its own
 		# UID:urn:eid:… since the vCard-uid process ; a UID comment before that).
@@ -1378,37 +1374,20 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		(( ${#ids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No OpenPGP ID string (u4|u5) in %s certificate.""\n" "$user" >&2 ; return 1 ;}
 		(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary OpenPGP ID string (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
 		[[ -z "$pseudo$extracomment" ]] || printf "$FUNCNAME: Notice: "$"vCard-property uids carry name/comment separately (FN:/NOTE:) — --name/--extra-comment are ignored when adding an EMAIL""\n" >&2
-
-		# Add each email as its own vCard-property UID. --quick-add-uid (not the
-		# --edit-key 'adduid' prompt, which rejects '<' in its name field).
-		for email in "${toadd[@]}" ; do
-			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'EMAIL: <$email>'" "$user" >&2
-			gpg --homedir "$gpghome" --batch --quick-add-uid "$user" "EMAIL: <$email>" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
-		done
 	fi
 
-	if [[ "$torev" ]] ; then
-		local nbemails
-		for email in "${torev[@]}" ; do
-			nbemails=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | wc -l)
-			((nbemails>1)) || { printf "$FUNCNAME: Error: "$"At least one email must be retained.""\n" >&2 ; return 1 ; }
-
-			# The exact UID string(s) carrying <email> (colon field 10), so we
-			# can revoke each with --quick-revoke-uid whatever their shape
-			# (EMAIL: <addr>, or an old name-addr uid).
-			local -a ruids ; readarray -t ruids < <(awk -F: "/^uid:[^r]:.*<$email>/ {print \$10}" <<<"$uids")
-			(( ${#ruids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No revokable %s inside certificate %s (in %s).""\n" "<$email>" "$user" "$gpghome" >&2 ; return 1 ; }
-
-			local ruid
-			for ruid in "${ruids[@]}" ; do
-				# --with-colons escapes ':' (and '\\', control bytes) as \\xNN in
-				# field 10 ; --quick-revoke-uid needs the real UID string back.
-				ruid=$(printf '%b' "$ruid")
-				printf "$FUNCNAME: Notice: "$"Revoking %s inside %s certificate…""\n" "$ruid" "$user" >&2
-				gpg --homedir "$gpghome" --batch --quick-revoke-uid "$user" "$ruid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || { echo "$FUNCNAME: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
-			done
-		done
-	fi
+	# Add and revoke through the property machinery (uid shape, cardinality,
+	# primary uid pinned back on the eid). Keyservers muted here : one single
+	# send below once everything is done.
+	local email
+	local -a vopt=()
+	[[ "$gpgfilter" != cat ]] || vopt=(-v)
+	for email in "${toadd[@]}" ; do
+		bl_pgpid_property email --add "$email" "${vopt[@]}" -K '' -H "$gpghome" -- "$user" >/dev/null || return $?
+	done
+	for email in "${torev[@]}" ; do
+		bl_pgpid_property email --revoke "$email" "${vopt[@]}" -K '' -H "$gpghome" -- "$user" >/dev/null || return $?
+	done
 
 	local ret=0
 	# Send updated certificate to keyservers
@@ -1584,7 +1563,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	local ret=0 modified=0
 	if (( ${#toadd[@]} + ${#torev[@]} + revokeall )) ; then
-		local uids uidstr rawu u v dup created keep i eiduid
+		local uids uidstr rawu u v dup created keep i eiduid firstuid
 		local -a prevuids curuids matched curcreated
 		# Get all uid/uat (from first keyring only)
 		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 ; print }')
@@ -1672,21 +1651,19 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		fi
 
 		if ((modified)) ; then
-			# gpg hands the primary flag to the uid with the freshest self-sig :
-			# pin it back onto the identity eid uid (the WoT anchor) after any change.
-			eiduid=""
+			# Pin the primary flag back onto the identity eid uid (the WoT
+			# anchor) after any change. Skipped when it is already the primary
+			# (= listed first) : gpg errors on that no-op re-flagging.
+			eiduid="" ; firstuid=""
 			while IFS= read -r rawu ; do
 				u=$(printf '%b' "$rawu")
+				[[ "$firstuid" ]] || firstuid=$u
 				[[ ! "$u" =~ ^UID:urn:eid: ]] || { eiduid=$u ; break ; }
 			done < <(gpg --homedir "$gpghome" --with-colons --list-key "$user" 2>/dev/null | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
-			if [[ "$eiduid" ]] ; then
-				# May fail when the last self-sig above landed the same second
-				# (gpg sees a signature '0 seconds in the future') : retry once.
-				gpg --homedir "$gpghome" --batch --quick-set-primary-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) \
-					|| { sleep 1 ; gpg --homedir "$gpghome" --batch --quick-set-primary-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) ; } \
-					|| printf "$FUNCNAME: Warning: "$"Can't set the primary uid back to"" %s.\n" "'$eiduid'" >&2
-			else
+			if [[ -z "$eiduid" ]] ; then
 				printf "$FUNCNAME: Notice: "$"No identity eid uid (UID:urn:eid:...) inside %s certificate - primary uid left as is.""\n" "$user" >&2
+			elif [[ "$eiduid" != "$firstuid" ]] ; then
+				gpg --homedir "$gpghome" --batch --quick-set-primary-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || printf "$FUNCNAME: Warning: "$"Can't set the primary uid back to"" %s.\n" "'$eiduid'" >&2
 			fi
 
 			# Send updated certificate to keyservers
