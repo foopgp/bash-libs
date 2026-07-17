@@ -446,6 +446,39 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	refute_output --partial "pgpid_NOTE="
 }
 
+@test "property note : comma and semicolon are RFC 6350-escaped, decoded on display" {
+	vkey
+	run --separate-stderr "${TARGET}" property note -A 'a, b; c' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_NOTE='a, b; c'"
+	run --separate-stderr "${TARGET}" property note --raw -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output --partial 'NOTE:a\, b\; c'
+}
+
+@test "property address : structural ';' kept, literal ',' escaped" {
+	vkey
+	run --separate-stderr "${TARGET}" property address -A ';;1 rue A, B;Ville;;75000;FR' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_ADR[0]=';;1 rue A, B;Ville;;75000;FR'"
+	run --separate-stderr "${TARGET}" property address --raw -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output --partial 'ADR:;;1 rue A\, B;Ville;;75000;FR'
+}
+
+@test "gen_key pins the identity eid uid as the primary user ID" {
+	local H="${BATS_TEST_TMPDIR}/genh" ; mkdir -p "$H" ; chmod 700 "$H"
+	run "${TARGET}" gen_key -N Alice -E "u4$EID1" -C 'hi, there; ok' -p x -H "$H" alice@example.org
+	assert_success
+	local F ; F=$(gpg --no-options --homedir "$H" --with-colons -K | awk -F: '$1=="fpr"{print $10;exit}')
+	# the eid uid's self-sig must carry the primary-user-id subpacket (25)…
+	run bash -c "gpg --no-options --homedir '$H' --export '$F' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .UID:urn:eid:/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output "PRIMARY"
+	# …and the gen_key NOTE went through the same vCard escaping.
+	run bash -c "gpg --no-options --homedir '$H' --export '$F' | gpg --list-packets 2>/dev/null | grep -o 'NOTE:[^\"]*'"
+	assert_output 'NOTE:hi\, there\; ok'
+}
+
 @test "property note : a colon inside the value survives the x3a escaping roundtrip" {
 	vkey
 	run --separate-stderr "${TARGET}" property note -A 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"

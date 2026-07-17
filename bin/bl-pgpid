@@ -632,6 +632,15 @@ _bl_pgpid_eids_of() {
 		| sort -u
 }
 
+# RFC 6350 §3.4 escape of a vCard text value carried inside a uid : always the
+# backslash and a newline (kept '\n' — a uid is single-line), the comma, and the
+# semicolon UNLESS $2 is non-empty (ADR keeps its structural ';'). Output on stdout.
+_bl_pgpid_vcard_esc() {   # VALUE [KEEP_SEMICOLON] → escaped
+	local v="${1//\\/\\\\}" ; v="${v//$'\r'/}" ; v="${v//,/\\,}"
+	[[ "$2" ]] || v="${v//;/\\;}"
+	printf '%s' "${v//$'\n'/\\n}"
+}
+
 _bl_pgpid_revoke_uid() {
 	# $3 = the real (already unescaped) uid string to revoke inside $2 certificate.
 	local gpghome=$1 user=$2 ruid=$3 gpgfilter=${4:-false}
@@ -1211,7 +1220,11 @@ OPTIONS:
 	local -a GQ=(gpg --homedir "$gpghome" --batch --passphrase "${passphrase}" --pinentry-mode loopback)
 	"${GQ[@]}" --quick-add-uid "$fpr" "FN:${pseudo}" || return $?
 	"${GQ[@]}" --quick-add-uid "$fpr" "EMAIL: <${email}>" || return $?
-	[[ -z "${extracomment// }" ]] || "${GQ[@]}" --quick-add-uid "$fpr" "NOTE:${extracomment# }" || return $?
+	[[ -z "${extracomment// }" ]] || "${GQ[@]}" --quick-add-uid "$fpr" "NOTE:$(_bl_pgpid_vcard_esc "${extracomment# }")" || return $?
+	# Pin the identity eid uid primary : it is the WoT/identity anchor, and being
+	# minted first it is the oldest — a keyserver's FIFO uid cap would evict it
+	# unless it carries the primary-user-id self-sig (cf. onak cap_packet_type).
+	"${GQ[@]}" --quick-set-primary-uid "$fpr" "UID:urn:eid:${pgpidu}" || printf "$FUNCNAME: Warning: "$"Can't set the primary uid back to"" %s.\n" "'UID:urn:eid:${pgpidu}'" >&2
 
 	# Generate and add auth key...
 	"${GQ[@]}" --quick-add-key "$fpr" ed25519 auth ${expire}y || return $?
@@ -1495,7 +1508,7 @@ bl_pgpid_property() {
 "$"PROPERTY is one of:"" name, note, address, phone, url, lang, geo, email.
 "$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
 "$"Without modification options, output the usable (non-revoked and non-expired) PROPERTY values, ready to be evaluated in bash.""
-"$"A note VALUE may be multiline: each newline is stored RFC 6350-escaped ('\n') and decoded back on display""
+"$"Free-text values (name, note) with , ; \\ or newlines are stored RFC 6350-escaped and decoded back on display (address keeps its structural ';') ; --raw shows the stored form""
 
 OPTIONS:
   -A, --add VALUE             "$"Add a PROPERTY uid - a new {name,note} revokes the previous one (may be used more than once)""
@@ -1578,18 +1591,16 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	local langre='^[a-zA-Z]{2,8}(-[a-zA-Z0-9]{1,8})*$'
 	local geore='^geo:-?[0-9]{1,2}(\.[0-9]+)?,-?[0-9]{1,3}(\.[0-9]+)?(,-?[0-9]+(\.[0-9]+)?)?(;(u|crs)=[a-zA-Z0-9.-]+)*$'
 	local val
-	# A NOTE may be multiline : RFC 6350 (§3.4) stores a newline as the
-	# two-character escape '\n' (backslash doubled first) — never raw, all the
-	# more as an OpenPGP uid is a single line. --revoke values get the same
-	# encoding so they match the stored form ; display decodes (--raw keeps it).
-	if [[ "$vprop" == NOTE ]] ; then
+	# vCard text escaping (RFC 6350 §3.4). Free-text values (FN, NOTE) escape , ; \
+	# and a newline ; ADR keeps its STRUCTURAL ';' separators ; URI / tag values
+	# (TEL, URL, GEO, LANG, EMAIL) stay verbatim. --revoke gets the same encoding
+	# so it matches the stored form ; display decodes it (--raw keeps it).
+	local escprof="" keepsemi=""
+	case "$vprop" in FN|NOTE) escprof=1 ;; ADR) escprof=1 ; keepsemi=1 ;; esac
+	if [[ "$escprof" ]] ; then
 		local i
-		for i in "${!toadd[@]}" ; do
-			val="${toadd[i]//\\/\\\\}" ; val="${val//$'\r'/}" ; toadd[i]="${val//$'\n'/\\n}"
-		done
-		for i in "${!torev[@]}" ; do
-			val="${torev[i]//\\/\\\\}" ; val="${val//$'\r'/}" ; torev[i]="${val//$'\n'/\\n}"
-		done
+		for i in "${!toadd[@]}" ; do toadd[i]=$(_bl_pgpid_vcard_esc "${toadd[i]}" "$keepsemi") ; done
+		for i in "${!torev[@]}" ; do torev[i]=$(_bl_pgpid_vcard_esc "${torev[i]}" "$keepsemi") ; done
 	fi
 	for val in "${toadd[@]}" ; do
 		if [[ -z "$val" ]] || [[ "$val" =~ [[:cntrl:]] ]] ; then
@@ -1760,10 +1771,14 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		fi
 		((! raw)) || { printf '%s\n\n' "$uid" ; continue ; }
 		[[ "$P" ]] || { legacy=1 ; continue ; }
-		if [[ "$P" == NOTE ]] ; then
-			# RFC 6350 unescape — a sentinel keeps '\\' clear of the '\n' pass.
-			value=${value//'\\'/$'\x01'} ; value=${value//'\n'/$'\n'} ; value=${value//$'\x01'/\\}
-		fi
+		case "$P" in
+			FN|NOTE|ADR)
+				# RFC 6350 unescape — a sentinel keeps '\\' clear of the other passes.
+				value=${value//'\\'/$'\x01'} ; value=${value//'\n'/$'\n'} ; value=${value//'\,'/,}
+				[[ "$P" == ADR ]] || value=${value//'\;'/;}   # ADR ';' are structural, never escaped
+				value=${value//$'\x01'/\\}
+				;;
+		esac
 		suffix=""
 		[[ "$validity" != [re] ]] || suffix="_REVOKED"
 		if [[ -z "$suffix" ]] && { [[ "$P" == UID ]] || [[ "$mono" == *" $P "* ]] ; } ; then
