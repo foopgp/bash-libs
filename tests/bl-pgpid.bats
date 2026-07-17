@@ -431,6 +431,21 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	done
 }
 
+@test "property note : multiline value survives the RFC 6350 backslash-n roundtrip" {
+	vkey
+	run --separate-stderr "${TARGET}" property note -A $'line1\nline2 : gnop' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_NOTE=$'line1\nline2 : gnop'"
+	# stored form : ONE uid line, the newline RFC 6350-escaped
+	run --separate-stderr "${TARGET}" property note --raw -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output --partial 'NOTE:line1\nline2 : gnop'
+	sleep 1
+	run --separate-stderr "${TARGET}" property note -R $'line1\nline2 : gnop' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	refute_output --partial "pgpid_NOTE="
+}
+
 @test "property note : a colon inside the value survives the x3a escaping roundtrip" {
 	vkey
 	run --separate-stderr "${TARGET}" property note -A 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"

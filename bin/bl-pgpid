@@ -1495,6 +1495,7 @@ bl_pgpid_property() {
 "$"PROPERTY is one of:"" name, note, address, phone, url, lang, geo, email.
 "$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
 "$"Without modification options, output the usable (non-revoked and non-expired) PROPERTY values, ready to be evaluated in bash.""
+"$"A note VALUE may be multiline: each newline is stored RFC 6350-escaped ('\n') and decoded back on display""
 
 OPTIONS:
   -A, --add VALUE             "$"Add a PROPERTY uid - a new {name,note} revokes the previous one (may be used more than once)""
@@ -1577,6 +1578,19 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	local langre='^[a-zA-Z]{2,8}(-[a-zA-Z0-9]{1,8})*$'
 	local geore='^geo:-?[0-9]{1,2}(\.[0-9]+)?,-?[0-9]{1,3}(\.[0-9]+)?(,-?[0-9]+(\.[0-9]+)?)?(;(u|crs)=[a-zA-Z0-9.-]+)*$'
 	local val
+	# A NOTE may be multiline : RFC 6350 (§3.4) stores a newline as the
+	# two-character escape '\n' (backslash doubled first) — never raw, all the
+	# more as an OpenPGP uid is a single line. --revoke values get the same
+	# encoding so they match the stored form ; display decodes (--raw keeps it).
+	if [[ "$vprop" == NOTE ]] ; then
+		local i
+		for i in "${!toadd[@]}" ; do
+			val="${toadd[i]//\\/\\\\}" ; val="${val//$'\r'/}" ; toadd[i]="${val//$'\n'/\\n}"
+		done
+		for i in "${!torev[@]}" ; do
+			val="${torev[i]//\\/\\\\}" ; val="${val//$'\r'/}" ; torev[i]="${val//$'\n'/\\n}"
+		done
+	fi
 	for val in "${toadd[@]}" ; do
 		if [[ -z "$val" ]] || [[ "$val" =~ [[:cntrl:]] ]] ; then
 			printf "$FUNCNAME: Error: "$"Invalid %s value"" %s.\n" "$vprop" "'$val'" >&2 ; return 2
@@ -1746,6 +1760,10 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		fi
 		((! raw)) || { printf '%s\n\n' "$uid" ; continue ; }
 		[[ "$P" ]] || { legacy=1 ; continue ; }
+		if [[ "$P" == NOTE ]] ; then
+			# RFC 6350 unescape — a sentinel keeps '\\' clear of the '\n' pass.
+			value=${value//'\\'/$'\x01'} ; value=${value//'\n'/$'\n'} ; value=${value//$'\x01'/\\}
+		fi
 		suffix=""
 		[[ "$validity" != [re] ]] || suffix="_REVOKED"
 		if [[ -z "$suffix" ]] && { [[ "$P" == UID ]] || [[ "$mono" == *" $P "* ]] ; } ; then
