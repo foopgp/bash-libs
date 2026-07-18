@@ -533,6 +533,27 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 	assert_output --partial "UID:urn:eid:u4$EID1"
 }
 
+@test "email --revoke retires an address on both its vCard and legacy uid (one call)" {
+	lkey
+	# Upgrade mints EMAIL: uids while keeping the legacy "… <addr>" uids, so
+	# alice@example.org now exists in BOTH shapes — the case where a first
+	# --revoke used to clear only the EMAIL: uid and leave the address still
+	# usable through its legacy uid (a second --revoke then wrongly errored).
+	"${TARGET}" property email -A carol@example.org -K '' -H "$LH" "0x$LFPR" >/dev/null 2>&1
+	run --separate-stderr "${TARGET}" email -H "$LH" "0x$LFPR"
+	assert_line "alice@example.org"
+	# A single --revoke must clear the address from every usable uid.
+	run --separate-stderr "${TARGET}" email -R alice@example.org -K '' -H "$LH" "0x$LFPR"
+	assert_success
+	run --separate-stderr "${TARGET}" email -H "$LH" "0x$LFPR"
+	refute_line "alice@example.org"
+	assert_line "alice.pro@example.org"
+	assert_line "carol@example.org"
+	# Both the EMAIL: and the legacy uid carrying alice@ are now revoked.
+	run bash -c "gpg --no-options --homedir '$LH' --with-colons -k 2>/dev/null | grep -c '^uid:r:.*<alice@example.org>'"
+	assert_output "2"
+}
+
 @test "certify signs only the identity uid of a vCard-uid certificate" {
 	local CH="$BATS_TEST_TMPDIR/ch" TH2="$BATS_TEST_TMPDIR/th2"
 	mkdir -p "$CH" "$TH2" ; chmod 700 "$CH" "$TH2"
