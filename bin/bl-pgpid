@@ -1144,13 +1144,14 @@ OPTIONS:
 			-C|--extracomment|--extra-comment)
 				shift ; extracomment=$1 ;;
 			-p|--passphrase)
-				shift ; passphrase=$1 ;;
+				shift ; passphrase=${1:?} ;;
 			-P|--passfrom|--pass-from)
 				shift ; passphrase=$( sed 1q < "$1" ) || return 1 ;;
 			-e|--expir*)
+				[[ "$2" =~ ^[1-9][0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Given parameter '%s' is not a valid number.""\n" "$2" >&2 ; return 2 ;}
 				shift ; expire=$1 ;;
 			-k|--keyserver)
-				shift ; keyserv=$1 ;;
+				shift ; keyserv=${1:?} ;;
 			-H|--homedir)
 				shift ; gpghome=${1:?} ;;
 			-v|--verify) verify=1 ;;
