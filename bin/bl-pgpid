@@ -1443,29 +1443,30 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	for email in "${toadd[@]}" ; do
 		bl_pgpid_property email --add "$email" "${vopt[@]}" -K '' -H "$gpghome" -- "$user" >/dev/null || return $?
 	done
-	# --revoke retires an address wherever it is usable, matching what
-	# `bl-pgpid email` shows (the mbox of every usable uid). The vCard
-	# "EMAIL: <addr>" shape goes through the property machinery (keepone guard,
-	# primary uid re-pinned) ; a legacy "Name (…) <addr>" uid carrying the same
-	# address is revoked here too — otherwise the address stays usable through
-	# it and a second --revoke would wrongly report nothing to revoke.
-	local rawu u hasvcard
-	local -a legacyuids
+	# --revoke retires the address that `bl-pgpid email` shows — the mbox of any
+	# usable uid, be it a vCard "EMAIL: <addr>" or a legacy "Name (…) <addr>".
+	# One uid is revoked per call (re-run --revoke to peel the next) : legacy
+	# shapes first, so the historical "u4/u5-in-a-legacy-uid" holders drain
+	# before the vCard EMAIL:. The keep-one guard counts every email-bearing uid
+	# (legacy and vCard alike), so the certificate never loses its last email.
+	local rawu u
+	local -a emailuids legacytargets vcardtargets targetuids
 	for email in "${torev[@]}" ; do
-		hasvcard=0 ; legacyuids=()
+		emailuids=() ; legacytargets=() ; vcardtargets=()
 		while IFS= read -r rawu ; do
 			u=$(printf '%b' "$rawu")
 			if [[ "$u" =~ ^EMAIL(\;[^:]*)?:\ ?\<?([^\<\>]+)\>?$ ]] ; then
-				[[ "${BASH_REMATCH[2]}" != "$email" ]] || hasvcard=1
+				emailuids+=("$u")
+				[[ "${BASH_REMATCH[2]}" != "$email" ]] || vcardtargets+=("$u")
 			elif [[ "$u" =~ \<([^\<\>]+)\>[[:space:]]*$ ]] ; then
-				[[ "${BASH_REMATCH[1]}" != "$email" ]] || legacyuids+=("$u")
+				emailuids+=("$u")
+				[[ "${BASH_REMATCH[1]}" != "$email" ]] || legacytargets+=("$u")
 			fi
 		done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
-		(( hasvcard || ${#legacyuids[@]} )) || { printf "$FUNCNAME: Error: "$"No revokable email %s inside %s certificate (in %s).""\n" "'$email'" "$user" "$gpghome" >&2 ; return 1 ; }
-		((! hasvcard)) || bl_pgpid_property email --revoke "$email" "${vopt[@]}" -K '' -H "$gpghome" -- "$user" >/dev/null || return $?
-		for u in "${legacyuids[@]}" ; do
-			_bl_pgpid_revoke_uid "$gpghome" "$user" "$u" "$gpgfilter" || return 1
-		done
+		targetuids=("${legacytargets[@]}" "${vcardtargets[@]}")
+		(( ${#targetuids[@]} )) || { printf "$FUNCNAME: Error: "$"No revokable email %s inside %s certificate (in %s).""\n" "'$email'" "$user" "$gpghome" >&2 ; return 1 ; }
+		(( ${#emailuids[@]} >= 2 )) || { printf "$FUNCNAME: Error: "$"At least one email must be retained.""\n" >&2 ; return 1 ; }
+		_bl_pgpid_revoke_uid "$gpghome" "$user" "${targetuids[0]}" "$gpgfilter" || return 1
 	done
 
 	local ret=0

@@ -516,7 +516,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	assert_output --partial "UID:urn:eid:u4$EID1"
 }
 
-@test "email --revoke delegates to property : keep-one guard applies" {
+@test "email --revoke keep-one : refuses to drop the last email-bearing uid" {
 	vkey
 	run --separate-stderr env LC_ALL=C "${TARGET}" email -R alice@example.org -K '' -H "$VH" "0x$VFPR"
 	assert_failure 1
@@ -549,25 +549,39 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 	assert_output --partial "UID:urn:eid:u4$EID1"
 }
 
-@test "email --revoke retires an address on both its vCard and legacy uid (one call)" {
+@test "email --revoke peels one uid per call, legacy shape first" {
 	lkey
 	# Upgrade mints EMAIL: uids while keeping the legacy "… <addr>" uids, so
-	# alice@example.org now exists in BOTH shapes — the case where a first
-	# --revoke used to clear only the EMAIL: uid and leave the address still
-	# usable through its legacy uid (a second --revoke then wrongly errored).
+	# alice@example.org now exists in BOTH shapes.
 	"${TARGET}" property email -A carol@example.org -K '' -H "$LH" "0x$LFPR" >/dev/null 2>&1
+	# 1st --revoke : the legacy "Alice Legacy (u4=…) <alice@…>" goes first ; the
+	# address is still usable through its vCard EMAIL: uid.
+	run --separate-stderr "${TARGET}" email -R alice@example.org -K '' -H "$LH" "0x$LFPR"
+	assert_success
+	run bash -c "gpg --no-options --homedir '$LH' --with-colons -k 2>/dev/null | grep -c '^uid:r:.*<alice@example.org>'"
+	assert_output "1"
 	run --separate-stderr "${TARGET}" email -H "$LH" "0x$LFPR"
 	assert_line "alice@example.org"
-	# A single --revoke must clear the address from every usable uid.
+	# 2nd --revoke : now the vCard EMAIL: uid ; the address finally disappears.
 	run --separate-stderr "${TARGET}" email -R alice@example.org -K '' -H "$LH" "0x$LFPR"
 	assert_success
 	run --separate-stderr "${TARGET}" email -H "$LH" "0x$LFPR"
 	refute_line "alice@example.org"
 	assert_line "alice.pro@example.org"
 	assert_line "carol@example.org"
-	# Both the EMAIL: and the legacy uid carrying alice@ are now revoked.
 	run bash -c "gpg --no-options --homedir '$LH' --with-colons -k 2>/dev/null | grep -c '^uid:r:.*<alice@example.org>'"
 	assert_output "2"
+}
+
+@test "email --revoke keep-one counts legacy uids too" {
+	lkey   # two legacy email uids (alice@, alice.pro@), no vCard, no upgrade
+	# Peeling the first legacy email is allowed : a second one remains.
+	run --separate-stderr "${TARGET}" email -R alice@example.org -K '' -H "$LH" "0x$LFPR"
+	assert_success
+	# The last remaining email is legacy-shaped : keep-one must still refuse it.
+	run --separate-stderr env LC_ALL=C "${TARGET}" email -R alice.pro@example.org -K '' -H "$LH" "0x$LFPR"
+	assert_failure 1
+	[[ "$stderr" == *"must be retained"* ]]
 }
 
 @test "certify signs only the identity uid of a vCard-uid certificate" {
