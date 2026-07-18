@@ -360,20 +360,16 @@ bl_pgpkey_change_token_meta() {
 	local usage="Usage: $name [OPTIONS]... [NEW_METADATA]"
 	local helpmsg="
 "$"Change a textual metadata of a security token (OpenPGP smartcard).""
-"$"By default, change the cardholder pseudonym (stored in « Login data », UTF-8, up to ~210 bytes), beside the OpenPGP Entity ID (u4=… or u5=…).""
+"$"Detect if NEW_METADATA is an email, a certurl or a lang.""
 "$"Missing input will be asked interactively.""
 
 OPTIONS:
   -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
   -A, --admincode CODE         "$"Admin code (usually 8 digits) protecting writes to security token metadata""
   -p, --admincodefrom FILE     "$"Get admin code from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin)
-  -E, --email                  "$"Change « Name of cardholder » instead, verifying the email is present (non-revoked) in the certificate.""
-  -U, --certurl                "$"Change « URL of public key » instead, verifying the URL returns a certificate that holds the public counterparts of the token's three private subkeys (revoked and expired subkeys are accepted).""
-  -L, --lang                   "$"Change « Language prefs » instead, only 2 letter code ISO 639-1 is accepted.
 "
 	local gpghome=${GNUPGHOME:-~/.gnupg}
-	local admincode admincodegiven newmeta
-	local subcmd="login"
+	local admincode admincodegiven newmeta subcmd
 	for ((;$#;)) ; do
 		case "$1" in
 			-H|--homedir)
@@ -382,15 +378,6 @@ OPTIONS:
 				shift ; admincodegiven=true ; admincode=$1 ;;
 			-p|--admincodefrom|--admin-code-from|--codefrom|--code-from)
 				shift ; admincodegiven=true ; admincode=$( head -n 1 < "$1" ) || return 1 ;;
-			-E|--email)
-				[[ "$subcmd" == "login" ]] || printf "$FUNCNAME: Warning: "$"--email, --certurl and --lang are mutually exclusive; keeping the last one"" (--email).\n" >&2
-				subcmd="name" ;;
-			-U|--certurl|--url)
-				[[ "$subcmd" == "login" ]] || printf "$FUNCNAME: Warning: "$"--email, --certurl and --lang are mutually exclusive; keeping the last one"" (--certurl).\n" >&2
-				subcmd="url" ;;
-			-L|--lang)
-				[[ "$subcmd" == "login" ]] || printf "$FUNCNAME: Warning: "$"--email, --certurl and --lang are mutually exclusive; keeping the last one"" (--lang).\n" >&2
-				subcmd="lang" ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
 			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPKEY_VERSION" ; return ;;
 			--) shift ; break ;;
@@ -402,28 +389,36 @@ OPTIONS:
 
 	newmeta=${1-}
 
-	# Pull token state — fingerprints (to verify --certurl), current login data
-	# (to preserve the eid prefix when changing the name), and the cardholder
-	# email (used as the default --email argument if user forgets it).
+	# Which DO to write, detected from NEW_METADATA : an email → DO 5B « Name of
+	# cardholder » ; an http(s) URL → DO 5F50 « URL of public key » ; a 2-letter
+	# ISO 639-1 code → DO 5F2D « Language prefs ». No argument : ask which one
+	# first, then the matching branch below prompts for the value.
+	if [[ "$newmeta" ]] ; then
+		if   [[ "$newmeta" =~ ^https?:// ]]                      ; then subcmd="url"
+		elif [[ "$newmeta" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then subcmd="name"
+		elif [[ "${newmeta,,}" =~ ^[a-z]{2}$ ]]                 ; then subcmd="lang"
+		else printf "$FUNCNAME: Error: "$"'%s' is neither an email, a certurl, nor a 2-letter language code.""\n" "$newmeta" >&2 ; return 2 ; fi
+	else
+		local kind
+		kind=$(bl_radiolist --output-index --text $"Which token metadata to change?" \
+			$"Email (Name of cardholder)" $"Public certificate URL" $"Language preference") || return $?
+		case "$kind" in
+			0) subcmd="name" ;;
+			1) subcmd="url" ;;
+			2) subcmd="lang" ;;
+			*) printf "$FUNCNAME: Error: "$"No metadata kind chosen.""\n" >&2 ; return 2 ;;
+		esac
+	fi
+
+	# Pull token state — the three subkey fingerprints (the 'url' branch checks a
+	# certurl holds them, the 'name' branch lists the cert's emails from the
+	# signing key) and confirm a token is actually present.
 	local -A tinfo
 	bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname tinfo || true
 	[[ "${tinfo[token_MSN]}" ]] || { printf "$FUNCNAME: Error: "$"No security token detected.""\n" >&2 ; return 1 ;}
 
 	# Build the value to write into the chosen DO
 	case "$subcmd" in
-		login)
-			[[ "$newmeta" ]] || newmeta=$(bl_input --text $"(UTF-8, up to ~210 chars)" $"New cardholder pseudonym")
-			[[ "$newmeta" ]] || { printf "$FUNCNAME: Error: "$"Empty pseudonym, nothing to do.""\n" >&2 ; return 2 ;}
-			# DO 5E content is "<eid> # <pseudonym>" by convention (cf. c3a8dd2 on bash-libs main). Pull the current login data and slice off
-			# everything starting at the magic " # " separator, then re-append the new pseudonym. If no eid is currently stored, fall back to
-			# the empty prefix — the magic separator still lets readers spot the pseudonym.
-			local current_login eid_prefix
-			current_login=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status 2>/dev/null |
-				sed -nE 's,^Login data\.+: ,,p')
-			[[ "$current_login" == "[not set]" ]] && current_login=""
-			eid_prefix=${current_login%% # *}
-			newmeta="${eid_prefix} # $(LC_CTYPE=C.UTF-8 sed 's,[^[:print:]],,g' <<<"$newmeta")"
-			;;
 		name)
 			[[ "$newmeta" ]] || newmeta=$(bl_input --text $"(ASCII only, up to 38 chars)" $"New cardholder email")
 			[[ "$newmeta" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "$FUNCNAME: Error: "$"Invalid email"" '%s'.\n" "$newmeta" >&2 ; return 2 ;}
@@ -466,7 +461,7 @@ OPTIONS:
 		lang)
 			[[ "$newmeta" ]] || newmeta=$(bl_input --text $"(ISO 639-1 — 2 letter code)" $"New cardholder language preference")
 			newmeta=${newmeta,,}
-			[[ "$newmeta" =~ ^[acdefghijklmnopqrstuvwxyz]{2}$ ]] || { printf "$FUNCNAME: Error: "$"Invalid ISO 639-1 language code"" '%s'.\n" "$newmeta" >&2 ; return 2 ;}
+			[[ "$newmeta" =~ ^[a-z]{2}$ ]] || { printf "$FUNCNAME: Error: "$"Invalid ISO 639-1 language code"" '%s'.\n" "$newmeta" >&2 ; return 2 ;}
 			;;
 
 	esac
@@ -478,8 +473,8 @@ OPTIONS:
 	# Pilot gpg --card-edit. For the "name" sub-command, gpg asks first for the surname then for the given names — we shove the whole value into surname.
 	local commands
 	case "$subcmd" in
-		login|url|lang) commands="admin\n${subcmd}\n${newmeta}\nquit\n" ;;
-		name)      commands="admin\nname\n${newmeta}\n\nquit\n" ;;
+		url|lang) commands="admin\n${subcmd}\n${newmeta}\nquit\n" ;;
+		name)     commands="admin\nname\n${newmeta}\n\nquit\n" ;;
 	esac
 
 	echo -e "$commands" |

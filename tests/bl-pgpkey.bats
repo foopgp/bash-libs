@@ -28,6 +28,13 @@ BIN="${BATS_TEST_DIRNAME}/../bin"
 	assert_output --partial "change_token_code"
 }
 
+@test "change_token_meta rejects a value that is neither email, certurl nor lang" {
+	# The type-detection gate errors out before any token access is attempted.
+	run --separate-stderr env LC_ALL=C "${TARGET}" change_token_meta "n0t_a_meta"
+	assert_failure 2
+	[[ "$stderr" == *"neither an email"* ]]
+}
+
 @test "bl-qrkey wrapper: program mode execs bl-pgpkey (same version, deprecation warning)" {
 	run --separate-stderr "${BIN}/bl-qrkey" --version
 	assert_success

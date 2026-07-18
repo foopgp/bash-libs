@@ -1910,10 +1910,6 @@ OPTIONS:
 				# remove first eventual email
 				aaname[pgpid_name]=$(sed --regexp-extended "s,${BL_INTERACTIVE_EMAIL_REGEX},, ; s, *$,, ; s,^ *,," <<<"${aaname[pgpid_name]}")
 			fi
-		elif [[ "$line" =~ ^Login\ data[^#]+\ #\ (.*)  ]] ; then
-			# DO 5E (field « Login data ») allow 254 bytes of any character. Best place to store long UTF-8 name (already after the u4/u5 and a magic " # ").
-		    # Note that `gpg --card-status` always outputs « Login data » after « Name of cardholder » ⇒ if a name is here, the previous aaname[pgpid_name] is overwritten.
-			aaname[pgpid_name]=${BASH_REMATCH[1]}
 		elif [[ "$line" =~ ^Signature\ key ]] ; then
 			aaname[pgpid_Skeyfpr]=$(sed --regexp-extended --silent ' { s, ,,g ; s,.*([ABCDEF0-9]{40}).*,\1,p } ' <<<"${line}")
 		elif [[ "$line" =~ ^Encryption\ key ]] ; then
@@ -1936,6 +1932,24 @@ OPTIONS:
 	# unexpectedly ask for a PIN.
 	if ((! quiet)) && [[ "${aaname[pgpid_Ckeyfpr]}" ]] ; then
 		_bl_pgpid_upgrade_uids "$gpghome" "${aaname[pgpid_Ckeyfpr]}" || true
+	fi
+
+	# The name now lives in the certificate's FN: uid (vCard-uid process) ; it
+	# supersedes the limited « Name of cardholder » (DO 5B) read from the token.
+	# Read from the local keyring only — offline-safe, no PIN ; when the cert is
+	# absent (no network, not fetched) the DO 5B name is kept as a best-effort
+	# fallback.
+	if [[ "${aaname[pgpid_Ckeyfpr]}" ]] ; then
+		local rawu fn=""
+		while IFS= read -r rawu ; do
+			rawu=$(printf '%b' "$rawu")
+			[[ "$rawu" =~ ^FN(\;[^:]*)?:\ ?(.*)$ ]] || continue
+			fn=${BASH_REMATCH[2]}
+			# RFC 6350 unescape (a sentinel keeps '\\' clear of the other passes).
+			fn=${fn//'\\'/$'\x01'} ; fn=${fn//'\n'/$'\n'} ; fn=${fn//'\,'/,} ; fn=${fn//'\;'/;} ; fn=${fn//$'\x01'/\\}
+			break
+		done < <(gpg --homedir "$gpghome" --with-colons --list-key "${aaname[pgpid_Ckeyfpr]}" 2>/dev/null | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
+		[[ -z "$fn" ]] || aaname[pgpid_name]=$fn
 	fi
 
 	aaname[pgpid_email]="${emails[0]}"
