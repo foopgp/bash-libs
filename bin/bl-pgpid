@@ -1993,14 +1993,16 @@ identifier (EID), or when no presentable uid carries an email.""
 
 OPTIONS:
   -E, --show-email         "$"Insert the email column #2 (one line per presentable uid)""
+  -c, --certs-count        "$"Insert, before VERDICT, the count of distinct external certifiers (valid non-self signatures over all uids, one signer counted once)""
   -L, --no-check-eid       "$"Legacy: don't require a consistent eid (certs not yet OpenPGP-ID aware)""
   -H, --homedir GNUPGHOME  "$"GnuPG home to read keys & trust from (default: ~/.gnupg)""
   -q, --quiet              "$"No per-line output. Exit code hold verdict: 0 if all certified, 196 if any uncertified, 197 if any revoked, 198 if any broken.""
 "
-	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0 showmail=0 checkeid=1
+	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0 showmail=0 certscount=0 checkeid=1
 	for ((;$#;)) ; do
 		case "$1" in
 			-E|--show-email)   showmail=1 ;;
+			-c|--certs-count|--certscount) certscount=1 ;;
 			-L|--no-check-eid) checkeid=0 ;;
 			-H|--homedir) shift ; syshome=${1:?} ;;
 			-q|--quiet)   quiet=1 ;;
@@ -2029,7 +2031,7 @@ OPTIONS:
 
 	# Per-certificate verdict → severity feeding the --quiet exit code:
 	# broken=198 dominates revoked=197 dominates uncertified=196 dominates certified=0.
-	local F colon eidfield verdict sev nNR cl rc=0
+	local F colon eidfield verdict sev nNR cl rc=0 ncerts ccol=""
 	local -a nreids fueids mbox
 	for F in "${fprs[@]}" ; do
 		colon=$("${GPG[@]}" --with-colons --list-keys "0x$F" 2>/dev/null)
@@ -2064,13 +2066,28 @@ OPTIONS:
 		((sev<=rc)) || rc=$sev
 
 		((quiet)) || {
+			# Optional column, before VERDICT : distinct external certifiers.
+			# Count the valid (`!`) signatures over all uid/uat, dropping the
+			# self-signatures ($5 == own keyid) and the non-exportable local ones
+			# (sigclass ending in 'l') ; a signer who signed several uids is kept
+			# once (deduped on its keyid). --check-sigs so gpg cryptographically
+			# verifies each signature and tags the valid ones with '!'.
+			if ((certscount)) ; then
+				ncerts=$("${GPG[@]}" --with-colons --check-sigs "0x$F" 2>/dev/null \
+					| awk -F: -v owner="${F: -16}" '
+						$1=="uid" || $1=="uat" { inuid=1 ; next }
+						$1=="pub" || $1=="sub" { inuid=0 ; next }
+						inuid && $1=="sig" && $2=="!" && $5!=owner && $11 !~ /l$/ { seen[$5]=1 }
+						END { n=0 ; for (s in seen) n++ ; print n }')
+				printf -v ccol -- "%-8s" " $ncerts"
+			fi
 			if ((! showmail)) ; then
-				printf -- "%-42s%-40s%s\n" "$F" " $eidfield" "$verdict"
+				printf -- "%-42s%-40s%s%s\n" "$F" " $eidfield" "$ccol" "$verdict"
 			elif (( ${#mbox[@]} == 0 )) ; then
-				printf -- "%-80s%-40s%s\n" "$F -" " $eidfield" "$verdict"    # no presentable email : keep the column, render it '-'
+				printf -- "%-80s%-40s%s%s\n" "$F -" " $eidfield" "$ccol" "$verdict"    # no presentable email : keep the column, render it '-'
 			else
 				for cl in "${mbox[@]}" ; do
-					printf -- "%-80s%-40s%s\n" "$cl" " $eidfield" "$verdict"
+					printf -- "%-80s%-40s%s%s\n" "$cl" " $eidfield" "$ccol" "$verdict"
 				done
 			fi
 		}

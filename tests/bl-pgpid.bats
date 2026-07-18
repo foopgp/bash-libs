@@ -103,6 +103,22 @@ wot () { build_wot ; source "${BATS_RUN_TMPDIR}/pgpid-wot/fprs.env" ; }
 	assert_output --regexp "u4${EID1} +uncertified$"
 }
 
+@test "cert_check -c : counts distinct external certifiers before the verdict" {
+	wot
+	# T1 is certified by the anchor only → exactly one external certifier.
+	run --separate-stderr "${TARGET}" cert_check -H "$HA" -c "0x$T1"
+	assert_success
+	assert_output --regexp "u4${EID1} +1 +certified$"
+	# T2 is unsigned → zero external certifiers.
+	run --separate-stderr "${TARGET}" cert_check -H "$HA" -c "0x$T2"
+	assert_success
+	assert_output --regexp "u4${EID1} +0 +uncertified$"
+	# The count sits between the email column and the verdict under -E too.
+	run --separate-stderr "${TARGET}" cert_check -H "$HA" -c -E "0x$T1"
+	assert_success
+	assert_output --regexp "alice@example.org.* u4${EID1} +1 +certified$"
+}
+
 @test "cert_check broken : conflicting eids on non-revoked uids" {
 	wot
 	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T3"
