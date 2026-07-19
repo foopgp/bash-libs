@@ -536,6 +536,19 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	refute_output --partial "ksprefrd"
 }
 
+@test "property ksprefrd : divergent keyservers across uids warn, primary kept" {
+	vkey
+	# keyserver A pinned on the primary (uid 1) …
+	"${TARGET}" property ksprefrd --add hkps://keys.foopgp.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	sleep 1
+	# … a different one planted on another (non-revoked) uid, uid 3
+	printf 'uid 3\nkeyserver\nhkp://foopgp.org:11371\ny\nsave\n' | gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH" --command-fd 0 --edit-key "0x$VFPR" >/dev/null 2>&1
+	run --separate-stderr env LC_ALL=C "${TARGET}" property ksprefrd --raw -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "hkps://keys.foopgp.org"                 # the primary's value wins
+	[[ "$stderr" == *"Several preferred keyservers"* ]]    # divergence flagged
+}
+
 @test "email --add delegates to property : both emails listed, eid uid stays primary" {
 	vkey
 	run --separate-stderr "${TARGET}" email -A bob@example.org -K '' -H "$VH" "0x$VFPR"

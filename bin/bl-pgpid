@@ -1696,17 +1696,29 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				gpg --homedir "$gpghome" --keyserver "$keyserv" --send-keys "$user" || ret=$?
 			done
 		else
-			# Read the primary uid's newest self-sig « preferred keyserver »
-			# (subpacket 24) straight from the packet dump. Deterministic, unlike
-			# 'showpref' whose scripted output proved state-dependent.
-			local kspref
-			kspref=$(gpg --homedir "$gpghome" --export "$user" 2>/dev/null | gpg --homedir "$gpghome" --list-packets 2>/dev/null | awk -v prim="$primaryuid" -v owner="${user: -16}" '
-				function finalize() { if (inprim && is_self && cur_created > best_created) { best_created=cur_created ; best_ks=cur_ks } }
-				/^:user ID packet:/ { finalize() ; u=$0 ; sub(/^:user ID packet: "/,"",u) ; sub(/"$/,"",u) ; inprim=(u==prim) ; is_self=0 ; cur_created=-1 ; cur_ks="" ; next }
-				/^:signature packet:/ { finalize() ; is_self=($0 ~ owner) ; cur_created=-1 ; cur_ks="" ; next }
-				/, created / { for (i=1;i<=NF;i++) if ($i=="created") cur_created=$(i+1)+0 }
-				/preferred keyserver:/ { s=$0 ; sub(/.*preferred keyserver: /,"",s) ; sub(/\)$/,"",s) ; cur_ks=s }
-				END { finalize() ; print best_ks }')
+			# Read the « preferred keyserver » (subpacket 24) across every
+			# non-revoked uid — the newest binding self-sig of each, straight from
+			# the packet dump ('showpref' proved too state-dependent to script).
+			# The awk emits "<is-primary>\t<keyserver>" per non-revoked uid that
+			# carries one. Keep the primary uid's value ; failing that, the last
+			# non-revoked one. Warn when several distinct values coexist.
+			local kspref primk="" lastk="" ip kv
+			local -A seen=()
+			while IFS=$'\t' read -r ip kv ; do
+				[[ "$kv" ]] || continue
+				((ip)) && primk=$kv ; lastk=$kv ; seen[$kv]=1
+			done < <(gpg --homedir "$gpghome" --export "$user" 2>/dev/null | gpg --homedir "$gpghome" --list-packets 2>/dev/null | awk -v owner="${user: -16}" '
+				function fs() { if (!inuid || !self) return ; if (sc ~ /^0x1[0-3]$/) { if (cr>mb) { mb=cr ; mbks=sks ; mbp=sp } } else if (sc=="0x30") { if (cr>mr) mr=cr } }
+				function fu() { fs() ; if (inuid && mb>0 && mb>mr && mbks!="") print mbp "\t" mbks }
+				/^:public subkey packet:|^:secret subkey packet:|^:public key packet:/ { fu() ; inuid=0 ; next }
+				/^:user ID packet:/ { fu() ; inuid=1 ; mb=0 ; mr=0 ; mbks="" ; mbp=0 ; self=0 ; cr=0 ; sks="" ; sp=0 ; sc="" ; next }
+				/^:signature packet:/ { fs() ; self=($0 ~ owner) ; cr=0 ; sks="" ; sp=0 ; sc="" ; next }
+				/, created / { for (i=1;i<=NF;i++) { if ($i=="created") cr=$(i+1)+0 ; if ($i=="sigclass") sc=$(i+1) } }
+				/preferred keyserver:/ { s=$0 ; sub(/.*preferred keyserver: /,"",s) ; sub(/\)$/,"",s) ; sks=s }
+				/primary user ID/ { sp=1 }
+				END { fu() }')
+			kspref=${primk:-$lastk}
+			(( ${#seen[@]} < 2 )) || printf "$FUNCNAME: Warning: "$"Several preferred keyservers across uids (%s) — kept '%s'.""\n" "${!seen[*]}" "$kspref" >&2
 			((raw)) && printf '%s\n' "$kspref" || printf 'pgpid_ksprefrd=%s\n' "${kspref@Q}"
 		fi
 		return $ret
