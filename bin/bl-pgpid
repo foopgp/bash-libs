@@ -385,6 +385,7 @@ declare -Ar BL_PGPID_COORDINATES=(
 
 ### Others Globals ###
 
+# First default keyserver MUST be hkp(s)://
 [[ "${BL_PGPID_KEYSERVERS[*]}" ]] || BL_PGPID_KEYSERVERS=(
 "hkps://keys.foopgp.org"
 "hkps://keys.openpgp.org"
@@ -1151,7 +1152,8 @@ OPTIONS:
 				[[ "$2" =~ ^[1-9][0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Given parameter '%s' is not a valid number.""\n" "$2" >&2 ; return 2 ;}
 				shift ; expire=$1 ;;
 			-k|--keyserver)
-				shift ; keyserv=${1:?} ;;
+				[[ "$2" =~ ^hkps?:// ]] || { printf "$FUNCNAME: Error: "$"keyserver MUST be hkp(s)://…""\n" >&2 ; return 2 ;}
+				shift ; keyserv=$1 ;;
 			-H|--homedir)
 				shift ; gpghome=${1:?} ;;
 			-v|--verify) verify=1 ;;
