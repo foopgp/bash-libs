@@ -649,6 +649,28 @@ _bl_pgpid_revoke_uid() {
 	gpg --homedir "$gpghome" --batch --quick-revoke-uid "$user" "$ruid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || { echo "${FUNCNAME[1]}: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
 }
 
+_bl_pgpid_vfold() {
+	# Emit a vCard content line folded to ≤75 octets (RFC 6350 §3.2) : CRLF then a
+	# single leading space starts each continuation.
+	local l=$1
+	printf '%s\r\n' "${l:0:75}" ; l=${l:75}
+	while [[ "$l" ]] ; do printf ' %s\r\n' "${l:0:74}" ; l=${l:74} ; done
+}
+
+_bl_pgpid_ks_to_keyurl() {
+	# KEYSERVER_URI FPR → the op=get lookup URL for a vCard KEY;MEDIATYPE (nothing
+	# when unparseable). hkps→https (443 implicit) ; hkp→http, its default port
+	# 11371 made explicit (http would else hit 80) unless the URI already has one.
+	local ks=$1 fpr=$2 scheme hostport
+	[[ "$ks" =~ ^(hkps?|https?)://([^/]+) ]] || return 0
+	scheme=${BASH_REMATCH[1],,} ; hostport=${BASH_REMATCH[2]}
+	[[ "$scheme" != hkp || "$hostport" == *:* ]] || hostport="$hostport:11371"
+	case "$scheme" in
+		hkps|https) printf 'https://%s/pks/lookup?op=get&search=0x%s\n' "$hostport" "$fpr" ;;
+		*)          printf 'http://%s/pks/lookup?op=get&search=0x%s\n' "$hostport" "$fpr" ;;
+	esac
+}
+
 _bl_pgpid_upgrade_uids() {
 	# Upgrade a legacy certificate to the vCard-uid process : mint its identity
 	# uid UID:urn:eid:<eid>, an FN: (name part of the first legacy uid) and one
@@ -1558,7 +1580,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	# time (a new one revokes the previous), at least one usable {FN,EMAIL} kept.
 	local mono=" FN NOTE " keepone=" FN EMAIL "
 	local -a toadd=() torev=()
-	local revokeall=0 showall=0 showrevoked=0 raw=0 prop vprop target
+	local revokeall=0 showall=0 showrevoked=0 raw=0 tovcard=0 prop vprop target
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local gpgfilter=false
 	for ((;$#;)) ; do
@@ -1571,6 +1593,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			--show-all|--showall) showall=1 ;;
 			--show-revoked|--showrevoked) showrevoked=1 ;;
 			--raw) raw=1 ;;
+			--to-vcard|--tovcard) tovcard=1 ; showall=1 ;;   # imply show-all : no PROPERTY needed
 			-K|--keyservers)
 				shift ; keyservs=($1) ;;
 			-H|--homedir)
@@ -1663,6 +1686,40 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	user=${fprs[0]}
 
 	local ret=0 modified=0
+
+	# --to-vcard : render the certificate as a vCard 4.0, the same output as the
+	# in-browser pgp2vcard.html. The vCard-property uids ARE the content lines
+	# (EMAIL keeps only its address, ;PREF-ranked) ; the identity/KEY/PHOTO are
+	# added ; everything is folded (RFC 6350). Overrides any other option.
+	if ((tovcard)) ; then
+		local rawu u pref=0 kspref keyurl photofile
+		printf 'BEGIN:VCARD\r\nVERSION:4.0\r\n'
+		while IFS= read -r rawu ; do
+			u=$(printf '%b' "$rawu")
+			[[ "$u" =~ ^([A-Z]+)(\;[^:]*)?:\ ?(.*)$ ]] || continue   # skip legacy (non-vCard) uids
+			if [[ "${BASH_REMATCH[1]}" == EMAIL ]] ; then
+				u=${BASH_REMATCH[3]} ; u=${u#<} ; u=${u%>}           # bare address, no angle brackets
+				pref=$((pref+1)) ; _bl_pgpid_vfold "EMAIL;PREF=${pref}:${u}"
+			else
+				_bl_pgpid_vfold "$u"                                 # already a valid, escaped vCard line
+			fi
+		done < <(gpg --homedir "$gpghome" --with-colons --list-key "$user" 2>/dev/null | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
+		# KEY;MEDIATYPE : retrievable-cert URL from the preferred keyserver
+		# (subpacket 24 ; default BL_PGPID_KEYSERVERS[0]).
+		kspref=$(bl_pgpid_property ksprefrd --raw --homedir "$gpghome" -- "$user" 2>/dev/null)
+		keyurl=$(_bl_pgpid_ks_to_keyurl "${kspref:-${BL_PGPID_KEYSERVERS[0]}}" "${user,,}")   # lowercase fpr, matching pgp2vcard.html
+		[[ -z "$keyurl" ]] || _bl_pgpid_vfold "KEY;MEDIATYPE=application/pgp-keys:${keyurl}"
+		# KEY inline : minimised export (no third-party sigs, no photo attributes).
+		_bl_pgpid_vfold "KEY:data:application/pgp-keys;base64,$(gpg --homedir "$gpghome" --export --export-options export-minimal,no-export-attributes "$user" 2>/dev/null | base64 --wrap=0)"
+		# PHOTO : the first UAT image, extracted through gpg's photo-viewer hook.
+		photofile=$(mktemp) && {
+			gpg --homedir "$gpghome" --photo-viewer "cp %I $photofile" --list-options show-photos --list-key "$user" >/dev/null 2>&1
+			[[ ! -s "$photofile" ]] || _bl_pgpid_vfold "PHOTO:data:image/jpeg;base64,$(base64 --wrap=0 "$photofile")"
+			rm -f "$photofile"
+		}
+		printf 'END:VCARD\r\n'
+		return 0
+	fi
 
 	# 'ksprefrd' : the preferred keyserver (OpenPGP self-sig subpacket 24). Not a
 	# vCard-property uid — it lives on the primary uid's self-sig and only shapes

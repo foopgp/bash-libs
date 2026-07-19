@@ -536,6 +536,22 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	refute_output --partial "ksprefrd"
 }
 
+@test "property --to-vcard : vCard 4.0 wrapper, EMAIL;PREF, KEY;MEDIATYPE from subpacket 24, KEY inline" {
+	vkey
+	"${TARGET}" property ksprefrd --add hkp://foopgp.org:11371 -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	# strip CRLF and unfold (CRLF + leading space) so whole-line asserts work
+	run bash -c "'${TARGET}' property --to-vcard -H '$VH' '0x$VFPR' 2>/dev/null | tr -d '\r' | sed ':a;N;\$!ba;s/\n //g'"
+	assert_success
+	assert_line "BEGIN:VCARD"
+	assert_line "VERSION:4.0"
+	assert_line "UID:urn:eid:u4$EID1"
+	assert_line "FN:Alice Test"
+	assert_line "EMAIL;PREF=1:alice@example.org"
+	assert_line "KEY;MEDIATYPE=application/pgp-keys:http://foopgp.org:11371/pks/lookup?op=get&search=0x${VFPR,,}"
+	assert_output --partial "KEY:data:application/pgp-keys;base64,"
+	assert_line "END:VCARD"
+}
+
 @test "property ksprefrd : divergent keyservers across uids warn, primary kept" {
 	vkey
 	# keyserver A pinned on the primary (uid 1) …
