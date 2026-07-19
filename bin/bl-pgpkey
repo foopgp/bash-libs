@@ -394,9 +394,9 @@ OPTIONS:
 	# ISO 639-1 code → DO 5F2D « Language prefs ». No argument : ask which one
 	# first, then the matching branch below prompts for the value.
 	if [[ "$newmeta" ]] ; then
-		if   [[ "$newmeta" =~ ^https?:// ]]                      ; then subcmd="url"
+		if [[ "${newmeta,,}" =~ ^[abcdefghijklmnopqrstuvwxyz]{2}$ ]] ; then subcmd="lang"
 		elif [[ "$newmeta" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then subcmd="name"
-		elif [[ "${newmeta,,}" =~ ^[a-z]{2}$ ]]                 ; then subcmd="lang"
+		elif [[ "${newmeta,,}" =~ ^[a-z][a-z0-9.+-]*:/ ]] ; then subcmd="url"
 		else printf "$FUNCNAME: Error: "$"'%s' is neither an email, a certurl, nor a 2-letter language code.""\n" "$newmeta" >&2 ; return 2 ; fi
 	else
 		local kind
@@ -435,7 +435,7 @@ OPTIONS:
 			;;
 		url)
 			[[ "$newmeta" ]] || newmeta=$(bl_input $"New URL to retrieve cardholder public certificate")
-			[[ "$newmeta" =~ ^https?:// ]] || { printf "$FUNCNAME: Error: "$"--certurl must be an http(s) URL"" ('%s').\n" "$newmeta" >&2 ; return 2 ;}
+			[[ "$newmeta" =~ ^[a-z][a-z0-9.+-]*:/ ]] || { printf "$FUNCNAME: Error: "$"--certurl should be an http(s) URL"" ('%s').\n" "$newmeta" >&2 ; return 2 ;}
 			# Fetch the URL into a throw-away keyring, then verify the imported cert holds each of the token's three private subkey fingerprints.
 			# Revoked / expired subkeys are accepted (the user may legitimately want to point at an archived cert) — only presence is required.
 			local tmpring
@@ -461,7 +461,7 @@ OPTIONS:
 		lang)
 			[[ "$newmeta" ]] || newmeta=$(bl_input --text $"(ISO 639-1 — 2 letter code)" $"New cardholder language preference")
 			newmeta=${newmeta,,}
-			[[ "$newmeta" =~ ^[a-z]{2}$ ]] || { printf "$FUNCNAME: Error: "$"Invalid ISO 639-1 language code"" '%s'.\n" "$newmeta" >&2 ; return 2 ;}
+			[[ "$newmeta" =~ ^[abcdefghijklmnopqrstuvwxyz]{2}$ ]] || { printf "$FUNCNAME: Error: "$"Invalid ISO 639-1 language code"" '%s'.\n" "$newmeta" >&2 ; return 2 ;}
 			;;
 
 	esac
