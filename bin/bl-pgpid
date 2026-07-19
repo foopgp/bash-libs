@@ -1530,18 +1530,21 @@ bl_pgpid_property() {
 	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 	local helpmsg="
 "$"Display and add or revoke vCard-property uids inside OpenPGP certificate.""
-"$"PROPERTY is one of:"" name, note, address, phone, url, lang, geo, email.
+"$"PROPERTY is one of: ""{ name, email, note, address, phone, url, lang, geo, ksprefrd }.
+"$"'ksprefrd' is preferred certificate server. This is not stored as a vCard-property uid, but used when generating vCard.""
 "$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
 "$"Without modification options, output the usable (non-revoked and non-expired) PROPERTY values, ready to be evaluated in bash.""
 "$"Free-text values (name, note) with , ; \\ or newlines are stored RFC 6350-escaped and decoded back on display (address keeps its structural ';') ; --raw shows the stored form""
 
 OPTIONS:
-  -A, --add VALUE             "$"Add a PROPERTY uid - a new {name,note} revokes the previous one (may be used more than once)""
+  -A, --add VALUE             "$"Add ({name,note,ksprefrd} ⇒ replace) a PROPERTY uid (may be used more than once)""
+      --replace-to VALUE      "$"Exact synonym of --add — terminolgy is just more relevant for {name,note,ksprefrd}""
   -R, --revoke VALUE          "$"Revoke the PROPERTY uid carrying VALUE (may be used more than once)""
-      --revoke-all            "$"Revoke every usable PROPERTY uid - all but the newest for {name,email}""
-      --show-all              "$"Display every vCard-property uid of the certificate, including its identity eid (UID:)""
+      --revoke-all            "$"Revoke every usable PROPERTY uid — all but the newest for {name,email}""
+      --show-all              "$"Display every vCard-property uid of the certificate, including its Entity ID (UID:urn:eid:…)""
       --show-revoked          "$"Also display revoked or expired uids""
       --raw                   "$"Display raw uid strings (vCard parameters kept), separated by empty lines""
+      --to-vcard              "$"Output vCard (override any other options)""
   -v, --verbose               "$"Increase verbosity""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
   -K, --keyservers KEYSERVERS "$"If non-empty, send updated certificate to this keyservers. "$"Default: ""
@@ -1560,7 +1563,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	local gpgfilter=false
 	for ((;$#;)) ; do
 		case "$1" in
-			-A|--add)
+			-A|--add|--replace-to)
 				shift ; toadd+=("${1:?}") ;;
 			-R|--rev|--revoke)
 				shift ; torev+=("${1:?}") ;;
