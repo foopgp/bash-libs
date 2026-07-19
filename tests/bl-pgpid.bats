@@ -506,6 +506,36 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	refute_output --partial "pgpid_NOTE="
 }
 
+@test "property ksprefrd : add/replace the primary uid's preferred keyserver, read it back, guards" {
+	vkey
+	# none yet on the primary (the UID:urn:eid: uid)
+	run --separate-stderr "${TARGET}" property ksprefrd --raw -H "$VH" "0x$VFPR"
+	assert_success ; assert_output ""
+	# add → subpacket 24 on the primary uid only, read back (eval then --raw)
+	"${TARGET}" property ksprefrd --add hkps://keys.foopgp.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	run --separate-stderr "${TARGET}" property ksprefrd -H "$VH" "0x$VFPR"
+	assert_output "pgpid_ksprefrd='hkps://keys.foopgp.org'"
+	# only ONE uid (the primary) carries it, and the primary flag survives
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' 2>/dev/null | gpg --no-options --list-packets 2>/dev/null | grep -c 'preferred keyserver'"
+	assert_output "1"
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' 2>/dev/null | gpg --no-options --list-packets 2>/dev/null | grep -c 'primary user ID'"
+	assert_output "1"
+	# --replace-to (synonym of --add) swaps it (sleep : distinct self-sig second)
+	sleep 1
+	"${TARGET}" property ksprefrd --replace-to hkp://foopgp.org:11371 -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	run --separate-stderr "${TARGET}" property ksprefrd --raw -H "$VH" "0x$VFPR"
+	assert_output "hkp://foopgp.org:11371"
+	# a non-hkp(s) value is refused
+	run --separate-stderr env LC_ALL=C "${TARGET}" property ksprefrd --add https://foo -K '' -H "$VH" "0x$VFPR"
+	assert_failure 2
+	# --revoke is meaningless here
+	run --separate-stderr env LC_ALL=C "${TARGET}" property ksprefrd --revoke x -H "$VH" "0x$VFPR"
+	assert_failure 2
+	# it is not a uid : never shown by --show-all
+	run --separate-stderr "${TARGET}" property --show-all -H "$VH" "0x$VFPR"
+	refute_output --partial "ksprefrd"
+}
+
 @test "email --add delegates to property : both emails listed, eid uid stays primary" {
 	vkey
 	run --separate-stderr "${TARGET}" email -A bob@example.org -K '' -H "$VH" "0x$VFPR"

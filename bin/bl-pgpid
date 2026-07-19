@@ -1602,8 +1602,12 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	fi
 
 	if [[ "$prop" ]] ; then
-		vprop=${vprops[${prop,,}]}
-		[[ "$vprop" ]] || { printf "$FUNCNAME: Error: "$"Unrecognized property"" '%s'.\n\n"$"Try '%s --help' for more information"".\n" "$prop" "$name" >&2 ; return 2 ; }
+		if [[ "${prop,,}" == ksprefrd ]] ; then
+			vprop=KSPREFRD	# not a vCard uid : the « preferred keyserver » subpacket (24), handled apart below
+		else
+			vprop=${vprops[${prop,,}]}
+			[[ "$vprop" ]] || { printf "$FUNCNAME: Error: "$"Unrecognized property"" '%s'.\n\n"$"Try '%s --help' for more information"".\n" "$prop" "$name" >&2 ; return 2 ; }
+		fi
 	elif (( ! showall )) ; then
 		printf "$FUNCNAME: Error: "$"Missing PROPERTY argument"".\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2
 	elif (( ${#toadd[@]} + ${#torev[@]} + revokeall )) ; then
@@ -1659,6 +1663,55 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	user=${fprs[0]}
 
 	local ret=0 modified=0
+
+	# 'ksprefrd' : the preferred keyserver (OpenPGP self-sig subpacket 24). Not a
+	# vCard-property uid — it lives on the primary uid's self-sig and only shapes
+	# the KEY;MEDIATYPE URL of the generated vCard. Read via gpg's authoritative
+	# 'showpref' (newest self-sig), written via 'edit-key … keyserver' on the
+	# primary uid (the uid gpg lists first). --revoke is meaningless here, and
+	# --show-all / --show-revoked leave it out (it is no uid).
+	if [[ "$vprop" == KSPREFRD ]] ; then
+		(( ${#torev[@]} + revokeall == 0 )) || { printf "$FUNCNAME: Error: "$"'ksprefrd' cannot be revoked.""\n" >&2 ; return 2 ; }
+		local primaryuid
+		primaryuid=$(gpg --homedir "$gpghome" --with-colons --list-key "$user" 2>/dev/null | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 ; exit }')
+		primaryuid=$(printf '%b' "$primaryuid")
+		[[ "$primaryuid" ]] || { printf "$FUNCNAME: Error: "$"No usable primary uid in %s.""\n" "$user" >&2 ; return 1 ; }
+		if (( ${#toadd[@]} )) ; then
+			(( ${#toadd[@]} == 1 )) || { printf "$FUNCNAME: Error: "$"Only one --add at a time for 'ksprefrd' (it replaces the previous value)"".\n" >&2 ; return 2 ; }
+			[[ "${toadd[0]}" =~ ^hkps?:// ]] || { printf "$FUNCNAME: Error: "$"'ksprefrd' must start with hkp(s)://"" (%s).\n" "'${toadd[0]}'" >&2 ; return 2 ; }
+			# One edit-key session on the primary uid. 'uid 1' selects it — gpg
+			# lists the primary first, and an edit-key 'uid' selector is an INDEX,
+			# never a string (a string matches nothing, and the keyserver would
+			# then spill onto EVERY uid). 'keyserver' sets/replaces the URL (the
+			# 'y' confirms a replacement, harmless when none exists) ; 'primary'
+			# re-asserts the primary flag in the SAME self-sig — the keyserver
+			# re-sign drops subpacket 25 otherwise, and that pinned primary is
+			# what onak's uid cap protects from FIFO eviction. One session = one
+			# self-sig (no same-second clash with a separate re-pin). A card-held
+			# key re-signs here → PIN.
+			printf 'uid 1\nkeyserver\n%s\ny\nprimary\nsave\n' "${toadd[0]}" \
+				| gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) \
+				|| { printf "$FUNCNAME: Error: "$"Can't set preferred keyserver - good PIN ?.""\n" >&2 ; return 1 ; }
+			for keyserv in ${keyservs[@]} ; do
+				gpg --homedir "$gpghome" --keyserver "$keyserv" --send-keys "$user" || ret=$?
+			done
+		else
+			# Read the primary uid's newest self-sig « preferred keyserver »
+			# (subpacket 24) straight from the packet dump. Deterministic, unlike
+			# 'showpref' whose scripted output proved state-dependent.
+			local kspref
+			kspref=$(gpg --homedir "$gpghome" --export "$user" 2>/dev/null | gpg --homedir "$gpghome" --list-packets 2>/dev/null | awk -v prim="$primaryuid" -v owner="${user: -16}" '
+				function finalize() { if (inprim && is_self && cur_created > best_created) { best_created=cur_created ; best_ks=cur_ks } }
+				/^:user ID packet:/ { finalize() ; u=$0 ; sub(/^:user ID packet: "/,"",u) ; sub(/"$/,"",u) ; inprim=(u==prim) ; is_self=0 ; cur_created=-1 ; cur_ks="" ; next }
+				/^:signature packet:/ { finalize() ; is_self=($0 ~ owner) ; cur_created=-1 ; cur_ks="" ; next }
+				/, created / { for (i=1;i<=NF;i++) if ($i=="created") cur_created=$(i+1)+0 }
+				/preferred keyserver:/ { s=$0 ; sub(/.*preferred keyserver: /,"",s) ; sub(/\)$/,"",s) ; cur_ks=s }
+				END { finalize() ; print best_ks }')
+			((raw)) && printf '%s\n' "$kspref" || printf 'pgpid_ksprefrd=%s\n' "${kspref@Q}"
+		fi
+		return $ret
+	fi
+
 	if (( ${#toadd[@]} + ${#torev[@]} + revokeall )) ; then
 		local uids uidstr rawu u v dup created keep i eiduid firstuid
 		local -a prevuids curuids matched curcreated
