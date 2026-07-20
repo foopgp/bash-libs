@@ -954,6 +954,17 @@ msgstr ""
 msgid "Choosing the only one editable OpenPGP certificate (%s)"
 msgstr ""
 
+msgid ""
+"Revoking a User ID is IRREVERSIBLE: OpenPGP keeps it on the certificate "
+"forever (marked revoked), and an identical User ID can never be added again."
+msgstr ""
+
+msgid "Revoke this User ID"
+msgstr ""
+
+msgid "Revocation cancelled."
+msgstr ""
+
 msgid "Revoking %s inside %s certificate…"
 msgstr ""
 
@@ -1167,6 +1178,9 @@ msgstr ""
 msgid "Prefered OpenPGP certificate server. "
 msgstr ""
 
+msgid "keyserver MUST be hkp(s)://…"
+msgstr ""
+
 msgid "Freshly generated key not found by its eid UID"
 msgstr ""
 
@@ -1241,6 +1255,9 @@ msgstr ""
 msgid "Add EMAIL. Enable --name and --extra-comment options"
 msgstr ""
 
+msgid "Assume yes: skip the irreversible-revocation confirmation"
+msgstr ""
+
 msgid ""
 "Also output the count of external valid certifications per email (tab-"
 "separated). If an email appears in several UIDs, only the maximum count is "
@@ -1261,11 +1278,22 @@ msgid ""
 "extra-comment are ignored when adding an EMAIL"
 msgstr ""
 
+msgid "No revokable email %s inside %s certificate (in %s)."
+msgstr ""
+
+msgid "At least one email must be retained."
+msgstr ""
+
 msgid ""
 "Display and add or revoke vCard-property uids inside OpenPGP certificate."
 msgstr ""
 
-msgid "PROPERTY is one of:"
+msgid "PROPERTY is one of: "
+msgstr ""
+
+msgid ""
+"'ksprefrd' is preferred certificate server. This is not stored as a vCard-"
+"property uid, but used when generating vCard."
 msgstr ""
 
 msgid ""
@@ -1274,19 +1302,30 @@ msgid ""
 msgstr ""
 
 msgid ""
-"Add a PROPERTY uid - a new {name,note} revokes the previous one (may be used "
-"more than once)"
+"Free-text values (name, note) with , ; \\\\ or newlines are stored RFC 6350-"
+"escaped and decoded back on display (address keeps its structural ';') ; --"
+"raw shows the stored form"
+msgstr ""
+
+msgid ""
+"Add ({name,note,ksprefrd} ⇒ replace) a PROPERTY uid (may be used more than "
+"once)"
+msgstr ""
+
+msgid ""
+"Exact synonym of --add — terminolgy is just more relevant for "
+"{name,note,ksprefrd}"
 msgstr ""
 
 msgid "Revoke the PROPERTY uid carrying VALUE (may be used more than once)"
 msgstr ""
 
-msgid "Revoke every usable PROPERTY uid - all but the newest for {name,email}"
+msgid "Revoke every usable PROPERTY uid — all but the newest for {name,email}"
 msgstr ""
 
 msgid ""
-"Display every vCard-property uid of the certificate, including its identity "
-"eid (UID:)"
+"Display every vCard-property uid of the certificate, including its Entity ID "
+"(UID:urn:eid:…)"
 msgstr ""
 
 msgid "Also display revoked or expired uids"
@@ -1294,6 +1333,9 @@ msgstr ""
 
 msgid ""
 "Display raw uid strings (vCard parameters kept), separated by empty lines"
+msgstr ""
+
+msgid "Output vCard (override any other options)"
 msgstr ""
 
 msgid "Unrecognized property"
@@ -1313,7 +1355,31 @@ msgstr ""
 msgid "Invalid %s value"
 msgstr ""
 
+msgid "'ksprefrd' cannot be revoked."
+msgstr ""
+
+msgid "No usable primary uid in %s."
+msgstr ""
+
+msgid ""
+"Only one --add at a time for 'ksprefrd' (it replaces the previous value)"
+msgstr ""
+
+msgid "'ksprefrd' must start with hkp(s)://"
+msgstr ""
+
+msgid "Can't set preferred keyserver - good PIN ?."
+msgstr ""
+
+msgid "Several preferred keyservers across uids (%s) — kept '%s'."
+msgstr ""
+
 msgid "%s certificate already carries %s"
+msgstr ""
+
+msgid ""
+"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked "
+"User IDs on the certificate and gpg refuses an identical one."
 msgstr ""
 
 msgid "No revokable %s inside certificate %s (in %s)."
@@ -1427,6 +1493,11 @@ msgid ""
 msgstr ""
 
 msgid "Insert the email column #2 (one line per presentable uid)"
+msgstr ""
+
+msgid ""
+"Insert, before VERDICT, the count of distinct external certifiers (valid non-"
+"self signatures over all uids, one signer counted once)"
 msgstr ""
 
 msgid "Legacy: don't require a consistent eid (certs not yet OpenPGP-ID aware)"
@@ -1772,9 +1843,7 @@ msgstr ""
 msgid "Change a textual metadata of a security token (OpenPGP smartcard)."
 msgstr ""
 
-msgid ""
-"By default, change the cardholder pseudonym (stored in « Login data », "
-"UTF-8, up to ~210 bytes), beside the OpenPGP Entity ID (u4=… or u5=…)."
+msgid "Detect if NEW_METADATA is an email, a certurl or a lang."
 msgstr ""
 
 msgid ""
@@ -1784,36 +1853,25 @@ msgstr ""
 msgid "Get admin code from first line of FILE"
 msgstr ""
 
-msgid ""
-"Change « Name of cardholder » instead, verifying the email is present (non-"
-"revoked) in the certificate."
+msgid "'%s' is neither an email, a certurl, nor a 2-letter language code."
 msgstr ""
 
-msgid ""
-"Change « URL of public key » instead, verifying the URL returns a "
-"certificate that holds the public counterparts of the token's three private "
-"subkeys (revoked and expired subkeys are accepted)."
+msgid "Which token metadata to change?"
 msgstr ""
 
-msgid ""
-"Change « Language prefs » instead, only 2 letter code ISO 639-1 is "
-"accepted.\n"
+msgid "Email (Name of cardholder)"
 msgstr ""
 
-msgid ""
-"--email, --certurl and --lang are mutually exclusive; keeping the last one"
+msgid "Public certificate URL"
+msgstr ""
+
+msgid "Language preference"
+msgstr ""
+
+msgid "No metadata kind chosen."
 msgstr ""
 
 msgid "No security token detected."
-msgstr ""
-
-msgid "(UTF-8, up to ~210 chars)"
-msgstr ""
-
-msgid "New cardholder pseudonym"
-msgstr ""
-
-msgid "Empty pseudonym, nothing to do."
 msgstr ""
 
 msgid "(ASCII only, up to 38 chars)"
@@ -1834,7 +1892,7 @@ msgstr ""
 msgid "New URL to retrieve cardholder public certificate"
 msgstr ""
 
-msgid "--certurl must be an http(s) URL"
+msgid "--certurl should be an http(s) URL"
 msgstr ""
 
 msgid "Can't fetch a usable certificate from %s."
