@@ -3024,3 +3024,28 @@ msgstr "action non reconnue"
 #~ msgid ""
 #~ "Only output fingerprint with ownertrust greater or equal to THRESHOLD."
 #~ msgstr "Affiche seulement les empreintes dont l’ownertrust est ≥ SEUIL."
+
+msgid "Assume yes: skip the irreversible-revocation confirmation"
+msgstr "Répondre oui : sauter la confirmation de révocation irréversible"
+
+msgid ""
+"Revoking a User ID is IRREVERSIBLE: OpenPGP keeps it on the certificate "
+"forever (marked revoked), and an identical User ID can never be added again."
+msgstr ""
+"Révoquer un User ID est IRRÉVERSIBLE : OpenPGP le conserve à jamais sur le "
+"certificat (marqué révoqué), et un User ID identique ne pourra plus jamais "
+"être ajouté."
+
+msgid "Revoke this User ID"
+msgstr "Révoquer ce User ID"
+
+msgid "Revocation cancelled."
+msgstr "Révocation annulée."
+
+msgid ""
+"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked "
+"User IDs on the certificate and gpg refuses an identical one."
+msgstr ""
+"%s a été révoqué précédemment et ne peut être ajouté de nouveau — OpenPGP "
+"conserve les User ID révoqués sur le certificat et gpg en refuse un "
+"identique."

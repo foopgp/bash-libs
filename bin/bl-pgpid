@@ -644,7 +644,16 @@ _bl_pgpid_vcard_esc() {   # VALUE [KEEP_SEMICOLON] → escaped
 
 _bl_pgpid_revoke_uid() {
 	# $3 = the real (already unescaped) uid string to revoke inside $2 certificate.
-	local gpghome=$1 user=$2 ruid=$3 gpgfilter=${4:-false}
+	# $5 = 1 to skip the irreversibility confirmation (--yes / non-interactive callers).
+	local gpghome=$1 user=$2 ruid=$3 gpgfilter=${4:-false} assumeyes=${5:-0}
+	# A revocation is IRREVERSIBLE : OpenPGP keeps the revoked User ID on the
+	# certificate forever (marked revoked), and gpg refuses to add an identical
+	# one afterwards. Confirm, showing the full uid, unless the caller assumed yes.
+	if (( ! assumeyes )) ; then
+		local warn=$"Revoking a User ID is IRREVERSIBLE: OpenPGP keeps it on the certificate forever (marked revoked), and an identical User ID can never be added again."
+		bl_yesno --default=no --text "$warn"$'\n\n'"  $ruid" $"Revoke this User ID" \
+			|| { printf "${FUNCNAME[1]}: Notice: "$"Revocation cancelled.""\n" >&2 ; return 1 ; }
+	fi
 	printf "${FUNCNAME[1]}: Notice: "$"Revoking %s inside %s certificate…""\n" "$ruid" "$user" >&2
 	gpg --homedir "$gpghome" --batch --quick-revoke-uid "$user" "$ruid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || { echo "${FUNCNAME[1]}: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
 }
@@ -1388,6 +1397,7 @@ bl_pgpid_email() {
 OPTIONS:
   -R, --revoke EMAIL          "$"Revoke existing EMAIL (may be used more than once)""
   -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options""
+  -y, --yes                   "$"Assume yes: skip the irreversible-revocation confirmation""
   -c, --certs-count           "$"Also output the count of external valid certifications per email (tab-separated). If an email appears in several UIDs, only the maximum count is kept.""
   -v, --verbose               "$"Increase verbosity""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
@@ -1395,7 +1405,7 @@ OPTIONS:
 $(printf -- "%80s\n" ${keyservs[@]})
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
-	local toadd torev pseudo extracomment certscount=0
+	local toadd torev pseudo extracomment certscount=0 assumeyes=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local gpgfilter=false
 	for ((;$#;)) ; do
@@ -1406,6 +1416,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			-A|--add)
 				[[ "$2" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$2'" >&2 ; return 2 ;}
 				shift ; toadd+=("$1") ;;
+			-y|--yes) assumeyes=1 ;;
 			-N|--name)
 				shift ; pseudo=$1 ;;
 			-C|--extracomment|--extra-comment)
@@ -1490,7 +1501,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		targetuids=("${legacytargets[@]}" "${vcardtargets[@]}")
 		(( ${#targetuids[@]} )) || { printf "$FUNCNAME: Error: "$"No revokable email %s inside %s certificate (in %s).""\n" "'$email'" "$user" "$gpghome" >&2 ; return 1 ; }
 		(( ${#emailuids[@]} >= 2 )) || { printf "$FUNCNAME: Error: "$"At least one email must be retained.""\n" >&2 ; return 1 ; }
-		_bl_pgpid_revoke_uid "$gpghome" "$user" "${targetuids[0]}" "$gpgfilter" || return 1
+		_bl_pgpid_revoke_uid "$gpghome" "$user" "${targetuids[0]}" "$gpgfilter" "$assumeyes" || return 1
 	done
 
 	local ret=0
@@ -1563,6 +1574,7 @@ OPTIONS:
       --replace-to VALUE      "$"Exact synonym of --add — terminolgy is just more relevant for {name,note,ksprefrd}""
   -R, --revoke VALUE          "$"Revoke the PROPERTY uid carrying VALUE (may be used more than once)""
       --revoke-all            "$"Revoke every usable PROPERTY uid — all but the newest for {name,email}""
+  -y, --yes                   "$"Assume yes: skip the irreversible-revocation confirmation""
       --show-all              "$"Display every vCard-property uid of the certificate, including its Entity ID (UID:urn:eid:…)""
       --show-revoked          "$"Also display revoked or expired uids""
       --raw                   "$"Display raw uid strings (vCard parameters kept), separated by empty lines""
@@ -1580,7 +1592,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	# time (a new one revokes the previous), at least one usable {FN,EMAIL} kept.
 	local mono=" FN NOTE " keepone=" FN EMAIL "
 	local -a toadd=() torev=()
-	local revokeall=0 showall=0 showrevoked=0 raw=0 tovcard=0 prop vprop target
+	local revokeall=0 showall=0 showrevoked=0 raw=0 tovcard=0 assumeyes=0 prop vprop target
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local gpgfilter=false
 	for ((;$#;)) ; do
@@ -1590,6 +1602,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			-R|--rev|--revoke)
 				shift ; torev+=("${1:?}") ;;
 			--revoke-all|--revokeall) revokeall=1 ;;
+			-y|--yes) assumeyes=1 ;;
 			--show-all|--showall) showall=1 ;;
 			--show-revoked|--showrevoked) showrevoked=1 ;;
 			--raw) raw=1 ;;
@@ -1783,7 +1796,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	if (( ${#toadd[@]} + ${#torev[@]} + revokeall )) ; then
 		local uids uidstr rawu u v dup created keep i eiduid firstuid
-		local -a prevuids curuids matched curcreated
+		local -a prevuids revuids curuids matched curcreated
 		# Legacy certificate ? Mint its vCard-uid shape first (identity uid,
 		# FN:, EMAIL:s - legacy uids kept), so the operations below see it.
 		_bl_pgpid_upgrade_uids "$gpghome" "$user" "$gpgfilter" || return 1
@@ -1799,6 +1812,14 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			u=$(printf '%b' "$rawu")
 			[[ ! "$u" =~ ^${vprop}(\;[^:]*)?:\ ?(.*)$ ]] || prevuids+=("$u")
 		done < <(awk -F: '$1=="uid" && $2 !~ /[re]/ { print $10 }' <<<"$uids")
+		# Revoked/expired twins of this property : gpg refuses to re-add a uid
+		# string identical to one already on the key (revocation keeps it there
+		# forever), so a match here is unaddable and gets its own clear message.
+		revuids=()
+		while IFS= read -r rawu ; do
+			u=$(printf '%b' "$rawu")
+			[[ ! "$u" =~ ^${vprop}(\;[^:]*)?:\ ?(.*)$ ]] || revuids+=("$u")
+		done < <(awk -F: '$1=="uid" && $2 ~ /[re]/ { print $10 }' <<<"$uids")
 
 		for val in "${toadd[@]}" ; do
 			# EMAIL keeps its angle brackets with a space before '<' (what
@@ -1809,6 +1830,10 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
 			done
 			((! dup)) || { printf "$FUNCNAME: Notice: "$"%s certificate already carries %s""\n" "$user" "'$uidstr'" >&2 ; continue ; }
+			for u in "${revuids[@]}" ; do
+				[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
+			done
+			((! dup)) || { printf "$FUNCNAME: Notice: "$"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked User IDs on the certificate and gpg refuses an identical one.""\n" "'$uidstr'" >&2 ; continue ; }
 			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'$uidstr'" "$user" >&2
 			gpg --homedir "$gpghome" --batch --quick-add-uid "$user" "$uidstr" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
 			modified=1
@@ -1819,7 +1844,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		# never left without any value).
 		if ((modified)) && [[ "$mono" == *" $vprop "* ]] ; then
 			for u in "${prevuids[@]}" ; do
-				_bl_pgpid_revoke_uid "$gpghome" "$user" "$u" "$gpgfilter" || return 1
+				_bl_pgpid_revoke_uid "$gpghome" "$user" "$u" "$gpgfilter" "$assumeyes" || return 1
 			done
 		fi
 
@@ -1843,7 +1868,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				printf "$FUNCNAME: Error: "$"At least one %s must be retained.""\n" "$vprop" >&2 ; return 1
 			fi
 			for u in "${matched[@]}" ; do
-				_bl_pgpid_revoke_uid "$gpghome" "$user" "$u" "$gpgfilter" || return 1
+				_bl_pgpid_revoke_uid "$gpghome" "$user" "$u" "$gpgfilter" "$assumeyes" || return 1
 			done
 			modified=1
 		done
@@ -1866,7 +1891,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			else
 				for ((i=0 ; i<${#curuids[@]} ; i++)) ; do
 					(( i != keep )) || continue
-					_bl_pgpid_revoke_uid "$gpghome" "$user" "${curuids[i]}" "$gpgfilter" || return 1
+					_bl_pgpid_revoke_uid "$gpghome" "$user" "${curuids[i]}" "$gpgfilter" "$assumeyes" || return 1
 				done
 				modified=1
 			fi

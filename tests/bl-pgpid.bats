@@ -388,7 +388,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 
 @test "property name --add : mono, previous FN revoked, eid uid stays primary" {
 	vkey
-	run --separate-stderr "${TARGET}" property name -A 'Alice Renamed' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property name -y -A 'Alice Renamed' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output "pgpid_FN='Alice Renamed'"
 	sleep 1
@@ -414,17 +414,17 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	assert_success
 	assert_line "pgpid_EMAIL[1]='<bob@example.org>'"
 	sleep 1
-	run --separate-stderr "${TARGET}" property email -R '<alice@example.org>' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property email -y -R '<alice@example.org>' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output "pgpid_EMAIL[0]='<bob@example.org>'"
 }
 
 @test "property phone --revoke-all : no keeper, then 'Nothing to revoke' warning" {
 	vkey
-	run --separate-stderr env LC_ALL=C "${TARGET}" property phone --revoke-all -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr env LC_ALL=C "${TARGET}" property phone -y --revoke-all -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	refute_output --partial "pgpid_TEL["
-	run --separate-stderr env LC_ALL=C "${TARGET}" property phone --revoke-all -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr env LC_ALL=C "${TARGET}" property phone -y --revoke-all -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	[[ "$stderr" == *"Nothing to revoke"* ]]
 }
@@ -433,7 +433,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	vkey
 	"${TARGET}" property email -A bob@example.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
 	sleep 1
-	run --separate-stderr "${TARGET}" property email --revoke-all -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property email -y --revoke-all -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output "pgpid_EMAIL[0]='<bob@example.org>'"
 }
@@ -457,7 +457,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	assert_success
 	assert_output --partial 'NOTE:line1\nline2 : gnop'
 	sleep 1
-	run --separate-stderr "${TARGET}" property note -R $'line1\nline2 : gnop' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property note -y -R $'line1\nline2 : gnop' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	refute_output --partial "pgpid_NOTE="
 }
@@ -501,7 +501,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	assert_success
 	assert_output "pgpid_NOTE='see: https://foopgp.org'"
 	sleep 1
-	run --separate-stderr "${TARGET}" property note -R 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property note -y -R 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	refute_output --partial "pgpid_NOTE="
 }
@@ -615,14 +615,14 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 	"${TARGET}" property email -A carol@example.org -K '' -H "$LH" "0x$LFPR" >/dev/null 2>&1
 	# 1st --revoke : the legacy "Alice Legacy (u4=…) <alice@…>" goes first ; the
 	# address is still usable through its vCard EMAIL: uid.
-	run --separate-stderr "${TARGET}" email -R alice@example.org -K '' -H "$LH" "0x$LFPR"
+	run --separate-stderr "${TARGET}" email -y -R alice@example.org -K '' -H "$LH" "0x$LFPR"
 	assert_success
 	run bash -c "gpg --no-options --homedir '$LH' --with-colons -k 2>/dev/null | grep -c '^uid:r:.*<alice@example.org>'"
 	assert_output "1"
 	run --separate-stderr "${TARGET}" email -H "$LH" "0x$LFPR"
 	assert_line "alice@example.org"
 	# 2nd --revoke : now the vCard EMAIL: uid ; the address finally disappears.
-	run --separate-stderr "${TARGET}" email -R alice@example.org -K '' -H "$LH" "0x$LFPR"
+	run --separate-stderr "${TARGET}" email -y -R alice@example.org -K '' -H "$LH" "0x$LFPR"
 	assert_success
 	run --separate-stderr "${TARGET}" email -H "$LH" "0x$LFPR"
 	refute_line "alice@example.org"
@@ -635,7 +635,7 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 @test "email --revoke keep-one counts legacy uids too" {
 	lkey   # two legacy email uids (alice@, alice.pro@), no vCard, no upgrade
 	# Peeling the first legacy email is allowed : a second one remains.
-	run --separate-stderr "${TARGET}" email -R alice@example.org -K '' -H "$LH" "0x$LFPR"
+	run --separate-stderr "${TARGET}" email -y -R alice@example.org -K '' -H "$LH" "0x$LFPR"
 	assert_success
 	# The last remaining email is legacy-shaped : keep-one must still refuse it.
 	run --separate-stderr env LC_ALL=C "${TARGET}" email -R alice.pro@example.org -K '' -H "$LH" "0x$LFPR"
@@ -661,4 +661,38 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 	assert_output --partial "UID\x3aurn\x3aeid\x3au4$EID1"
 	refute_output --partial "FN"
 	refute_output --partial "EMAIL"
+}
+
+@test "property revoke asks for irreversible-revocation confirmation ; declining keeps the uid" {
+	vkey
+	# TEL is not a keep-one property, so the revoke reaches the confirmation.
+	run bash -c "echo n | env LC_ALL=C BL_INTERACTIVE_FRONTEND= '${TARGET}' property phone -R '+33612345678' -K '' -H '$VH' '0x$VFPR' 2>&1"
+	assert_output --partial "IRREVERSIBLE"
+	assert_output --partial "Revocation cancelled"
+	# the phone survived : nothing was revoked
+	run --separate-stderr "${TARGET}" property phone -H "$VH" "0x$VFPR"
+	assert_line "pgpid_TEL[0]='+33612345678'"
+}
+
+@test "property revoke -y skips the confirmation and revokes" {
+	vkey
+	run --separate-stderr "${TARGET}" property phone -y -R '+33612345678' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	refute_output --partial "pgpid_TEL["
+}
+
+@test "property email --add of a revoked address reports it is unaddable, not a PIN error" {
+	vkey
+	# a second usable email so keep-one lets us revoke the first
+	"${TARGET}" property email -A bob@example.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	sleep 1
+	"${TARGET}" property email -y -R alice@example.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	# re-adding it : OpenPGP keeps the revoked uid, gpg would refuse an identical
+	# one — say so clearly instead of blaming the PIN.
+	run --separate-stderr env LC_ALL=C "${TARGET}" property email -A alice@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	[[ "$stderr" == *"revoked earlier and cannot be added again"* ]]
+	[[ "$stderr" != *"PIN"* ]]
+	# the address did not come back to life
+	refute_output --partial "alice@example.org"
 }
