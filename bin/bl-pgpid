@@ -2331,7 +2331,7 @@ bl_pgpid_certify() {
 OPTIONS:
   -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask""
   -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate""
-  -o, --ownertrust VALUE       "$"What level of trust do you assign to the target to correctly certify others"" {undefined,marginal,full,ultimate,never} - "$"Default: ""marginal.
+  -o, --ownertrust VALUE       "$"What level of trust do you assign to the target to correctly certify others"" {undefined,marginal,full,never} - "$"Default: ""marginal.
   -G, --vouch                  "$"Take legal responsability for any actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
   -g, --vouch-for DOMAIN       "$"Assume some legal responsibilities on the target."" (Not implemented yet)
   -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing""
@@ -2358,7 +2358,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			-R|--revoke)
 				revoke=1 ;;
 			-o|--ownertrust)
-				[[ "$2" =~ ^(undefined|marginal|full|ultimate|never)$ ]] || { printf -- "$FUNCNAME: Error: "$"Unknown ownertrust value '%s'"".\n" "$2" >&2 ; return 2 ;}
+				[[ "$2" =~ ^(undefined|marginal|full|never)$ ]] || { printf -- "$FUNCNAME: Error: "$"Unknown ownertrust value '%s'"".\n" "$2" >&2 ; return 2 ;}
 				shift ; ownertrust=$1 ;;
 			-G|--vouch)
 				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
