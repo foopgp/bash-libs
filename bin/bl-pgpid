@@ -681,14 +681,11 @@ _bl_pgpid_ks_to_keyurl() {
 }
 
 _bl_pgpid_upgrade_uids() {
-	# Upgrade a legacy certificate to the vCard-uid process : mint its identity
-	# uid UID:urn:eid:<eid> and an FN: (name part of the first legacy uid), then
-	# pin the primary on the identity. That is the whole gain — the eid stops
-	# squatting a comment field and gets its own self-certified anchor.
-	# Legacy uids are NOT revoked (the web of trust rests on their
-	# certifications) and their emails are NOT re-minted (see below). No-op
-	# without the secret key, without a single consistent legacy eid, or when
-	# the identity uid already exists.
+	# Upgrade a legacy certificate : mint its identity uid UID:urn:eid:<eid> and
+	# an FN: (name part of the first legacy uid), then pin the primary on the
+	# identity. Legacy uids are neither revoked nor re-minted — the web of trust
+	# rests on their certifications. No-op without the secret key, without a
+	# single consistent legacy eid, or when the identity uid already exists.
 	local gpghome=$1 user=$2 gpgfilter=${3:-false}
 	local rawu u fn eiduid
 	local -a uids=() ids
@@ -715,12 +712,8 @@ _bl_pgpid_upgrade_uids() {
 		"${GQ[@]}" --quick-add-uid "$user" "FN:${fn}" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "${FUNCNAME[1]}" "adduid" >&2 ; return 1 ;}
 	fi
 
-	# Emails are deliberately left alone. A legacy uid is already a name-addr
-	# 'Name (u4=…) <addr>' that every mail client handles, so minting a second
-	# uid for the same address would only duplicate it, split the third-party
-	# certifications between the two, and burn uid quota. Its now-redundant
-	# (u4=…) comment is harmless — and the uid must not be revoked anyway, the
-	# web of trust rests on it.
+	# Emails left alone : a legacy uid is already name-addr, and a second uid for
+	# the same address would split its third-party certifications.
 
 	"${GQ[@]}" --quick-set-primary-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || printf "${FUNCNAME[1]}: Warning: "$"Can't set the primary uid back to"" %s.\n" "'$eiduid'" >&2
 }
@@ -1224,12 +1217,9 @@ OPTIONS:
 	[[ "$passphrase" ]] || passphrase=$(bl_new_password "Passphrase")
 	[[ "$passphrase" ]] || { printf "%s: Error: Passphrase can't be empty at this stage.\n" "$FUNCNAME" >&2 ; return 2 ;}
 
-	# The certificate is born with a single, self-certified identity UID: the
-	# eid URN (Section 4.5 of draft-foopgp-urn-eid). Name and any note are then
-	# added as separate vCard-property UIDs (FN:, NOTE:), each certifiable and
-	# revocable on its own — see bl-contacts / the PGP ID spec. The email is NOT
-	# a vCard-property uid : it keeps the conventional 'Name <addr>' shape that
-	# every mail client understands (see _bl_pgpid_upgrade_uids).
+	# Born with a single self-certified identity uid (the eid URN, §4.5 of
+	# draft-foopgp-urn-eid). Name and note follow as vCard-property uids ; the
+	# address is a plain name-addr uid (docs/IMPLEMENTATION.md).
 	cat <<-EOF | gpg --homedir "$gpghome" --batch --generate-key --allow-freeform-uid || return $?
 		%echo Generating OpenPGP key for ${email}
 		Key-Type: eddsa
@@ -1475,11 +1465,8 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		[[ -z "$extracomment" ]] || printf "$FUNCNAME: Notice: "$"--extra-comment is ignored: a note is carried by its own NOTE: vCard uid""\n" >&2
 	fi
 
-	# Add each address as a plain 'Name <addr>' uid — deliberately NOT a
-	# vCard-property uid: every mail client understands this shape, none
-	# understands 'EMAIL: <addr>' (Evolution refuses to send, Thunderbird pastes
-	# 'EMAIL:' into To:) — JJB, 2026-08-02. Keyservers are muted here : a single
-	# send happens below, once everything is done.
+	# Plain 'Name <addr>' uid, not a vCard-property one (docs/IMPLEMENTATION.md).
+	# Keyservers muted here : a single send happens below.
 	local uidstr rawu u dup uidname eiduid
 	local -a prevuids=() revuids=()
 	if ((${#toadd[@]})) ; then
@@ -1519,13 +1506,9 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		# gpg promotes the freshly added uid : pin the primary back on the eid.
 		gpg --homedir "$gpghome" --batch --quick-set-primary-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || printf "$FUNCNAME: Warning: "$"Can't set the primary uid back to"" %s.\n" "'$eiduid'" >&2
 	done
-	# --revoke retires the address that `bl-pgpid email` shows — the mbox of any
-	# usable uid, whatever its shape: the current "Name <addr>", the historical
-	# "Name (u4/u5=…) <addr>", or the short-lived "EMAIL: <addr>" experiment.
-	# One uid is revoked per call (re-run --revoke to peel the next) : the
-	# deprecated "EMAIL: <addr>" shape drains FIRST, so a certificate converges
-	# on name-addr uids. The keep-one guard counts every email-bearing uid
-	# whatever its shape, so the certificate never loses its last address.
+	# One uid revoked per call (re-run to peel the next), deprecated 'EMAIL:'
+	# shape first. The keep-one guard counts every email-bearing uid whatever
+	# its shape, so the certificate never loses its last address.
 	local rawu u
 	local -a emailuids legacytargets vcardtargets targetuids
 	for email in "${torev[@]}" ; do
@@ -1557,19 +1540,11 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	fi
 
 	if ((certscount)) ; then
-		# For each usable (non-revoked, non-expired) UID, count the sig packets
-		# that gpg marked valid (`!`) and whose issuer keyid differs from the
-		# certificate's own keyid (= self-signature). If the same email appears
-		# on several UIDs, keep the maximum across them — the user only cares
-		# how well-vouched the address is, not how many redundant UIDs carry it.
-		# --check-sigs (not --list-sigs) so gpg actually verifies each signature
-		# and tags it with `!` when the signer's public key is in the keyring
-		# and the signature is cryptographically correct. Untaggable sigs
-		# ('?' = unknown signer, '-' = bad sig, '%' = error) don't count.
-		# Also drop non-exportable « local » signatures (sigclass ending in 'l',
-		# e.g. `10l`): they live in the holder's keyring only and don't count
-		# as a public certification (caught 2026-06-23 thanks to my own
-		# 2026-05-25 lsign of jjb's cert which inflated the count).
+		# --check-sigs (not --list-sigs) so gpg verifies each signature and tags
+		# it '!' ; '?' / '-' / '%' do not count, nor do self-signatures. Drop
+		# non-exportable « local » signatures (sigclass ending in 'l') : they
+		# live in one keyring only and are not a public certification
+		# (docs/IMPLEMENTATION.md). Same address on several uids : keep the max.
 		gpg --homedir "$gpghome" --with-colons --check-sigs "$user" 2>/dev/null |
 			awk -F: -v owner="${user: -16}" '
 				function flush_uid(    e, c) {
@@ -1804,16 +1779,11 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		if (( ${#toadd[@]} )) ; then
 			(( ${#toadd[@]} == 1 )) || { printf "$FUNCNAME: Error: "$"Only one --add at a time for 'ksprefrd' (it replaces the previous value)"".\n" >&2 ; return 2 ; }
 			[[ "${toadd[0]}" =~ ^hkps?:// ]] || { printf "$FUNCNAME: Error: "$"'ksprefrd' must start with hkp(s)://"" (%s).\n" "'${toadd[0]}'" >&2 ; return 2 ; }
-			# One edit-key session on the primary uid. 'uid 1' selects it — gpg
-			# lists the primary first, and an edit-key 'uid' selector is an INDEX,
-			# never a string (a string matches nothing, and the keyserver would
-			# then spill onto EVERY uid). 'keyserver' sets/replaces the URL (the
-			# 'y' confirms a replacement, harmless when none exists) ; 'primary'
-			# re-asserts the primary flag in the SAME self-sig — the keyserver
-			# re-sign drops subpacket 25 otherwise, and that pinned primary is
-			# what onak's uid cap protects from FIFO eviction. One session = one
-			# self-sig (no same-second clash with a separate re-pin). A card-held
-			# key re-signs here → PIN.
+			# One edit-key session on the primary uid. 'uid 1' is an INDEX, never
+			# a string (a string matches nothing, and the keyserver would then
+			# spill onto EVERY uid). 'primary' must be re-asserted in the SAME
+			# self-sig : the keyserver re-sign drops subpacket 25 otherwise.
+			# A card-held key re-signs here → PIN.
 			printf 'uid 1\nkeyserver\n%s\ny\nprimary\nsave\n' "${toadd[0]}" \
 				| gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) \
 				|| { printf "$FUNCNAME: Error: "$"Can't set preferred keyserver - good PIN ?.""\n" >&2 ; return 1 ; }
@@ -1821,12 +1791,10 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				gpg --homedir "$gpghome" --keyserver "$keyserv" --send-keys "$user" || ret=$?
 			done
 		else
-			# Read the « preferred keyserver » (subpacket 24) across every
-			# non-revoked uid — the newest binding self-sig of each, straight from
-			# the packet dump ('showpref' proved too state-dependent to script).
-			# The awk emits "<is-primary>\t<keyserver>" per non-revoked uid that
-			# carries one. Keep the primary uid's value ; failing that, the last
-			# non-revoked one. Warn when several distinct values coexist.
+			# Preferred keyserver (subpacket 24) from each non-revoked uid's newest
+			# binding self-sig, read from the packet dump ('showpref' is too
+			# state-dependent to script). The awk emits "<is-primary>\t<keyserver>" ;
+			# keep the primary uid's value, failing that the last non-revoked one.
 			local kspref primk="" lastk="" ip kv
 			local -A seen=()
 			while IFS=$'\t' read -r ip kv ; do
@@ -2430,9 +2398,8 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	[[ "$targetfpr" != "$keyfpr" ]] || { echo "$FUNCNAME: Warning: "$"Self-certification is not innovative! ;-)" >&2 ; return 142 ;}
 	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 143 ;}
 
-	# Sign only the identity uid : a name may be a pseudonym and an address
-	# deserves its own proof-of-control challenge (--all-emails opts out).
-	# Legacy certificates fall back to every uid matching $targetid.
+	# Sign only the identity uid (--all-emails opts out) ; legacy certificates
+	# fall back to every uid matching $targetid. See docs/IMPLEMENTATION.md.
 	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*UID.x3aurn.x3aeid.x3a.*'"$targetid"'/ { i+=1 ; print $10 }')
 	(( ${#uids[@]} )) || readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:.*'"$targetid"'/ { i+=1 ; print $10 }')
 	if ((allemails)) ; then
@@ -2784,16 +2751,10 @@ OPTIONS:
 
 	rsvg-convert --format=pdf --output="$tmpdir/single.pdf" "$tmpdir/render.svg" || return $?
 
-	# A4 landscape: default sticker 85×25mm → 3×7 = 21/page ; with --template (card-shaped) → 3×3 = 9/page.
+	# A4 landscape: sticker 85×25mm → 3×7 = 21/page ; --template card → 3×3 = 9/page.
 	# pdfjam tiles ONE page per --nup slot, so duplicate single.pdf N times first.
-	# --noautoscale true keeps the inputs at their natural 85×55mm card (or 85×25mm sticker)
-	# size instead of inflating them to fill each nup cell. On A4 landscape that lands a
-	# 3×3 card grid (255×165mm) with ~21mm side margins and ~22.5mm top/bottom margins,
-	# and a 3×7 sticker grid (255×175mm) with ~21mm side and ~17.5mm top/bottom — both
-	# comfortably inside any consumer printer's printable area. Without it the cards
-	# came out ~18% over the European business-card standard AND fully bled to the
-	# top/bottom edge of the sheet, so any printer with a non-zero unprintable margin
-	# clipped them.
+	# --noautoscale true keeps the natural card/sticker size : without it the
+	# output is ~18% oversized and bleeds past the printable area.
 	local nup n i
 	[[ "$usetemplate" ]] && { nup="3x3" ; n=9 ; } || { nup="3x7" ; n=21 ; }
 	local -a copies=()
