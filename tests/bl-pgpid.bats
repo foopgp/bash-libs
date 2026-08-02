@@ -647,24 +647,42 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 	[[ "$stderr" == *"must be retained"* ]]
 }
 
-@test "certify signs only the identity uid of a vCard-uid certificate" {
-	local CH="$BATS_TEST_TMPDIR/ch" TH2="$BATS_TEST_TMPDIR/th2"
+ckey () {	# an anchor key (CH/AF) + an imported vCard-uid target (TH2/TF) per test
+	CH="$BATS_TEST_TMPDIR/ch" ; TH2="$BATS_TEST_TMPDIR/th2"
 	mkdir -p "$CH" "$TH2" ; chmod 700 "$CH" "$TH2"
 	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '')
 	"${B[@]}" --homedir "$TH2" --allow-freeform-uid --quick-generate-key "UID:urn:eid:u4$EID1" ed25519 sign 0 2>/dev/null
-	local TF=$(gpg --no-options --homedir "$TH2" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
+	TF=$(gpg --no-options --homedir "$TH2" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
 	"${B[@]}" --homedir "$TH2" --quick-add-uid "$TF" 'FN:Bob' 2>/dev/null
-	"${B[@]}" --homedir "$TH2" --quick-add-uid "$TF" 'EMAIL: <bob@example.org>' 2>/dev/null
+	"${B[@]}" --homedir "$TH2" --quick-add-uid "$TF" 'Bob <bob@example.org>' 2>/dev/null
 	"${B[@]}" --homedir "$CH" --quick-generate-key 'Anchor <anchor@example.org>' ed25519 sign 0 2>/dev/null
-	local AF=$(gpg --no-options --homedir "$CH" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
+	AF=$(gpg --no-options --homedir "$CH" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
 	gpg --no-options --homedir "$TH2" --export "$TF" 2>/dev/null | gpg --no-options --homedir "$CH" --import 2>/dev/null
+}
+
+signed_uids () {	# uids of $TF carrying a signature from the anchor $AF
+	gpg --no-options --homedir "$CH" --with-colons --check-sigs "0x$TF" 2>/dev/null \
+		| awk -F: -v a="${AF: -16}" '$1=="uid"{u=$10} $1=="sig" && $5==a {print u}'
+}
+
+@test "certify signs only the identity uid of a vCard-uid certificate" {
+	ckey
 	run --separate-stderr "${TARGET}" certify -u "$AF" -K '' -H "$CH" "$EID1" "$TF" </dev/null
 	assert_success
-	# exactly one uid signed by the anchor : the UID:urn:eid: one
-	run bash -c "gpg --no-options --homedir '$CH' --with-colons --check-sigs '0x$TF' 2>/dev/null | awk -F: -v a='${AF: -16}' '\$1==\"uid\"{u=\$10} \$1==\"sig\" && \$5==a {print u}'"
+	run signed_uids
 	assert_output --partial "UID\x3aurn\x3aeid\x3au4$EID1"
 	refute_output --partial "FN"
-	refute_output --partial "EMAIL"
+	refute_output --partial "bob@example.org"
+}
+
+@test "certify --all-emails also signs the uids carrying an address" {
+	ckey
+	run --separate-stderr "${TARGET}" certify -E -u "$AF" -K '' -H "$CH" "$EID1" "$TF" </dev/null
+	assert_success
+	run signed_uids
+	assert_output --partial "UID\x3aurn\x3aeid\x3au4$EID1"
+	assert_output --partial "bob@example.org"
+	refute_output --partial "FN"
 }
 
 @test "property revoke asks for irreversible-revocation confirmation ; declining keeps the uid" {

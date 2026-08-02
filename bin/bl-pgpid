@@ -2330,12 +2330,10 @@ bl_pgpid_certify() {
 
 OPTIONS:
   -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask""
+  -E, --all-emails             "$"Also certify every OpenPGP uid containing an email (for compatibility with some legacy software)""
   -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate""
   -o, --ownertrust VALUE       "$"What level of trust do you assign to the target to correctly certify others"" {undefined,marginal,full,never} - "$"Default: ""marginal.
-  -G, --vouch                  "$"Take legal responsability for any actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
-  -g, --vouch-for DOMAIN       "$"Assume some legal responsibilities on the target."" (Not implemented yet)
   -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing""
-  -f, --force-sign-key         "$"Allow to unrevoke or to change vouching""
   -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environnement variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
   -K, --keyservers KEYSERVERS  "$"If non-empty, receive and send updated certificate from and to this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
@@ -2349,7 +2347,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 - 143 "$"Key fingerprint does not match.""
 - "$"Other non-zero on other errors.""
 "
-	local revoke=0 keyid vouchfor signcmd="sign" oforce ownertrust
+	local revoke=0 allemails=0 keyid signcmd="sign" ownertrust
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -2360,17 +2358,10 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			-o|--ownertrust)
 				[[ "$2" =~ ^(undefined|marginal|full|never)$ ]] || { printf -- "$FUNCNAME: Error: "$"Unknown ownertrust value '%s'"".\n" "$2" >&2 ; return 2 ;}
 				shift ; ownertrust=$1 ;;
-			-G|--vouch)
-				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
-				vouchfor="ALL" ;;
-			-g|--vouch-for)
-				[[ "$2" == ALL ]] || { printf -- "$FUNCNAME: Error:" $"Only %s is yet a known domain for vouching"".\n" "'ALL'" >&2 ; return 2 ;}
-				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
-				shift ; vouchfor=${1:?} ;;
+			-E|--all-emails|--allemails)
+				allemails=1 ;;
 			-l|--local)
 				signcmd="lsign" ;;
-			-f|--force-sign-key|--force)
-				oforce="--force-sign-key" ;;
 			-k|--keyserver)
 				printf -- "$FUNCNAME: Warning: "$"Deprecated option"" '--keyserver' - "$"Please use %s instead.""\n" "'--keyservers'" >&2
 				;&
@@ -2439,12 +2430,21 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	[[ "$targetfpr" != "$keyfpr" ]] || { echo "$FUNCNAME: Warning: "$"Self-certification is not innovative! ;-)" >&2 ; return 142 ;}
 	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 143 ;}
 
-	# Sign ONLY the identity uid when the certificate is vCard-uid shaped :
-	# FN: may be a pseudonym, and EMAIL: would deserve its own challenge.
-	# Else (legacy) : every uid containing $targetid, as before.
-	# (cf. /usr/share/doc/gnupg/DETAILS.gz ; from first keyring only)
+	# Sign only the identity uid : a name may be a pseudonym and an address
+	# deserves its own proof-of-control challenge (--all-emails opts out).
+	# Legacy certificates fall back to every uid matching $targetid.
 	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*UID.x3aurn.x3aeid.x3a.*'"$targetid"'/ { i+=1 ; print $10 }')
 	(( ${#uids[@]} )) || readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:.*'"$targetid"'/ { i+=1 ; print $10 }')
+	if ((allemails)) ; then
+		local eu u2 dup
+		while IFS= read -r eu ; do
+			dup=0
+			for u2 in "${uids[@]}" ; do
+				[[ "$u2" != "$eu" ]] || { dup=1 ; break ; }
+			done
+			((dup)) || uids+=("$eu")
+		done < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*<[^<>]+>/ { print $10 }')
+	fi
 	[[ "$uids" ]] || { echo "$FUNCNAME: Crit: "$"No uid. Certificate is probably corrupted." >&2 ; return 1 ;}
 	# Field 10 escapes ':' (and '\\', control bytes) as \\xNN : gpg wants the
 	# real uid string back after the '=' exact-match prefix.
@@ -2452,12 +2452,10 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	if ((revoke)) ; then
 		[[ -z "$ownertrust" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--ownertrust" >&2
-		[[ -z "$oforce" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--force-sign-key" >&2
-		[[ -z "$vouchfor" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--vouch-for" >&2
 		gpg --homedir "$gpghome" --quick-revoke-sig "$targetfpr" "$keyfpr" "${uids[@]/#/=}" || return $?
 		printf "$FUNCNAME: Notice: "$"The sub-layer (%s) return no error, but it may have found nothing to revoke.""\n" "gpg --quick-revoke-sig" >&2
 	else
-		gpg --homedir "$gpghome" --local-user "$keyfpr" $oforce --quick-$signcmd-key "$targetfpr" "${uids[@]/#/=}" || return $?
+		gpg --homedir "$gpghome" --local-user "$keyfpr" --quick-$signcmd-key "$targetfpr" "${uids[@]/#/=}" || return $?
 		printf "$FUNCNAME: Notice: "$"Successfully sign %d '%s' inside certificate %s.""\n" ${#uids[@]} "$targetid" "$targetfpr" >&2
 		gpg --homedir "$gpghome" --quick-set-ownertrust "$targetfpr" "${ownertrust:-marginal}" || true
 	fi

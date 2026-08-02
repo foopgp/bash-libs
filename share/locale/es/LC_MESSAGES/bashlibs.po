@@ -1252,7 +1252,7 @@ msgstr ""
 msgid "Revoke existing EMAIL (may be used more than once)"
 msgstr ""
 
-msgid "Add EMAIL. Enable --name and --extra-comment options"
+msgid "Add EMAIL as a 'Name <EMAIL>' uid. Enable the --name option"
 msgstr ""
 
 msgid "Assume yes: skip the irreversible-revocation confirmation"
@@ -1274,8 +1274,15 @@ msgid "Supernumerary OpenPGP ID string (%s)."
 msgstr ""
 
 msgid ""
-"vCard-property uids carry name/comment separately (FN:/NOTE:) — --name/--"
-"extra-comment are ignored when adding an EMAIL"
+"--extra-comment is ignored: a note is carried by its own NOTE: vCard uid"
+msgstr ""
+
+msgid "%s certificate already carries %s"
+msgstr ""
+
+msgid ""
+"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked "
+"User IDs on the certificate and gpg refuses an identical one."
 msgstr ""
 
 msgid "No revokable email %s inside %s certificate (in %s)."
@@ -1289,6 +1296,11 @@ msgid ""
 msgstr ""
 
 msgid "PROPERTY is one of: "
+msgstr ""
+
+msgid ""
+"Email addresses are not vCard-property uids (they keep the 'Name <addr>' "
+"shape every mail client understands): manage them with '"
 msgstr ""
 
 msgid ""
@@ -1372,14 +1384,6 @@ msgid "Can't set preferred keyserver - good PIN ?."
 msgstr ""
 
 msgid "Several preferred keyservers across uids (%s) — kept '%s'."
-msgstr ""
-
-msgid "%s certificate already carries %s"
-msgstr ""
-
-msgid ""
-"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked "
-"User IDs on the certificate and gpg refuses an identical one."
 msgstr ""
 
 msgid "No revokable %s inside certificate %s (in %s)."
@@ -1543,6 +1547,11 @@ msgstr ""
 msgid "Guess it from connected token, else ask"
 msgstr ""
 
+msgid ""
+"Also certify every OpenPGP uid containing an email (for compatibility with "
+"some legacy software)"
+msgstr ""
+
 msgid "Revoke your previous certifications on someone else's certificate"
 msgstr ""
 
@@ -1550,19 +1559,7 @@ msgid ""
 "What level of trust do you assign to the target to correctly certify others"
 msgstr ""
 
-msgid "Take legal responsability for any actions by the target. "
-msgstr ""
-
-msgid "Same as"
-msgstr ""
-
-msgid "Assume some legal responsibilities on the target."
-msgstr ""
-
 msgid "« Non-exportable » certification. Pretty useless, except for testing"
-msgstr ""
-
-msgid "Allow to unrevoke or to change vouching"
 msgstr ""
 
 msgid "GnuPG home directory"
@@ -1592,12 +1589,6 @@ msgid "Key fingerprint does not match."
 msgstr ""
 
 msgid "Unknown ownertrust value '%s'"
-msgstr ""
-
-msgid "Not implemented yet."
-msgstr ""
-
-msgid "Only %s is yet a known domain for vouching"
 msgstr ""
 
 msgid "Unrecognized argument"
