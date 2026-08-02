@@ -81,6 +81,54 @@ permanent, and the exact revoked string can never be added again.
 
 ---
 
+## Unix user IDs derived from an eid (`bl-pgpid gen_uid`)
+
+`gen_uid` maps an OpenPGP eid onto an almost-unique Unix user ID. Choosing the
+usable range took some measuring — hence `BL_PGPID_XUID_MIN` and
+`BL_PGPID_XUID_MAX`.
+
+### What the system allows
+
+Since Linux 2.6 a uid is coded on 32 bits, so it should range from 0 (root) to
+2^32-1 = 4294967295. Older Unix systems used 16 bits (0 to 65535), with the
+conventions that still hold today:
+
+- `0` — root
+- under `1000` — "system" users
+- `1000` — the main "human" user (often also the first administrator)
+- above `1000` — other "human" users
+- `65534` — `nobody`, by convention
+
+See the [Debian policy on users and
+groups](https://www.debian.org/doc/debian-policy/ch-opersys.html#users-and-groups).
+
+### What it actually accepts
+
+```
+$ LANG=C.UTF-8 sudo useradd -u 4294967295 test
+useradd: invalid user ID '4294967295'                      → exit 3
+
+$ LANG=C.UTF-8 sudo useradd -u 4294967294 test
+useradd warning: test's uid -2 outside of the UID_MIN 1000
+                 and UID_MAX 60000 range.                  → exit 0
+```
+
+Note the warning: `useradd` already prints that uid back as **-2**. The 32-bit
+value is being handled as signed somewhere.
+
+### The range we settled on
+
+Reserving 4294967294 and 4294967293, plus everything under 2^18 (262144), for
+future use or convention leaves 262144 … 4294967292 — 4294705148 slots, about
+half the current human population (~8 billion).
+
+That is the theory. In practice **anything at or above 2^31 causes trouble**,
+almost certainly because a lot of software manipulates uids as signed rather
+than unsigned integers. `BL_PGPID_XUID_MAX` was therefore lowered to
+2^31-2 = 2147483646, which still leaves ~2.15 billion slots.
+
+---
+
 ## Certification (`bl-pgpid certify`)
 
 ### What gets signed

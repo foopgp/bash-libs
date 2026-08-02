@@ -1053,33 +1053,8 @@ OPTIONS:
 }
 
 bl_pgpid_gen_uid() {
-#  Since linux kernel 2.6, user ID (uid) are coded on 32 bit, so it should range from 0 (root) to 2^32-1 = 4294967295
-#  On older unix systems it was coded on 16 bit (0 to 65535) :
-#  - 0: root
-#  - under 1000: "system" users
-#  - 1000: Main "human" user (also often: first administrator)
-#  - above 1000: other "human" users
-#  - up to 65534, which is use by convention by the user 'nobody'.
-#
-#  tests:
-#  - $ LANG=C.UTF-8 sudo useradd -u 4294967295 test
-#    useradd: invalid user ID '4294967295'
-#    Return value $?: 3 (error)
-#  - $ LANG=C.UTF-8 sudo useradd -u 4294967294 test
-#    useradd warning: test's uid -2 outside of the UID_MIN 1000 and UID_MAX 60000 range.
-#    Return value $?: 0 (OK)
-#
-#   If we let 4294967294, 4294967293 and id under 2^18 (< 262144), for some futur usage/convention,
-#   then we can use range 262144 to 4294967292, to get an almost unique Unix User ID from unique OpenPGP ID string (u4,...)
-#
-#   See: https://www.debian.org/doc/debian-policy/ch-opersys.html#users-and-groups
-#
-#   Which make 4294705148 slots, ~= about half of the actual human population (~8 billions).
-#   But we encounter many problems when ( uid >= 2^31 ), probably because many software manipulate uid as signed instead of unsigned.
-#   Then we have had to decrease BL_PGPID_XUID_MAX to 2^31-2=2147483646
-#
-#   Constants: BL_PGPID_XUID_MIN and BL_PGPID_XUID_MAX
-
+	# Range [BL_PGPID_XUID_MIN, BL_PGPID_XUID_MAX] : uids at or above 2^31 break
+	# on software that treats them as signed — docs/IMPLEMENTATION.md.
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [U4]"
