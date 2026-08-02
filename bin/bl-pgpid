@@ -682,14 +682,16 @@ _bl_pgpid_ks_to_keyurl() {
 
 _bl_pgpid_upgrade_uids() {
 	# Upgrade a legacy certificate to the vCard-uid process : mint its identity
-	# uid UID:urn:eid:<eid>, an FN: (name part of the first legacy uid) and one
-	# EMAIL: <…> per legacy email, then pin the primary on the identity.
-	# Legacy uids are NOT revoked : the web of trust still rests on their
-	# certifications. No-op without the secret key, without a single consistent
-	# legacy eid, or when the identity uid already exists.
+	# uid UID:urn:eid:<eid> and an FN: (name part of the first legacy uid), then
+	# pin the primary on the identity. That is the whole gain — the eid stops
+	# squatting a comment field and gets its own self-certified anchor.
+	# Legacy uids are NOT revoked (the web of trust rests on their
+	# certifications) and their emails are NOT re-minted (see below). No-op
+	# without the secret key, without a single consistent legacy eid, or when
+	# the identity uid already exists.
 	local gpghome=$1 user=$2 gpgfilter=${3:-false}
-	local rawu u fn eiduid email
-	local -a uids=() ids emails=()
+	local rawu u fn eiduid
+	local -a uids=() ids
 	while IFS= read -r rawu ; do
 		u=$(printf '%b' "$rawu")
 		[[ ! "$u" =~ ^UID:urn:eid: ]] || return 0	# already vCard-uid shaped
@@ -713,13 +715,12 @@ _bl_pgpid_upgrade_uids() {
 		"${GQ[@]}" --quick-add-uid "$user" "FN:${fn}" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "${FUNCNAME[1]}" "adduid" >&2 ; return 1 ;}
 	fi
 
-	for u in "${uids[@]}" ; do
-		[[ ! "$u" =~ \<([^>]+)\> ]] || { [[ " ${emails[*]} " == *" ${BASH_REMATCH[1]} "* ]] || emails+=(${BASH_REMATCH[1]}) ; }
-	done
-	for email in "${emails[@]}" ; do
-		printf "%s: Notice: Adding %s into %s certificate...\n" "${FUNCNAME[1]}" "'EMAIL: <${email}>'" "$user" >&2
-		"${GQ[@]}" --quick-add-uid "$user" "EMAIL: <${email}>" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "${FUNCNAME[1]}" "adduid" >&2 ; return 1 ;}
-	done
+	# Emails are deliberately left alone. A legacy uid is already a name-addr
+	# 'Name (u4=…) <addr>' that every mail client handles, so minting a second
+	# uid for the same address would only duplicate it, split the third-party
+	# certifications between the two, and burn uid quota. Its now-redundant
+	# (u4=…) comment is harmless — and the uid must not be revoked anyway, the
+	# web of trust rests on it.
 
 	"${GQ[@]}" --quick-set-primary-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || printf "${FUNCNAME[1]}: Warning: "$"Can't set the primary uid back to"" %s.\n" "'$eiduid'" >&2
 }
@@ -1224,9 +1225,11 @@ OPTIONS:
 	[[ "$passphrase" ]] || { printf "%s: Error: Passphrase can't be empty at this stage.\n" "$FUNCNAME" >&2 ; return 2 ;}
 
 	# The certificate is born with a single, self-certified identity UID: the
-	# eid URN (Section 4.5 of draft-foopgp-urn-eid). Name, email and any note
-	# are then added as separate vCard-property UIDs (FN:, EMAIL:, NOTE:), each
-	# certifiable and revocable on its own — see bl-contacts / the PGP ID spec.
+	# eid URN (Section 4.5 of draft-foopgp-urn-eid). Name and any note are then
+	# added as separate vCard-property UIDs (FN:, NOTE:), each certifiable and
+	# revocable on its own — see bl-contacts / the PGP ID spec. The email is NOT
+	# a vCard-property uid : it keeps the conventional 'Name <addr>' shape that
+	# every mail client understands (see _bl_pgpid_upgrade_uids).
 	cat <<-EOF | gpg --homedir "$gpghome" --batch --generate-key --allow-freeform-uid || return $?
 		%echo Generating OpenPGP key for ${email}
 		Key-Type: eddsa
@@ -1249,11 +1252,11 @@ OPTIONS:
 	fpr=$(gpg --homedir "$gpghome" --list-secret-keys --with-colons "=UID:urn:eid:${pgpidu}" | awk -F: '$1=="fpr"{print $10;exit}') || return $?
 	[[ "$fpr" ]] || { printf "$FUNCNAME: Error: "$"Freshly generated key not found by its eid UID"" (%s).\n" "$pgpidu" >&2 ; return 1 ; }
 
-	# Add the vCard-property UIDs. EMAIL keeps its angle brackets with a space
-	# before '<' (what GnuPG/gpgme/WKD/MUAs and OpenKeychain all parse).
+	# Add the vCard-property UIDs, then the email as a plain 'Name <addr>' uid
+	# (see _bl_pgpid_upgrade_uids : an 'EMAIL: <addr>' uid breaks real MUAs).
 	local -a GQ=(gpg --homedir "$gpghome" --batch --passphrase "${passphrase}" --pinentry-mode loopback)
 	"${GQ[@]}" --quick-add-uid "$fpr" "FN:${pseudo}" || return $?
-	"${GQ[@]}" --quick-add-uid "$fpr" "EMAIL: <${email}>" || return $?
+	"${GQ[@]}" --quick-add-uid "$fpr" "${pseudo} <${email}>" || return $?
 	[[ -z "${extracomment// }" ]] || "${GQ[@]}" --quick-add-uid "$fpr" "NOTE:$(_bl_pgpid_vcard_esc "${extracomment# }")" || return $?
 	# Pin the identity eid uid primary : it is the WoT/identity anchor, and being
 	# minted first it is the oldest — a keyserver's FIFO uid cap would evict it
@@ -1396,7 +1399,7 @@ bl_pgpid_email() {
 
 OPTIONS:
   -R, --revoke EMAIL          "$"Revoke existing EMAIL (may be used more than once)""
-  -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options""
+  -A, --add EMAIL             "$"Add EMAIL as a 'Name <EMAIL>' uid. Enable the --name option""
   -y, --yes                   "$"Assume yes: skip the irreversible-revocation confirmation""
   -c, --certs-count           "$"Also output the count of external valid certifications per email (tab-separated). If an email appears in several UIDs, only the maximum count is kept.""
   -v, --verbose               "$"Increase verbosity""
@@ -1405,17 +1408,20 @@ OPTIONS:
 $(printf -- "%80s\n" ${keyservs[@]})
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
-	local toadd torev pseudo extracomment certscount=0 assumeyes=0
+	local toadd torev pseudo extracomment email certscount=0 assumeyes=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local gpgfilter=false
 	for ((;$#;)) ; do
 		case "$1" in
 			-R|--rev|--revoke)
-				[[ "$2" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$2'" >&2 ; return 2 ;}
-				shift ; torev+=("$1") ;;
+				# Both the bare and the <bracketed> input shapes are accepted.
+				shift ; email=${1#<} ; email=${email%>}
+				[[ "$email" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$1'" >&2 ; return 2 ;}
+				torev+=("$email") ;;
 			-A|--add)
-				[[ "$2" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$2'" >&2 ; return 2 ;}
-				shift ; toadd+=("$1") ;;
+				shift ; email=${1#<} ; email=${email%>}
+				[[ "$email" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$1'" >&2 ; return 2 ;}
+				toadd+=("$email") ;;
 			-y|--yes) assumeyes=1 ;;
 			-N|--name)
 				shift ; pseudo=$1 ;;
@@ -1466,27 +1472,65 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		ids=($(_bl_pgpid_eids_of <<<"$uids"))
 		(( ${#ids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No OpenPGP ID string (u4|u5) in %s certificate.""\n" "$user" >&2 ; return 1 ;}
 		(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary OpenPGP ID string (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
-		[[ -z "$pseudo$extracomment" ]] || printf "$FUNCNAME: Notice: "$"vCard-property uids carry name/comment separately (FN:/NOTE:) — --name/--extra-comment are ignored when adding an EMAIL""\n" >&2
+		[[ -z "$extracomment" ]] || printf "$FUNCNAME: Notice: "$"--extra-comment is ignored: a note is carried by its own NOTE: vCard uid""\n" >&2
 	fi
 
-	# Add and revoke through the property machinery (uid shape, cardinality,
-	# primary uid pinned back on the eid). Keyservers muted here : one single
-	# send below once everything is done.
-	local email
-	local -a vopt=()
-	[[ "$gpgfilter" != cat ]] || vopt=(-v)
+	# Add each address as a plain 'Name <addr>' uid — deliberately NOT a
+	# vCard-property uid: every mail client understands this shape, none
+	# understands 'EMAIL: <addr>' (Evolution refuses to send, Thunderbird pastes
+	# 'EMAIL:' into To:) — JJB, 2026-08-02. Keyservers are muted here : a single
+	# send happens below, once everything is done.
+	local uidstr rawu u dup uidname eiduid
+	local -a prevuids=() revuids=()
+	if ((${#toadd[@]})) ; then
+		# The name in front of the address: --name wins, else the certificate's
+		# own FN: vCard uid, else (per address) the local part.
+		if [[ -z "$pseudo" ]] ; then
+			while IFS= read -r rawu ; do
+				u=$(printf '%b' "$rawu")
+				[[ "$u" =~ ^FN(\;[^:]*)?:\ ?(.*)$ ]] || continue
+				pseudo=${BASH_REMATCH[2]} ; break
+			done < <(awk -F: '$1=="uid" && $2 !~ /[re]/ { print $10 }' <<<"$uids")
+		fi
+		# --with-colons escapes ':' (and '\\', control bytes) as \\xNN in field
+		# 10 ; gpg --quick-*-uid need the real UID string back.
+		while IFS= read -r rawu ; do prevuids+=("$(printf '%b' "$rawu")") ; done \
+			< <(awk -F: '$1=="uid" && $2 !~ /[re]/ { print $10 }' <<<"$uids")
+		while IFS= read -r rawu ; do revuids+=("$(printf '%b' "$rawu")") ; done \
+			< <(awk -F: '$1=="uid" && $2 ~ /[re]/ { print $10 }' <<<"$uids")
+		eiduid="UID:urn:eid:${ids[0]}"
+	fi
 	for email in "${toadd[@]}" ; do
-		bl_pgpid_property email --add "$email" "${vopt[@]}" -K '' -H "$gpghome" -- "$user" >/dev/null || return $?
+		uidname=${pseudo:-${email%%@*}}
+		uidstr="${uidname} <${email}>"
+		dup=0
+		for u in "${prevuids[@]}" ; do
+			[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
+		done
+		((! dup)) || { printf "$FUNCNAME: Notice: "$"%s certificate already carries %s""\n" "$user" "'$uidstr'" >&2 ; continue ; }
+		# A revoked twin keeps its string on the certificate forever and gpg
+		# refuses an identical one : say so instead of blaming the PIN.
+		for u in "${revuids[@]}" ; do
+			[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
+		done
+		((! dup)) || { printf "$FUNCNAME: Notice: "$"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked User IDs on the certificate and gpg refuses an identical one.""\n" "'$uidstr'" >&2 ; continue ; }
+		printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'$uidstr'" "$user" >&2
+		gpg --homedir "$gpghome" --batch --quick-add-uid "$user" "$uidstr" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
+		# gpg promotes the freshly added uid : pin the primary back on the eid.
+		gpg --homedir "$gpghome" --batch --quick-set-primary-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || printf "$FUNCNAME: Warning: "$"Can't set the primary uid back to"" %s.\n" "'$eiduid'" >&2
 	done
 	# --revoke retires the address that `bl-pgpid email` shows — the mbox of any
-	# usable uid, be it a vCard "EMAIL: <addr>" or a legacy "Name (…) <addr>".
-	# One uid is revoked per call (re-run --revoke to peel the next) : legacy
-	# shapes first, so the historical "u4/u5-in-a-legacy-uid" holders drain
-	# before the vCard EMAIL:. The keep-one guard counts every email-bearing uid
-	# (legacy and vCard alike), so the certificate never loses its last email.
+	# usable uid, whatever its shape: the current "Name <addr>", the historical
+	# "Name (u4/u5=…) <addr>", or the short-lived "EMAIL: <addr>" experiment.
+	# One uid is revoked per call (re-run --revoke to peel the next) : the
+	# deprecated "EMAIL: <addr>" shape drains FIRST, so a certificate converges
+	# on name-addr uids. The keep-one guard counts every email-bearing uid
+	# whatever its shape, so the certificate never loses its last address.
 	local rawu u
 	local -a emailuids legacytargets vcardtargets targetuids
 	for email in "${torev[@]}" ; do
+		# Both the bare and the <bracketed> input shapes are accepted.
+		email=${email#<} ; email=${email%>}
 		emailuids=() ; legacytargets=() ; vcardtargets=()
 		while IFS= read -r rawu ; do
 			u=$(printf '%b' "$rawu")
@@ -1498,7 +1542,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				[[ "${BASH_REMATCH[1]}" != "$email" ]] || legacytargets+=("$u")
 			fi
 		done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
-		targetuids=("${legacytargets[@]}" "${vcardtargets[@]}")
+		targetuids=("${vcardtargets[@]}" "${legacytargets[@]}")
 		(( ${#targetuids[@]} )) || { printf "$FUNCNAME: Error: "$"No revokable email %s inside %s certificate (in %s).""\n" "'$email'" "$user" "$gpghome" >&2 ; return 1 ; }
 		(( ${#emailuids[@]} >= 2 )) || { printf "$FUNCNAME: Error: "$"At least one email must be retained.""\n" >&2 ; return 1 ; }
 		_bl_pgpid_revoke_uid "$gpghome" "$user" "${targetuids[0]}" "$gpgfilter" "$assumeyes" || return 1
@@ -1563,7 +1607,8 @@ bl_pgpid_property() {
 	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 	local helpmsg="
 "$"Display and add or revoke vCard-property uids inside OpenPGP certificate.""
-"$"PROPERTY is one of: ""{ name, email, note, address, phone, url, lang, geo, ksprefrd }.
+"$"PROPERTY is one of: ""{ name, note, address, phone, url, lang, geo, ksprefrd }.
+"$"Email addresses are not vCard-property uids (they keep the 'Name <addr>' shape every mail client understands): manage them with '""$BL_PGPID_NAME email'.
 "$"'ksprefrd' is preferred certificate server. This is not stored as a vCard-property uid, but used when generating vCard.""
 "$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
 "$"Without modification options, output the usable (non-revoked and non-expired) PROPERTY values, ready to be evaluated in bash.""
@@ -1587,10 +1632,13 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	# The vCard property (RFC 6350) behind each CLI name. The identity eid
 	# (UID:urn:eid:…) is deliberately NOT manageable here: the whole web of
 	# trust hangs on it, changing it deserves its own heavily-confirmed UX.
-	local -A vprops=([name]=FN [note]=NOTE [address]=ADR [phone]=TEL [url]=URL [lang]=LANG [geo]=GEO [email]=EMAIL)
+	# Email is deliberately absent : an email-bearing uid keeps the conventional
+	# 'Name <addr>' shape (MUAs choke on 'EMAIL: <addr>'), so it is not a
+	# vCard-property uid and is managed by bl_pgpid_email instead.
+	local -A vprops=([name]=FN [note]=NOTE [address]=ADR [phone]=TEL [url]=URL [lang]=LANG [geo]=GEO)
 	# House cardinality (stricter than RFC 6350) : one usable {FN,NOTE} at a
-	# time (a new one revokes the previous), at least one usable {FN,EMAIL} kept.
-	local mono=" FN NOTE " keepone=" FN EMAIL "
+	# time (a new one revokes the previous), at least one usable FN kept.
+	local mono=" FN NOTE " keepone=" FN "
 	local -a toadd=() torev=()
 	local revokeall=0 showall=0 showrevoked=0 raw=0 tovcard=0 assumeyes=0 prop vprop target
 	local gpghome=${GNUPGHOME:-~/.gnupg}
@@ -1709,12 +1757,19 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		printf 'BEGIN:VCARD\r\nVERSION:4.0\r\n'
 		while IFS= read -r rawu ; do
 			u=$(printf '%b' "$rawu")
-			[[ "$u" =~ ^([A-Z]+)(\;[^:]*)?:\ ?(.*)$ ]] || continue   # skip legacy (non-vCard) uids
-			if [[ "${BASH_REMATCH[1]}" == EMAIL ]] ; then
-				u=${BASH_REMATCH[3]} ; u=${u#<} ; u=${u%>}           # bare address, no angle brackets
-				pref=$((pref+1)) ; _bl_pgpid_vfold "EMAIL;PREF=${pref}:${u}"
-			else
-				_bl_pgpid_vfold "$u"                                 # already a valid, escaped vCard line
+			if [[ "$u" =~ ^([A-Z]+)(\;[^:]*)?:\ ?(.*)$ ]] ; then
+				if [[ "${BASH_REMATCH[1]}" == EMAIL ]] ; then
+					# Legacy 'EMAIL: <addr>' uid — still rendered so that
+					# certificates minted during that experiment keep working.
+					u=${BASH_REMATCH[3]} ; u=${u#<} ; u=${u%>}       # bare address, no angle brackets
+					pref=$((pref+1)) ; _bl_pgpid_vfold "EMAIL;PREF=${pref}:${u}"
+				else
+					_bl_pgpid_vfold "$u"                             # already a valid, escaped vCard line
+				fi
+			elif [[ "$u" =~ \<([^\<\>]+)\>[[:space:]]*$ ]] ; then
+				# Plain 'Name <addr>' uid : only its address becomes a vCard
+				# line (the name is carried by FN:, the eid by UID:urn:eid:…).
+				pref=$((pref+1)) ; _bl_pgpid_vfold "EMAIL;PREF=${pref}:${BASH_REMATCH[1]}"
 			fi
 		done < <(gpg --homedir "$gpghome" --with-colons --list-key "$user" 2>/dev/null | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
 		# KEY;MEDIATYPE : retrievable-cert URL from the preferred keyserver
@@ -1822,9 +1877,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		done < <(awk -F: '$1=="uid" && $2 ~ /[re]/ { print $10 }' <<<"$uids")
 
 		for val in "${toadd[@]}" ; do
-			# EMAIL keeps its angle brackets with a space before '<' (what
-			# GnuPG/gpgme/WKD/MUAs and OpenKeychain all parse).
-			[[ "$vprop" != EMAIL ]] && uidstr="${vprop}:${val}" || uidstr="EMAIL: <${val}>"
+			uidstr="${vprop}:${val}"
 			dup=0
 			for u in "${prevuids[@]}" ; do
 				[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
@@ -1855,10 +1908,8 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				u=$(printf '%b' "$rawu")
 				[[ ! "$u" =~ ^${vprop}(\;[^:]*)?:\ ?(.*)$ ]] || curuids+=("$u")
 			done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
-			# VALUE matches the parsed value (vCard parameters ignored) ;
-			# for EMAIL both bare and <bracketed> input shapes are accepted.
+			# VALUE matches the parsed value (vCard parameters ignored).
 			v=$val
-			[[ "$vprop" != EMAIL ]] || { v=${v#<} ; v=${v%>} ; v="<$v>" ; }
 			for u in "${curuids[@]}" ; do
 				[[ "$u" =~ ^${vprop}(\;[^:]*)?:\ ?(.*)$ ]] || continue
 				[[ ${BASH_REMATCH[2]} != "$v" ]] || matched+=("$u")
