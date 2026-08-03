@@ -1458,8 +1458,12 @@ msgstr "Afficher les courriels utilisables (non révoqués et non expirés)."
 msgid "Revoke existing EMAIL (may be used more than once)"
 msgstr "Révoquer l'EMAIL existant (peut être utilisé plusieurs fois)"
 
+msgid "Revoke every usable email uid but the newest"
+msgstr "Révoquer tous les uid email utilisables sauf le plus récent"
+
 msgid "Add EMAIL as a 'Name <EMAIL>' uid. Enable the --name option"
-msgstr "Ajouter l'EMAIL sous forme d'un uid « Nom <EMAIL> ». Active l'option --name"
+msgstr ""
+"Ajouter l'EMAIL sous forme d'un uid « Nom <EMAIL> ». Active l'option --name"
 
 msgid "Assume yes: skip the irreversible-revocation confirmation"
 msgstr "Répondre oui : sauter la confirmation de révocation irréversible"
@@ -1504,6 +1508,9 @@ msgstr "Pas d'email %s révoquable dans le certificat %s (dans %s)."
 
 msgid "At least one email must be retained."
 msgstr "Au moins une adresse de courriel doit être conservée."
+
+msgid "Nothing to revoke."
+msgstr "Rien à révoquer."
 
 msgid ""
 "Display and add or revoke vCard-property uids inside OpenPGP certificate."
@@ -1632,9 +1639,6 @@ msgstr "Pas de %s révoquable dans le certificat %s (dans %s)"
 
 msgid "At least one %s must be retained."
 msgstr "Au moins un %s doit être conservé."
-
-msgid "Nothing to revoke."
-msgstr "Rien à révoquer."
 
 msgid ""
 "No identity eid uid (UID:urn:eid:...) inside %s certificate - primary uid "

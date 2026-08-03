@@ -431,7 +431,6 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 }
 
 @test "email --revoke-all keeps the newest" {
-	skip "email --revoke-all not ported yet from property email (revocation is irreversible: implement deliberately)"
 	vkey
 	"${TARGET}" email -A bob@example.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
 	sleep 1
@@ -592,8 +591,7 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 	"${B[@]}" --quick-add-uid "$LFPR" "Alice Legacy (u4=$EID1) <alice.pro@example.org>" 2>/dev/null
 }
 
-@test "property --add upgrades a legacy certificate first : vCard uids minted, legacy uids kept" {
-	skip "TODO rewrite: the upgrade no longer mints an email uid per legacy address (a legacy uid is already name-addr), so this test's premise is gone"
+@test "email --add upgrades a legacy certificate first : identity uid + FN: minted, legacy uids kept" {
 	lkey
 	run --separate-stderr "${TARGET}" email -A carol@example.org -K '' -H "$LH" "0x$LFPR"
 	assert_success
@@ -611,21 +609,9 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 	assert_output --partial "UID:urn:eid:u4$EID1"
 }
 
-@test "email --revoke peels one uid per call, legacy shape first" {
-	skip "TODO rewrite: an address no longer exists in two shapes at once (the upgrade stopped duplicating it), so one --revoke now retires it outright"
+@test "email --revoke retires a legacy address in a single call" {
 	lkey
-	# Upgrade mints EMAIL: uids while keeping the legacy "… <addr>" uids, so
-	# alice@example.org now exists in BOTH shapes.
 	"${TARGET}" email -A carol@example.org -K '' -H "$LH" "0x$LFPR" >/dev/null 2>&1
-	# 1st --revoke : the legacy "Alice Legacy (u4=…) <alice@…>" goes first ; the
-	# address is still usable through its vCard EMAIL: uid.
-	run --separate-stderr "${TARGET}" email -y -R alice@example.org -K '' -H "$LH" "0x$LFPR"
-	assert_success
-	run bash -c "gpg --no-options --homedir '$LH' --with-colons -k 2>/dev/null | grep -c '^uid:r:.*<alice@example.org>'"
-	assert_output "1"
-	run --separate-stderr "${TARGET}" email -H "$LH" "0x$LFPR"
-	assert_line "alice@example.org"
-	# 2nd --revoke : now the vCard EMAIL: uid ; the address finally disappears.
 	run --separate-stderr "${TARGET}" email -y -R alice@example.org -K '' -H "$LH" "0x$LFPR"
 	assert_success
 	run --separate-stderr "${TARGET}" email -H "$LH" "0x$LFPR"
@@ -633,7 +619,24 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 	assert_line "alice.pro@example.org"
 	assert_line "carol@example.org"
 	run bash -c "gpg --no-options --homedir '$LH' --with-colons -k 2>/dev/null | grep -c '^uid:r:.*<alice@example.org>'"
-	assert_output "2"
+	assert_output "1"
+}
+
+@test "email --revoke drains the deprecated 'EMAIL:' shape before the name-addr one" {
+	vkey
+	# A certificate minted during the EMAIL: experiment carries both shapes for
+	# the same address.
+	gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH" \
+		--quick-add-uid "$VFPR" 'EMAIL: <alice@example.org>' 2>/dev/null
+	run --separate-stderr "${TARGET}" email -y -R alice@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	# the deprecated uid went first ; the name-addr one still carries the address
+	run bash -c "gpg --no-options --homedir '$VH' --with-colons -k 2>/dev/null | grep -c '^uid:u:.*Alice Test <alice@example.org>'"
+	assert_output "1"
+	run bash -c "gpg --no-options --homedir '$VH' --with-colons -k 2>/dev/null | grep -c '^uid:r:.*EMAIL'"
+	assert_output "1"
+	run --separate-stderr "${TARGET}" email -H "$VH" "0x$VFPR"
+	assert_line "alice@example.org"
 }
 
 @test "email --revoke keep-one counts legacy uids too" {

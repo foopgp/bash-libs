@@ -1364,6 +1364,7 @@ bl_pgpid_email() {
 
 OPTIONS:
   -R, --revoke EMAIL          "$"Revoke existing EMAIL (may be used more than once)""
+      --revoke-all            "$"Revoke every usable email uid but the newest""
   -A, --add EMAIL             "$"Add EMAIL as a 'Name <EMAIL>' uid. Enable the --name option""
   -y, --yes                   "$"Assume yes: skip the irreversible-revocation confirmation""
   -c, --certs-count           "$"Also output the count of external valid certifications per email (tab-separated). If an email appears in several UIDs, only the maximum count is kept.""
@@ -1373,7 +1374,7 @@ OPTIONS:
 $(printf -- "%80s\n" ${keyservs[@]})
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
-	local toadd torev pseudo extracomment email certscount=0 assumeyes=0
+	local toadd torev pseudo extracomment email certscount=0 assumeyes=0 revokeall=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local gpgfilter=false
 	for ((;$#;)) ; do
@@ -1387,6 +1388,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				shift ; email=${1#<} ; email=${email%>}
 				[[ "$email" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$1'" >&2 ; return 2 ;}
 				toadd+=("$email") ;;
+			--revoke-all|--revokeall) revokeall=1 ;;
 			-y|--yes) assumeyes=1 ;;
 			-N|--name)
 				shift ; pseudo=$1 ;;
@@ -1428,6 +1430,9 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	if [[ "$toadd" ]] ; then
 		local uids ids
+		# Legacy certificate ? Mint its identity uid first, so the primary can be
+		# pinned back on it after the add.
+		_bl_pgpid_upgrade_uids "$gpghome" "$user" "$gpgfilter" || return 1
 		# Get all uid/uat (from first keyring only)
 		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 ; print }')
 		[[ "$uids" ]] || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "$user" "$gpghome" >&2 ; return 1 ; }
@@ -1506,9 +1511,32 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		_bl_pgpid_revoke_uid "$gpghome" "$user" "${targetuids[0]}" "$gpgfilter" "$assumeyes" || return 1
 	done
 
+	if ((revokeall)) ; then
+		local created keep i
+		local -a alluids=() allcreated=()
+		while IFS=: read -r created rawu ; do
+			u=$(printf '%b' "$rawu")
+			[[ "$u" =~ ^EMAIL(\;[^:]*)?:\ ?\<?[^\<\>]+\>?$ || "$u" =~ \<[^\<\>]+\>[[:space:]]*$ ]] || continue
+			alluids+=("$u") ; allcreated+=("$created")
+		done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { printf "%s:%s\n", $6, $10 }')
+		# Keep the newest (uid self-sig creation date, last listed wins ties).
+		keep=-1
+		for ((i=0 ; i<${#alluids[@]} ; i++)) ; do
+			(( keep >= 0 && allcreated[i] < allcreated[keep] )) || keep=$i
+		done
+		if (( ${#alluids[@]} < 2 )) ; then
+			printf "$FUNCNAME: Warning: "$"Nothing to revoke.""\n" >&2
+		else
+			for ((i=0 ; i<${#alluids[@]} ; i++)) ; do
+				((i != keep)) || continue
+				_bl_pgpid_revoke_uid "$gpghome" "$user" "${alluids[i]}" "$gpgfilter" "$assumeyes" || return 1
+			done
+		fi
+	fi
+
 	local ret=0
 	# Send updated certificate to keyservers
-	if [[ "$torev" || "$toadd" ]] ; then
+	if [[ "$torev" || "$toadd" ]] || ((revokeall)) ; then
 		for keyserv in ${keyservs[@]} ; do
 			gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "$user" || ret=$?
 		done
@@ -1795,8 +1823,8 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	if (( ${#toadd[@]} + ${#torev[@]} + revokeall )) ; then
 		local uids uidstr rawu u v dup created keep i eiduid firstuid
 		local -a prevuids revuids curuids matched curcreated
-		# Legacy certificate ? Mint its vCard-uid shape first (identity uid,
-		# FN:, EMAIL:s - legacy uids kept), so the operations below see it.
+		# Legacy certificate ? Mint its vCard-uid shape first (identity uid and
+		# FN:, legacy uids kept), so the operations below see it.
 		_bl_pgpid_upgrade_uids "$gpghome" "$user" "$gpgfilter" || return 1
 		# Get all uid/uat (from first keyring only)
 		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 ; print }')

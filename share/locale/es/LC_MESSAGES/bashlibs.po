@@ -1252,6 +1252,9 @@ msgstr ""
 msgid "Revoke existing EMAIL (may be used more than once)"
 msgstr ""
 
+msgid "Revoke every usable email uid but the newest"
+msgstr ""
+
 msgid "Add EMAIL as a 'Name <EMAIL>' uid. Enable the --name option"
 msgstr ""
 
@@ -1289,6 +1292,9 @@ msgid "No revokable email %s inside %s certificate (in %s)."
 msgstr ""
 
 msgid "At least one email must be retained."
+msgstr ""
+
+msgid "Nothing to revoke."
 msgstr ""
 
 msgid ""
@@ -1390,9 +1396,6 @@ msgid "No revokable %s inside certificate %s (in %s)."
 msgstr ""
 
 msgid "At least one %s must be retained."
-msgstr ""
-
-msgid "Nothing to revoke."
 msgstr ""
 
 msgid ""
