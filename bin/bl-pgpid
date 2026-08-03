@@ -2404,7 +2404,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	# Sign only the identity uid (--all-emails opts out) ; legacy certificates
 	# fall back to every uid matching $targetid. See docs/IMPLEMENTATION.md.
 	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*UID.x3aurn.x3aeid.x3a.*'"$targetid"'/ { i+=1 ; print $10 }')
-	(( ${#uids[@]} )) || readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:.*'"$targetid"'/ { i+=1 ; print $10 }')
+	(( ${#uids[@]} )) || readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*'"$targetid"'/ { i+=1 ; print $10 }')
 	if ((allemails)) ; then
 		local eu u2 dup
 		while IFS= read -r eu ; do
