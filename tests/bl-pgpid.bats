@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-# © 2026 Mnèmê (u5=001777236237.945e_43.30_005.38) <mneme@foopgp.org>
+# © 2026 Mnêmê (u5001777236237.945e_43.30_005.38) <mneme@foopgp.org>
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 
