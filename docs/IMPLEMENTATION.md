@@ -1,6 +1,6 @@
 <!--
 © 2026 Jean-Jacques Brucker (u4sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76) <jjbrucker@foopgp.org>
-© 2026 Mnêmê Opus-5 (u5001777236237.945e_43.30_005.38) <mneme@foopgp.org>
+© 2026 Mnêmê (u5001777236237.945e_43.30_005.38 claude-opus-5) <mneme@foopgp.org>
 
 SPDX-License-Identifier: CC-BY-SA-4.0+
 -->
