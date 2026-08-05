@@ -1135,9 +1135,6 @@ msgstr ""
 "Mise à niveau du certificat %s vers le processus vCard-uid (uids historiques "
 "conservés : la toile de confiance repose dessus)…"
 
-msgid "Can't set the primary uid back to"
-msgstr "Impossible de repositionner l’uid primaire sur"
-
 msgid ""
 "Output fingerprints, emails and OpenPGP IDentifier of certificates matching "
 "NAME|U4|U5|EMAIL."
@@ -1376,6 +1373,9 @@ msgstr "le keyserver DOIT être hkp(s)://…"
 
 msgid "Freshly generated key not found by its eid UID"
 msgstr "Clé fraîchement générée introuvable par son uid eid"
+
+msgid "Can't set the primary uid to"
+msgstr "Impossible de positionner l’uid primaire sur"
 
 msgid "Extract or add image inside OpenPGP certificate."
 msgstr "Extraire ou ajouter une image dans le certificat OpenPGP."
@@ -1639,13 +1639,6 @@ msgstr "Pas de %s révoquable dans le certificat %s (dans %s)"
 
 msgid "At least one %s must be retained."
 msgstr "Au moins un %s doit être conservé."
-
-msgid ""
-"No identity eid uid (UID:urn:eid:...) inside %s certificate - primary uid "
-"left as is."
-msgstr ""
-"Pas d’uid eid d’identité (UID:urn:eid:...) dans le certificat %s - uid "
-"primaire laissé tel quel."
 
 msgid "Some non-vCard uids were skipped - use --raw to display them."
 msgstr "Des uids non-vCard ont été sautés - utiliser --raw pour les afficher."
@@ -2931,6 +2924,13 @@ msgstr "aucune action fournie"
 
 msgid "unrecognized action"
 msgstr "action non reconnue"
+
+#~ msgid ""
+#~ "No identity eid uid (UID:urn:eid:...) inside %s certificate - primary uid "
+#~ "left as is."
+#~ msgstr ""
+#~ "Pas d’uid eid d’identité (UID:urn:eid:...) dans le certificat %s - uid "
+#~ "primaire laissé tel quel."
 
 #~ msgid "Add EMAIL. Enable --name and --extra-comment options"
 #~ msgstr "Ajouter un EMAIL. Active les options --name et --extra-comment"

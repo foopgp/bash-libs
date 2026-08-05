@@ -24,7 +24,7 @@ One section per subject. When this file outgrows ~2000 lines, split it.
 
 | uid | Shape | Role |
 |---|---|---|
-| identity | `UID:urn:eid:u4…` / `UID:urn:eid:u5…` | The self-certified anchor. Primary uid. This is what the web of trust signs. |
+| identity | `UID:urn:eid:u4…` / `UID:urn:eid:u5…` | The self-certified anchor. This is what the web of trust signs. **Not** the primary uid — see below. |
 | name | `FN:Alice Martin` | vCard `FN` property. |
 | note, phone, address, url, lang, geo | `NOTE:…`, `TEL:…`, `ADR:…`, … | vCard properties (RFC 6350), one uid each — independently certifiable and revocable. |
 | address | `Alice Martin <alice@example.org>` | A **plain RFC 5322 name-addr uid**. Deliberately *not* a vCard-property uid. |
@@ -179,3 +179,35 @@ is how well vouched the address is, not how many uids happen to carry it.
 - `ultimate` as an `--ownertrust` value — ultimate trust is what you assign to
   your *own* keys; offering it when certifying someone else invites a mistake
   that silently widens the trust anchor.
+
+## The primary-user-id flag belongs to the main address
+
+Subpacket 25 marks, by long-standing OpenPGP convention, the holder's **main
+email address**. Mail clients read the signer's identity there. Point it at an
+address-less uid and they report a sender/signer mismatch — Evolution does,
+verbatim: *« les adresses de l'expéditeur et du signataire ne correspondent
+pas »*.
+
+Between 2026-07-17 and 2026-08-05 we pinned it on the eid anchor instead, for
+one reason: the anchor is minted first, so it is the oldest uid, and a
+keyserver's FIFO uid cap evicts oldest-first. The primary flag was the only
+thing keeping it. That is now onak's job — `cap_packet_type()` shields one uid
+matching `^UID:urn:` on its own — so the flag went back where it belongs.
+
+What that means per function:
+
+| function | primary flag |
+|---|---|
+| `gen_key` | set once, on the `Name <addr>` uid |
+| `_bl_pgpid_upgrade_uids` | untouched — a legacy cert already has it where its holder wants it |
+| `email` | untouched — adding an address is not a claim about which one is main |
+| `property` | untouched — a vCard property has no business moving it |
+
+`email` deliberately has **no `--primary` option**: whoever wants to move the
+flag has `gpg --quick-set-primary-uid`, and an extra option here would be API
+surface, hence bug surface, for no gain (JJB, 2026-08-05).
+
+⚠️ Never assert the primary flag through gpg's **listing order**. Several uids
+minted within the same second come back in an unstable order, which makes such
+a test pass and fail on alternate runs — measured. Read subpacket 25 out of
+`gpg --list-packets` instead; the bats suite does.

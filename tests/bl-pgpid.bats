@@ -387,7 +387,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	assert_line "pgpid_TEL[0]='+33612345678'"
 }
 
-@test "property name --add : mono, previous FN revoked, eid uid stays primary" {
+@test "property name --add : mono, previous FN revoked, primary left alone" {
 	vkey
 	run --separate-stderr "${TARGET}" property name -y -A 'Alice Renamed' -K '' -H "$VH" "0x$VFPR"
 	assert_success
@@ -397,9 +397,11 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	assert_success
 	assert_line "pgpid_FN_REVOKED[0]='Alice Test'"
 	assert_line "pgpid_FN='Alice Renamed'"
-	# set-primary pinned the eid uid back : gpg lists the primary uid first
-	run bash -c "gpg --no-options --homedir '$VH' -k 2>/dev/null | grep -m1 '^uid'"
-	assert_output --partial "UID:urn:eid:u4$EID1"
+	# property must not move the primary flag : it belongs to the main address.
+	# Asserted on subpacket 25 itself, never on listing order — gpg's uid order
+	# is not stable when several self-sigs share a second.
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .FN:/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output ""
 }
 
 @test "email --revoke : the last usable email is retained" {
@@ -483,14 +485,18 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	assert_output --partial 'ADR:;;1 rue A\, B;Ville;;75000;FR'
 }
 
-@test "gen_key pins the identity eid uid as the primary user ID" {
+@test "gen_key pins the address uid as the primary user ID, not the eid anchor" {
 	local H="${BATS_TEST_TMPDIR}/genh" ; mkdir -p "$H" ; chmod 700 "$H"
 	run "${TARGET}" gen_key -N Alice -E "u4$EID1" -C 'hi, there; ok' -p x -H "$H" alice@example.org
 	assert_success
 	local F ; F=$(gpg --no-options --homedir "$H" --with-colons -K | awk -F: '$1=="fpr"{print $10;exit}')
-	# the eid uid's self-sig must carry the primary-user-id subpacket (25)…
-	run bash -c "gpg --no-options --homedir '$H' --export '$F' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .UID:urn:eid:/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	# primary marks the holder's main ADDRESS : mail clients read the signer
+	# identity there, and an address-less primary makes them cry mismatch.
+	run bash -c "gpg --no-options --homedir '$H' --export '$F' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .Alice <alice@example.org>/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
 	assert_output "PRIMARY"
+	# …and the eid anchor must NOT carry it any more.
+	run bash -c "gpg --no-options --homedir '$H' --export '$F' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .UID:urn:eid:/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output ""
 	# …and the gen_key NOTE went through the same vCard escaping.
 	run bash -c "gpg --no-options --homedir '$H' --export '$F' | gpg --list-packets 2>/dev/null | grep -o 'NOTE:[^\"]*'"
 	assert_output 'NOTE:hi\, there\; ok'
@@ -566,14 +572,17 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	[[ "$stderr" == *"Several preferred keyservers"* ]]    # divergence flagged
 }
 
-@test "email --add delegates to property : both emails listed, eid uid stays primary" {
+@test "email --add lists both addresses and does not move the primary flag" {
 	vkey
 	run --separate-stderr "${TARGET}" email -A bob@example.org -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	assert_line "alice@example.org"
 	assert_line "bob@example.org"
-	run bash -c "gpg --no-options --homedir '$VH' -k 2>/dev/null | grep -m1 '^uid'"
-	assert_output --partial "UID:urn:eid:u4$EID1"
+	# Adding an address says nothing about which one is the main one, so the
+	# newcomer must not end up primary. Asserted on subpacket 25, never on
+	# listing order — gpg's uid order is not stable within a second.
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .*bob@example.org/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output ""
 }
 
 @test "email --revoke keep-one : refuses to drop the last email-bearing uid" {
@@ -604,9 +613,10 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 	# the legacy uids are NOT revoked (the web of trust rests on them)
 	run bash -c "gpg --no-options --homedir '$LH' --with-colons -k 2>/dev/null | grep -c '^uid:u:.*Alice Legacy (u4='"
 	assert_output "2"
-	# the identity eid uid took the primary flag (listed first)
-	run bash -c "gpg --no-options --homedir '$LH' -k 2>/dev/null | grep -m1 '^uid'"
-	assert_output --partial "UID:urn:eid:u4$EID1"
+	# the upgrade does NOT move the primary flag : it belongs to the holder's
+	# main address, and a legacy certificate already has one where it wants it.
+	run bash -c "gpg --no-options --homedir '$LH' --export '0x$LFPR' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .UID:urn:eid:/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output ""
 }
 
 @test "email --revoke retires a legacy address in a single call" {

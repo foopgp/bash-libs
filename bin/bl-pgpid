@@ -715,7 +715,11 @@ _bl_pgpid_upgrade_uids() {
 	# Emails left alone : a legacy uid is already name-addr, and a second uid for
 	# the same address would split its third-party certifications.
 
-	"${GQ[@]}" --quick-set-primary-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || printf "${FUNCNAME[1]}: Warning: "$"Can't set the primary uid back to"" %s.\n" "'$eiduid'" >&2
+	# The primary flag is NOT touched. By long-standing OpenPGP convention it
+	# marks the holder's main EMAIL ADDRESS, and mail clients read the signer's
+	# identity there; moving it onto the address-less eid uid made Evolution
+	# report a sender/signer mismatch. The eid anchor no longer needs it either:
+	# onak shields any "UID:urn:" uid from the FIFO uid cap on its own.
 }
 
 
@@ -1223,10 +1227,16 @@ OPTIONS:
 	"${GQ[@]}" --quick-add-uid "$fpr" "FN:${pseudo}" || return $?
 	"${GQ[@]}" --quick-add-uid "$fpr" "${pseudo} <${email}>" || return $?
 	[[ -z "${extracomment// }" ]] || "${GQ[@]}" --quick-add-uid "$fpr" "NOTE:$(_bl_pgpid_vcard_esc "${extracomment# }")" || return $?
-	# Pin the identity eid uid primary : it is the WoT/identity anchor, and being
-	# minted first it is the oldest — a keyserver's FIFO uid cap would evict it
-	# unless it carries the primary-user-id self-sig (cf. onak cap_packet_type).
-	"${GQ[@]}" --quick-set-primary-uid "$fpr" "UID:urn:eid:${pgpidu}" || printf "$FUNCNAME: Warning: "$"Can't set the primary uid back to"" %s.\n" "'UID:urn:eid:${pgpidu}'" >&2
+	# Primary goes on the ADDRESS uid, which is what the flag has meant by
+	# convention since forever: the holder's main email. Mail clients read the
+	# signer's identity there, so an address-less primary makes them report a
+	# sender/signer mismatch.
+	#
+	# It used to be pinned on the eid uid instead, for one reason only: being
+	# minted first, the anchor is the oldest uid and a keyserver's FIFO cap
+	# would evict it. onak now shields any "UID:urn:" uid on its own
+	# (cap_packet_type / signedpacket_is_urn_anchor), so that reason is gone.
+	"${GQ[@]}" --quick-set-primary-uid "$fpr" "${pseudo} <${email}>" || printf "$FUNCNAME: Warning: "$"Can't set the primary uid to"" %s.\n" "'${pseudo} <${email}>'" >&2
 
 	# Generate and add auth key...
 	"${GQ[@]}" --quick-add-key "$fpr" ed25519 auth ${expire}y || return $?
@@ -1483,8 +1493,6 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		((! dup)) || { printf "$FUNCNAME: Notice: "$"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked User IDs on the certificate and gpg refuses an identical one.""\n" "'$uidstr'" >&2 ; continue ; }
 		printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'$uidstr'" "$user" >&2
 		gpg --homedir "$gpghome" --batch --quick-add-uid "$user" "$uidstr" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
-		# gpg promotes the freshly added uid : pin the primary back on the eid.
-		gpg --homedir "$gpghome" --batch --quick-set-primary-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || printf "$FUNCNAME: Warning: "$"Can't set the primary uid back to"" %s.\n" "'$eiduid'" >&2
 	done
 	# One uid revoked per call (re-run to peel the next), deprecated 'EMAIL:'
 	# shape first. The keep-one guard counts every email-bearing uid whatever
@@ -1920,20 +1928,9 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		fi
 
 		if ((modified)) ; then
-			# Pin the primary flag back onto the identity eid uid (the WoT
-			# anchor) after any change. Skipped when it is already the primary
-			# (= listed first) : gpg errors on that no-op re-flagging.
-			eiduid="" ; firstuid=""
-			while IFS= read -r rawu ; do
-				u=$(printf '%b' "$rawu")
-				[[ "$firstuid" ]] || firstuid=$u
-				[[ ! "$u" =~ ^UID:urn:eid: ]] || { eiduid=$u ; break ; }
-			done < <(gpg --homedir "$gpghome" --with-colons --list-key "$user" 2>/dev/null | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
-			if [[ -z "$eiduid" ]] ; then
-				printf "$FUNCNAME: Notice: "$"No identity eid uid (UID:urn:eid:...) inside %s certificate - primary uid left as is.""\n" "$user" >&2
-			elif [[ "$eiduid" != "$firstuid" ]] ; then
-				gpg --homedir "$gpghome" --batch --quick-set-primary-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || printf "$FUNCNAME: Warning: "$"Can't set the primary uid back to"" %s.\n" "'$eiduid'" >&2
-			fi
+			# The primary flag is left strictly alone. It is, by convention,
+			# the holder's main email address — not an identity anchor — and
+			# a property uid has no business moving it.
 
 			# Send updated certificate to keyservers
 			for keyserv in ${keyservs[@]} ; do

@@ -976,9 +976,6 @@ msgid ""
 "web of trust rests on them)…"
 msgstr ""
 
-msgid "Can't set the primary uid back to"
-msgstr ""
-
 msgid ""
 "Output fingerprints, emails and OpenPGP IDentifier of certificates matching "
 "NAME|U4|U5|EMAIL."
@@ -1182,6 +1179,9 @@ msgid "keyserver MUST be hkp(s)://…"
 msgstr ""
 
 msgid "Freshly generated key not found by its eid UID"
+msgstr ""
+
+msgid "Can't set the primary uid to"
 msgstr ""
 
 msgid "Extract or add image inside OpenPGP certificate."
@@ -1396,11 +1396,6 @@ msgid "No revokable %s inside certificate %s (in %s)."
 msgstr ""
 
 msgid "At least one %s must be retained."
-msgstr ""
-
-msgid ""
-"No identity eid uid (UID:urn:eid:...) inside %s certificate - primary uid "
-"left as is."
 msgstr ""
 
 msgid "Some non-vCard uids were skipped - use --raw to display them."
