@@ -688,6 +688,45 @@ signed_uids () {	# uids of $TF carrying a signature from the anchor $AF
 	refute_output --partial "FN"
 }
 
+@test "certify --only-email signs the address uids and never the eid anchor" {
+	ckey
+	run --separate-stderr "${TARGET}" certify --only-email -u "$AF" -K '' -H "$CH" "$EID1" "$TF" </dev/null
+	assert_success
+	run signed_uids
+	assert_output --partial "bob@example.org"
+	refute_output --partial "UID\x3aurn\x3aeid\x3au4$EID1"
+	refute_output --partial "FN"
+}
+
+@test "certify --only-email leaves ownertrust undefined, not marginal" {
+	ckey
+	run --separate-stderr "${TARGET}" certify --only-email -u "$AF" -K '' -H "$CH" "$EID1" "$TF" </dev/null
+	assert_success
+	# 2 = undefined in gpg's --export-ownertrust encoding, 4 = marginal
+	run bash -c "gpg --no-options --homedir '$CH' --export-ownertrust 2>/dev/null | grep '^$TF'"
+	assert_output --partial ":2:"
+	refute_output --partial ":4:"
+}
+
+@test "certify cannot even reach a certificate that carries no address (known limit)" {
+	ckey
+	# An eid-only cert — exactly what our own key generation produces before
+	# any address is added. gpg finds it by the eid substring, but
+	# --list-options show-only-fpr-mbox yields nothing without a mailbox, so
+	# bl_pgpid_get, and therefore certify, never sees it: 141, not 1.
+	# Pinning the real behaviour: the day get learns to find such a cert,
+	# this test fails and forces the follow-up decision.
+	local NH="$BATS_TEST_TMPDIR/noaddr" ; mkdir -p "$NH" ; chmod 700 "$NH"
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '')
+	"${B[@]}" --homedir "$NH" --allow-freeform-uid --quick-generate-key "UID:urn:eid:u4$EID2" ed25519 sign 0 2>/dev/null
+	local NF ; NF=$(gpg --no-options --homedir "$NH" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
+	"${B[@]}" --homedir "$NH" --quick-add-uid "$NF" 'FN:Carol' 2>/dev/null
+	gpg --no-options --homedir "$NH" --export "$NF" 2>/dev/null | gpg --no-options --homedir "$CH" --import 2>/dev/null
+	run --separate-stderr "${TARGET}" certify --only-email -u "$AF" -K '' -H "$CH" "$EID2" "$NF" </dev/null
+	assert_failure
+	assert_equal "$status" 141
+}
+
 @test "property revoke asks for irreversible-revocation confirmation ; declining keeps the uid" {
 	vkey
 	# TEL is not a keep-one property, so the revoke reaches the confirmation.

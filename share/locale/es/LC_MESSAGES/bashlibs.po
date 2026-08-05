@@ -1555,6 +1555,11 @@ msgid ""
 "some legacy software)"
 msgstr ""
 
+msgid ""
+"Certify ONLY the uids carrying an email, never the eid anchor. For when you "
+"could check the address but not the civil status behind the eid"
+msgstr ""
+
 msgid "Revoke your previous certifications on someone else's certificate"
 msgstr ""
 
@@ -1612,6 +1617,10 @@ msgstr ""
 msgid "Enter the first 8 hexadecimal characters of target's key fingerprint:"
 msgstr ""
 
+msgid ""
+"No uid carrying an email on certificate %s - nothing to certify with %s."
+msgstr ""
+
 msgid "No uid. Certificate is probably corrupted."
 msgstr ""
 
@@ -1622,7 +1631,16 @@ msgid ""
 "The sub-layer (%s) return no error, but it may have found nothing to revoke."
 msgstr ""
 
+msgid ""
+"Successfully signed %d email uid(s) inside certificate %s - the eid anchor "
+"was NOT certified."
+msgstr ""
+
 msgid "Successfully sign %d '%s' inside certificate %s."
+msgstr ""
+
+msgid ""
+"%s: ownertrust left '%s' - the identity behind the eid was not certified."
 msgstr ""
 
 msgid "Recompute the GnuPG trustdb using given ownertrust delegations."

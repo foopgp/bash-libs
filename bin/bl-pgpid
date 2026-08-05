@@ -2302,6 +2302,7 @@ bl_pgpid_certify() {
 OPTIONS:
   -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask""
   -E, --all-emails             "$"Also certify every OpenPGP uid containing an email (for compatibility with some legacy software)""
+      --only-email             "$"Certify ONLY the uids carrying an email, never the eid anchor. For when you could check the address but not the civil status behind the eid""
   -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate""
   -o, --ownertrust VALUE       "$"What level of trust do you assign to the target to correctly certify others"" {undefined,marginal,full,never} - "$"Default: ""marginal.
   -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing""
@@ -2318,7 +2319,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 - 143 "$"Key fingerprint does not match.""
 - "$"Other non-zero on other errors.""
 "
-	local revoke=0 allemails=0 keyid signcmd="sign" ownertrust
+	local revoke=0 allemails=0 onlyemail=0 keyid signcmd="sign" ownertrust
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -2331,6 +2332,8 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				shift ; ownertrust=$1 ;;
 			-E|--all-emails|--allemails)
 				allemails=1 ;;
+			--only-email|--onlyemail)
+				onlyemail=1 ;;
 			-l|--local)
 				signcmd="lsign" ;;
 			-k|--keyserver)
@@ -2403,9 +2406,18 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	# Sign only the identity uid (--all-emails opts out) ; legacy certificates
 	# fall back to every uid matching $targetid. See docs/IMPLEMENTATION.md.
-	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*UID.x3aurn.x3aeid.x3a.*'"$targetid"'/ { i+=1 ; print $10 }')
-	(( ${#uids[@]} )) || readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*'"$targetid"'/ { i+=1 ; print $10 }')
-	if ((allemails)) ; then
+	# --only-email attests the ADDRESS and nothing else: the certifier could
+	# reach the mailbox but could not check the civil status the eid stands
+	# for. Signing the eid anchor there would claim exactly what was NOT
+	# verified, so that uid is left out from the start rather than filtered
+	# afterwards.
+	if ((onlyemail)) ; then
+		uids=()
+	else
+		readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*UID.x3aurn.x3aeid.x3a.*'"$targetid"'/ { i+=1 ; print $10 }')
+		(( ${#uids[@]} )) || readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*'"$targetid"'/ { i+=1 ; print $10 }')
+	fi
+	if ((allemails || onlyemail)) ; then
 		local eu u2 dup
 		while IFS= read -r eu ; do
 			dup=0
@@ -2414,6 +2426,10 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			done
 			((dup)) || uids+=("$eu")
 		done < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*<[^<>]+>/ { print $10 }')
+	fi
+	if ((onlyemail)) && (( ! ${#uids[@]} )) ; then
+		printf -- "$FUNCNAME: Error: "$"No uid carrying an email on certificate %s - nothing to certify with %s.""\n" "$targetfpr" "--only-email" >&2
+		return 1
 	fi
 	[[ "$uids" ]] || { echo "$FUNCNAME: Crit: "$"No uid. Certificate is probably corrupted." >&2 ; return 1 ;}
 	# Field 10 escapes ':' (and '\\', control bytes) as \\xNN : gpg wants the
@@ -2426,7 +2442,20 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		printf "$FUNCNAME: Notice: "$"The sub-layer (%s) return no error, but it may have found nothing to revoke.""\n" "gpg --quick-revoke-sig" >&2
 	else
 		gpg --homedir "$gpghome" --local-user "$keyfpr" --quick-$signcmd-key "$targetfpr" "${uids[@]/#/=}" || return $?
-		printf "$FUNCNAME: Notice: "$"Successfully sign %d '%s' inside certificate %s.""\n" ${#uids[@]} "$targetid" "$targetfpr" >&2
+		if ((onlyemail)) ; then
+			printf "$FUNCNAME: Notice: "$"Successfully signed %d email uid(s) inside certificate %s - the eid anchor was NOT certified.""\n" ${#uids[@]} "$targetfpr" >&2
+		else
+			printf "$FUNCNAME: Notice: "$"Successfully sign %d '%s' inside certificate %s.""\n" ${#uids[@]} "$targetid" "$targetfpr" >&2
+		fi
+		# Ownertrust answers "how well does this one certify OTHERS". Granting
+		# it to someone whose own identity could not be checked would not
+		# follow, so --only-email lowers the default to 'undefined'. An
+		# explicit --ownertrust still wins: the operator may know the person
+		# well and simply lack a document today.
+		if ((onlyemail)) && [[ -z "$ownertrust" ]] ; then
+			ownertrust="undefined"
+			printf -- "$FUNCNAME: Notice: "$"%s: ownertrust left '%s' - the identity behind the eid was not certified.""\n" "--only-email" "undefined" >&2
+		fi
 		gpg --homedir "$gpghome" --quick-set-ownertrust "$targetfpr" "${ownertrust:-marginal}" || true
 	fi
 

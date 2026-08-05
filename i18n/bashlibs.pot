@@ -14,7 +14,7 @@ msgstr ""
 
 #: ../bin/bl-contacts:94 ../bin/bl-contacts:204 ../bin/bl-djibian:88
 #: ../bin/bl-interactive:87 ../bin/bl-interactive:88 ../bin/bl-pgpid:406
-#: ../bin/bl-pgpid:2577 ../bin/bl-pgpkey:104 ../bin/bl-pgpkey:250
+#: ../bin/bl-pgpid:2606 ../bin/bl-pgpkey:104 ../bin/bl-pgpkey:250
 #: ../bin/bl-pgpkey:297 ../bin/bl-pgpkey:367 ../bin/bl-pgpkey:506
 #: ../bin/bl-pgpkey:651 ../bin/bl-pgpkey:822 ../bin/bl-pgpkey:999
 #: ../bin/bl-security:93
@@ -36,8 +36,8 @@ msgstr ""
 #: ../bin/bl-pgpid:607 ../bin/bl-pgpid:795 ../bin/bl-pgpid:988
 #: ../bin/bl-pgpid:1078 ../bin/bl-pgpid:1163 ../bin/bl-pgpid:1282
 #: ../bin/bl-pgpid:1410 ../bin/bl-pgpid:1651 ../bin/bl-pgpid:2038
-#: ../bin/bl-pgpid:2201 ../bin/bl-pgpid:2346 ../bin/bl-pgpid:2467
-#: ../bin/bl-pgpid:2597 ../bin/bl-pgpkey:122 ../bin/bl-pgpkey:148
+#: ../bin/bl-pgpid:2201 ../bin/bl-pgpid:2349 ../bin/bl-pgpid:2496
+#: ../bin/bl-pgpid:2626 ../bin/bl-pgpkey:122 ../bin/bl-pgpkey:148
 #: ../bin/bl-pgpkey:268 ../bin/bl-pgpkey:320 ../bin/bl-pgpkey:384
 #: ../bin/bl-pgpkey:539 ../bin/bl-pgpkey:683 ../bin/bl-pgpkey:842
 #: ../bin/bl-pgpkey:1041 ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325
@@ -67,8 +67,8 @@ msgstr ""
 #: ../bin/bl-pgpid:795 ../bin/bl-pgpid:988 ../bin/bl-pgpid:1078
 #: ../bin/bl-pgpid:1163 ../bin/bl-pgpid:1282 ../bin/bl-pgpid:1410
 #: ../bin/bl-pgpid:1651 ../bin/bl-pgpid:1671 ../bin/bl-pgpid:1674
-#: ../bin/bl-pgpid:1676 ../bin/bl-pgpid:2038 ../bin/bl-pgpid:2346
-#: ../bin/bl-pgpid:2359 ../bin/bl-pgpid:2597 ../bin/bl-pgpid:2819
+#: ../bin/bl-pgpid:1676 ../bin/bl-pgpid:2038 ../bin/bl-pgpid:2349
+#: ../bin/bl-pgpid:2362 ../bin/bl-pgpid:2626 ../bin/bl-pgpid:2848
 #: ../bin/bl-pgpkey:122 ../bin/bl-pgpkey:148 ../bin/bl-pgpkey:160
 #: ../bin/bl-pgpkey:268 ../bin/bl-pgpkey:320 ../bin/bl-pgpkey:384
 #: ../bin/bl-pgpkey:539 ../bin/bl-pgpkey:683 ../bin/bl-pgpkey:842
@@ -323,14 +323,14 @@ msgstr ""
 
 #: ../bin/bl-contacts:634 ../bin/bl-dji:523 ../bin/bl-djibian:426
 #: ../bin/bl-foopgp:642 ../bin/bl-interactive:495 ../bin/bl-json:361
-#: ../bin/bl-markdown:273 ../bin/bl-pgpid:2777 ../bin/bl-pgpkey:1143
+#: ../bin/bl-markdown:273 ../bin/bl-pgpid:2806 ../bin/bl-pgpkey:1143
 #: ../bin/bl-security:400
 msgid "Show help and exit."
 msgstr ""
 
 #: ../bin/bl-contacts:635 ../bin/bl-dji:524 ../bin/bl-djibian:427
 #: ../bin/bl-foopgp:643 ../bin/bl-interactive:496 ../bin/bl-json:362
-#: ../bin/bl-markdown:274 ../bin/bl-pgpid:2778 ../bin/bl-pgpkey:1144
+#: ../bin/bl-markdown:274 ../bin/bl-pgpid:2807 ../bin/bl-pgpkey:1144
 #: ../bin/bl-security:401
 msgid "Show version and exit."
 msgstr ""
@@ -341,7 +341,7 @@ msgstr ""
 
 #: ../bin/bl-contacts:676 ../bin/bl-dji:565 ../bin/bl-djibian:468
 #: ../bin/bl-foopgp:684 ../bin/bl-interactive:535 ../bin/bl-json:401
-#: ../bin/bl-markdown:315 ../bin/bl-pgpid:2819 ../bin/bl-pgpkey:1185
+#: ../bin/bl-markdown:315 ../bin/bl-pgpid:2848 ../bin/bl-pgpkey:1185
 #: ../bin/bl-qif:609 ../bin/bl-security:440 ../bin/bl-test:198
 msgid "Unrecognized action"
 msgstr ""
@@ -915,7 +915,7 @@ msgid ""
 "NONE, whiptail, dialog or zenity."
 msgstr ""
 
-#: ../bin/bl-interactive:87 ../bin/bl-interactive:88 ../bin/bl-pgpid:2308
+#: ../bin/bl-interactive:87 ../bin/bl-interactive:88 ../bin/bl-pgpid:2309
 #: ../bin/bl-pgpkey:250 ../bin/bl-pgpkey:297 ../bin/bl-pgpkey:367
 #: ../bin/bl-pgpkey:506 ../bin/bl-pgpkey:651 ../bin/bl-pgpkey:822
 #: ../bin/bl-pgpkey:999
@@ -1064,8 +1064,8 @@ msgstr ""
 #: ../bin/bl-json:137 ../bin/bl-pgpid:740 ../bin/bl-pgpid:745
 #: ../bin/bl-pgpid:1126 ../bin/bl-pgpid:1131 ../bin/bl-pgpid:1132
 #: ../bin/bl-pgpid:1254 ../bin/bl-pgpid:1256 ../bin/bl-pgpid:1373
-#: ../bin/bl-pgpid:1607 ../bin/bl-pgpid:2303 ../bin/bl-pgpid:2306
-#: ../bin/bl-pgpid:2309 ../bin/bl-pgpkey:649 ../bin/bl-pgpkey:650
+#: ../bin/bl-pgpid:1607 ../bin/bl-pgpid:2303 ../bin/bl-pgpid:2307
+#: ../bin/bl-pgpid:2310 ../bin/bl-pgpkey:649 ../bin/bl-pgpkey:650
 #: ../bin/bl-security:285 ../bin/bl-security:286
 msgid "Default: "
 msgstr ""
@@ -1425,13 +1425,13 @@ msgstr ""
 
 #: ../bin/bl-pgpid:744 ../bin/bl-pgpid:1133 ../bin/bl-pgpid:1255
 #: ../bin/bl-pgpid:1372 ../bin/bl-pgpid:1606 ../bin/bl-pgpid:2009
-#: ../bin/bl-pgpid:2577
+#: ../bin/bl-pgpid:2606
 msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr ""
 
 #: ../bin/bl-pgpid:744 ../bin/bl-pgpid:1133 ../bin/bl-pgpid:1255
 #: ../bin/bl-pgpid:1372 ../bin/bl-pgpid:1606 ../bin/bl-pgpid:2009
-#: ../bin/bl-pgpid:2308
+#: ../bin/bl-pgpid:2309
 msgid "Environnement variable: "
 msgstr ""
 
@@ -1641,7 +1641,7 @@ msgid "Extract or add image inside OpenPGP certificate."
 msgstr ""
 
 #: ../bin/bl-pgpid:1246 ../bin/bl-pgpid:1362 ../bin/bl-pgpid:1591
-#: ../bin/bl-pgpid:2569
+#: ../bin/bl-pgpid:2598
 msgid ""
 "Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or "
 "interactively ask KEYID of secret key."
@@ -1678,12 +1678,12 @@ msgstr ""
 msgid "If non-empty, send updated certificate to this keyservers. "
 msgstr ""
 
-#: ../bin/bl-pgpid:1273 ../bin/bl-pgpid:1400 ../bin/bl-pgpid:2337
+#: ../bin/bl-pgpid:1273 ../bin/bl-pgpid:1400 ../bin/bl-pgpid:2340
 #: ../bin/bl-pgpkey:1036
 msgid "Deprecated option"
 msgstr ""
 
-#: ../bin/bl-pgpid:1273 ../bin/bl-pgpid:1400 ../bin/bl-pgpid:2337
+#: ../bin/bl-pgpid:1273 ../bin/bl-pgpid:1400 ../bin/bl-pgpid:2340
 msgid "Please use %s instead."
 msgstr ""
 
@@ -1699,7 +1699,7 @@ msgstr ""
 msgid "Unable to resize image"
 msgstr ""
 
-#: ../bin/bl-pgpid:1322 ../bin/bl-pgpid:2385
+#: ../bin/bl-pgpid:1322 ../bin/bl-pgpid:2388
 msgid "User '%s' match many (%d) certificates"
 msgstr ""
 
@@ -1964,7 +1964,7 @@ msgstr ""
 msgid "else: Output 'declare -A VARNAME=…'"
 msgstr ""
 
-#: ../bin/bl-pgpid:2011 ../bin/bl-pgpid:2312
+#: ../bin/bl-pgpid:2011 ../bin/bl-pgpid:2313
 msgid "Return value:"
 msgstr ""
 
@@ -1982,7 +1982,7 @@ msgid ""
 "then 107 if all required data are missing (OpenPGP card is probably empty)."
 msgstr ""
 
-#: ../bin/bl-pgpid:2015 ../bin/bl-pgpid:2319
+#: ../bin/bl-pgpid:2015 ../bin/bl-pgpid:2320
 msgid "Other non-zero on other errors."
 msgstr ""
 
@@ -2112,251 +2112,273 @@ msgid ""
 msgstr ""
 
 #: ../bin/bl-pgpid:2305
-msgid "Revoke your previous certifications on someone else's certificate"
+msgid ""
+"Certify ONLY the uids carrying an email, never the eid anchor. For when you "
+"could check the address but not the civil status behind the eid"
 msgstr ""
 
 #: ../bin/bl-pgpid:2306
+msgid "Revoke your previous certifications on someone else's certificate"
+msgstr ""
+
+#: ../bin/bl-pgpid:2307
 msgid ""
 "What level of trust do you assign to the target to correctly certify others"
 msgstr ""
 
-#: ../bin/bl-pgpid:2307
+#: ../bin/bl-pgpid:2308
 msgid "« Non-exportable » certification. Pretty useless, except for testing"
 msgstr ""
 
-#: ../bin/bl-pgpid:2308 ../bin/bl-pgpkey:250 ../bin/bl-pgpkey:297
+#: ../bin/bl-pgpid:2309 ../bin/bl-pgpkey:250 ../bin/bl-pgpkey:297
 #: ../bin/bl-pgpkey:367 ../bin/bl-pgpkey:506 ../bin/bl-pgpkey:651
 #: ../bin/bl-pgpkey:822 ../bin/bl-pgpkey:999
 msgid "GnuPG home directory"
 msgstr ""
 
-#: ../bin/bl-pgpid:2309
+#: ../bin/bl-pgpid:2310
 msgid ""
 "If non-empty, receive and send updated certificate from and to this "
 "keyservers. "
 msgstr ""
 
-#: ../bin/bl-pgpid:2313
+#: ../bin/bl-pgpid:2314
 msgid "No error"
 msgstr ""
 
-#: ../bin/bl-pgpid:2314
+#: ../bin/bl-pgpid:2315
 msgid "Input/Usage error"
 msgstr ""
 
-#: ../bin/bl-pgpid:2315
+#: ../bin/bl-pgpid:2316
 msgid "Interactivity error"
 msgstr ""
 
-#: ../bin/bl-pgpid:2316
+#: ../bin/bl-pgpid:2317
 msgid "No certificate for user"
 msgstr ""
 
-#: ../bin/bl-pgpid:2317 ../bin/bl-pgpid:2401
+#: ../bin/bl-pgpid:2318 ../bin/bl-pgpid:2404
 msgid "Self-certification is not innovative! ;-)"
 msgstr ""
 
-#: ../bin/bl-pgpid:2318 ../bin/bl-pgpid:2402
+#: ../bin/bl-pgpid:2319 ../bin/bl-pgpid:2405
 msgid "Key fingerprint does not match."
 msgstr ""
 
-#: ../bin/bl-pgpid:2330
+#: ../bin/bl-pgpid:2331
 msgid "Unknown ownertrust value '%s'"
 msgstr ""
 
-#: ../bin/bl-pgpid:2359
+#: ../bin/bl-pgpid:2362
 msgid "Unrecognized argument"
 msgstr ""
 
-#: ../bin/bl-pgpid:2368
+#: ../bin/bl-pgpid:2371
 msgid "Private key to use ? (KeyID of your Certification Key)"
 msgstr ""
 
-#: ../bin/bl-pgpid:2374
+#: ../bin/bl-pgpid:2377
 msgid "Invalid or ambiguous private key to use '%s'."
 msgstr ""
 
-#: ../bin/bl-pgpid:2386
+#: ../bin/bl-pgpid:2389
 msgid "Please select key fingerprint"
 msgstr ""
 
-#: ../bin/bl-pgpid:2390
+#: ../bin/bl-pgpid:2393
 msgid "Please verify and complete target's fingerprint:"
 msgstr ""
 
-#: ../bin/bl-pgpid:2397
+#: ../bin/bl-pgpid:2400
 msgid "Enter the first 8 hexadecimal characters of target's key fingerprint:"
 msgstr ""
 
-#: ../bin/bl-pgpid:2418
+#: ../bin/bl-pgpid:2431
+msgid ""
+"No uid carrying an email on certificate %s - nothing to certify with %s."
+msgstr ""
+
+#: ../bin/bl-pgpid:2434
 msgid "No uid. Certificate is probably corrupted."
 msgstr ""
 
-#: ../bin/bl-pgpid:2424
+#: ../bin/bl-pgpid:2440
 msgid "%s is non-sense, then ignored, when revoking."
 msgstr ""
 
-#: ../bin/bl-pgpid:2426
+#: ../bin/bl-pgpid:2442
 msgid ""
 "The sub-layer (%s) return no error, but it may have found nothing to revoke."
 msgstr ""
 
-#: ../bin/bl-pgpid:2429
+#: ../bin/bl-pgpid:2446
+msgid ""
+"Successfully signed %d email uid(s) inside certificate %s - the eid anchor "
+"was NOT certified."
+msgstr ""
+
+#: ../bin/bl-pgpid:2448
 msgid "Successfully sign %d '%s' inside certificate %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:2445
+#: ../bin/bl-pgpid:2457
+msgid ""
+"%s: ownertrust left '%s' - the identity behind the eid was not certified."
+msgstr ""
+
+#: ../bin/bl-pgpid:2474
 msgid "Recompute the GnuPG trustdb using given ownertrust delegations."
 msgstr ""
 
-#: ../bin/bl-pgpid:2447
+#: ../bin/bl-pgpid:2476
 msgid ""
 "This is like 'gpg --update-trustdb', but importing first ownertrust defined "
 "in\n"
 "given OWNERTRUST.GPG file(s), IN ORDER."
 msgstr ""
 
-#: ../bin/bl-pgpid:2449
+#: ../bin/bl-pgpid:2478
 msgid ""
 "Every file MUST be OpenPGP signed message and its signer MUST already be "
 "valid,\n"
 "else the delegation chain is broken."
 msgstr ""
 
-#: ../bin/bl-pgpid:2451
+#: ../bin/bl-pgpid:2480
 msgid "That is why OWNERTRUST.GPG order is important."
 msgstr ""
 
-#: ../bin/bl-pgpid:2454
+#: ../bin/bl-pgpid:2483
 msgid "GnuPG home to update (default: ~/.gnupg)"
 msgstr ""
 
-#: ../bin/bl-pgpid:2455
+#: ../bin/bl-pgpid:2484
 msgid "Non-interactive: recompute with 'gpg --check-trustdb', never prompt"
 msgstr ""
 
-#: ../bin/bl-pgpid:2456
+#: ../bin/bl-pgpid:2485
 msgid "Only Error/Warning output"
 msgstr ""
 
-#: ../bin/bl-pgpid:2492
+#: ../bin/bl-pgpid:2521
 msgid "cannot read or verify %s (missing, not signed, or bad signature?)"
 msgstr ""
 
-#: ../bin/bl-pgpid:2496
+#: ../bin/bl-pgpid:2525
 msgid "%s carries no verifiable signature (signer key missing?)"
 msgstr ""
 
-#: ../bin/bl-pgpid:2498
+#: ../bin/bl-pgpid:2527
 msgid "%s is signed in the future (%s) — is the local clock right?"
 msgstr ""
 
-#: ../bin/bl-pgpid:2500
+#: ../bin/bl-pgpid:2529
 msgid "%s carries a delegation older than a year (%s)"
 msgstr ""
 
-#: ../bin/bl-pgpid:2512
+#: ../bin/bl-pgpid:2541
 msgid "%s is not a valid ownertrust file"
 msgstr ""
 
-#: ../bin/bl-pgpid:2524
+#: ../bin/bl-pgpid:2553
 msgid "the delegations are already applied — ownertrust left unchanged"
 msgstr ""
 
-#: ../bin/bl-pgpid:2531
+#: ../bin/bl-pgpid:2560
 msgid "current ownertrust backed up in %s"
 msgstr ""
 
-#: ../bin/bl-pgpid:2538
+#: ../bin/bl-pgpid:2567
 msgid "delegation chain broken: the signer of %s is not (yet) valid"
 msgstr ""
 
-#: ../bin/bl-pgpid:2546
+#: ../bin/bl-pgpid:2575
 msgid "ownertrust changes:"
 msgstr ""
 
-#: ../bin/bl-pgpid:2550
+#: ../bin/bl-pgpid:2579
 msgid "to restore the previous trust: "
 msgstr ""
 
-#: ../bin/bl-pgpid:2568
+#: ../bin/bl-pgpid:2597
 msgid "Produce or print an OpenPGP ID stamp or business card."
 msgstr ""
 
-#: ../bin/bl-pgpid:2570
+#: ../bin/bl-pgpid:2599
 msgid ""
 "A single email appears on the output: if the argument is an email it is used "
 "verbatim; otherwise the most recent non-revoked email of the certificate is "
 "picked."
 msgstr ""
 
-#: ../bin/bl-pgpid:2573
+#: ../bin/bl-pgpid:2602
 msgid "Printer name to send to, or output SVG file if it ends with '.svg'"
 msgstr ""
 
-#: ../bin/bl-pgpid:2574
+#: ../bin/bl-pgpid:2603
 msgid ""
 "Use this template to produce business card (eg: …/share/bash-libs/svg/"
 "card.svg)"
 msgstr ""
 
-#: ../bin/bl-pgpid:2575
+#: ../bin/bl-pgpid:2604
 msgid "Override the displayed name"
 msgstr ""
 
-#: ../bin/bl-pgpid:2575
+#: ../bin/bl-pgpid:2604
 msgid " (default: guessed from OpenPGP certificate and email)"
 msgstr ""
 
-#: ../bin/bl-pgpid:2576
+#: ../bin/bl-pgpid:2605
 msgid "Output in grayscale instead of color"
 msgstr ""
 
-#: ../bin/bl-pgpid:2615
+#: ../bin/bl-pgpid:2644
 msgid "Select certificate to print"
 msgstr ""
 
-#: ../bin/bl-pgpid:2634
+#: ../bin/bl-pgpid:2663
 msgid "No usable certificate for %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:2635
+#: ../bin/bl-pgpid:2664
 msgid "Email %s matches several non-revoked certificates (%d)."
 msgstr ""
 
-#: ../bin/bl-pgpid:2653
+#: ../bin/bl-pgpid:2682
 msgid "No usable (non-revoked) email in certificate %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:2654
+#: ../bin/bl-pgpid:2683
 msgid "Picking most recent email %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:2704
+#: ../bin/bl-pgpid:2733
 msgid "Card template %s is not readable, falling back to default %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:2705
+#: ../bin/bl-pgpid:2734
 msgid "Default card.svg template not found."
 msgstr ""
 
-#: ../bin/bl-pgpid:2721
+#: ../bin/bl-pgpid:2750
 msgid "Friends of OpenPGP"
 msgstr ""
 
-#: ../bin/bl-pgpid:2743
+#: ../bin/bl-pgpid:2772
 msgid "Wrote SVG to %s."
 msgstr ""
 
-#: ../bin/bl-pgpid:2751
+#: ../bin/bl-pgpid:2780
 msgid "No printer detected."
 msgstr ""
 
-#: ../bin/bl-pgpid:2752
+#: ../bin/bl-pgpid:2781
 msgid "Where to print ?"
 msgstr ""
 
-#: ../bin/bl-pgpid:2768
+#: ../bin/bl-pgpid:2797
 msgid "Printing %s %s on %s…"
 msgstr ""
 

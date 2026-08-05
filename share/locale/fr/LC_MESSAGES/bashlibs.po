@@ -1842,6 +1842,13 @@ msgstr ""
 "Certifier aussi tous les uid OpenPGP contenant une adresse courriel "
 "(compatibilité avec certains logiciels anciens)"
 
+msgid ""
+"Certify ONLY the uids carrying an email, never the eid anchor. For when you "
+"could check the address but not the civil status behind the eid"
+msgstr ""
+"Ne certifier QUE les uids portant un courriel, jamais l'ancre eid. Pour "
+"quand on a pu vérifier l'adresse, mais pas l'état civil derrière l'eid"
+
 msgid "Revoke your previous certifications on someone else's certificate"
 msgstr ""
 "Révoquer vos certifications précédentes sur le certificat d’une autre "
@@ -1905,6 +1912,12 @@ msgstr ""
 "Entrez les 8 premiers caractères hexadécimaux de l’empreinte de clé de la "
 "cible :"
 
+msgid ""
+"No uid carrying an email on certificate %s - nothing to certify with %s."
+msgstr ""
+"Aucun uid portant un courriel sur le certificat %s - rien à certifier avec "
+"%s."
+
 msgid "No uid. Certificate is probably corrupted."
 msgstr "Aucun uid. Le certificat est probablement corrompu."
 
@@ -1917,8 +1930,21 @@ msgstr ""
 "La sous-couche (%s) n’a renvoyé aucune erreur, mais elle n’a peut-être rien "
 "trouvé à révoquer."
 
+msgid ""
+"Successfully signed %d email uid(s) inside certificate %s - the eid anchor "
+"was NOT certified."
+msgstr ""
+"Signature réussie de %d uid(s) de courriel dans le certificat %s - l'ancre "
+"eid n'a PAS été certifiée."
+
 msgid "Successfully sign %d '%s' inside certificate %s."
 msgstr "Signature réussie de %d '%s' dans le certificat %s."
+
+msgid ""
+"%s: ownertrust left '%s' - the identity behind the eid was not certified."
+msgstr ""
+"%s : confiance laissée à '%s' - l'identité derrière l'eid n'a pas été "
+"certifiée."
 
 msgid "Recompute the GnuPG trustdb using given ownertrust delegations."
 msgstr ""
