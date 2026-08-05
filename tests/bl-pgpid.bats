@@ -585,6 +585,31 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	assert_output ""
 }
 
+@test "email --revoke moves the primary flag back onto an address" {
+	vkey
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH")
+	"${B[@]}" --quick-add-uid "$VFPR" 'Alice Test <bob@example.org>' 2>/dev/null
+	"${B[@]}" --quick-set-primary-uid "$VFPR" 'Alice Test <alice@example.org>' 2>/dev/null
+	sleep 1
+	# Minted last : without the fix gpg hands the main identity over to it.
+	"${B[@]}" --allow-freeform-uid --quick-add-uid "$VFPR" 'NOTE:a motto' 2>/dev/null
+	run --separate-stderr "${TARGET}" email -y -R alice@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .*bob@example.org/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output "PRIMARY"
+}
+
+@test "email --revoke of a secondary address leaves the primary flag alone" {
+	vkey
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH")
+	"${B[@]}" --quick-add-uid "$VFPR" 'Alice Test <bob@example.org>' 2>/dev/null
+	"${B[@]}" --quick-set-primary-uid "$VFPR" 'Alice Test <alice@example.org>' 2>/dev/null
+	run --separate-stderr "${TARGET}" email -y -R bob@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .*alice@example.org/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output "PRIMARY"
+}
+
 @test "email --revoke keep-one : refuses to drop the last email-bearing uid" {
 	vkey
 	run --separate-stderr env LC_ALL=C "${TARGET}" email -R alice@example.org -K '' -H "$VH" "0x$VFPR"

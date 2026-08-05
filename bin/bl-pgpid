@@ -658,6 +658,33 @@ _bl_pgpid_revoke_uid() {
 	gpg --homedir "$gpghome" --batch --quick-revoke-uid "$user" "$ruid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || { echo "${FUNCNAME[1]}: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
 }
 
+_bl_pgpid_fix_primary() {
+	local helpmsg="Usage: $FUNCNAME GNUPGHOME KEY [STDERRFILTER]
+Ensure KEY still announces an email address as its main identity, ie. as the first
+uid gpg lists - what OpenPGP tools and MTAs read. Move the primary-user-id flag
+onto the newest remaining address uid when it does not, do nothing when it does.
+Meant to run after revoking a uid: gpg leaves the flag on the revoked one and
+silently falls back on the newest remaining uid, whatever its shape.
+See docs/IMPLEMENTATION.md
+"
+	case "$1" in -h|--h*) echo "$helpmsg" ; return ;; esac
+	local gpghome=$1 user=$2 gpgfilter=${3:-false}
+	local created rawu u newest= newestdate=0 first=1
+	while IFS=: read -r created rawu ; do
+		u=$(printf '%b' "$rawu")
+		if ((first)) ; then
+			first=0
+			[[ ! "$u" =~ \<[^\<\>]+\>[[:space:]]*$ ]] || return 0
+		fi
+		[[ "$u" =~ \<[^\<\>]+\>[[:space:]]*$ ]] || continue
+		# Newest self-sig creation date wins, last listed wins ties.
+		(( created < newestdate )) || { newestdate=$created ; newest=$u ; }
+	done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { printf "%s:%s\n", $6, $10 }')
+	[[ "$newest" ]] || { printf "${FUNCNAME[1]}: Warning: "$"No address left on %s certificate to carry the primary User ID flag.""\n" "$user" >&2 ; return 0 ; }
+	printf "${FUNCNAME[1]}: Notice: "$"Main identity is no more an address: moving the primary User ID flag to %s.""\n" "$newest" >&2
+	gpg --homedir "$gpghome" --batch --quick-set-primary-uid "$user" "$newest" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || { echo "${FUNCNAME[1]}: Error: "$"Can't set the primary User ID - good PIN ?." >&2 ; return 1 ;}
+}
+
 _bl_pgpid_vfold() {
 	# Emit a vCard content line folded to ≤75 octets (RFC 6350 §3.2) : CRLF then a
 	# single leading space starts each continuation.
@@ -1497,7 +1524,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	# One uid revoked per call (re-run to peel the next), deprecated 'EMAIL:'
 	# shape first. The keep-one guard counts every email-bearing uid whatever
 	# its shape, so the certificate never loses its last address.
-	local rawu u
+	local rawu u revoked=0
 	local -a emailuids legacytargets vcardtargets targetuids
 	for email in "${torev[@]}" ; do
 		# Both the bare and the <bracketed> input shapes are accepted.
@@ -1517,6 +1544,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		(( ${#targetuids[@]} )) || { printf "$FUNCNAME: Error: "$"No revokable email %s inside %s certificate (in %s).""\n" "'$email'" "$user" "$gpghome" >&2 ; return 1 ; }
 		(( ${#emailuids[@]} >= 2 )) || { printf "$FUNCNAME: Error: "$"At least one email must be retained.""\n" >&2 ; return 1 ; }
 		_bl_pgpid_revoke_uid "$gpghome" "$user" "${targetuids[0]}" "$gpgfilter" "$assumeyes" || return 1
+		revoked=1
 	done
 
 	if ((revokeall)) ; then
@@ -1538,8 +1566,12 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			for ((i=0 ; i<${#alluids[@]} ; i++)) ; do
 				((i != keep)) || continue
 				_bl_pgpid_revoke_uid "$gpghome" "$user" "${alluids[i]}" "$gpgfilter" "$assumeyes" || return 1
+				revoked=1
 			done
 		fi
+	fi
+	if ((revoked)) ; then
+		_bl_pgpid_fix_primary "$gpghome" "$user" "$gpgfilter" || return 1
 	fi
 
 	local ret=0

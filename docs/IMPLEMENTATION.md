@@ -200,12 +200,37 @@ What that means per function:
 |---|---|
 | `gen_key` | set once, on the `Name <addr>` uid |
 | `_bl_pgpid_upgrade_uids` | untouched — a legacy cert already has it where its holder wants it |
-| `email` | untouched — adding an address is not a claim about which one is main |
+| `email --add` | untouched — adding an address is not a claim about which one is main |
+| `email --revoke` | re-pinned on the newest remaining address, but only when the revocation left a non-address uid in charge (see below) |
 | `property` | untouched — a vCard property has no business moving it |
 
 `email` deliberately has **no `--primary` option**: whoever wants to move the
 flag has `gpg --quick-set-primary-uid`, and an extra option here would be API
 surface, hence bug surface, for no gain (JJB, 2026-08-05).
+
+### Revoking an address does not move the flag — gpg silently falls back
+
+Measured on gpg 2.4.7, 2026-08-06. Revoke the uid carrying subpacket 25 and:
+
+1. **The flag does not move.** It stays frozen in the self-signature of the
+   now-revoked uid, where it is inert but still visible in `--list-packets`.
+2. **gpg falls back on the newest remaining uid** — whatever its shape. Not
+   "the next one", and not the eid anchor either (which is minted first, so it
+   never rises). What rises is the *last property minted*:
+
+   | certificate | main identity after revoking the primary address |
+   |---|---|
+   | eid + `FN:` + address | `FN:Alice` |
+   | eid + `FN:` + address + `NOTE:` | `NOTE:…` — the holder's motto, shown as their identity |
+   | eid + `FN:` + address + 2nd address | the 2nd address, *only* because it happened to be the newest |
+
+`_bl_pgpid_fix_primary()` closes this. It reads the **first uid gpg lists** —
+which is what every tool takes as the main identity, whether that comes from
+the flag or from the fallback — and, when that uid carries no address, re-pins
+the flag on the newest remaining address. No-op otherwise, so revoking a
+secondary address leaves the operator's choice alone.
+
+The keep-one guard guarantees there is always an address left to re-pin on.
 
 ⚠️ Never assert the primary flag through gpg's **listing order**. Several uids
 minted within the same second come back in an unstable order, which makes such
