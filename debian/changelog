@@ -1,3 +1,45 @@
+bash-libs (0.4.0-1) unstable; urgency=medium
+
+  [ jjbrucker ]
+  * add bash-completion/bl-uetree + improve bl-uetree description
+  * reorganize regular expressions
+  * Bug fixes. Start managing ':' in uid:  awk … gsub(/\x3a/,':',0)
+  * bl_pgpid_gen_key: add 3 little input guards
+  * bl_pgpkey_change_token_meta(): improve guard regexs
+  * bl-pgpid: hardener guard for preferred keyserver
+  * Remove ultimate from list of available ownertrust when certifying someone else
+
+  [ Mnêmê ]
+  * shellcheck re-enabled: extend the global .shellcheckrc (gettext "$"…"" false positives, house word-splitting/test styles, LANG= prefix) ; fix the real findings — lexicographic [[ < ]] in every dispatcher (latent: '141' < '2' is true), unquoted ${#$var} pattern strips, read -r, glob-unsafe != — ; per-library lint bats re-enabled (interactive, log, uetree, contacts) linting the repo sources
+  * rename bl-qrkey → bl-pgpkey (it outgrew QR codes: token codes, passphrase, cardholder metadata). Functions bl_qrkey_*→bl_pgpkey_*, constants BL_QRKEY_*→BL_PGPKEY_*, FUNCNAME offsets 9→10 ; bl-qrkey kept as a thin deprecation shim (program: exec bl-pgpkey ; sourced: bl_qrkey_* delegating aliases + warning) freezing the pgpid-qrscan / djibian-onboarding contract ; completion + man renamed ; bl-pgpkey.bats (lint + shim delegation + frozen-contract) ; fix latent bug: bl-pgpid printed empty $BL_QRKEY_VERSION
+  * harden bl-djibian + bl-foopgp + completions: bl-foopgp read -r everywhere (financial |-delimited fields must not mangle backslashes) + scoped SC2030/SC2031 disables where entry[] is consumed inside its own pipeline / persists via < <() ; missing bash-completion/bl-contacts added ; lint+smoke bats for bl-djibian and bl-foopgp lock in their shellcheck-clean state
+  * bl-pgpid: the vCard-uid key process (draft-foopgp-urn-eid) — gen_key now mints a certificate whose identity UID is the glued eid URN 'UID:urn:eid:u4VALUE' (self-certified anchor), then adds FN:/EMAIL: <>/NOTE: as separate --quick-add-uid vCard-property uids ; email add→--quick-add-uid, revoke→--quick-revoke-uid (decoding the \\x3a-escaped colon field so the exact uid matches), retaining >=1 email ; print reads the name from FN: and the eid via _bl_pgpid_eids_of (glued). Verified end-to-end (gen→cert_check certified→email add/revoke→print card→gpg -r <email>), old comment-uid certs still read fine. NOTE for review: eid uid stays primary — the FN:/EMAIL: primary-flag choice is open
+  * bl-pgpid: new property action - display/add/revoke vCard-property uids (name,note,address,phone,url,lang,geo,email) with house cardinality (mono {FN,NOTE}, keep-one {FN,EMAIL}), sanity checks at add, eid uid pinned back primary after any change, pgpid_-prefixed eval-friendly output or --raw + 12 bats ; i18n fr pass 728/728 (catches up stale bl-contacts/bl-pgpkey msgids) ; fix Worlwide typo
+  * bl-pgpid property: multiline note — store newlines RFC 6350-escaped ('\n', backslash doubled first), same encoding on --revoke, decoded on display (--raw keeps the stored form) + 1 bats
+  * bl-pgpid: RFC 6350-escape , ; \ + newline in vCard text uids — new _bl_pgpid_vcard_esc helper shared by 'property' (FN/NOTE full ; ADR keeps its structural ';') and gen_key's NOTE ; display decodes ; --raw keeps the stored form. gen_key now also pins the identity eid uid primary (subpkt 25) so a keyserver's FIFO uid cap cannot evict the anchor. +3 bats
+  * bl-pgpid cert_check: new -c/--certs-count column (distinct external certifiers, before VERDICT) + 1 bats
+  * bl-pgpid email --revoke: one uid per call (legacy shape first) + keep-one counts legacy uids too
+  * bl-pgpid/bl-pgpkey: drop the card-metadata pseudonym bidouille — the name now comes from the cert's FN: uid
+  * bl-pgpid property ksprefrd: read/write the primary uid's preferred keyserver (subpacket 24)
+  * bl-pgpid property ksprefrd: read across all non-revoked uids (primary wins, else last), warn on divergence
+  * bl-pgpid property --to-vcard: render the certificate as a vCard 4.0 (bash mirror of pgp2vcard.html)
+  * bl-pgpid: confirm the irreversible uid revocation (+ -y/--yes) and explain an unaddable revoked address instead of blaming the PIN
+  * bl-pgpid: email uids go back to 'Name <addr>' — EMAIL: leaves the vCard family
+  * bl-pgpid certify: implement -E/--all-emails, refresh the catalogs
+  * bl-pgpid email: port --revoke-all, restore the legacy upgrade, rewrite two tests
+  * Fix my name spelling: Mnèmê/Mnème → Mnêmê, and glue the eid (u5=… → u5…)
+  * bl-pgpid certify: the legacy fallback was selecting revoked uids too
+  * bl-pgpid: give the primary-user-id flag back to the main address
+  * bl-pgpid email: keep an address as the main identity after a revocation
+  * tests: read the uid index back instead of hardcoding it in the T6 fixture
+  * docs: turn the implementation notes into bash-libs-implementation(7)
+  * bl-uetree: name the eid among the technologies uetree combines
+  * docs: split the implementation notes per domain — bl-pgpid-implementation(7)
+  * bl-*: say eid where we meant the identifier, not "OpenPGP ID"
+  * bl-qif: remove — QIF is not worth a new tool
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Thu, 06 Aug 2026 17:35:06 +0200
+
 bash-libs (0.3.15-1) unstable; urgency=medium
 
   [ Mnème ]

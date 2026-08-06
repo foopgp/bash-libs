@@ -4,6 +4,8 @@
 /usr/bin/bl-djibian
 /usr/share/bash-completion/completions/bl-qrkey
 /usr/bin/bl-qrkey
+/usr/share/bash-completion/completions/bl-pgpkey
+/usr/bin/bl-pgpkey
 /usr/share/bash-libs/svg/card.svg
 /usr/share/bash-completion/completions/bl-uetree
 /usr/bin/bl-uetree

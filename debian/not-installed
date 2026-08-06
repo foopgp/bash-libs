@@ -1,6 +1,6 @@
-/usr/bin/bl-qif
 /usr/bin/bl-test
-/usr/share/bash-completion/completions/bl-qif
 /usr/share/bash-completion/completions/bl-test
-/usr/share/man/man1/bl-qif.1.gz
 /usr/share/man/man1/bl-test.1.gz
+/usr/bin/bl-contacts
+/usr/share/bash-completion/completions/bl-contacts
+/usr/share/man/man1/bl-contacts.1.gz
