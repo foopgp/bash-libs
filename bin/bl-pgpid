@@ -665,7 +665,7 @@ uid gpg lists - what OpenPGP tools and MTAs read. Move the primary-user-id flag
 onto the newest remaining address uid when it does not, do nothing when it does.
 Meant to run after revoking a uid: gpg leaves the flag on the revoked one and
 silently falls back on the newest remaining uid, whatever its shape.
-See docs/IMPLEMENTATION.md
+See bash-libs-implementation(7)
 "
 	case "$1" in -h|--h*) echo "$helpmsg" ; return ;; esac
 	local gpghome=$1 user=$2 gpgfilter=${3:-false}
@@ -1085,7 +1085,7 @@ OPTIONS:
 
 bl_pgpid_gen_uid() {
 	# Range [BL_PGPID_XUID_MIN, BL_PGPID_XUID_MAX] : uids at or above 2^31 break
-	# on software that treats them as signed — docs/IMPLEMENTATION.md.
+	# on software that treats them as signed — bash-libs-implementation(7).
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [U4]"
@@ -1225,7 +1225,7 @@ OPTIONS:
 
 	# Born with a single self-certified identity uid (the eid URN, §4.5 of
 	# draft-foopgp-urn-eid). Name and note follow as vCard-property uids ; the
-	# address is a plain name-addr uid (docs/IMPLEMENTATION.md).
+	# address is a plain name-addr uid (bash-libs-implementation(7)).
 	cat <<-EOF | gpg --homedir "$gpghome" --batch --generate-key --allow-freeform-uid || return $?
 		%echo Generating OpenPGP key for ${email}
 		Key-Type: eddsa
@@ -1482,7 +1482,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		[[ -z "$extracomment" ]] || printf "$FUNCNAME: Notice: "$"--extra-comment is ignored: a note is carried by its own NOTE: vCard uid""\n" >&2
 	fi
 
-	# Plain 'Name <addr>' uid, not a vCard-property one (docs/IMPLEMENTATION.md).
+	# Plain 'Name <addr>' uid, not a vCard-property one (bash-libs-implementation(7)).
 	# Keyservers muted here : a single send happens below.
 	local uidstr rawu u dup uidname eiduid
 	local -a prevuids=() revuids=()
@@ -1587,7 +1587,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		# it '!' ; '?' / '-' / '%' do not count, nor do self-signatures. Drop
 		# non-exportable « local » signatures (sigclass ending in 'l') : they
 		# live in one keyring only and are not a public certification
-		# (docs/IMPLEMENTATION.md). Same address on several uids : keep the max.
+		# (bash-libs-implementation(7)). Same address on several uids : keep the max.
 		gpg --homedir "$gpghome" --with-colons --check-sigs "$user" 2>/dev/null |
 			awk -F: -v owner="${user: -16}" '
 				function flush_uid(    e, c) {
@@ -2431,7 +2431,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 143 ;}
 
 	# Sign only the identity uid (--all-emails opts out) ; legacy certificates
-	# fall back to every uid matching $targetid. See docs/IMPLEMENTATION.md.
+	# fall back to every uid matching $targetid. See bash-libs-implementation(7).
 	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*UID.x3aurn.x3aeid.x3a.*'"$targetid"'/ { i+=1 ; print $10 }')
 	(( ${#uids[@]} )) || readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*'"$targetid"'/ { i+=1 ; print $10 }')
 	# Still no eid u4 ${targetid} is almost impossible since algorthim started with bl_pgpid_get ${targetid}
