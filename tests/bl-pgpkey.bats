@@ -40,7 +40,7 @@ BIN="${BATS_TEST_DIRNAME}/../bin"
 	assert_success
 	assert_output --regexp "^bl-pgpkey "
 	# the warning goes to stderr
-	[ -n "$stderr" ]
+	[[ -n "$stderr" ]]
 }
 
 @test "bl-qrkey wrapper: sourced mode exposes bl_qrkey_* shims delegating to bl_pgpkey_*" {
