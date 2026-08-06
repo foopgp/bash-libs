@@ -1155,7 +1155,7 @@ bl_pgpid_gen_key() {
 
 OPTIONS:
   -N, --name PSEUDONYM             "$"Common name or pseudonym. "$"Default: "$"first part of email"".
-  -E, --eid U4|U5                  "$"Entity ID. Worldwide and decentralised entity identifier."$" See: ""\$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
+  -c, --eid U4|U5                  "$"Entity ID. Worldwide and decentralised entity identifier."$" See: ""\$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
   -C, --extra-comment NOTE         "$"Supplemental information or comment associated with the entity.""
   -p, --passphrase PASSPHRASE      "$"Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage)""
   -P, --passfrom FILE              "$"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin …)""
@@ -1171,7 +1171,7 @@ OPTIONS:
 		case "$1" in
 			-n|-N|--name*)
 				shift ; pseudo=${1:-} ;;
-			-c|-E|--comment|--eid)
+			-c|--comment|--eid)
 				shift ; pgpidu=$1 ; pgpidugiven="." ;;
 			-C|--extracomment|--extra-comment)
 				shift ; extracomment=$1 ;;
