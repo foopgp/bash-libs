@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0+
 -->
 
 ---
-title: BASH-LIBS-IMPLEMENTATION
+title: BL-PGPID-IMPLEMENTATION
 section: 7
 header: Implementation notes
 footer: bash-libs
@@ -14,21 +14,19 @@ footer: bash-libs
 
 # NAME
 
-bash-libs-implementation - design choices and field experience behind the bash-libs sources
+bl-pgpid-implementation - design choices and field experience behind bl-pgpid
 
 # DESCRIPTION
 
-These are interpreted scripts: every comment line is read at every run, and
-nothing strips them. So the code keeps only what cannot be deduced from the code
-itself — an external constraint, a non-obvious trap, an invariant — and points
-here. The reasoning, the alternatives we rejected and the mistakes we made live
-in this page.
+**bl-pgpid**(1) is an interpreted script: every comment line is read at every
+run, and nothing strips them. So the source keeps only what cannot be deduced
+from the code itself — an external constraint, a non-obvious trap, an invariant
+— and points here. The reasoning, the alternatives we rejected and the mistakes
+we made live in this page.
 
-One section per subject. When this page outgrows ~2000 lines, split it.
+One page per bash-libs domain, one section per subject.
 
 # OPENPGP UID SHAPES
-
-Applies to **bl-pgpid**(1).
 
 ## What a foopgp certificate carries
 
@@ -91,9 +89,8 @@ permanent, and the exact revoked string can never be added again.
 
 # UNIX USER IDS DERIVED FROM AN EID
 
-Applies to **bl-pgpid**(1) `gen_uid`, which maps an eid onto an almost-unique
-Unix user ID. Choosing the usable range took some measuring — hence
-`BL_PGPID_XUID_MIN` and `BL_PGPID_XUID_MAX`.
+`gen_uid` maps an eid onto an almost-unique Unix user ID. Choosing the usable
+range took some measuring — hence `BL_PGPID_XUID_MIN` and `BL_PGPID_XUID_MAX`.
 
 ## What the system allows
 
@@ -136,8 +133,6 @@ than unsigned integers. `BL_PGPID_XUID_MAX` was therefore lowered to
 2^31-2 = 2147483646, which still leaves ~2.15 billion slots.
 
 # CERTIFICATION
-
-Applies to **bl-pgpid**(1) `certify`.
 
 ## What gets signed
 
@@ -261,7 +256,7 @@ wants.
 
 # SEE ALSO
 
-[**bash-libs**](bash-libs.7.md)(7), [**bl-pgpid**](bl-pgpid.1.md)(1).
+[**bl-pgpid**](bl-pgpid.1.md)(1), [**bash-libs**](bash-libs.7.md)(7).
 
 # AUTHORS
 

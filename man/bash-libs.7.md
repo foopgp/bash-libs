@@ -30,7 +30,9 @@ Bash-libs was initialy developped by **foopgp.org**, to manage:
 
 Generate and manage OpenPGP ID, an OpenPGP configuration providing universal and decentralized civil status to secure your digital life (emails, git, ssh, avatar, sso, etc.).
 
-See [**bl-pgpid**](bl-pgpid.1.md)(1) manual for more details.
+See [**bl-pgpid**](bl-pgpid.1.md)(1) manual for more details, and
+[**bl-pgpid-implementation**](bl-pgpid-implementation.7.md)(7) for the design
+choices behind it.
 
 ## bl-pgpkey
 
@@ -135,7 +137,8 @@ All bash-libs exposed functions and executables return zero on normal operation,
 [**bl-djibian**](bl-djibian.1.md)(1),
 
 [**bl-foopgp**](bl-foopgp.1.md)(1),
-[**bl-dji**](bl-dji.1.md)(1).
+[**bl-dji**](bl-dji.1.md)(1),
+[**bl-pgpid-implementation**](bl-pgpid-implementation.7.md)(7).
 
 # AUTHORS/MAINTAINERS
 
