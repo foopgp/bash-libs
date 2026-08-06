@@ -622,11 +622,15 @@ OPTIONS:
 	echo "${keyid%% *}"
 }
 
-# Read `gpg --with-colons` output on stdin ; print the distinct OpenPGP IDs
-# (u4…/u5…, rendered like everywhere else) carried by its uid records, one per
-# line, sorted. $1, if given, is an ERE the uid validity field (colon column 2)
-# must fully match for that uid to be considered (default: any single validity).
 _bl_pgpid_eids_of() {
+	local helpmsg="Usage: gpg --with-colons … | $FUNCNAME [VALIDITY_ERE]
+Print the distinct eids (u4…/u5…, rendered like everywhere else) carried by the
+uid records of a 'gpg --with-colons' listing read on standard input, one per line,
+sorted.
+VALIDITY_ERE, when given, is an ERE the uid validity field (colon column 2) must
+fully match for that uid to count. Default: any single validity.
+"
+	case "$1" in -h|--h*) echo "$helpmsg" ; return ;; esac
 	local vf="${1:-.}"
 	awk -F: -v vf="$vf" '$1=="uid" && $2 ~ ("^(" vf ")$") { print $10 }' \
 		| sed --silent --regexp-extended "s,.*${BL_PGPID_EID_DEPRECATED_REGEX}.*,u\3\5,p ; s,UID.*${BL_PGPID_EID_STANDARD_REGEX}.*,\1,p" \
@@ -708,11 +712,16 @@ _bl_pgpid_ks_to_keyurl() {
 }
 
 _bl_pgpid_upgrade_uids() {
-	# Upgrade a legacy certificate : mint its identity uid UID:urn:eid:<eid> and
-	# an FN: (name part of the first legacy uid), then pin the primary on the
-	# identity. Legacy uids are neither revoked nor re-minted — the web of trust
-	# rests on their certifications. No-op without the secret key, without a
-	# single consistent legacy eid, or when the identity uid already exists.
+	local helpmsg="Usage: $FUNCNAME GNUPGHOME KEY [STDERRFILTER]
+Upgrade a legacy certificate: mint its identity uid UID:urn:eid:<eid>, and an FN:
+carrying the name part of the first legacy uid. Legacy uids are neither revoked
+nor re-minted, the web of trust rests on their certifications, and the primary
+flag stays where its holder put it.
+No-op without the secret key, without a single consistent legacy eid, or when the
+identity uid already exists.
+See bash-libs-implementation(7)
+"
+	case "$1" in -h|--h*) echo "$helpmsg" ; return ;; esac
 	local gpghome=$1 user=$2 gpgfilter=${3:-false}
 	local rawu u fn eiduid
 	local -a uids=() ids
@@ -742,11 +751,7 @@ _bl_pgpid_upgrade_uids() {
 	# Emails left alone : a legacy uid is already name-addr, and a second uid for
 	# the same address would split its third-party certifications.
 
-	# The primary flag is NOT touched. By long-standing OpenPGP convention it
-	# marks the holder's main EMAIL ADDRESS, and mail clients read the signer's
-	# identity there; moving it onto the address-less eid uid made Evolution
-	# report a sender/signer mismatch. The eid anchor no longer needs it either:
-	# onak shields any "UID:urn:" uid from the FIFO uid cap on its own.
+	# The primary flag is NOT touched — bash-libs-implementation(7).
 }
 
 
@@ -1254,15 +1259,8 @@ OPTIONS:
 	"${GQ[@]}" --quick-add-uid "$fpr" "FN:${pseudo}" || return $?
 	"${GQ[@]}" --quick-add-uid "$fpr" "${pseudo} <${email}>" || return $?
 	[[ -z "${extracomment// }" ]] || "${GQ[@]}" --quick-add-uid "$fpr" "NOTE:$(_bl_pgpid_vcard_esc "${extracomment# }")" || return $?
-	# Primary goes on the ADDRESS uid, which is what the flag has meant by
-	# convention since forever: the holder's main email. Mail clients read the
-	# signer's identity there, so an address-less primary makes them report a
-	# sender/signer mismatch.
-	#
-	# It used to be pinned on the eid uid instead, for one reason only: being
-	# minted first, the anchor is the oldest uid and a keyserver's FIFO cap
-	# would evict it. onak now shields any "UID:urn:" uid on its own
-	# (cap_packet_type / signedpacket_is_urn_anchor), so that reason is gone.
+	# Primary goes on the ADDRESS uid, never on the eid anchor, and the reason it
+	# is not the other way round is worth reading: bash-libs-implementation(7).
 	"${GQ[@]}" --quick-set-primary-uid "$fpr" "${pseudo} <${email}>" || printf "$FUNCNAME: Warning: "$"Can't set the primary uid to"" %s.\n" "'${pseudo} <${email}>'" >&2
 
 	# Generate and add auth key...
@@ -1583,11 +1581,9 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	fi
 
 	if ((certscount)) ; then
-		# --check-sigs (not --list-sigs) so gpg verifies each signature and tags
-		# it '!' ; '?' / '-' / '%' do not count, nor do self-signatures. Drop
-		# non-exportable « local » signatures (sigclass ending in 'l') : they
-		# live in one keyring only and are not a public certification
-		# (bash-libs-implementation(7)). Same address on several uids : keep the max.
+		# --check-sigs (not --list-sigs) so gpg verifies and tags each signature
+		# '!' ; local ones (sigclass ending in 'l') are not public certifications
+		# and do not count either — bash-libs-implementation(7).
 		gpg --homedir "$gpghome" --with-colons --check-sigs "$user" 2>/dev/null |
 			awk -F: -v owner="${user: -16}" '
 				function flush_uid(    e, c) {
@@ -1647,12 +1643,9 @@ OPTIONS:
   -K, --keyservers KEYSERVERS "$"If non-empty, send updated certificate to this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
 "
-	# The vCard property (RFC 6350) behind each CLI name. The identity eid
-	# (UID:urn:eid:…) is deliberately NOT manageable here: the whole web of
-	# trust hangs on it, changing it deserves its own heavily-confirmed UX.
-	# Email is deliberately absent : an email-bearing uid keeps the conventional
-	# 'Name <addr>' shape (MUAs choke on 'EMAIL: <addr>'), so it is not a
-	# vCard-property uid and is managed by bl_pgpid_email instead.
+	# The vCard property (RFC 6350) behind each CLI name. Two deliberate absences:
+	# the eid anchor, which the whole web of trust hangs on, and email, which is
+	# not a vCard-property uid at all — bash-libs-implementation(7).
 	local -A vprops=([name]=FN [note]=NOTE [address]=ADR [phone]=TEL [url]=URL [lang]=LANG [geo]=GEO)
 	# House cardinality (stricter than RFC 6350) : one usable {FN,NOTE} at a
 	# time (a new one revokes the previous), at least one usable FN kept.
@@ -2284,12 +2277,10 @@ OPTIONS:
 		((sev<=rc)) || rc=$sev
 
 		((quiet)) || {
-			# Optional column, before VERDICT : distinct external certifiers.
-			# Count the valid (`!`) signatures over all uid/uat, dropping the
-			# self-signatures ($5 == own keyid) and the non-exportable local ones
-			# (sigclass ending in 'l') ; a signer who signed several uids is kept
-			# once (deduped on its keyid). --check-sigs so gpg cryptographically
-			# verifies each signature and tags the valid ones with '!'.
+			# Optional column, before VERDICT : distinct external certifiers, ie.
+			# valid ('!') signatures over all uid/uat, deduped on the signer keyid.
+			# Same counting rules as 'email --certs-count' — see
+			# bash-libs-implementation(7).
 			if ((certscount)) ; then
 				ncerts=$("${GPG[@]}" --with-colons --check-sigs "0x$F" 2>/dev/null \
 					| awk -F: -v owner="${F: -16}" '
