@@ -2231,8 +2231,8 @@ msgid "All actions support a --help option, eg:"
 msgstr ""
 
 msgid ""
-"Manage a \\\"universal entities tree\\\", a filesystem-native registry of "
-"well-defined, certified contacts."
+"Manage a 'universal entities tree', a filesystem-native registry of well-"
+"defined, certified contacts."
 msgstr ""
 
 msgid ""

@@ -2998,8 +2998,8 @@ msgstr ""
 
 #: ../bin/bl-uetree:103
 msgid ""
-"Manage a \\\"universal entities tree\\\", a filesystem-native registry of "
-"well-defined, certified contacts."
+"Manage a 'universal entities tree', a filesystem-native registry of well-"
+"defined, certified contacts."
 msgstr ""
 
 #: ../bin/bl-uetree:104
