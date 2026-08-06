@@ -40,8 +40,7 @@ msgstr ""
 #: ../bin/bl-pgpid:2620 ../bin/bl-pgpkey:122 ../bin/bl-pgpkey:148
 #: ../bin/bl-pgpkey:268 ../bin/bl-pgpkey:320 ../bin/bl-pgpkey:384
 #: ../bin/bl-pgpkey:539 ../bin/bl-pgpkey:683 ../bin/bl-pgpkey:842
-#: ../bin/bl-pgpkey:1041 ../bin/bl-qif:162 ../bin/bl-qif:251 ../bin/bl-qif:325
-#: ../bin/bl-qif:420 ../bin/bl-security:142 ../bin/bl-security:176
+#: ../bin/bl-pgpkey:1041 ../bin/bl-security:142 ../bin/bl-security:176
 #: ../bin/bl-security:231 ../bin/bl-security:296 ../bin/bl-security:345
 #: ../bin/bl-test:144 ../bin/bl-uetree:123 ../bin/bl-uetree:444
 #: ../bin/bl-uetree:545 ../bin/bl-uetree:622 ../bin/bl-uetree:671
@@ -72,12 +71,11 @@ msgstr ""
 #: ../bin/bl-pgpkey:122 ../bin/bl-pgpkey:148 ../bin/bl-pgpkey:160
 #: ../bin/bl-pgpkey:268 ../bin/bl-pgpkey:320 ../bin/bl-pgpkey:384
 #: ../bin/bl-pgpkey:539 ../bin/bl-pgpkey:683 ../bin/bl-pgpkey:842
-#: ../bin/bl-pgpkey:1041 ../bin/bl-pgpkey:1185 ../bin/bl-qif:162
-#: ../bin/bl-qif:251 ../bin/bl-qif:325 ../bin/bl-qif:420 ../bin/bl-qif:609
-#: ../bin/bl-security:142 ../bin/bl-security:176 ../bin/bl-security:231
-#: ../bin/bl-security:296 ../bin/bl-security:345 ../bin/bl-security:365
-#: ../bin/bl-security:391 ../bin/bl-security:440 ../bin/bl-test:144
-#: ../bin/bl-test:198 ../bin/bl-uetree:123 ../bin/bl-uetree:837
+#: ../bin/bl-pgpkey:1041 ../bin/bl-pgpkey:1185 ../bin/bl-security:142
+#: ../bin/bl-security:176 ../bin/bl-security:231 ../bin/bl-security:296
+#: ../bin/bl-security:345 ../bin/bl-security:365 ../bin/bl-security:391
+#: ../bin/bl-security:440 ../bin/bl-test:144 ../bin/bl-test:198
+#: ../bin/bl-uetree:123 ../bin/bl-uetree:837
 msgid "Try '%s --help' for more information"
 msgstr ""
 
@@ -342,7 +340,7 @@ msgstr ""
 #: ../bin/bl-contacts:676 ../bin/bl-dji:565 ../bin/bl-djibian:468
 #: ../bin/bl-foopgp:684 ../bin/bl-interactive:535 ../bin/bl-json:401
 #: ../bin/bl-markdown:315 ../bin/bl-pgpid:2842 ../bin/bl-pgpkey:1185
-#: ../bin/bl-qif:609 ../bin/bl-security:440 ../bin/bl-test:198
+#: ../bin/bl-security:440 ../bin/bl-test:198
 msgid "Unrecognized action"
 msgstr ""
 
