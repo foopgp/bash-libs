@@ -37,6 +37,8 @@ PATH="../bin:$PATH"
 for bl in ../bin/$bashlibs ; do
 	namedesc=$(LANG=C.UTF-8 $bl --help | sed -n '/^$/ {n;p;q}')
 	blname=$(basename "$bl")
+	# bl-qrkey has been renamed as bl-pgpkey. For retrocompat, bl-qrkey still existe as a wrapper to bl-pgpkey, and it's 'manpage' should just be a link to bl-pgpkey's manpage.
+	[[ "$blname" != bl-qrkey ]] || continue
 	cat <<EOF > "${blname}.1.md.draft"
 <!--
 © 2025 Jean-Jacques Brucker <jjbrucker@foopgp.org>
