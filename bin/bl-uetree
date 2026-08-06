@@ -100,8 +100,8 @@ if ((BL_UETREE_isprogram)) ; then
 fi
 
 BL_UETREE_chelpmsg="
-"$"Manage a \"universal entities tree\", a filesystem-native registry of entities.""
-"$"Entities are well defined contacts when using certified OpenPGP ID.""
+"$"Manage a \"universal entities tree\", a filesystem-native registry of well-defined, certified contacts.""
+"$"Its storage architecture combines the strengths of eids, git, vCard and the OpenPGP web of trust.""
 "$"Each entity is cross-indexed by email, phone, name, eid, …""
 
 MAIN OPTIONS:"

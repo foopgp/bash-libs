@@ -2999,11 +2999,13 @@ msgstr ""
 #: ../bin/bl-uetree:103
 msgid ""
 "Manage a \\\"universal entities tree\\\", a filesystem-native registry of "
-"entities."
+"well-defined, certified contacts."
 msgstr ""
 
 #: ../bin/bl-uetree:104
-msgid "Entities are well defined contacts when using certified OpenPGP ID."
+msgid ""
+"Its storage architecture combines the strengths of eids, git, vCard and the "
+"OpenPGP web of trust."
 msgstr ""
 
 #: ../bin/bl-uetree:105
