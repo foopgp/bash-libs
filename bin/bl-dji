@@ -552,7 +552,7 @@ _bl_dji_parseoptions "$@" || _BL_DJI_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_DJI_RETVAL
 
 [[ "$_BL_DJI_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_DJI_RETVAL" < 2 ]] || exit $_BL_DJI_RETVAL
+[[ "$_BL_DJI_RETVAL" -lt 2 ]] || exit $_BL_DJI_RETVAL
 
 ### Run ###
 set -e

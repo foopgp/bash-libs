@@ -8,13 +8,13 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-UETREE
 section: 1
 header: User Commands
-footer: bash-libs 0.3.15
+footer: bash-libs 0.4.0
 ---
 
 # NAME
 
-bl-uetree - Manage a uetree, a filesystem-native registry of
-self-certifying entities.
+bl-uetree - Manage a \'universal entities tree\', a filesystem-native
+registry of well-defined, certified contacts.
 
 # SYNOPSIS
 
@@ -22,10 +22,10 @@ self-certifying entities.
 
 # DESCRIPTION
 
-Manage a uetree, a filesystem-native registry of self-certifying
-entities. Each entity is keyed by an OpenPGP identifier and
-cross-indexed by email, phone and name ; its canonical record is a vCard
-4.0 file (entity.vcf).
+Manage a \'universal entities tree\', a filesystem-native registry of
+well-defined, certified contacts. Its storage architecture combines the
+strengths of eids, git, vCard and the OpenPGP web of trust. Each entity
+is cross-indexed by email, phone, name, eid, ...
 
 ## MAIN OPTIONS:
 

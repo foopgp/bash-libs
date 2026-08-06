@@ -10,7 +10,7 @@
 # subsequent commits.
 #
 # Copyright © 2026 Jean-Jacques Brucker (u4=sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76) <jjbrucker@foopgp.org>
-# Copyright © 2026 Mnèmê (u5=001777236237.945e_43.30_005.38) <mneme@foopgp.org>
+# Copyright © 2026 Mnêmê (u5001777236237.945e_43.30_005.38) <mneme@foopgp.org>
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 #
@@ -100,9 +100,9 @@ if ((BL_UETREE_isprogram)) ; then
 fi
 
 BL_UETREE_chelpmsg="
-"$"Manage a uetree, a filesystem-native registry of self-certifying entities.""
-"$"Each entity is keyed by an OpenPGP identifier and cross-indexed by email, phone
-and name ; its canonical record is a vCard 4.0 file (entity.vcf).""
+"$"Manage a 'universal entities tree', a filesystem-native registry of well-defined, certified contacts.""
+"$"Its storage architecture combines the strengths of eids, git, vCard and the OpenPGP web of trust.""
+"$"Each entity is cross-indexed by email, phone, name, eid, …""
 
 MAIN OPTIONS:"
 
@@ -166,7 +166,7 @@ _bl_uetree_write_format_chain() {
 	local root="$1" target="$2" leafflag="$3"
 	local ver="$BL_UETREE_FORMAT_VERSION"
 	[[ -f "$root/$BL_UETREE_FORMAT" ]] || printf 'uetree %s %s /\n' "$ver" "$BL_UETREE_FLAG_NODE" > "$root/$BL_UETREE_FORMAT"
-	local rel="${target#$root}" ; rel="${rel#/}"
+	local rel="${target#"$root"}" ; rel="${rel#/}"
 	local cur="$root" acc="" segment want
 	local -a segs
 	IFS='/' read -ra segs <<< "$rel"
@@ -292,6 +292,7 @@ _bl_uetree_aliases_parse() {
 # Emit an .ALIASES manifest on stdout from parallel flags ($1 nameref) and
 # paths ($2 nameref) arrays, at the write version.
 _bl_uetree_aliases_emit() {
+	# shellcheck disable=SC2178 # namerefs to caller arrays
 	local -n _fl="$1" _pa="$2"
 	local i
 	for i in "${!_pa[@]}" ; do
@@ -362,7 +363,7 @@ _bl_uetree_relpath_tel() {
 # Auto-detect the branch of an item (eid|email|tel|name).
 _bl_uetree_detect_branch() {
 	local bare="${1#u*=}"
-	if [[ "$1" =~ ^u(did)?[45]= ]] || [[ "$bare" =~ ^${BL_PGPID_EID_REGEX}$ ]] ; then echo eid
+	if [[ "$1" =~ ^u(did)?[45]= ]] || [[ "$bare" =~ ^${BL_PGPID_UX_REGEX}$ ]] ; then echo eid
 	elif [[ "$1" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then echo email
 	elif [[ "$1" =~ ^${BL_UETREE_E164_REGEX}$ ]] ; then echo tel
 	else echo name
@@ -459,12 +460,12 @@ OPTIONS:
 	local has_rec has_ali has_kids
 	local -A rf vc
 	while IFS= read -r ff ; do
-		dir="${ff%/$BL_UETREE_FORMAT}"
+		dir="${ff%/"$BL_UETREE_FORMAT"}"
 		nnodes=$((nnodes+1))
 		if ! _bl_uetree_read_format "$dir" rf ; then _ckerr "$(printf $"%s: invalid or unsupported .FORMAT" "$dir")" ; continue ; fi
 		flag="${rf[flags]}" ; path="${rf[path]}"
 
-		rel="${dir#$root}" ; rel="${rel#/}"
+		rel="${dir#"$root"}" ; rel="${rel#/}"
 		[[ -z "$rel" ]] && actual="/" || actual="/$rel/"
 		[[ "$path" == "$actual" ]] || _ckerr "$(printf $"%s: .FORMAT path %s does not match actual %s" "$dir" "$path" "$actual")"
 
@@ -561,7 +562,7 @@ OPTIONS:
 			c1="${slug:0:1}" ; c2="${slug:0:2}"
 			for d in "$root"/by-name/*/"$c1"/"$c2"/"$slug"/ ; do
 				[[ -d "$d" ]] || continue
-				rels+=("${d#$root}")
+				rels+=("${d#"$root"}")
 			done ;;
 		*) printf "$FUNCNAME: Error: "$"unknown branch"" '%s'\n" "$branch" >&2 ; return 2 ;;
 	esac

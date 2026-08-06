@@ -10,6 +10,11 @@
 
 load ./setup_teardown.bash
 
+@test "linter: shellcheck clean under the global .shellcheckrc" {
+	# lint the repo source: the .shellcheckrc lookup starts from the script dir
+	shellcheck -x "${BATS_TEST_DIRNAME}/../bin/$(basename "${TARGET}")"
+}
+
 @test "test_Fp_1_1_log_to_stderr" {
 	LOG_LEVELS=(Emerg Alert Crit Error Warning Notice Info Debug)
 	LEVEL_INDEXS="  0     1    2     3       4      5    6     7"

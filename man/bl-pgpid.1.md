@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs 0.3.15
+footer: bash-libs 0.4.0
 ---
 
 # NAME
@@ -49,8 +49,8 @@ ICAO 9303, ISO/IEC 7816, many others RFC.
 
 get
 
-:   Output fingerprints, emails and OpenPGP IDentifier of certificates
-    matching NAME\|U4\|U5\|EMAIL.
+:   Output fingerprints, emails and eid of certificates matching
+    NAME\|U4\|U5\|EMAIL.
 
 mrz_to_u4
 
@@ -59,7 +59,7 @@ mrz_to_u4
 
 gen_u4
 
-:   Generate OpenPGP ID u4 string. Missing input will be asked
+:   Generate an eid u4 string. Missing input will be asked
     interactively.
 
 gen_uid
@@ -80,6 +80,11 @@ email
 
 :   Display and add or revoke emails inside OpenPGP certificate.
 
+property
+
+:   Display and add or revoke vCard-property uids inside OpenPGP
+    certificate.
+
 token_check
 
 :   Check if security token is correctly configured for OpenPGP ID ; may
@@ -92,7 +97,7 @@ cert_check
 
 certify
 
-:   Certify somebody else, identified by its OpenPGP ID TARGET_U4.
+:   Certify somebody else, identified by its eid TARGET_U4.
 
 update_trustdb
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-# © 2026 Mnèmê (u5=001777236237.945e_43.30_005.38) <mneme@foopgp.org>
+# © 2026 Mnêmê (u5001777236237.945e_43.30_005.38) <mneme@foopgp.org>
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 
@@ -45,8 +45,12 @@ build_wot () {
 
 	# T6 : eid on a NON-f/u uid ; the f/u uid (the plain one) has no eid.
 	_gen "Al6 (u4=$EID1) <a6@example.org>" "Plain6 <b6@example.org>" ; T6=$RF ; _imp "$RH" "$T6" ; rm -rf "$RH"
+	# 'uid N' is an INDEX and gpg promotes the effective primary uid to the front :
+	# hardcoding 2 signs the wrong uid whenever the clock ticks between the mints.
+	local i6
+	i6=$(gpg --no-options --homedir "$HA" --with-colons -k "$T6" | awk -F: '/^pub:/ { if (i>0) exit } /^(uid|uat):/ { i+=1 ; if ($10 ~ /b6@example.org/) { print i ; exit } }')
 	gpg "${B[@]}" --homedir "$HA" --command-fd 0 --edit-key "$T6" >/dev/null 2>&1 <<-EOF
-	uid 2
+	uid ${i6:?}
 	sign
 	y
 	save
@@ -101,6 +105,22 @@ wot () { build_wot ; source "${BATS_RUN_TMPDIR}/pgpid-wot/fprs.env" ; }
 	run --separate-stderr "${TARGET}" cert_check -H "$HA" "0x$T2"
 	assert_success
 	assert_output --regexp "u4${EID1} +uncertified$"
+}
+
+@test "cert_check -c : counts distinct external certifiers before the verdict" {
+	wot
+	# T1 is certified by the anchor only → exactly one external certifier.
+	run --separate-stderr "${TARGET}" cert_check -H "$HA" -c "0x$T1"
+	assert_success
+	assert_output --regexp "u4${EID1} +1 +certified$"
+	# T2 is unsigned → zero external certifiers.
+	run --separate-stderr "${TARGET}" cert_check -H "$HA" -c "0x$T2"
+	assert_success
+	assert_output --regexp "u4${EID1} +0 +uncertified$"
+	# The count sits between the email column and the verdict under -E too.
+	run --separate-stderr "${TARGET}" cert_check -H "$HA" -c -E "0x$T1"
+	assert_success
+	assert_output --regexp "alice@example.org.* u4${EID1} +1 +certified$"
 }
 
 @test "cert_check broken : conflicting eids on non-revoked uids" {
@@ -267,7 +287,7 @@ ut () { LC_ALL=C "${TARGET}" update_trustdb "$@" 2>&1 ; }
 	assert_output --partial "backed up"
 	assert_output --partial "+$FFPR:5:"
 	assert_equal "$(gpg --no-options --homedir "$UH" --export-ownertrust | grep -c "^$FFPR:5:")" "1"
-	assert_equal "$(ls "$UH"/ownertrust-backups/ | wc -l)" "1"
+	assert_equal "$(find "$UH"/ownertrust-backups/ -maxdepth 1 -type f | wc -l)" "1"
 }
 
 @test "update_trustdb is idempotent : re-applying leaves the ownertrust unchanged" {
@@ -318,4 +338,425 @@ ut () { LC_ALL=C "${TARGET}" update_trustdb "$@" 2>&1 ; }
 	ut --batch -H "$UH" "$UTD/deleg.gpg" >/dev/null   # define every key's ownertrust first
 	run ut -H "$UH" </dev/null                          # nothing left undefined → no prompt
 	assert_success
+}
+
+# --- property : vCard-property uids (FN/NOTE/ADR/TEL/URL/LANG/GEO/EMAIL) ---
+
+vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
+	VH="$BATS_TEST_TMPDIR/vh" ; mkdir -p "$VH" ; chmod 700 "$VH"
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH")
+	"${B[@]}" --allow-freeform-uid --quick-generate-key "UID:urn:eid:u4$EID1" ed25519 cert 0 2>/dev/null
+	VFPR=$(gpg --no-options --homedir "$VH" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
+	"${B[@]}" --quick-add-uid "$VFPR" 'FN:Alice Test' 2>/dev/null
+	"${B[@]}" --quick-add-uid "$VFPR" 'Alice Test <alice@example.org>' 2>/dev/null
+	"${B[@]}" --quick-add-uid "$VFPR" 'TEL;TYPE=home:+33612345678' 2>/dev/null
+}
+
+@test "property help exits 0" {
+	run --separate-stderr "${TARGET}" property --help
+	assert_success
+	assert_line --index 0 --regexp "^Usage: "
+}
+
+@test "property unknown property is error 2" {
+	run "${TARGET}" property bogus 0xDEADBEEF
+	assert_failure 2
+}
+
+@test "email : eval-friendly output" {
+	vkey
+	run --separate-stderr "${TARGET}" email -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "alice@example.org"
+}
+
+@test "property phone : vCard parameters ignored, kept under --raw" {
+	vkey
+	run --separate-stderr "${TARGET}" property phone -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_TEL[0]='+33612345678'"
+	run --separate-stderr "${TARGET}" property phone --raw -H "$VH" "0x$VFPR"
+	assert_success
+	assert_line --index 0 "TEL;TYPE=home:+33612345678"
+}
+
+@test "property --show-all : every property and the identity eid uid" {
+	vkey
+	run --separate-stderr "${TARGET}" property --show-all -H "$VH" "0x$VFPR"
+	assert_success
+	assert_line "pgpid_UID='urn:eid:u4$EID1'"
+	assert_line "pgpid_FN='Alice Test'"
+	# no EMAIL here : an address is not a vCard-property uid any more
+	refute_line --partial "alice@example.org"
+	assert_line "pgpid_TEL[0]='+33612345678'"
+}
+
+@test "property name --add : mono, previous FN revoked, primary left alone" {
+	vkey
+	run --separate-stderr "${TARGET}" property name -y -A 'Alice Renamed' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_FN='Alice Renamed'"
+	sleep 1
+	run --separate-stderr "${TARGET}" property name --show-revoked -H "$VH" "0x$VFPR"
+	assert_success
+	assert_line "pgpid_FN_REVOKED[0]='Alice Test'"
+	assert_line "pgpid_FN='Alice Renamed'"
+	# property must not move the primary flag : it belongs to the main address.
+	# Asserted on subpacket 25 itself, never on listing order — gpg's uid order
+	# is not stable when several self-sigs share a second.
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .FN:/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output ""
+}
+
+@test "email --revoke : the last usable email is retained" {
+	vkey
+	run --separate-stderr env LC_ALL=C "${TARGET}" email -R alice@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_failure 1
+	[[ "$stderr" == *"must be retained"* ]]
+}
+
+@test "email : add then revoke roundtrip (bracketed input accepted)" {
+	vkey
+	run --separate-stderr "${TARGET}" email -A bob@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_line "bob@example.org"
+	sleep 1
+	run --separate-stderr "${TARGET}" email -y -R '<alice@example.org>' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "bob@example.org"
+}
+
+@test "property phone --revoke-all : no keeper, then 'Nothing to revoke' warning" {
+	vkey
+	run --separate-stderr env LC_ALL=C "${TARGET}" property phone -y --revoke-all -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	refute_output --partial "pgpid_TEL["
+	run --separate-stderr env LC_ALL=C "${TARGET}" property phone -y --revoke-all -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	[[ "$stderr" == *"Nothing to revoke"* ]]
+}
+
+@test "email --revoke-all keeps the newest" {
+	vkey
+	"${TARGET}" email -A bob@example.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	sleep 1
+	run --separate-stderr "${TARGET}" email -y --revoke-all -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "bob@example.org"
+}
+
+@test "property : invalid values and a double mono --add are rejected with error 2" {
+	vkey
+	local bad
+	for bad in "email -A not-an-email" "phone -A 12345" "url -A notaurl" "lang -A x" "geo -A geo:abc" "name -A One -A Two" ; do
+		run "${TARGET}" property $bad -K '' -H "$VH" "0x$VFPR"
+		assert_failure 2
+	done
+}
+
+@test "property note : multiline value survives the RFC 6350 backslash-n roundtrip" {
+	vkey
+	run --separate-stderr "${TARGET}" property note -A $'line1\nline2 : gnop' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_NOTE=$'line1\nline2 : gnop'"
+	# stored form : ONE uid line, the newline RFC 6350-escaped
+	run --separate-stderr "${TARGET}" property note --raw -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output --partial 'NOTE:line1\nline2 : gnop'
+	sleep 1
+	run --separate-stderr "${TARGET}" property note -y -R $'line1\nline2 : gnop' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	refute_output --partial "pgpid_NOTE="
+}
+
+@test "property note : comma and semicolon are RFC 6350-escaped, decoded on display" {
+	vkey
+	run --separate-stderr "${TARGET}" property note -A 'a, b; c' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_NOTE='a, b; c'"
+	run --separate-stderr "${TARGET}" property note --raw -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output --partial 'NOTE:a\, b\; c'
+}
+
+@test "property address : structural ';' kept, literal ',' escaped" {
+	vkey
+	run --separate-stderr "${TARGET}" property address -A ';;1 rue A, B;Ville;;75000;FR' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_ADR[0]=';;1 rue A, B;Ville;;75000;FR'"
+	run --separate-stderr "${TARGET}" property address --raw -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output --partial 'ADR:;;1 rue A\, B;Ville;;75000;FR'
+}
+
+@test "gen_key pins the address uid as the primary user ID, not the eid anchor" {
+	local H="${BATS_TEST_TMPDIR}/genh" ; mkdir -p "$H" ; chmod 700 "$H"
+	run "${TARGET}" gen_key -N Alice -c "u4$EID1" -C 'hi, there; ok' -p x -H "$H" alice@example.org
+	assert_success
+	local F ; F=$(gpg --no-options --homedir "$H" --with-colons -K | awk -F: '$1=="fpr"{print $10;exit}')
+	# primary marks the holder's main ADDRESS : mail clients read the signer
+	# identity there, and an address-less primary makes them cry mismatch.
+	run bash -c "gpg --no-options --homedir '$H' --export '$F' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .Alice <alice@example.org>/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output "PRIMARY"
+	# …and the eid anchor must NOT carry it any more.
+	run bash -c "gpg --no-options --homedir '$H' --export '$F' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .UID:urn:eid:/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output ""
+	# …and the gen_key NOTE went through the same vCard escaping.
+	run bash -c "gpg --no-options --homedir '$H' --export '$F' | gpg --list-packets 2>/dev/null | grep -o 'NOTE:[^\"]*'"
+	assert_output 'NOTE:hi\, there\; ok'
+}
+
+@test "property note : a colon inside the value survives the x3a escaping roundtrip" {
+	vkey
+	run --separate-stderr "${TARGET}" property note -A 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "pgpid_NOTE='see: https://foopgp.org'"
+	sleep 1
+	run --separate-stderr "${TARGET}" property note -y -R 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	refute_output --partial "pgpid_NOTE="
+}
+
+@test "property ksprefrd : add/replace the primary uid's preferred keyserver, read it back, guards" {
+	vkey
+	# none yet on the primary (the UID:urn:eid: uid)
+	run --separate-stderr "${TARGET}" property ksprefrd --raw -H "$VH" "0x$VFPR"
+	assert_success ; assert_output ""
+	# add → subpacket 24 on the primary uid only, read back (eval then --raw)
+	"${TARGET}" property ksprefrd --add hkps://keys.foopgp.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	run --separate-stderr "${TARGET}" property ksprefrd -H "$VH" "0x$VFPR"
+	assert_output "pgpid_ksprefrd='hkps://keys.foopgp.org'"
+	# only ONE uid (the primary) carries it, and the primary flag survives
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' 2>/dev/null | gpg --no-options --list-packets 2>/dev/null | grep -c 'preferred keyserver'"
+	assert_output "1"
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' 2>/dev/null | gpg --no-options --list-packets 2>/dev/null | grep -c 'primary user ID'"
+	assert_output "1"
+	# --replace-to (synonym of --add) swaps it (sleep : distinct self-sig second)
+	sleep 1
+	"${TARGET}" property ksprefrd --replace-to hkp://foopgp.org:11371 -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	run --separate-stderr "${TARGET}" property ksprefrd --raw -H "$VH" "0x$VFPR"
+	assert_output "hkp://foopgp.org:11371"
+	# a non-hkp(s) value is refused
+	run --separate-stderr env LC_ALL=C "${TARGET}" property ksprefrd --add https://foo -K '' -H "$VH" "0x$VFPR"
+	assert_failure 2
+	# --revoke is meaningless here
+	run --separate-stderr env LC_ALL=C "${TARGET}" property ksprefrd --revoke x -H "$VH" "0x$VFPR"
+	assert_failure 2
+	# it is not a uid : never shown by --show-all
+	run --separate-stderr "${TARGET}" property --show-all -H "$VH" "0x$VFPR"
+	refute_output --partial "ksprefrd"
+}
+
+@test "property --to-vcard : vCard 4.0 wrapper, EMAIL;PREF, KEY;MEDIATYPE from subpacket 24, KEY inline" {
+	vkey
+	"${TARGET}" property ksprefrd --add hkp://foopgp.org:11371 -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	# strip CRLF and unfold (CRLF + leading space) so whole-line asserts work
+	run bash -c "'${TARGET}' property --to-vcard -H '$VH' '0x$VFPR' 2>/dev/null | tr -d '\r' | sed ':a;N;\$!ba;s/\n //g'"
+	assert_success
+	assert_line "BEGIN:VCARD"
+	assert_line "VERSION:4.0"
+	assert_line "UID:urn:eid:u4$EID1"
+	assert_line "FN:Alice Test"
+	assert_line "EMAIL;PREF=1:alice@example.org"
+	assert_line "KEY;MEDIATYPE=application/pgp-keys:http://foopgp.org:11371/pks/lookup?op=get&search=0x${VFPR,,}"
+	assert_output --partial "KEY:data:application/pgp-keys;base64,"
+	assert_line "END:VCARD"
+}
+
+@test "property ksprefrd : divergent keyservers across uids warn, primary kept" {
+	vkey
+	# keyserver A pinned on the primary (uid 1) …
+	"${TARGET}" property ksprefrd --add hkps://keys.foopgp.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	sleep 1
+	# … a different one planted on another (non-revoked) uid, uid 3
+	printf 'uid 3\nkeyserver\nhkp://foopgp.org:11371\ny\nsave\n' | gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH" --command-fd 0 --edit-key "0x$VFPR" >/dev/null 2>&1
+	run --separate-stderr env LC_ALL=C "${TARGET}" property ksprefrd --raw -H "$VH" "0x$VFPR"
+	assert_success
+	assert_output "hkps://keys.foopgp.org"                 # the primary's value wins
+	[[ "$stderr" == *"Several preferred keyservers"* ]]    # divergence flagged
+}
+
+@test "email --add lists both addresses and does not move the primary flag" {
+	vkey
+	run --separate-stderr "${TARGET}" email -A bob@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	assert_line "alice@example.org"
+	assert_line "bob@example.org"
+	# Adding an address says nothing about which one is the main one, so the
+	# newcomer must not end up primary. Asserted on subpacket 25, never on
+	# listing order — gpg's uid order is not stable within a second.
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .*bob@example.org/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output ""
+}
+
+@test "email --revoke moves the primary flag back onto an address" {
+	vkey
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH")
+	"${B[@]}" --quick-add-uid "$VFPR" 'Alice Test <bob@example.org>' 2>/dev/null
+	"${B[@]}" --quick-set-primary-uid "$VFPR" 'Alice Test <alice@example.org>' 2>/dev/null
+	sleep 1
+	# Minted last : without the fix gpg hands the main identity over to it.
+	"${B[@]}" --allow-freeform-uid --quick-add-uid "$VFPR" 'NOTE:a motto' 2>/dev/null
+	run --separate-stderr "${TARGET}" email -y -R alice@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .*bob@example.org/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output "PRIMARY"
+}
+
+@test "email --revoke of a secondary address leaves the primary flag alone" {
+	vkey
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH")
+	"${B[@]}" --quick-add-uid "$VFPR" 'Alice Test <bob@example.org>' 2>/dev/null
+	"${B[@]}" --quick-set-primary-uid "$VFPR" 'Alice Test <alice@example.org>' 2>/dev/null
+	run --separate-stderr "${TARGET}" email -y -R bob@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .*alice@example.org/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output "PRIMARY"
+}
+
+@test "email --revoke keep-one : refuses to drop the last email-bearing uid" {
+	vkey
+	run --separate-stderr env LC_ALL=C "${TARGET}" email -R alice@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_failure 1
+	[[ "$stderr" == *"must be retained"* ]]
+}
+
+lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
+	LH="$BATS_TEST_TMPDIR/lh" ; mkdir -p "$LH" ; chmod 700 "$LH"
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$LH")
+	"${B[@]}" --quick-generate-key "Alice Legacy (u4=$EID1) <alice@example.org>" ed25519 cert 0 2>/dev/null
+	LFPR=$(gpg --no-options --homedir "$LH" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
+	"${B[@]}" --quick-add-uid "$LFPR" "Alice Legacy (u4=$EID1) <alice.pro@example.org>" 2>/dev/null
+}
+
+@test "email --add upgrades a legacy certificate first : identity uid + FN: minted, legacy uids kept" {
+	lkey
+	run --separate-stderr "${TARGET}" email -A carol@example.org -K '' -H "$LH" "0x$LFPR"
+	assert_success
+	assert_line "alice.pro@example.org"
+	assert_line "alice@example.org"
+	assert_line "carol@example.org"
+	run --separate-stderr "${TARGET}" property --show-all -H "$LH" "0x$LFPR"
+	assert_line "pgpid_UID='urn:eid:u4$EID1'"
+	assert_line "pgpid_FN='Alice Legacy'"
+	# the legacy uids are NOT revoked (the web of trust rests on them)
+	run bash -c "gpg --no-options --homedir '$LH' --with-colons -k 2>/dev/null | grep -c '^uid:u:.*Alice Legacy (u4='"
+	assert_output "2"
+	# the upgrade does NOT move the primary flag : it belongs to the holder's
+	# main address, and a legacy certificate already has one where it wants it.
+	run bash -c "gpg --no-options --homedir '$LH' --export '0x$LFPR' | gpg --list-packets 2>/dev/null | awk '/user ID packet: .UID:urn:eid:/{f=1;next} /user ID packet:/{f=0} f&&/subpkt 25/{print \"PRIMARY\";exit}'"
+	assert_output ""
+}
+
+@test "email --revoke retires a legacy address in a single call" {
+	lkey
+	"${TARGET}" email -A carol@example.org -K '' -H "$LH" "0x$LFPR" >/dev/null 2>&1
+	run --separate-stderr "${TARGET}" email -y -R alice@example.org -K '' -H "$LH" "0x$LFPR"
+	assert_success
+	run --separate-stderr "${TARGET}" email -H "$LH" "0x$LFPR"
+	refute_line "alice@example.org"
+	assert_line "alice.pro@example.org"
+	assert_line "carol@example.org"
+	run bash -c "gpg --no-options --homedir '$LH' --with-colons -k 2>/dev/null | grep -c '^uid:r:.*<alice@example.org>'"
+	assert_output "1"
+}
+
+@test "email --revoke drains the deprecated 'EMAIL:' shape before the name-addr one" {
+	vkey
+	# A certificate minted during the EMAIL: experiment carries both shapes for
+	# the same address.
+	gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH" \
+		--quick-add-uid "$VFPR" 'EMAIL: <alice@example.org>' 2>/dev/null
+	run --separate-stderr "${TARGET}" email -y -R alice@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	# the deprecated uid went first ; the name-addr one still carries the address
+	run bash -c "gpg --no-options --homedir '$VH' --with-colons -k 2>/dev/null | grep -c '^uid:u:.*Alice Test <alice@example.org>'"
+	assert_output "1"
+	run bash -c "gpg --no-options --homedir '$VH' --with-colons -k 2>/dev/null | grep -c '^uid:r:.*EMAIL'"
+	assert_output "1"
+	run --separate-stderr "${TARGET}" email -H "$VH" "0x$VFPR"
+	assert_line "alice@example.org"
+}
+
+@test "email --revoke keep-one counts legacy uids too" {
+	lkey   # two legacy email uids (alice@, alice.pro@), no vCard, no upgrade
+	# Peeling the first legacy email is allowed : a second one remains.
+	run --separate-stderr "${TARGET}" email -y -R alice@example.org -K '' -H "$LH" "0x$LFPR"
+	assert_success
+	# The last remaining email is legacy-shaped : keep-one must still refuse it.
+	run --separate-stderr env LC_ALL=C "${TARGET}" email -R alice.pro@example.org -K '' -H "$LH" "0x$LFPR"
+	assert_failure 1
+	[[ "$stderr" == *"must be retained"* ]]
+}
+
+ckey () {	# an anchor key (CH/AF) + an imported vCard-uid target (TH2/TF) per test
+	CH="$BATS_TEST_TMPDIR/ch" ; TH2="$BATS_TEST_TMPDIR/th2"
+	mkdir -p "$CH" "$TH2" ; chmod 700 "$CH" "$TH2"
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '')
+	"${B[@]}" --homedir "$TH2" --allow-freeform-uid --quick-generate-key "UID:urn:eid:u4$EID1" ed25519 sign 0 2>/dev/null
+	TF=$(gpg --no-options --homedir "$TH2" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
+	"${B[@]}" --homedir "$TH2" --quick-add-uid "$TF" 'FN:Bob' 2>/dev/null
+	"${B[@]}" --homedir "$TH2" --quick-add-uid "$TF" 'Bob <bob@example.org>' 2>/dev/null
+	"${B[@]}" --homedir "$CH" --quick-generate-key 'Anchor <anchor@example.org>' ed25519 sign 0 2>/dev/null
+	AF=$(gpg --no-options --homedir "$CH" --with-colons -K 2>/dev/null | awk -F: '$1=="fpr"{print $10;exit}')
+	gpg --no-options --homedir "$TH2" --export "$TF" 2>/dev/null | gpg --no-options --homedir "$CH" --import 2>/dev/null
+}
+
+signed_uids () {	# uids of $TF carrying a signature from the anchor $AF
+	gpg --no-options --homedir "$CH" --with-colons --check-sigs "0x$TF" 2>/dev/null \
+		| awk -F: -v a="${AF: -16}" '$1=="uid"{u=$10} $1=="sig" && $5==a {print u}'
+}
+
+@test "certify signs only the identity uid of a vCard-uid certificate" {
+	ckey
+	run --separate-stderr "${TARGET}" certify -u "$AF" -K '' -H "$CH" "$EID1" "$TF" </dev/null
+	assert_success
+	run signed_uids
+	assert_output --partial "UID\x3aurn\x3aeid\x3au4$EID1"
+	refute_output --partial "FN"
+	refute_output --partial "bob@example.org"
+}
+
+@test "certify --all-emails also signs the uids carrying an address" {
+	ckey
+	run --separate-stderr "${TARGET}" certify -E -u "$AF" -K '' -H "$CH" "$EID1" "$TF" </dev/null
+	assert_success
+	run signed_uids
+	assert_output --partial "UID\x3aurn\x3aeid\x3au4$EID1"
+	assert_output --partial "bob@example.org"
+	refute_output --partial "FN"
+}
+
+@test "property revoke asks for irreversible-revocation confirmation ; declining keeps the uid" {
+	vkey
+	# TEL is not a keep-one property, so the revoke reaches the confirmation.
+	run bash -c "echo n | env LC_ALL=C BL_INTERACTIVE_FRONTEND= '${TARGET}' property phone -R '+33612345678' -K '' -H '$VH' '0x$VFPR' 2>&1"
+	assert_output --partial "IRREVERSIBLE"
+	assert_output --partial "Revocation cancelled"
+	# the phone survived : nothing was revoked
+	run --separate-stderr "${TARGET}" property phone -H "$VH" "0x$VFPR"
+	assert_line "pgpid_TEL[0]='+33612345678'"
+}
+
+@test "property revoke -y skips the confirmation and revokes" {
+	vkey
+	run --separate-stderr "${TARGET}" property phone -y -R '+33612345678' -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	refute_output --partial "pgpid_TEL["
+}
+
+@test "email --add of a revoked address reports it is unaddable, not a PIN error" {
+	vkey
+	# a second usable email so keep-one lets us revoke the first
+	"${TARGET}" email -A bob@example.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	sleep 1
+	"${TARGET}" email -y -R alice@example.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	# re-adding it : OpenPGP keeps the revoked uid, gpg would refuse an identical
+	# one — say so clearly instead of blaming the PIN.
+	run --separate-stderr env LC_ALL=C "${TARGET}" email -A alice@example.org -K '' -H "$VH" "0x$VFPR"
+	assert_success
+	[[ "$stderr" == *"revoked earlier and cannot be added again"* ]]
+	[[ "$stderr" != *"PIN"* ]]
+	# the address did not come back to life
+	refute_output --partial "alice@example.org"
 }

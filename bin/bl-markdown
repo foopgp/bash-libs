@@ -302,7 +302,7 @@ _bl_md_parseoptions "$@" || _BL_MD_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_MD_RETVAL
 
 [[ "$_BL_MD_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_MD_RETVAL" < 2 ]] || exit $_BL_MD_RETVAL
+[[ "$_BL_MD_RETVAL" -lt 2 ]] || exit $_BL_MD_RETVAL
 
 ### Run ###
 set -e

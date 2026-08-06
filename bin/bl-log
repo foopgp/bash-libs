@@ -360,7 +360,7 @@ _bl_log_parseoptions "$BL_LOG_NAME" "$@" || _BL_LOG_RETVAL="$?"
 [[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
 
 [[ "$_BL_LOG_RETVAL"   != "1"  ]] || exit 0
-[[ "$_BL_LOG_RETVAL" < 2 ]] || exit $_BL_LOG_RETVAL
+[[ "$_BL_LOG_RETVAL" -lt 2 ]] || exit $_BL_LOG_RETVAL
 
 ### Run ###
 set -e

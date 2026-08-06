@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-# © 2026 Mnèmê (u5=001777236237.945e_43.30_005.38) <mneme@foopgp.org>
+# © 2026 Mnêmê (u5001777236237.945e_43.30_005.38) <mneme@foopgp.org>
 #
 # SPDX-License-Identifier: LGPL-3.0-only
 
@@ -8,6 +8,11 @@
 # shellcheck source=/dev/null
 
 load ./setup_teardown.bash
+
+@test "linter: shellcheck clean under the global .shellcheckrc" {
+	# lint the repo source: the .shellcheckrc lookup starts from the script dir
+	shellcheck -x "${BATS_TEST_DIRNAME}/../bin/$(basename "${TARGET}")"
+}
 
 U4=sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76
 

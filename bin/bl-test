@@ -185,7 +185,7 @@ _bl_test_parseoptions "$@" || _BL_TEST_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_TEST_RETVAL
 
 [[ "$_BL_TEST_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_TEST_RETVAL" < 2 ]] || exit $_BL_TEST_RETVAL
+[[ "$_BL_TEST_RETVAL" -lt 2 ]] || exit $_BL_TEST_RETVAL
 
 ### Run ###
 set -e

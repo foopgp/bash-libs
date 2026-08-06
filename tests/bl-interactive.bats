@@ -9,10 +9,11 @@
 
 load ./setup_teardown.bash
 
-# Disabled 2026-07-08 (JJB): Until code is ready for a well configured shellcheck (cf: .shellcheckrc)
-# @test "test_Fc_1_1_linter" {
-## 	shellcheck "${TARGET}"
-# }
+# Re-enabled 2026-07-14: the library is clean under the global .shellcheckrc.
+@test "test_Fc_1_1_linter" {
+	# lint the repo source: the .shellcheckrc lookup starts from the script dir
+	shellcheck -x "${BATS_TEST_DIRNAME}/../bin/$(basename "${TARGET}")"
+}
 
 @test "test_Fc_help_option" {
 	run --separate-stderr "${TARGET}" --help

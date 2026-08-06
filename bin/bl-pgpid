@@ -88,15 +88,23 @@ BL_PGPID_VERSION=$(git describe --dirty --broken --always)
 BL_PGPID_FUNCTIONS=( $(sed -n 's,^\(bl_[^( ]*\) *().*,\1,p' "$BASH_SOURCE") )
 readonly BL_PGPID_NAME BL_PGPID_VERSION BL_PGPID_FUNCTIONS
 
-declare -r BL_PGPID_CO_REGEX="e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9]{2}\.[0-9]{2}"
-# Best way to NOT manage LC_COLLATE(="C.UTF-8") - cf. https://unix.stackexchange.com/questions/645054/how-do-bash-and-zsh-handle-collation-in-patterns-and-regexes
-declare -r BL_PGPID_U4H_REGEX="[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0-9_-]{22}"
-declare -r BL_PGPID_U4_REGEX="${BL_PGPID_U4H_REGEX}${BL_PGPID_CO_REGEX}"							# Birth of "human" (must have a name, should have a soul)
-declare -r BL_PGPID_TIME_REGEX="[01-][0-9]{11}\.[0-9]{3}"											# From 'Thu Feb 15 14:22:42 LMT -1199' to 'Wed Nov 16 10:46:39 CET 5138'
-declare -r BL_PGPID_U5_REGEX="${BL_PGPID_TIME_REGEX}${BL_PGPID_CO_REGEX}"							# Apparition of anything (with or without any ghost in the shell)
-declare -r BL_PGPID_EID_REGEX="(${BL_PGPID_U4_REGEX}|${BL_PGPID_U5_REGEX})"						# OpenPGP entity ID — umbrella for every current and future variant
+# Our Date, Time and geo coordinate — regular expressions
 declare -r BL_PGPID_DATE_REGEX="(18|19|20)[0-9]{2}(0[1-9]|1[0,1,2])(0[1-9]|[12][0-9]|3[01])"
-declare -r BL_PGPID_N2_REGEX="${BL_PGPID_DATE_REGEX}${BL_PGPID_CO_REGEX}"							# Deprecated
+declare -r BL_PGPID_TIME_REGEX="[01-][0-9]{11}\.[0-9]{3}"				# From 'Thu Feb 15 14:22:42 LMT -1199' to 'Wed Nov 16 10:46:39 CET 5138'
+declare -r BL_PGPID_CO_REGEX="e[_-][0-9]{2}\.[0-9]{2}[_-][01][0-9]{2}\.[0-9]{2}"
+
+# Entity ID (EID) contents — regular expressions
+# Note: US-ASCII into brackets is th best way to NOT manage LC_COLLATE(="C.UTF-8") - cf. https://unix.stackexchange.com/questions/645054/how-do-bash-and-zsh-handle-collation-in-patterns-and-regexes
+declare -r BL_PGPID_U4H_REGEX="[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0-9_-]{22}"
+declare -r BL_PGPID_U4_REGEX="(${BL_PGPID_U4H_REGEX})(${BL_PGPID_CO_REGEX})"		# Birth of "human" (must have a name, should have a soul)
+declare -r BL_PGPID_N2_REGEX="${BL_PGPID_DATE_REGEX}${BL_PGPID_CO_REGEX}"		# Deprecated, don't exist anymore (should soon totally disapear)
+declare -r BL_PGPID_U5_REGEX="(${BL_PGPID_TIME_REGEX})(${BL_PGPID_CO_REGEX})"		# Apparition of anything (with or without any ghost in the shell)
+declare -r BL_PGPID_UX_REGEX="(${BL_PGPID_U4_REGEX}|${BL_PGPID_U5_REGEX})"		# Ombrella for all known UID contents
+
+# Full Entity ID (EID) — regular expressions
+declare -r BL_PGPID_EID_STANDARD_REGEX="((u4)(${BL_PGPID_U4_REGEX})|(u5)(${BL_PGPID_U5_REGEX}))"
+declare -r BL_PGPID_EID_DEPRECATED_REGEX="u(did)?((4|5)([=:]|.x3a)(${BL_PGPID_U4_REGEX}|${BL_PGPID_U5_REGEX}))"
+declare -r BL_PGPID_EID_REGEX="(${BL_PGPID_EID_STANDARD_REGEX}|${BL_PGPID_EID_DEPRECATED_REGEX})"	# Ombrella for all known EID contents
 
 declare -r BL_PGPID_XUID_MIN=$((1<<18))
 declare -r BL_PGPID_XUID_MAX=$(((1<<31)-2))
@@ -377,6 +385,7 @@ declare -Ar BL_PGPID_COORDINATES=(
 
 ### Others Globals ###
 
+# First default keyserver MUST be hkp(s)://
 [[ "${BL_PGPID_KEYSERVERS[*]}" ]] || BL_PGPID_KEYSERVERS=(
 "hkps://keys.foopgp.org"
 "hkps://keys.openpgp.org"
@@ -545,7 +554,7 @@ OPTIONS:
 				shift ; gpghome=${1:?} ;;
 			-e|--exportable) filtertest='[[ "${record[TockenSN]}" == \+ ]]' ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
@@ -593,7 +602,7 @@ OPTIONS:
 				shift ; qtxt=$1 ;;
 			-e|--exportable) getargs+="$1 " ;;
 			-h|--h*) echo "$helpmsg" ; return ;;
-			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_QRKEY_VERSION" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
 			--) shift ; break ;;
 			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$FUNCNAME" >&2 ; return 2 ;;
 			*) break ;;
@@ -613,15 +622,136 @@ OPTIONS:
 	echo "${keyid%% *}"
 }
 
-# Read `gpg --with-colons` output on stdin ; print the distinct OpenPGP IDs
-# (u4…/u5…, rendered like everywhere else) carried by its uid records, one per
-# line, sorted. $1, if given, is an ERE the uid validity field (colon column 2)
-# must fully match for that uid to be considered (default: any single validity).
 _bl_pgpid_eids_of() {
+	local helpmsg="Usage: gpg --with-colons … | $FUNCNAME [VALIDITY_ERE]
+Print the distinct eids (u4…/u5…, rendered like everywhere else) carried by the
+uid records of a 'gpg --with-colons' listing read on standard input, one per line,
+sorted.
+VALIDITY_ERE, when given, is an ERE the uid validity field (colon column 2) must
+fully match for that uid to count. Default: any single validity.
+"
+	case "$1" in -h|--h*) echo "$helpmsg" ; return ;; esac
 	local vf="${1:-.}"
-	awk -F: -v vf="$vf" '$1=="uid" && $2 ~ ("^(" vf ")$")' \
-		| sed --silent --regexp-extended "s,.*4=?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5=?(${BL_PGPID_U5_REGEX}).*,u5\1,p" \
+	awk -F: -v vf="$vf" '$1=="uid" && $2 ~ ("^(" vf ")$") { print $10 }' \
+		| sed --silent --regexp-extended "s,.*${BL_PGPID_EID_DEPRECATED_REGEX}.*,u\3\5,p ; s,UID.*${BL_PGPID_EID_STANDARD_REGEX}.*,\1,p" \
 		| sort -u
+}
+
+# RFC 6350 §3.4 escape of a vCard text value carried inside a uid : always the
+# backslash and a newline (kept '\n' — a uid is single-line), the comma, and the
+# semicolon UNLESS $2 is non-empty (ADR keeps its structural ';'). Output on stdout.
+_bl_pgpid_vcard_esc() {   # VALUE [KEEP_SEMICOLON] → escaped
+	local v="${1//\\/\\\\}" ; v="${v//$'\r'/}" ; v="${v//,/\\,}"
+	[[ "$2" ]] || v="${v//;/\\;}"
+	printf '%s' "${v//$'\n'/\\n}"
+}
+
+_bl_pgpid_revoke_uid() {
+	# $3 = the real (already unescaped) uid string to revoke inside $2 certificate.
+	# $5 = 1 to skip the irreversibility confirmation (--yes / non-interactive callers).
+	local gpghome=$1 user=$2 ruid=$3 gpgfilter=${4:-false} assumeyes=${5:-0}
+	# A revocation is IRREVERSIBLE : OpenPGP keeps the revoked User ID on the
+	# certificate forever (marked revoked), and gpg refuses to add an identical
+	# one afterwards. Confirm, showing the full uid, unless the caller assumed yes.
+	if (( ! assumeyes )) ; then
+		local warn=$"Revoking a User ID is IRREVERSIBLE: OpenPGP keeps it on the certificate forever (marked revoked), and an identical User ID can never be added again."
+		bl_yesno --default=no --text "$warn"$'\n\n'"  $ruid" $"Revoke this User ID" \
+			|| { printf "${FUNCNAME[1]}: Notice: "$"Revocation cancelled.""\n" >&2 ; return 1 ; }
+	fi
+	printf "${FUNCNAME[1]}: Notice: "$"Revoking %s inside %s certificate…""\n" "$ruid" "$user" >&2
+	gpg --homedir "$gpghome" --batch --quick-revoke-uid "$user" "$ruid" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || { echo "${FUNCNAME[1]}: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
+}
+
+_bl_pgpid_fix_primary() {
+	local helpmsg="Usage: $FUNCNAME GNUPGHOME KEY [STDERRFILTER]
+Ensure KEY still announces an email address as its main identity, ie. as the first
+uid gpg lists - what OpenPGP tools and MTAs read. Move the primary-user-id flag
+onto the newest remaining address uid when it does not, do nothing when it does.
+Meant to run after revoking a uid: gpg leaves the flag on the revoked one and
+silently falls back on the newest remaining uid, whatever its shape.
+See bl-pgpid-implementation(7)
+"
+	case "$1" in -h|--h*) echo "$helpmsg" ; return ;; esac
+	local gpghome=$1 user=$2 gpgfilter=${3:-false}
+	local created rawu u newest= newestdate=0 first=1
+	while IFS=: read -r created rawu ; do
+		u=$(printf '%b' "$rawu")
+		if ((first)) ; then
+			first=0
+			[[ ! "$u" =~ \<[^\<\>]+\>[[:space:]]*$ ]] || return 0
+		fi
+		[[ "$u" =~ \<[^\<\>]+\>[[:space:]]*$ ]] || continue
+		# Newest self-sig creation date wins, last listed wins ties.
+		(( created < newestdate )) || { newestdate=$created ; newest=$u ; }
+	done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { printf "%s:%s\n", $6, $10 }')
+	[[ "$newest" ]] || { printf "${FUNCNAME[1]}: Warning: "$"No address left on %s certificate to carry the primary User ID flag.""\n" "$user" >&2 ; return 0 ; }
+	printf "${FUNCNAME[1]}: Notice: "$"Main identity is no longer an address: moving the primary User ID flag to %s.""\n" "$newest" >&2
+	gpg --homedir "$gpghome" --batch --quick-set-primary-uid "$user" "$newest" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || { echo "${FUNCNAME[1]}: Error: "$"Can't set the primary User ID - good PIN ?." >&2 ; return 1 ;}
+}
+
+_bl_pgpid_vfold() {
+	# Emit a vCard content line folded to ≤75 octets (RFC 6350 §3.2) : CRLF then a
+	# single leading space starts each continuation.
+	local l=$1
+	printf '%s\r\n' "${l:0:75}" ; l=${l:75}
+	while [[ "$l" ]] ; do printf ' %s\r\n' "${l:0:74}" ; l=${l:74} ; done
+}
+
+_bl_pgpid_ks_to_keyurl() {
+	# KEYSERVER_URI FPR → the op=get lookup URL for a vCard KEY;MEDIATYPE (nothing
+	# when unparseable). hkps→https (443 implicit) ; hkp→http, its default port
+	# 11371 made explicit (http would else hit 80) unless the URI already has one.
+	local ks=$1 fpr=$2 scheme hostport
+	[[ "$ks" =~ ^(hkps?|https?)://([^/]+) ]] || return 0
+	scheme=${BASH_REMATCH[1],,} ; hostport=${BASH_REMATCH[2]}
+	[[ "$scheme" != hkp || "$hostport" == *:* ]] || hostport="$hostport:11371"
+	case "$scheme" in
+		hkps|https) printf 'https://%s/pks/lookup?op=get&search=0x%s\n' "$hostport" "$fpr" ;;
+		*)          printf 'http://%s/pks/lookup?op=get&search=0x%s\n' "$hostport" "$fpr" ;;
+	esac
+}
+
+_bl_pgpid_upgrade_uids() {
+	local helpmsg="Usage: $FUNCNAME GNUPGHOME KEY [STDERRFILTER]
+Upgrade a legacy certificate: mint its identity uid UID:urn:eid:<eid>, and an FN:
+carrying the name part of the first legacy uid. Legacy uids are neither revoked
+nor re-minted, the web of trust rests on their certifications, and the primary
+flag stays where its holder put it.
+No-op without the secret key, without a single consistent legacy eid, or when the
+identity uid already exists.
+See bl-pgpid-implementation(7)
+"
+	case "$1" in -h|--h*) echo "$helpmsg" ; return ;; esac
+	local gpghome=$1 user=$2 gpgfilter=${3:-false}
+	local rawu u fn eiduid
+	local -a uids=() ids
+	while IFS= read -r rawu ; do
+		u=$(printf '%b' "$rawu")
+		[[ ! "$u" =~ ^UID:urn:eid: ]] || return 0	# already vCard-uid shaped
+		uids+=("$u")
+	done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" 2>/dev/null \
+		| awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" { i+=1 } $1=="uid" && $2 !~ /[re]/ { print $10 }')
+	(( ${#uids[@]} )) || return 0	# no secret key or no usable uid : not ours to upgrade
+	ids=($(printf '%s\n' "${uids[@]}" | sed --silent --regexp-extended "s,.*${BL_PGPID_EID_DEPRECATED_REGEX}.*,u\3\5,p" | sort -u))
+	(( ${#ids[@]} == 1 )) || return 0	# no (or conflicting) legacy eid : nothing to upgrade
+
+	printf "${FUNCNAME[1]}: Notice: "$"Upgrading %s certificate to the vCard-uid process (legacy uids kept : the web of trust rests on them)…""\n" "$user" >&2
+	local -a GQ=(gpg --homedir "$gpghome" --batch)
+	eiduid="UID:urn:eid:${ids[0]}"
+	printf "%s: Notice: Adding %s into %s certificate...\n" "${FUNCNAME[1]}" "'$eiduid'" "$user" >&2
+	"${GQ[@]}" --quick-add-uid "$user" "$eiduid" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "${FUNCNAME[1]}" "adduid" >&2 ; return 1 ;}
+
+	# Name part of the first legacy uid (its comment and email stripped).
+	fn=${uids[0]%%\ \(*} ; fn=${fn%%\ \<*} ; fn=${fn# } ; fn=${fn% }
+	if [[ "$fn" && "$fn" != *\<* ]] ; then
+		printf "%s: Notice: Adding %s into %s certificate...\n" "${FUNCNAME[1]}" "'FN:${fn}'" "$user" >&2
+		"${GQ[@]}" --quick-add-uid "$user" "FN:${fn}" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "${FUNCNAME[1]}" "adduid" >&2 ; return 1 ;}
+	fi
+
+	# Emails left alone : a legacy uid is already name-addr, and a second uid for
+	# the same address would split its third-party certifications.
+
+	# The primary flag is NOT touched — bl-pgpid-implementation(7).
 }
 
 
@@ -634,7 +764,7 @@ bl_pgpid_get() {
 	local maxfromks=100
 	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 	local helpmsg="
-"$"Output fingerprints, emails and OpenPGP IDentifier of certificates matching NAME|U4|U5|EMAIL.""
+"$"Output fingerprints, emails and eid of certificates matching NAME|U4|U5|EMAIL.""
 "$"May also get or refresh certificates from keyservers.""
 
 OPTIONS:
@@ -759,7 +889,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			if [[ "$cfpr" != $prevfpr ]] ; then
 				id=" $(gpg --homedir "$gpghome" --with-colons $gpgaction "0x$cfpr" | _bl_pgpid_eids_of)"
 				if [[ "$id" == *$'\n'* ]] ; then
-					printf "$FUNCNAME: Warning: "$"Certificate %s contain more than one OpenPGP ID string.""\n" "0x$cfpr" >&2
+					printf "$FUNCNAME: Warning: "$"Certificate %s contains more than one eid.""\n" "0x$cfpr" >&2
 					id=" -"
 				elif [[ "$id" == \  ]] ; then
 					id=" -"
@@ -866,7 +996,7 @@ bl_pgpid_gen_u4() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
-"$"Generate OpenPGP ID u4 string"". "$"Missing input will be asked interactively.""
+"$"Generate an eid u4 string"". "$"Missing input will be asked interactively.""
 "$"You may pass the Machine Readable Zone of an international passport as argument, but there are ~20% chances that generated *u4* is incorrect.""
 
 OPTIONS:
@@ -959,33 +1089,8 @@ OPTIONS:
 }
 
 bl_pgpid_gen_uid() {
-#  Since linux kernel 2.6, user ID (uid) are coded on 32 bit, so it should range from 0 (root) to 2^32-1 = 4294967295
-#  On older unix systems it was coded on 16 bit (0 to 65535) :
-#  - 0: root
-#  - under 1000: "system" users
-#  - 1000: Main "human" user (also often: first administrator)
-#  - above 1000: other "human" users
-#  - up to 65534, which is use by convention by the user 'nobody'.
-#
-#  tests:
-#  - $ LANG=C.UTF-8 sudo useradd -u 4294967295 test
-#    useradd: invalid user ID '4294967295'
-#    Return value $?: 3 (error)
-#  - $ LANG=C.UTF-8 sudo useradd -u 4294967294 test
-#    useradd warning: test's uid -2 outside of the UID_MIN 1000 and UID_MAX 60000 range.
-#    Return value $?: 0 (OK)
-#
-#   If we let 4294967294, 4294967293 and id under 2^18 (< 262144), for some futur usage/convention,
-#   then we can use range 262144 to 4294967292, to get an almost unique Unix User ID from unique OpenPGP ID string (u4,...)
-#
-#   See: https://www.debian.org/doc/debian-policy/ch-opersys.html#users-and-groups
-#
-#   Which make 4294705148 slots, ~= about half of the actual human population (~8 billions).
-#   But we encounter many problems when ( uid >= 2^31 ), probably because many software manipulate uid as signed instead of unsigned.
-#   Then we have had to decrease BL_PGPID_XUID_MAX to 2^31-2=2147483646
-#
-#   Constants: BL_PGPID_XUID_MIN and BL_PGPID_XUID_MAX
-
+	# Range [BL_PGPID_XUID_MIN, BL_PGPID_XUID_MAX] : uids at or above 2^31 break
+	# on software that treats them as signed — bl-pgpid-implementation(7).
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [U4]"
@@ -1032,7 +1137,7 @@ OPTIONS:
 	elif [[ "$str_in" =~ ${BL_PGPID_U5_REGEX} ]] ; then
 		u4h="$(echo "${BASH_REMATCH[0]}" | md5sum | xxd -r -p | basenc --base64url)"
 	else
-		printf "$FUNCNAME: Error: "$"No OpenPGP ID (u4 or u5) found in '%s'""...\n" "${str_in: 0:50}" >&2
+		printf "$FUNCNAME: Error: "$"No eid (u4 or u5) found in '%s'""...\n" "${str_in: 0:50}" >&2
 		return 2
 	fi
 
@@ -1055,8 +1160,8 @@ bl_pgpid_gen_key() {
 
 OPTIONS:
   -N, --name PSEUDONYM             "$"Common name or pseudonym. "$"Default: "$"first part of email"".
-  -c, --comment U4|U5              "$"First part of comment field MUST be a OpenPGP ID string."$" See: ""\$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
-  -C, --extra-comment COMMENT      "$"Comment (second part of comment field, free to use)""
+  -c, --eid U4|U5                  "$"Entity ID. Worldwide and decentralised entity identifier."$" See: ""\$BL_PGPID_U4_REGEX \$BL_PGPID_U5_REGEX.
+  -C, --extra-comment NOTE         "$"Supplemental information or comment associated with the entity.""
   -p, --passphrase PASSPHRASE      "$"Passphrase to (symetric) encrypt secret part of OpenPGP key. CAN'T BE EMPTY (at this stage)""
   -P, --passfrom FILE              "$"Get passphrase from first line of FILE (eg: fifo, tmpfs, /dev/stdin …)""
   -e, --expiration YEARS           "$"Number of years before certificate expiration. "$"Default: ""11 -> $(date -I -d "+11 years"))
@@ -1070,18 +1175,20 @@ OPTIONS:
 	for ((;$#;)) ; do
 		case "$1" in
 			-n|-N|--name*)
-				shift ; pseudo=$1 ;;
-			-c|--comment)
+				shift ; pseudo=${1:-} ;;
+			-c|--comment|--eid)
 				shift ; pgpidu=$1 ; pgpidugiven="." ;;
 			-C|--extracomment|--extra-comment)
 				shift ; extracomment=$1 ;;
 			-p|--passphrase)
-				shift ; passphrase=$1 ;;
+				shift ; passphrase=${1:?} ;;
 			-P|--passfrom|--pass-from)
 				shift ; passphrase=$( sed 1q < "$1" ) || return 1 ;;
 			-e|--expir*)
+				[[ "$2" =~ ^[1-9][0-9]*$ ]] || { printf "$FUNCNAME: Error: "$"Given parameter '%s' is not a valid number.""\n" "$2" >&2 ; return 2 ;}
 				shift ; expire=$1 ;;
 			-k|--keyserver)
+				[[ "$2" =~ ^hkps?:// ]] || { printf "$FUNCNAME: Error: "$"keyserver MUST be hkp(s)://…""\n" >&2 ; return 2 ;}
 				shift ; keyserv=$1 ;;
 			-H|--homedir)
 				shift ; gpghome=${1:?} ;;
@@ -1106,14 +1213,14 @@ OPTIONS:
 #TODO (also): check gpg version, because we use some recent feature, and compatibility may change (tested with gpg (GnuPG) 2.2.27 libgcrypt 1.8.8)
 
 	if [[ "$pgpidu" =~ ${BL_PGPID_U4_REGEX} ]] ; then
-		pgpidu="u4=${BASH_REMATCH[0]}"
+		pgpidu="u4${BASH_REMATCH[0]}"
 	elif [[ "$pgpidu" =~ ${BL_PGPID_U5_REGEX} ]] ; then
-		pgpidu="u5=${BASH_REMATCH[0]}"
+		pgpidu="u5${BASH_REMATCH[0]}"
 	elif [[ "$pgpidugiven" ]] ; then
-		printf "%s: Error: No OpenPGP ID string in given '%s'.\n" "$FUNCNAME" "$pgpidu" >&2
+		printf "%s: Error: No eid in given '%s'.\n" "$FUNCNAME" "$pgpidu" >&2
 		return 2
 	else
-		pgpidu="u4=$(bl_pgpid_gen_u4 --verify)"
+		pgpidu="u4$(bl_pgpid_gen_u4 --verify)"
 	fi
 
 	[[ "$pseudo" ]] || pseudo=${email%%@*}
@@ -1121,6 +1228,9 @@ OPTIONS:
 	[[ "$passphrase" ]] || passphrase=$(bl_new_password "Passphrase")
 	[[ "$passphrase" ]] || { printf "%s: Error: Passphrase can't be empty at this stage.\n" "$FUNCNAME" >&2 ; return 2 ;}
 
+	# Born with a single self-certified identity uid (the eid URN, §4.5 of
+	# draft-foopgp-urn-eid). Name and note follow as vCard-property uids ; the
+	# address is a plain name-addr uid (bl-pgpid-implementation(7)).
 	cat <<-EOF | gpg --homedir "$gpghome" --batch --generate-key --allow-freeform-uid || return $?
 		%echo Generating OpenPGP key for ${email}
 		Key-Type: eddsa
@@ -1129,9 +1239,7 @@ OPTIONS:
 		Subkey-Type: ecdh
 		Subkey-Curve: Curve25519
 		Subkey-Usage: encrypt
-		Name-Real: ${pseudo}
-		Name-Comment: ${pgpidu} ${extracomment}
-		Name-Email: ${email}
+		Name-Real: UID:urn:eid:${pgpidu}
 		Expire-Date: $(date -I -d "+$expire years")
 		Passphrase: ${passphrase}
 		Keyserver: ${keyserv}
@@ -1139,12 +1247,24 @@ OPTIONS:
 		%commit
 	EOF
 
-	# get first 2 fprs
-	local fprs
-	fprs=($(gpg --homedir "$gpghome" --list-secret-keys --with-colons "$email" | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p')) || return $?
+	# Look the fresh key up by its exact eid UID ('=' prefix = exact match), the
+	# only UID it has at this point.
+	local fpr
+	fpr=$(gpg --homedir "$gpghome" --list-secret-keys --with-colons "=UID:urn:eid:${pgpidu}" | awk -F: '$1=="fpr"{print $10;exit}') || return $?
+	[[ "$fpr" ]] || { printf "$FUNCNAME: Error: "$"Freshly generated key not found by its eid UID"" (%s).\n" "$pgpidu" >&2 ; return 1 ; }
+
+	# Add the vCard-property UIDs, then the email as a plain 'Name <addr>' uid
+	# (see _bl_pgpid_upgrade_uids : an 'EMAIL: <addr>' uid breaks real MUAs).
+	local -a GQ=(gpg --homedir "$gpghome" --batch --passphrase "${passphrase}" --pinentry-mode loopback)
+	"${GQ[@]}" --quick-add-uid "$fpr" "FN:${pseudo}" || return $?
+	"${GQ[@]}" --quick-add-uid "$fpr" "${pseudo} <${email}>" || return $?
+	[[ -z "${extracomment// }" ]] || "${GQ[@]}" --quick-add-uid "$fpr" "NOTE:$(_bl_pgpid_vcard_esc "${extracomment# }")" || return $?
+	# Primary goes on the ADDRESS uid, never on the eid anchor, and the reason it
+	# is not the other way round is worth reading: bl-pgpid-implementation(7).
+	"${GQ[@]}" --quick-set-primary-uid "$fpr" "${pseudo} <${email}>" || printf "$FUNCNAME: Warning: "$"Can't set the primary uid to"" %s.\n" "'${pseudo} <${email}>'" >&2
 
 	# Generate and add auth key...
-	gpg --homedir "$gpghome" --batch --passphrase "${passphrase}" --pinentry-mode loopback --quick-add-key ${fprs[0]} ed25519 auth ${expire}y || return $?
+	"${GQ[@]}" --quick-add-key "$fpr" ed25519 auth ${expire}y || return $?
 
 	# output all (3) fingerprints, first fingerprint should be the one of the main key
 	gpg --homedir "$gpghome" --list-secret-keys --with-colons "$email" | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'
@@ -1279,9 +1399,9 @@ bl_pgpid_email() {
 
 OPTIONS:
   -R, --revoke EMAIL          "$"Revoke existing EMAIL (may be used more than once)""
-  -A, --add EMAIL             "$"Add EMAIL. Enable --name and --extra-comment options""
-  -N, --name PSEUDONYM        "$"Common name or pseudonym beside new EMAIL. "$"Default: "$"first part of email""
-  -C, --extra-comment COMMENT "$"(Free to use part of) comment beside new EMAIL""
+      --revoke-all            "$"Revoke every usable email uid but the newest""
+  -A, --add EMAIL             "$"Add EMAIL as a 'Name <EMAIL>' uid. Enable the --name option""
+  -y, --yes                   "$"Assume yes: skip the irreversible-revocation confirmation""
   -c, --certs-count           "$"Also output the count of external valid certifications per email (tab-separated). If an email appears in several UIDs, only the maximum count is kept.""
   -v, --verbose               "$"Increase verbosity""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
@@ -1289,17 +1409,22 @@ OPTIONS:
 $(printf -- "%80s\n" ${keyservs[@]})
 "
 	# TODO: (maybe) sanitize --name or --extra-comment inputs (removing '\' '(' ')' ... ) ?
-	local toadd torev pseudo extracomment certscount=0
+	local toadd torev pseudo extracomment email certscount=0 assumeyes=0 revokeall=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local gpgfilter=false
 	for ((;$#;)) ; do
 		case "$1" in
 			-R|--rev|--revoke)
-				[[ "$2" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$2'" >&2 ; return 2 ;}
-				shift ; torev+=("$1") ;;
+				# Both the bare and the <bracketed> input shapes are accepted.
+				shift ; email=${1#<} ; email=${email%>}
+				[[ "$email" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$1'" >&2 ; return 2 ;}
+				torev+=("$email") ;;
 			-A|--add)
-				[[ "$2" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$2'" >&2 ; return 2 ;}
-				shift ; toadd+=("$1") ;;
+				shift ; email=${1#<} ; email=${email%>}
+				[[ "$email" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] || { printf "%s: Error: Invalid email %s.\n" "$FUNCNAME" "'$1'" >&2 ; return 2 ;}
+				toadd+=("$email") ;;
+			--revoke-all|--revokeall) revokeall=1 ;;
+			-y|--yes) assumeyes=1 ;;
 			-N|--name)
 				shift ; pseudo=$1 ;;
 			-C|--extracomment|--extra-comment)
@@ -1338,65 +1463,127 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --no-fetch -- "$user")) || return $?
 	user=${fprs[0]}
 
-	if [[ "$torev" || "$toadd" ]] ; then
-		local uids email commands
+	if [[ "$toadd" ]] ; then
+		local uids ids
+		# Legacy certificate ? Mint its identity uid first, so the primary can be
+		# pinned back on it after the add.
+		_bl_pgpid_upgrade_uids "$gpghome" "$user" "$gpgfilter" || return 1
 		# Get all uid/uat (from first keyring only)
 		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 ; print }')
 		[[ "$uids" ]] || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "$user" "$gpghome" >&2 ; return 1 ; }
+
+		# Sanity: the certificate must already carry exactly one eid (its own
+		# UID:urn:eid:… since the vCard-uid process ; a UID comment before that).
+		ids=($(_bl_pgpid_eids_of <<<"$uids"))
+		(( ${#ids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No eid (u4|u5) in %s certificate.""\n" "$user" >&2 ; return 1 ;}
+		(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary eid (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
+		[[ -z "$extracomment" ]] || printf "$FUNCNAME: Notice: "$"--extra-comment is ignored: a note is carried by its own NOTE: vCard uid""\n" >&2
 	fi
 
-	if [[ "$toadd" ]] ; then
-		local ids
-
-		ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4=\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5=\1,p" <<<"$uids" | sort -u))
-		(( ${#ids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No OpenPGP ID string (u4|u5) in %s certificate.""\n" "$user" >&2 ; return 1 ;}
-		(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary OpenPGP ID string (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
-
-		# Add emails
-		for email in "${toadd[@]}" ; do
-			[[ "$pseudo" ]] || pseudo=${email%%@*}
-			commands=$(printf "adduid\n$pseudo\n$email\n${ids[0]}$extracomment\nsave\n")
-			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'$pseudo (${ids[0]}$extracomment) <$email>'" "$user" >&2
-			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) <<<"$commands" || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
-		done
+	# Plain 'Name <addr>' uid, not a vCard-property one (bl-pgpid-implementation(7)).
+	# Keyservers muted here : a single send happens below.
+	local uidstr rawu u dup uidname eiduid
+	local -a prevuids=() revuids=()
+	if ((${#toadd[@]})) ; then
+		# The name in front of the address: --name wins, else the certificate's
+		# own FN: vCard uid, else (per address) the local part.
+		if [[ -z "$pseudo" ]] ; then
+			while IFS= read -r rawu ; do
+				u=$(printf '%b' "$rawu")
+				[[ "$u" =~ ^FN(\;[^:]*)?:\ ?(.*)$ ]] || continue
+				pseudo=${BASH_REMATCH[2]} ; break
+			done < <(awk -F: '$1=="uid" && $2 !~ /[re]/ { print $10 }' <<<"$uids")
+		fi
+		# --with-colons escapes ':' (and '\\', control bytes) as \\xNN in field
+		# 10 ; gpg --quick-*-uid need the real UID string back.
+		while IFS= read -r rawu ; do prevuids+=("$(printf '%b' "$rawu")") ; done \
+			< <(awk -F: '$1=="uid" && $2 !~ /[re]/ { print $10 }' <<<"$uids")
+		while IFS= read -r rawu ; do revuids+=("$(printf '%b' "$rawu")") ; done \
+			< <(awk -F: '$1=="uid" && $2 ~ /[re]/ { print $10 }' <<<"$uids")
+		eiduid="UID:urn:eid:${ids[0]}"
 	fi
-
-	if [[ "$torev" ]] ; then
-		local nbemails
-		for email in "${torev[@]}" ; do
-			nbemails=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | wc -l)
-			((nbemails>1)) || { printf "$FUNCNAME: Error: "$"At least one email must be retained.""\n" >&2 ; return 1 ; }
-
-			commands=$(awk "/^uid:[^r].*<$email>/ "'{ printf "uid "NR"\nrevuid\ny\n4\n\ny\nsave\n" }' <<<"$uids")
-			[[ "$commands" ]] || { printf "$FUNCNAME: Error: "$"No revokable %s inside certificate %s (in %s).""\n" "<$email>" "$user" "$gpghome" >&2 ; return 1 ; }
-
-			printf "$FUNCNAME: Notice: "$"Revoking %s inside %s certificate…""\n" "<$email>" "$user" >&2
-			gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" | sort -u | sort -t'(' --key=2n >&2 ) <<<"$commands" || { echo "$FUNCNAME: Error: "$"Can't revoke - good PIN ?." >&2 ; return 1 ;}
+	for email in "${toadd[@]}" ; do
+		uidname=${pseudo:-${email%%@*}}
+		uidstr="${uidname} <${email}>"
+		dup=0
+		for u in "${prevuids[@]}" ; do
+			[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
 		done
+		((! dup)) || { printf "$FUNCNAME: Notice: "$"%s certificate already carries %s""\n" "$user" "'$uidstr'" >&2 ; continue ; }
+		# A revoked twin keeps its string on the certificate forever and gpg
+		# refuses an identical one : say so instead of blaming the PIN.
+		for u in "${revuids[@]}" ; do
+			[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
+		done
+		((! dup)) || { printf "$FUNCNAME: Notice: "$"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked User IDs on the certificate and gpg refuses an identical one.""\n" "'$uidstr'" >&2 ; continue ; }
+		printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'$uidstr'" "$user" >&2
+		gpg --homedir "$gpghome" --batch --quick-add-uid "$user" "$uidstr" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
+	done
+	# One uid revoked per call (re-run to peel the next), deprecated 'EMAIL:'
+	# shape first. The keep-one guard counts every email-bearing uid whatever
+	# its shape, so the certificate never loses its last address.
+	local rawu u revoked=0
+	local -a emailuids legacytargets vcardtargets targetuids
+	for email in "${torev[@]}" ; do
+		# Both the bare and the <bracketed> input shapes are accepted.
+		email=${email#<} ; email=${email%>}
+		emailuids=() ; legacytargets=() ; vcardtargets=()
+		while IFS= read -r rawu ; do
+			u=$(printf '%b' "$rawu")
+			if [[ "$u" =~ ^EMAIL(\;[^:]*)?:\ ?\<?([^\<\>]+)\>?$ ]] ; then
+				emailuids+=("$u")
+				[[ "${BASH_REMATCH[2]}" != "$email" ]] || vcardtargets+=("$u")
+			elif [[ "$u" =~ \<([^\<\>]+)\>[[:space:]]*$ ]] ; then
+				emailuids+=("$u")
+				[[ "${BASH_REMATCH[1]}" != "$email" ]] || legacytargets+=("$u")
+			fi
+		done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
+		targetuids=("${vcardtargets[@]}" "${legacytargets[@]}")
+		(( ${#targetuids[@]} )) || { printf "$FUNCNAME: Error: "$"No revokable email %s inside %s certificate (in %s).""\n" "'$email'" "$user" "$gpghome" >&2 ; return 1 ; }
+		(( ${#emailuids[@]} >= 2 )) || { printf "$FUNCNAME: Error: "$"At least one email must be retained.""\n" >&2 ; return 1 ; }
+		_bl_pgpid_revoke_uid "$gpghome" "$user" "${targetuids[0]}" "$gpgfilter" "$assumeyes" || return 1
+		revoked=1
+	done
+
+	if ((revokeall)) ; then
+		local created keep i
+		local -a alluids=() allcreated=()
+		while IFS=: read -r created rawu ; do
+			u=$(printf '%b' "$rawu")
+			[[ "$u" =~ ^EMAIL(\;[^:]*)?:\ ?\<?[^\<\>]+\>?$ || "$u" =~ \<[^\<\>]+\>[[:space:]]*$ ]] || continue
+			alluids+=("$u") ; allcreated+=("$created")
+		done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { printf "%s:%s\n", $6, $10 }')
+		# Keep the newest (uid self-sig creation date, last listed wins ties).
+		keep=-1
+		for ((i=0 ; i<${#alluids[@]} ; i++)) ; do
+			(( keep >= 0 && allcreated[i] < allcreated[keep] )) || keep=$i
+		done
+		if (( ${#alluids[@]} < 2 )) ; then
+			printf "$FUNCNAME: Warning: "$"Nothing to revoke.""\n" >&2
+		else
+			for ((i=0 ; i<${#alluids[@]} ; i++)) ; do
+				((i != keep)) || continue
+				_bl_pgpid_revoke_uid "$gpghome" "$user" "${alluids[i]}" "$gpgfilter" "$assumeyes" || return 1
+				revoked=1
+			done
+		fi
+	fi
+	if ((revoked)) ; then
+		_bl_pgpid_fix_primary "$gpghome" "$user" "$gpgfilter" || return 1
 	fi
 
 	local ret=0
 	# Send updated certificate to keyservers
-	if [[ "$torev" || "$toadd" ]] ; then
+	if [[ "$torev" || "$toadd" ]] || ((revokeall)) ; then
 		for keyserv in ${keyservs[@]} ; do
 			gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "$user" || ret=$?
 		done
 	fi
 
 	if ((certscount)) ; then
-		# For each usable (non-revoked, non-expired) UID, count the sig packets
-		# that gpg marked valid (`!`) and whose issuer keyid differs from the
-		# certificate's own keyid (= self-signature). If the same email appears
-		# on several UIDs, keep the maximum across them — the user only cares
-		# how well-vouched the address is, not how many redundant UIDs carry it.
-		# --check-sigs (not --list-sigs) so gpg actually verifies each signature
-		# and tags it with `!` when the signer's public key is in the keyring
-		# and the signature is cryptographically correct. Untaggable sigs
-		# ('?' = unknown signer, '-' = bad sig, '%' = error) don't count.
-		# Also drop non-exportable « local » signatures (sigclass ending in 'l',
-		# e.g. `10l`): they live in the holder's keyring only and don't count
-		# as a public certification (caught 2026-06-23 thanks to my own
-		# 2026-05-25 lsign of jjb's cert which inflated the count).
+		# --check-sigs (not --list-sigs) so gpg verifies and tags each signature
+		# '!' ; local ones (sigclass ending in 'l') are not public certifications
+		# and do not count either — bl-pgpid-implementation(7).
 		gpg --homedir "$gpghome" --with-colons --check-sigs "$user" 2>/dev/null |
 			awk -F: -v owner="${user: -16}" '
 				function flush_uid(    e, c) {
@@ -1424,6 +1611,404 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	else
 		gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "$user"  | sort -u | cut -d ' ' -f 2
 	fi
+	return $ret
+}
+
+bl_pgpid_property() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name PROPERTY [OPTIONS]... [NAME|EMAIL|KEYID|U4|U5]"
+	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
+	local helpmsg="
+"$"Display and add or revoke vCard-property uids inside OpenPGP certificate.""
+"$"PROPERTY is one of: ""{ name, note, address, phone, url, lang, geo, ksprefrd }.
+"$"Email addresses are not vCard-property uids (they keep the 'Name <addr>' shape every mail client understands): manage them with '""$BL_PGPID_NAME email'.
+"$"'ksprefrd' is preferred certificate server. This is not stored as a vCard-property uid, but used when generating vCard.""
+"$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
+"$"Without modification options, output the usable (non-revoked and non-expired) PROPERTY values, ready to be evaluated in bash.""
+"$"Free-text values (name, note) with , ; \\ or newlines are stored RFC 6350-escaped and decoded back on display (address keeps its structural ';') ; --raw shows the stored form""
+
+OPTIONS:
+  -A, --add VALUE             "$"Add ({name,note,ksprefrd} ⇒ replace) a PROPERTY uid (may be used more than once)""
+      --replace-to VALUE      "$"Exact synonym of --add — terminolgy is just more relevant for {name,note,ksprefrd}""
+  -R, --revoke VALUE          "$"Revoke the PROPERTY uid carrying VALUE (may be used more than once)""
+      --revoke-all            "$"Revoke every usable PROPERTY uid — all but the newest for {name,email}""
+  -y, --yes                   "$"Assume yes: skip the irreversible-revocation confirmation""
+      --show-all              "$"Display every vCard-property uid of the certificate, including its Entity ID (UID:urn:eid:…)""
+      --show-revoked          "$"Also display revoked or expired uids""
+      --raw                   "$"Display raw uid strings (vCard parameters kept), separated by empty lines""
+      --to-vcard              "$"Output vCard (override any other options)""
+  -v, --verbose               "$"Increase verbosity""
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
+  -K, --keyservers KEYSERVERS "$"If non-empty, send updated certificate to this keyservers. "$"Default: ""
+$(printf -- "%80s\n" ${keyservs[@]})
+"
+	# The vCard property (RFC 6350) behind each CLI name. Two deliberate absences:
+	# the eid anchor, which the whole web of trust hangs on, and email, which is
+	# not a vCard-property uid at all — bl-pgpid-implementation(7).
+	local -A vprops=([name]=FN [note]=NOTE [address]=ADR [phone]=TEL [url]=URL [lang]=LANG [geo]=GEO)
+	# House cardinality (stricter than RFC 6350) : one usable {FN,NOTE} at a
+	# time (a new one revokes the previous), at least one usable FN kept.
+	local mono=" FN NOTE " keepone=" FN "
+	local -a toadd=() torev=()
+	local revokeall=0 showall=0 showrevoked=0 raw=0 tovcard=0 assumeyes=0 prop vprop target
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local gpgfilter=false
+	for ((;$#;)) ; do
+		case "$1" in
+			-A|--add|--replace-to)
+				shift ; toadd+=("${1:?}") ;;
+			-R|--rev|--revoke)
+				shift ; torev+=("${1:?}") ;;
+			--revoke-all|--revokeall) revokeall=1 ;;
+			-y|--yes) assumeyes=1 ;;
+			--show-all|--showall) showall=1 ;;
+			--show-revoked|--showrevoked) showrevoked=1 ;;
+			--raw) raw=1 ;;
+			--to-vcard|--tovcard) tovcard=1 ; showall=1 ;;   # imply show-all : no PROPERTY needed
+			-K|--keyservers)
+				shift ; keyservs=($1) ;;
+			-H|--homedir)
+				shift ; gpghome=${1:?} ;;
+			-v|--verbose) gpgfilter="cat" ;;
+			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version) printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift
+				while (($#)) ; do
+					if [[ -z "$prop" ]] ; then prop=$1
+					elif [[ -z "$target" ]] ; then target=$1
+					else printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'…""\n" "$1" >&2
+					fi
+					shift
+				done ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*)	if [[ -z "$prop" ]] ; then prop=$1
+				elif [[ -z "$target" ]] ; then target=$1
+				else printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'…""\n" "$1" >&2
+				fi ;;
+		esac
+		shift
+	done
+
+	# With --show-all the PROPERTY argument is optional : a lone positional
+	# that is no known property is the certificate lookup string.
+	if [[ "$prop" ]] && ((showall)) && [[ -z "$target" && -z "${vprops[${prop,,}]}" ]] ; then
+		target=$prop ; prop=""
+	fi
+
+	if [[ "$prop" ]] ; then
+		if [[ "${prop,,}" == ksprefrd ]] ; then
+			vprop=KSPREFRD	# not a vCard uid : the « preferred keyserver » subpacket (24), handled apart below
+		else
+			vprop=${vprops[${prop,,}]}
+			[[ "$vprop" ]] || { printf "$FUNCNAME: Error: "$"Unrecognized property"" '%s'.\n\n"$"Try '%s --help' for more information"".\n" "$prop" "$name" >&2 ; return 2 ; }
+		fi
+	elif (( ! showall )) ; then
+		printf "$FUNCNAME: Error: "$"Missing PROPERTY argument"".\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2
+	elif (( ${#toadd[@]} + ${#torev[@]} + revokeall )) ; then
+		printf "$FUNCNAME: Error: "$"Modification options need a PROPERTY argument"".\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2
+	fi
+
+	(( ${#toadd[@]} < 2 )) || [[ "$mono" != *" $vprop "* ]] || { printf "$FUNCNAME: Error: "$"Only one --add at a time for {name,note} (the new value revokes the previous one)"".\n" >&2 ; return 2 ; }
+
+	# Sanity checks before minting a uid : strict on the machine-parseable
+	# properties, light (non-empty, no control character) on the free-text ones.
+	local telre='^(tel:)?\+[0-9][0-9 ./()-]{3,22}[0-9]$'
+	local urlre='^[a-zA-Z][a-zA-Z0-9+.-]*://[^[:space:]]+$'
+	local langre='^[a-zA-Z]{2,8}(-[a-zA-Z0-9]{1,8})*$'
+	local geore='^geo:-?[0-9]{1,2}(\.[0-9]+)?,-?[0-9]{1,3}(\.[0-9]+)?(,-?[0-9]+(\.[0-9]+)?)?(;(u|crs)=[a-zA-Z0-9.-]+)*$'
+	local val
+	# vCard text escaping (RFC 6350 §3.4). Free-text values (FN, NOTE) escape , ; \
+	# and a newline ; ADR keeps its STRUCTURAL ';' separators ; URI / tag values
+	# (TEL, URL, GEO, LANG, EMAIL) stay verbatim. --revoke gets the same encoding
+	# so it matches the stored form ; display decodes it (--raw keeps it).
+	local escprof="" keepsemi=""
+	case "$vprop" in FN|NOTE) escprof=1 ;; ADR) escprof=1 ; keepsemi=1 ;; esac
+	if [[ "$escprof" ]] ; then
+		local i
+		for i in "${!toadd[@]}" ; do toadd[i]=$(_bl_pgpid_vcard_esc "${toadd[i]}" "$keepsemi") ; done
+		for i in "${!torev[@]}" ; do torev[i]=$(_bl_pgpid_vcard_esc "${torev[i]}" "$keepsemi") ; done
+	fi
+	for val in "${toadd[@]}" ; do
+		if [[ -z "$val" ]] || [[ "$val" =~ [[:cntrl:]] ]] ; then
+			printf "$FUNCNAME: Error: "$"Invalid %s value"" %s.\n" "$vprop" "'$val'" >&2 ; return 2
+		fi
+		case "$vprop" in
+			EMAIL) [[ "$val" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ;;
+			TEL)   [[ "$val" =~ $telre ]] ;;
+			URL)   [[ "$val" =~ $urlre ]] ;;
+			LANG)  [[ "$val" =~ $langre ]] ;;
+			GEO)   [[ "$val" =~ $geore ]] ;;
+			*) true ;;
+		esac || { printf "$FUNCNAME: Error: "$"Invalid %s value"" %s.\n" "$vprop" "'$val'" >&2 ; return 2 ; }
+	done
+
+	local user
+	if [[ "$target" ]] ; then
+		user=$target
+	else
+		local -A cardinfo
+		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
+		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	fi
+
+	# Check that $user match only one certificate
+	local fprs
+	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --no-fetch -- "$user")) || return $?
+	user=${fprs[0]}
+
+	local ret=0 modified=0
+
+	# --to-vcard : render the certificate as a vCard 4.0, the same output as the
+	# in-browser pgp2vcard.html. The vCard-property uids ARE the content lines
+	# (EMAIL keeps only its address, ;PREF-ranked) ; the identity/KEY/PHOTO are
+	# added ; everything is folded (RFC 6350). Overrides any other option.
+	if ((tovcard)) ; then
+		local rawu u pref=0 kspref keyurl photofile
+		printf 'BEGIN:VCARD\r\nVERSION:4.0\r\n'
+		while IFS= read -r rawu ; do
+			u=$(printf '%b' "$rawu")
+			if [[ "$u" =~ ^([A-Z]+)(\;[^:]*)?:\ ?(.*)$ ]] ; then
+				if [[ "${BASH_REMATCH[1]}" == EMAIL ]] ; then
+					# Legacy 'EMAIL: <addr>' uid — still rendered so that
+					# certificates minted during that experiment keep working.
+					u=${BASH_REMATCH[3]} ; u=${u#<} ; u=${u%>}       # bare address, no angle brackets
+					pref=$((pref+1)) ; _bl_pgpid_vfold "EMAIL;PREF=${pref}:${u}"
+				else
+					_bl_pgpid_vfold "$u"                             # already a valid, escaped vCard line
+				fi
+			elif [[ "$u" =~ \<([^\<\>]+)\>[[:space:]]*$ ]] ; then
+				# Plain 'Name <addr>' uid : only its address becomes a vCard
+				# line (the name is carried by FN:, the eid by UID:urn:eid:…).
+				pref=$((pref+1)) ; _bl_pgpid_vfold "EMAIL;PREF=${pref}:${BASH_REMATCH[1]}"
+			fi
+		done < <(gpg --homedir "$gpghome" --with-colons --list-key "$user" 2>/dev/null | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
+		# KEY;MEDIATYPE : retrievable-cert URL from the preferred keyserver
+		# (subpacket 24 ; default BL_PGPID_KEYSERVERS[0]).
+		kspref=$(bl_pgpid_property ksprefrd --raw --homedir "$gpghome" -- "$user" 2>/dev/null)
+		keyurl=$(_bl_pgpid_ks_to_keyurl "${kspref:-${BL_PGPID_KEYSERVERS[0]}}" "${user,,}")   # lowercase fpr, matching pgp2vcard.html
+		[[ -z "$keyurl" ]] || _bl_pgpid_vfold "KEY;MEDIATYPE=application/pgp-keys:${keyurl}"
+		# KEY inline : minimised export (no third-party sigs, no photo attributes).
+		_bl_pgpid_vfold "KEY:data:application/pgp-keys;base64,$(gpg --homedir "$gpghome" --export --export-options export-minimal,no-export-attributes "$user" 2>/dev/null | base64 --wrap=0)"
+		# PHOTO : the first UAT image, extracted through gpg's photo-viewer hook.
+		photofile=$(mktemp) && {
+			gpg --homedir "$gpghome" --photo-viewer "cp %I $photofile" --list-options show-photos --list-key "$user" >/dev/null 2>&1
+			[[ ! -s "$photofile" ]] || _bl_pgpid_vfold "PHOTO:data:image/jpeg;base64,$(base64 --wrap=0 "$photofile")"
+			rm -f "$photofile"
+		}
+		printf 'END:VCARD\r\n'
+		return 0
+	fi
+
+	# 'ksprefrd' : the preferred keyserver (OpenPGP self-sig subpacket 24). Not a
+	# vCard-property uid — it lives on the primary uid's self-sig and only shapes
+	# the KEY;MEDIATYPE URL of the generated vCard. Read via gpg's authoritative
+	# 'showpref' (newest self-sig), written via 'edit-key … keyserver' on the
+	# primary uid (the uid gpg lists first). --revoke is meaningless here, and
+	# --show-all / --show-revoked leave it out (it is no uid).
+	if [[ "$vprop" == KSPREFRD ]] ; then
+		(( ${#torev[@]} + revokeall == 0 )) || { printf "$FUNCNAME: Error: "$"'ksprefrd' cannot be revoked.""\n" >&2 ; return 2 ; }
+		local primaryuid
+		primaryuid=$(gpg --homedir "$gpghome" --with-colons --list-key "$user" 2>/dev/null | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 ; exit }')
+		primaryuid=$(printf '%b' "$primaryuid")
+		[[ "$primaryuid" ]] || { printf "$FUNCNAME: Error: "$"No usable primary uid in %s.""\n" "$user" >&2 ; return 1 ; }
+		if (( ${#toadd[@]} )) ; then
+			(( ${#toadd[@]} == 1 )) || { printf "$FUNCNAME: Error: "$"Only one --add at a time for 'ksprefrd' (it replaces the previous value)"".\n" >&2 ; return 2 ; }
+			[[ "${toadd[0]}" =~ ^hkps?:// ]] || { printf "$FUNCNAME: Error: "$"'ksprefrd' must start with hkp(s)://"" (%s).\n" "'${toadd[0]}'" >&2 ; return 2 ; }
+			# One edit-key session on the primary uid. 'uid 1' is an INDEX, never
+			# a string (a string matches nothing, and the keyserver would then
+			# spill onto EVERY uid). 'primary' must be re-asserted in the SAME
+			# self-sig : the keyserver re-sign drops subpacket 25 otherwise.
+			# A card-held key re-signs here → PIN.
+			printf 'uid 1\nkeyserver\n%s\ny\nprimary\nsave\n' "${toadd[0]}" \
+				| gpg --homedir "$gpghome" --batch --command-fd 0 --edit-key "$user" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) \
+				|| { printf "$FUNCNAME: Error: "$"Can't set preferred keyserver - good PIN ?.""\n" >&2 ; return 1 ; }
+			for keyserv in ${keyservs[@]} ; do
+				gpg --homedir "$gpghome" --keyserver "$keyserv" --send-keys "$user" || ret=$?
+			done
+		else
+			# Preferred keyserver (subpacket 24) from each non-revoked uid's newest
+			# binding self-sig, read from the packet dump ('showpref' is too
+			# state-dependent to script). The awk emits "<is-primary>\t<keyserver>" ;
+			# keep the primary uid's value, failing that the last non-revoked one.
+			local kspref primk="" lastk="" ip kv
+			local -A seen=()
+			while IFS=$'\t' read -r ip kv ; do
+				[[ "$kv" ]] || continue
+				((ip)) && primk=$kv ; lastk=$kv ; seen[$kv]=1
+			done < <(gpg --homedir "$gpghome" --export "$user" 2>/dev/null | gpg --homedir "$gpghome" --list-packets 2>/dev/null | awk -v owner="${user: -16}" '
+				function fs() { if (!inuid || !self) return ; if (sc ~ /^0x1[0-3]$/) { if (cr>mb) { mb=cr ; mbks=sks ; mbp=sp } } else if (sc=="0x30") { if (cr>mr) mr=cr } }
+				function fu() { fs() ; if (inuid && mb>0 && mb>mr && mbks!="") print mbp "\t" mbks }
+				/^:public subkey packet:|^:secret subkey packet:|^:public key packet:/ { fu() ; inuid=0 ; next }
+				/^:user ID packet:/ { fu() ; inuid=1 ; mb=0 ; mr=0 ; mbks="" ; mbp=0 ; self=0 ; cr=0 ; sks="" ; sp=0 ; sc="" ; next }
+				/^:signature packet:/ { fs() ; self=($0 ~ owner) ; cr=0 ; sks="" ; sp=0 ; sc="" ; next }
+				/, created / { for (i=1;i<=NF;i++) { if ($i=="created") cr=$(i+1)+0 ; if ($i=="sigclass") sc=$(i+1) } }
+				/preferred keyserver:/ { s=$0 ; sub(/.*preferred keyserver: /,"",s) ; sub(/\)$/,"",s) ; sks=s }
+				/primary user ID/ { sp=1 }
+				END { fu() }')
+			kspref=${primk:-$lastk}
+			(( ${#seen[@]} < 2 )) || printf "$FUNCNAME: Warning: "$"Several preferred keyservers across uids (%s) — kept '%s'.""\n" "${!seen[*]}" "$kspref" >&2
+			((raw)) && printf '%s\n' "$kspref" || printf 'pgpid_ksprefrd=%s\n' "${kspref@Q}"
+		fi
+		return $ret
+	fi
+
+	if (( ${#toadd[@]} + ${#torev[@]} + revokeall )) ; then
+		local uids uidstr rawu u v dup created keep i eiduid firstuid
+		local -a prevuids revuids curuids matched curcreated
+		# Legacy certificate ? Mint its vCard-uid shape first (identity uid and
+		# FN:, legacy uids kept), so the operations below see it.
+		_bl_pgpid_upgrade_uids "$gpghome" "$user" "$gpgfilter" || return 1
+		# Get all uid/uat (from first keyring only)
+		uids=$(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk '/^pub:/ { if (i>0)  exit } /^(uid|uat):/ { i+=1 ; print }')
+		[[ "$uids" ]] || { printf "$FUNCNAME: Error: "$"No editable certificate %s (in %s).""\n" "$user" "$gpghome" >&2 ; return 1 ; }
+
+		# Usable uids of this property (decoded), before any change.
+		prevuids=()
+		while IFS= read -r rawu ; do
+			# --with-colons escapes ':' (and '\\', control bytes) as \\xNN in
+			# field 10 ; gpg --quick-*-uid need the real UID string back.
+			u=$(printf '%b' "$rawu")
+			[[ ! "$u" =~ ^${vprop}(\;[^:]*)?:\ ?(.*)$ ]] || prevuids+=("$u")
+		done < <(awk -F: '$1=="uid" && $2 !~ /[re]/ { print $10 }' <<<"$uids")
+		# Revoked/expired twins of this property : gpg refuses to re-add a uid
+		# string identical to one already on the key (revocation keeps it there
+		# forever), so a match here is unaddable and gets its own clear message.
+		revuids=()
+		while IFS= read -r rawu ; do
+			u=$(printf '%b' "$rawu")
+			[[ ! "$u" =~ ^${vprop}(\;[^:]*)?:\ ?(.*)$ ]] || revuids+=("$u")
+		done < <(awk -F: '$1=="uid" && $2 ~ /[re]/ { print $10 }' <<<"$uids")
+
+		for val in "${toadd[@]}" ; do
+			uidstr="${vprop}:${val}"
+			dup=0
+			for u in "${prevuids[@]}" ; do
+				[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
+			done
+			((! dup)) || { printf "$FUNCNAME: Notice: "$"%s certificate already carries %s""\n" "$user" "'$uidstr'" >&2 ; continue ; }
+			for u in "${revuids[@]}" ; do
+				[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
+			done
+			((! dup)) || { printf "$FUNCNAME: Notice: "$"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked User IDs on the certificate and gpg refuses an identical one.""\n" "'$uidstr'" >&2 ; continue ; }
+			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'$uidstr'" "$user" >&2
+			gpg --homedir "$gpghome" --batch --quick-add-uid "$user" "$uidstr" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
+			modified=1
+		done
+
+		# House cardinality : the {FN,NOTE} uids that were usable before this
+		# --add get revoked now (add first, revoke after, so the property is
+		# never left without any value).
+		if ((modified)) && [[ "$mono" == *" $vprop "* ]] ; then
+			for u in "${prevuids[@]}" ; do
+				_bl_pgpid_revoke_uid "$gpghome" "$user" "$u" "$gpgfilter" "$assumeyes" || return 1
+			done
+		fi
+
+		for val in "${torev[@]}" ; do
+			# Usable uids of the property right now (--add above included).
+			curuids=() ; matched=()
+			while IFS= read -r rawu ; do
+				u=$(printf '%b' "$rawu")
+				[[ ! "$u" =~ ^${vprop}(\;[^:]*)?:\ ?(.*)$ ]] || curuids+=("$u")
+			done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
+			# VALUE matches the parsed value (vCard parameters ignored).
+			v=$val
+			for u in "${curuids[@]}" ; do
+				[[ "$u" =~ ^${vprop}(\;[^:]*)?:\ ?(.*)$ ]] || continue
+				[[ ${BASH_REMATCH[2]} != "$v" ]] || matched+=("$u")
+			done
+			(( ${#matched[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No revokable %s inside certificate %s (in %s).""\n" "'${vprop}:${val}'" "$user" "$gpghome" >&2 ; return 1 ; }
+			if [[ "$keepone" == *" $vprop "* ]] && (( ${#curuids[@]} - ${#matched[@]} < 1 )) ; then
+				printf "$FUNCNAME: Error: "$"At least one %s must be retained.""\n" "$vprop" >&2 ; return 1
+			fi
+			for u in "${matched[@]}" ; do
+				_bl_pgpid_revoke_uid "$gpghome" "$user" "$u" "$gpgfilter" "$assumeyes" || return 1
+			done
+			modified=1
+		done
+
+		if ((revokeall)) ; then
+			curuids=() ; curcreated=()
+			while IFS=: read -r created rawu ; do
+				u=$(printf '%b' "$rawu")
+				[[ ! "$u" =~ ^${vprop}(\;[^:]*)?:\ ?(.*)$ ]] || { curuids+=("$u") ; curcreated+=("$created") ; }
+			done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { printf "%s:%s\n", $6, $10 }')
+			keep=-1
+			if [[ "$keepone" == *" $vprop "* ]] ; then
+				# All but the newest (uid self-sig creation, last listed wins ties).
+				for ((i=0 ; i<${#curuids[@]} ; i++)) ; do
+					(( keep >= 0 && curcreated[i] < curcreated[keep] )) || keep=$i
+				done
+			fi
+			if (( ${#curuids[@]} - (keep >= 0 ? 1 : 0) < 1 )) ; then
+				printf "$FUNCNAME: Warning: "$"Nothing to revoke.""\n" >&2
+			else
+				for ((i=0 ; i<${#curuids[@]} ; i++)) ; do
+					(( i != keep )) || continue
+					_bl_pgpid_revoke_uid "$gpghome" "$user" "${curuids[i]}" "$gpgfilter" "$assumeyes" || return 1
+				done
+				modified=1
+			fi
+		fi
+
+		if ((modified)) ; then
+			# The primary flag is left strictly alone. It is, by convention,
+			# the holder's main email address — not an identity anchor — and
+			# a property uid has no business moving it.
+
+			# Send updated certificate to keyservers
+			for keyserv in ${keyservs[@]} ; do
+				gpg --homedir "$gpghome" --keyserver "${keyserv}" --send-keys "$user" || ret=$?
+			done
+		fi
+	fi
+
+	# Display (the modified state, when modification options were given).
+	local -a ulines
+	# ':' as inner separator : raw field 10 never carries one (escaped \x3a),
+	# and unlike a tab it keeps empty fields apart (revoked uids have no $6).
+	readarray -t ulines < <(gpg --homedir "$gpghome" --with-colons --list-key "$user" 2>/dev/null \
+		| awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" { i+=1 ; printf "%s:%s:%s\n", $2, $6, $10 }')
+	local line validity created uid P value suffix legacy=0
+	local -A idx=()
+	for line in "${ulines[@]}" ; do
+		IFS=: read -r validity created uid <<<"$line"
+		uid=$(printf '%b' "$uid")
+		case "$validity" in
+			r|e) ((showrevoked)) || continue ;;
+		esac
+		# A vCard-property uid : NAME[;PARAMS]:[ ]VALUE - parameters possibly
+		# stamped by another program are ignored (kept under --raw only).
+		if [[ "$uid" =~ ^([A-Z]+)(\;[^:]*)?:\ ?(.*)$ ]] ; then
+			P=${BASH_REMATCH[1]} ; value=${BASH_REMATCH[3]}
+		else
+			P=""
+		fi
+		if (( ! showall )) ; then
+			[[ "$P" == "$vprop" ]] || continue
+		fi
+		((! raw)) || { printf '%s\n\n' "$uid" ; continue ; }
+		[[ "$P" ]] || { legacy=1 ; continue ; }
+		case "$P" in
+			FN|NOTE|ADR)
+				# RFC 6350 unescape — a sentinel keeps '\\' clear of the other passes.
+				value=${value//'\\'/$'\x01'} ; value=${value//'\n'/$'\n'} ; value=${value//'\,'/,}
+				[[ "$P" == ADR ]] || value=${value//'\;'/;}   # ADR ';' are structural, never escaped
+				value=${value//$'\x01'/\\}
+				;;
+		esac
+		suffix=""
+		[[ "$validity" != [re] ]] || suffix="_REVOKED"
+		if [[ -z "$suffix" ]] && { [[ "$P" == UID ]] || [[ "$mono" == *" $P "* ]] ; } ; then
+			printf 'pgpid_%s=%s\n' "$P" "${value@Q}"
+		else
+			printf 'pgpid_%s[%d]=%s\n' "$P$suffix" "${idx[$P$suffix]:-0}" "${value@Q}"
+			idx[$P$suffix]=$(( ${idx[$P$suffix]:-0} + 1 ))
+		fi
+	done
+	((! legacy)) || printf "$FUNCNAME: Notice: "$"Some non-vCard uids were skipped - use --raw to display them.""\n" >&2
+
 	return $ret
 }
 
@@ -1521,10 +2106,6 @@ OPTIONS:
 				# remove first eventual email
 				aaname[pgpid_name]=$(sed --regexp-extended "s,${BL_INTERACTIVE_EMAIL_REGEX},, ; s, *$,, ; s,^ *,," <<<"${aaname[pgpid_name]}")
 			fi
-		elif [[ "$line" =~ ^Login\ data[^#]+\ #\ (.*)  ]] ; then
-			# DO 5E (field « Login data ») allow 254 bytes of any character. Best place to store long UTF-8 name (already after the u4/u5 and a magic " # ").
-		    # Note that `gpg --card-status` always outputs « Login data » after « Name of cardholder » ⇒ if a name is here, the previous aaname[pgpid_name] is overwritten.
-			aaname[pgpid_name]=${BASH_REMATCH[1]}
 		elif [[ "$line" =~ ^Signature\ key ]] ; then
 			aaname[pgpid_Skeyfpr]=$(sed --regexp-extended --silent ' { s, ,,g ; s,.*([ABCDEF0-9]{40}).*,\1,p } ' <<<"${line}")
 		elif [[ "$line" =~ ^Encryption\ key ]] ; then
@@ -1542,12 +2123,37 @@ OPTIONS:
 	aaname[pgpid_Ckeyfpr]=$(gpg --homedir "$gpghome" --list-options show-only-fpr-mbox --list-key "${aaname[pgpid_Skeyfpr]:- ${aaname[pgpid_Ekeyfpr]:- ${aaname[pgpid_Akeyfpr]}}}" | grep -o -m1 "\<[0-9ABCDEF]\{40\}\>") || echo "$FUNCNAME: Warning:" $"No known certification key. Please share or get certificate (keyserver, by email, ...)" >&2
 	((noCfpr)) || echo "${aaname[pgpid_Ckeyfpr]}"
 
+	# Legacy certificate ? Mint its vCard-uid shape (the connected token holds
+	# the secret key). Skipped in --quiet mode : a metadata check must not
+	# unexpectedly ask for a PIN.
+	if ((! quiet)) && [[ "${aaname[pgpid_Ckeyfpr]}" ]] ; then
+		_bl_pgpid_upgrade_uids "$gpghome" "${aaname[pgpid_Ckeyfpr]}" || true
+	fi
+
+	# The name now lives in the certificate's FN: uid (vCard-uid process) ; it
+	# supersedes the limited « Name of cardholder » (DO 5B) read from the token.
+	# Read from the local keyring only — offline-safe, no PIN ; when the cert is
+	# absent (no network, not fetched) the DO 5B name is kept as a best-effort
+	# fallback.
+	if [[ "${aaname[pgpid_Ckeyfpr]}" ]] ; then
+		local rawu fn=""
+		while IFS= read -r rawu ; do
+			rawu=$(printf '%b' "$rawu")
+			[[ "$rawu" =~ ^FN(\;[^:]*)?:\ ?(.*)$ ]] || continue
+			fn=${BASH_REMATCH[2]}
+			# RFC 6350 unescape (a sentinel keeps '\\' clear of the other passes).
+			fn=${fn//'\\'/$'\x01'} ; fn=${fn//'\n'/$'\n'} ; fn=${fn//'\,'/,} ; fn=${fn//'\;'/;} ; fn=${fn//$'\x01'/\\}
+			break
+		done < <(gpg --homedir "$gpghome" --with-colons --list-key "${aaname[pgpid_Ckeyfpr]}" 2>/dev/null | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
+		[[ -z "$fn" ]] || aaname[pgpid_name]=$fn
+	fi
+
 	aaname[pgpid_email]="${emails[0]}"
 	(( ${#emails[@]} < 2 )) || ((quiet)) || printf "$FUNCNAME: Notice: "$"Supernumerary emails (%d), skipping %s …""\n" ${#emails[@]} "${emails[@]:1}" >&2
 
 	# Should be in 'Login data' field, but who knows ? (yet...) 
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}" | sort -u))
-	(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary OpenPGP ID string (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
+	(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary eid (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
 	aaname[pgpid_id]="${ids[0]}"
 
 	aaname[token_AVersion]="${ttype} ${tversion}"
@@ -1598,14 +2204,16 @@ identifier (EID), or when no presentable uid carries an email.""
 
 OPTIONS:
   -E, --show-email         "$"Insert the email column #2 (one line per presentable uid)""
+  -c, --certs-count        "$"Insert, before VERDICT, the count of distinct external certifiers (valid non-self signatures over all uids, one signer counted once)""
   -L, --no-check-eid       "$"Legacy: don't require a consistent eid (certs not yet OpenPGP-ID aware)""
   -H, --homedir GNUPGHOME  "$"GnuPG home to read keys & trust from (default: ~/.gnupg)""
   -q, --quiet              "$"No per-line output. Exit code hold verdict: 0 if all certified, 196 if any uncertified, 197 if any revoked, 198 if any broken.""
 "
-	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0 showmail=0 checkeid=1
+	local syshome=${GNUPGHOME:-~/.gnupg} quiet=0 showmail=0 certscount=0 checkeid=1
 	for ((;$#;)) ; do
 		case "$1" in
 			-E|--show-email)   showmail=1 ;;
+			-c|--certs-count|--certscount) certscount=1 ;;
 			-L|--no-check-eid) checkeid=0 ;;
 			-H|--homedir) shift ; syshome=${1:?} ;;
 			-q|--quiet)   quiet=1 ;;
@@ -1634,7 +2242,7 @@ OPTIONS:
 
 	# Per-certificate verdict → severity feeding the --quiet exit code:
 	# broken=198 dominates revoked=197 dominates uncertified=196 dominates certified=0.
-	local F colon eidfield verdict sev nNR cl rc=0
+	local F colon eidfield verdict sev nNR cl rc=0 ncerts ccol=""
 	local -a nreids fueids mbox
 	for F in "${fprs[@]}" ; do
 		colon=$("${GPG[@]}" --with-colons --list-keys "0x$F" 2>/dev/null)
@@ -1669,13 +2277,26 @@ OPTIONS:
 		((sev<=rc)) || rc=$sev
 
 		((quiet)) || {
+			# Optional column, before VERDICT : distinct external certifiers, ie.
+			# valid ('!') signatures over all uid/uat, deduped on the signer keyid.
+			# Same counting rules as 'email --certs-count' — see
+			# bl-pgpid-implementation(7).
+			if ((certscount)) ; then
+				ncerts=$("${GPG[@]}" --with-colons --check-sigs "0x$F" 2>/dev/null \
+					| awk -F: -v owner="${F: -16}" '
+						$1=="uid" || $1=="uat" { inuid=1 ; next }
+						$1=="pub" || $1=="sub" { inuid=0 ; next }
+						inuid && $1=="sig" && $2=="!" && $5!=owner && $11 !~ /l$/ { seen[$5]=1 }
+						END { n=0 ; for (s in seen) n++ ; print n }')
+				printf -v ccol -- "%-8s" " $ncerts"
+			fi
 			if ((! showmail)) ; then
-				printf -- "%-42s%-40s%s\n" "$F" " $eidfield" "$verdict"
+				printf -- "%-42s%-40s%s%s\n" "$F" " $eidfield" "$ccol" "$verdict"
 			elif (( ${#mbox[@]} == 0 )) ; then
-				printf -- "%-80s%-40s%s\n" "$F -" " $eidfield" "$verdict"    # no presentable email : keep the column, render it '-'
+				printf -- "%-80s%-40s%s%s\n" "$F -" " $eidfield" "$ccol" "$verdict"    # no presentable email : keep the column, render it '-'
 			else
 				for cl in "${mbox[@]}" ; do
-					printf -- "%-80s%-40s%s\n" "$cl" " $eidfield" "$verdict"
+					printf -- "%-80s%-40s%s%s\n" "$cl" " $eidfield" "$ccol" "$verdict"
 				done
 			fi
 		}
@@ -1690,7 +2311,7 @@ bl_pgpid_certify() {
 	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 
 	local helpmsg="
-"$"Certify somebody else, identified by its OpenPGP ID TARGET_U4.""
+"$"Certify somebody else, identified by its eid TARGET_U4.""
 "$"Missing input will be asked interactively."" E.g.: "$"Civil status to calculate TARGET_U4.""
 
 "$"Certification means : I know this other certificate belongs to this real person.""
@@ -1700,12 +2321,10 @@ bl_pgpid_certify() {
 
 OPTIONS:
   -u, --use-privkey NAME|KEYID "$"Select private key to use. "$"Default: "$"Guess it from connected token, else ask""
+  -E, --all-emails             "$"Also certify every OpenPGP uid containing an email. For compatibility with some legacy software.""
   -R, --revoke                 "$"Revoke your previous certifications on someone else's certificate""
-  -o, --ownertrust VALUE       "$"What level of trust do you assign to the target to correctly certify others"" {undefined,marginal,full,ultimate,never} - "$"Default: ""marginal.
-  -G, --vouch                  "$"Take legal responsability for any actions by the target. "$"Same as"" '--vouch-for ALL'. (Not implemented yet)
-  -g, --vouch-for DOMAIN       "$"Assume some legal responsibilities on the target."" (Not implemented yet)
+  -o, --ownertrust VALUE       "$"What level of trust do you assign to the target to correctly certify others"" {undefined,marginal,full,never} - "$"Default: ""marginal.
   -l, --local                  "$"« Non-exportable » certification. Pretty useless, except for testing""
-  -f, --force-sign-key         "$"Allow to unrevoke or to change vouching""
   -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environnement variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
   -K, --keyservers KEYSERVERS  "$"If non-empty, receive and send updated certificate from and to this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
@@ -1719,7 +2338,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 - 143 "$"Key fingerprint does not match.""
 - "$"Other non-zero on other errors.""
 "
-	local revoke=0 keyid vouchfor signcmd="sign" oforce ownertrust
+	local revoke=0 allemails=0 keyid signcmd="sign" ownertrust
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
@@ -1728,19 +2347,12 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			-R|--revoke)
 				revoke=1 ;;
 			-o|--ownertrust)
-				[[ "$2" =~ ^(undefined|marginal|full|ultimate|never)$ ]] || { printf -- "$FUNCNAME: Error: "$"Unknown ownertrust value '%s'"".\n" "$2" >&2 ; return 2 ;}
+				[[ "$2" =~ ^(undefined|marginal|full|never)$ ]] || { printf -- "$FUNCNAME: Error: "$"Unknown ownertrust value '%s'"".\n" "$2" >&2 ; return 2 ;}
 				shift ; ownertrust=$1 ;;
-			-G|--vouch)
-				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
-				vouchfor="ALL" ;;
-			-g|--vouch-for)
-				[[ "$2" == ALL ]] || { printf -- "$FUNCNAME: Error:" $"Only %s is yet a known domain for vouching"".\n" "'ALL'" >&2 ; return 2 ;}
-				{ echo "$FUNCNAME: Error: "$"Not implemented yet." >&2 ; return 2 ;}
-				shift ; vouchfor=${1:?} ;;
+			-E|--all-emails|--allemails)
+				allemails=1 ;;
 			-l|--local)
 				signcmd="lsign" ;;
-			-f|--force-sign-key|--force)
-				oforce="--force-sign-key" ;;
 			-k|--keyserver)
 				printf -- "$FUNCNAME: Warning: "$"Deprecated option"" '--keyserver' - "$"Please use %s instead.""\n" "'--keyservers'" >&2
 				;&
@@ -1759,7 +2371,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	local targetid targetfpr keyfpr
 	for ((;$#;)) ; do
-		if [[ "$1" =~ ${BL_PGPID_EID_REGEX} ]] ; then
+		if [[ "$1" =~ ${BL_PGPID_UX_REGEX} ]] ; then
 			targetid=${BASH_REMATCH[0]}
 		elif [[ "${1^^}" =~ ^[ABCDEF0-9]{40}$ ]] ; then
 			targetfpr=${BASH_REMATCH[0]}
@@ -1809,19 +2421,35 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	[[ "$targetfpr" != "$keyfpr" ]] || { echo "$FUNCNAME: Warning: "$"Self-certification is not innovative! ;-)" >&2 ; return 142 ;}
 	grep -q "$targetfpr" <<<"${fprs[@]}"|| { echo "$FUNCNAME: Error: "$"Key fingerprint does not match." >&2 ; return 143 ;}
 
-	# Get full uids containing $targetid (cf. /usr/share/doc/gnupg/DETAILS.gz ; from first keyring only)
-	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:.*'"$targetid"'/ { i+=1 ; print $10 }')
-	[[ "$uids" ]] || { echo "$FUNCNAME: Crit: "$"No uid. Certificate is probably corrupted." >&2 ; return 1 ;}
+	# Sign only the identity uid (--all-emails opts out) ; legacy certificates
+	# fall back to every uid matching $targetid. See bl-pgpid-implementation(7).
+	readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*UID.x3aurn.x3aeid.x3a.*'"$targetid"'/ { i+=1 ; print $10 }')
+	(( ${#uids[@]} )) || readarray -t uids < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*'"$targetid"'/ { i+=1 ; print $10 }')
+	# Still no eid u4 ${targetid} is almost impossible since algorthim started with bl_pgpid_get ${targetid}
+	(( ${#uids[@]} )) || { printf -- "$FUNCNAME: Crit: "$"No OpenPGP uid containing '%s' on certificate %s. Certificate is probably corrupted.""\n" "$targetid" "$targetfpr"  >&2 ; return 1 ;}
+	if ((allemails)) ; then
+		local eu u2 dup
+		while IFS= read -r eu ; do
+			dup=0
+			for u2 in "${uids[@]}" ; do
+				[[ "$u2" != "$eu" ]] || { dup=1 ; break ; }
+			done
+			((dup)) || uids+=("$eu")
+		done < <(gpg --homedir "$gpghome" --with-colons --list-key "$targetfpr" | awk -F: '/^pub:/ { if (i>0)  exit } /^uid:[^re]:.*<[^<>]+>/ { print $10 }')
+	fi
+	# Field 10 escapes ':' (and '\\', control bytes) as \\xNN : gpg wants the
+	# real uid string back after the '=' exact-match prefix.
+	local iu ; for ((iu=0 ; iu<${#uids[@]} ; iu++)) ; do uids[iu]=$(printf '%b' "${uids[iu]}") ; done
 
 	if ((revoke)) ; then
 		[[ -z "$ownertrust" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--ownertrust" >&2
-		[[ -z "$oforce" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--force-sign-key" >&2
-		[[ -z "$vouchfor" ]] || printf -- "$FUNCNAME: Info: "$"%s is non-sense, then ignored, when revoking.""\n" "--vouch-for" >&2
 		gpg --homedir "$gpghome" --quick-revoke-sig "$targetfpr" "$keyfpr" "${uids[@]/#/=}" || return $?
 		printf "$FUNCNAME: Notice: "$"The sub-layer (%s) return no error, but it may have found nothing to revoke.""\n" "gpg --quick-revoke-sig" >&2
 	else
-		gpg --homedir "$gpghome" --local-user "$keyfpr" $oforce --quick-$signcmd-key "$targetfpr" "${uids[@]/#/=}" || return $?
-		printf "$FUNCNAME: Notice: "$"Successfully sign %d '%s' inside certificate %s.""\n" ${#uids[@]} "$targetid" "$targetfpr" >&2
+		gpg --homedir "$gpghome" --local-user "$keyfpr" --quick-$signcmd-key "$targetfpr" "${uids[@]/#/=}" || return $?
+		printf "$FUNCNAME: Notice: "$"Successfully sign %d uid(s) inside certificate %s.""\n" ${#uids[@]} "$targetfpr" >&2
+
+		# Ownertrust answers "how well does this one certify OTHERS".
 		gpg --homedir "$gpghome" --quick-set-ownertrust "$targetfpr" "${ownertrust:-marginal}" || true
 	fi
 
@@ -1977,13 +2605,13 @@ OPTIONS:
 	for ((;$#;)) ; do
 		case "$1" in
 			-P|--print|--printer)
-				shift ; printer=$1 ;;
+				shift ; printer=${1:?} ;;
 			-t|--template)
 				shift ; usetemplate=${1:?} ;;
 			-g|--no-color|--gray|--grayscale)
 				nocolor=1 ;;
 			-N|--usename|--name)
-				shift ; usename=${1:?} ;;
+				shift ; usename=${1:-} ;;
 			-H|--homedir)
 				shift ; gpghome=${1:?} ;;
 			-h|--help) printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
@@ -2049,22 +2677,37 @@ OPTIONS:
 		printf "$FUNCNAME: Notice: "$"Picking most recent email %s.""\n" "$email" >&2
 	fi
 
-	# Pretty name: --name overrides ; otherwise pulled from the uid attached to that email, falling back to the local-part.
+	# Pretty name: --name overrides ; else a FN: vCard-property uid (the vCard-uid
+	# process) ; else the name part of an old name-addr uid attached to the email ;
+	# else the email local-part. --with-colons escapes ':' as \\xNN in field 10,
+	# so each candidate is decoded before matching.
 	local pname=$usename
-	[[ "$pname" ]] || pname=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null |
-		awk -F: -v EM="<$email>" '/^uid:[^r]:/ {
-			if (index($10, EM)) {
-				n = $10
-				sub(/ *\([^)]*\) *<[^>]+>$/, "", n); sub(/ *<[^>]+>$/, "", n)
-				print n ; exit
-			}
-		}')
+	local _u
+	if [[ -z "$pname" ]] ; then
+		while read -r _u ; do
+			_u=$(printf '%b' "$_u")
+			[[ "$_u" == FN:* ]] || continue
+			pname=${_u#FN:} ; break
+		done < <(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null | awk -F: '/^uid:[^r]:/{print $10}')
+	fi
+	if [[ -z "$pname" ]] ; then
+		pname=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null |
+			awk -F: -v EM="<$email>" '/^uid:[^r]:/ {
+				if (index($10, EM)) {
+					n = $10
+					sub(/ *\([^)]*\) *<[^>]+>$/, "", n); sub(/ *<[^>]+>$/, "", n)
+					print n ; exit
+				}
+			}')
+		pname=$(printf '%b' "$pname")
+		# A vCard property prefix (from an email-only uid) is not a display name.
+		[[ ! "$pname" =~ ^(EMAIL|UID|NOTE|FN): ]] || pname=""
+	fi
 	[[ "$pname" ]] || pname=${email%%@*}
 
-	# OpenPGP ID (u4 or u5), if present in the certificate
+	# eid (u4 or u5) in its standard glued form, if present in the certificate
 	local pgpid
-	pgpid=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null |
-		sed -nE "s,.*4=?(${BL_PGPID_U4_REGEX}).*,u4=\\1,p ; s,.*5=?(${BL_PGPID_U5_REGEX}).*,u5=\\1,p" | sort -u | head -n1)
+	pgpid=$(gpg --homedir "$gpghome" --with-colons --list-keys "$fpr" 2>/dev/null | _bl_pgpid_eids_of | head -n1)
 
 	# Format fingerprint as 2 lines of 5 groups of 4 hex
 	local fprspaced fprline1 fprline2
@@ -2134,16 +2777,10 @@ OPTIONS:
 
 	rsvg-convert --format=pdf --output="$tmpdir/single.pdf" "$tmpdir/render.svg" || return $?
 
-	# A4 landscape: default sticker 85×25mm → 3×7 = 21/page ; with --template (card-shaped) → 3×3 = 9/page.
+	# A4 landscape: sticker 85×25mm → 3×7 = 21/page ; --template card → 3×3 = 9/page.
 	# pdfjam tiles ONE page per --nup slot, so duplicate single.pdf N times first.
-	# --noautoscale true keeps the inputs at their natural 85×55mm card (or 85×25mm sticker)
-	# size instead of inflating them to fill each nup cell. On A4 landscape that lands a
-	# 3×3 card grid (255×165mm) with ~21mm side margins and ~22.5mm top/bottom margins,
-	# and a 3×7 sticker grid (255×175mm) with ~21mm side and ~17.5mm top/bottom — both
-	# comfortably inside any consumer printer's printable area. Without it the cards
-	# came out ~18% over the European business-card standard AND fully bled to the
-	# top/bottom edge of the sheet, so any printer with a non-zero unprintable margin
-	# clipped them.
+	# --noautoscale true keeps the natural card/sticker size : without it the
+	# output is ~18% oversized and bleeds past the printable area.
 	local nup n i
 	[[ "$usetemplate" ]] && { nup="3x3" ; n=9 ; } || { nup="3x7" ; n=21 ; }
 	local -a copies=()
@@ -2192,7 +2829,7 @@ _bl_pgpid_parseoptions "$@" || _BL_PGPID_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_PGPID_RETVAL
 
 [[ "$_BL_PGPID_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_PGPID_RETVAL" < 2 ]] || exit $_BL_PGPID_RETVAL
+[[ "$_BL_PGPID_RETVAL" -lt 2 ]] || exit $_BL_PGPID_RETVAL
 
 ### Run ###
 set -e

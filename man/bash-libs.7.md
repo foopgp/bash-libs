@@ -30,14 +30,16 @@ Bash-libs was initialy developped by **foopgp.org**, to manage:
 
 Generate and manage OpenPGP ID, an OpenPGP configuration providing universal and decentralized civil status to secure your digital life (emails, git, ssh, avatar, sso, etc.).
 
-See [**bl-pgpid**](bl-pgpid.1.md)(1) manual for more details.
+See [**bl-pgpid**](bl-pgpid.1.md)(1) manual for more details, and
+[**bl-pgpid-implementation**](bl-pgpid-implementation.7.md)(7) for the design
+choices behind it.
 
-## bl-qrkey
+## bl-pgpkey
 
 Backup or restore OpenPGP ID using printed QR codes and Shamir's secret sharing. Configure Yubikeys or Nitrokeys for OpenPGP ID.
 Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, ...).
 
-See [**bl-qrkey**](bl-qrkey.1.md)(1) manual for more details.
+See [**bl-pgpkey**](bl-pgpkey.1.md)(1) manual for more details.
 
 ## bl-dji
 
@@ -131,11 +133,12 @@ All bash-libs exposed functions and executables return zero on normal operation,
 [**bl-markdown**](bl-markdown.1.md)(1),
 
 [**bl-pgpid**](bl-pgpid.1.md)(1),
-[**bl-qrkey**](bl-qrkey.1.md)(1),
+[**bl-pgpkey**](bl-pgpkey.1.md)(1),
 [**bl-djibian**](bl-djibian.1.md)(1),
 
 [**bl-foopgp**](bl-foopgp.1.md)(1),
-[**bl-dji**](bl-dji.1.md)(1).
+[**bl-dji**](bl-dji.1.md)(1),
+[**bl-pgpid-implementation**](bl-pgpid-implementation.7.md)(7).
 
 # AUTHORS/MAINTAINERS
 

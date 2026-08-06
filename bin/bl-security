@@ -307,7 +307,7 @@ OPTIONS:
 	preamble=$(printf $"Retype %s" "$question")
 	while true ; do
 		passwd=$(bl_input --password --text "$preamble" "$question") || return $?
-		[[ "$passwd2" != $passwd ]] || break
+		[[ "$passwd2" != "$passwd" ]] || break
 		preamble=$"Passwords do not match. Please retype"
 		passwd2=$passwd
 	done
@@ -365,7 +365,7 @@ OPTIONS:
 			printf "$FUNCNAME: Error: "$"Unrecognized encoding"" '$ienc'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
 	esac
 
-	while read offset hex char; do
+	while read -r offset hex char; do
 		#printf "%016X\n" $((0x$hex))
 		dec=$((0x$hex ^ dec))
 		#printf "%016X\n" $((dec))
@@ -427,7 +427,7 @@ _bl_security_parseoptions "$@" || _BL_SECURITY_RETVAL=$?
 [[ "$BASH_SOURCE" == "$0" ]] || return $_BL_SECURITY_RETVAL
 
 [[ "$_BL_SECURITY_RETVAL" != "1"  ]] || exit 0
-[[ "$_BL_SECURITY_RETVAL" < 2 ]] || exit $_BL_SECURITY_RETVAL
+[[ "$_BL_SECURITY_RETVAL" -lt 2 ]] || exit $_BL_SECURITY_RETVAL
 
 ### Run ###
 set -e
