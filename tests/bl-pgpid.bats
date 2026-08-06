@@ -45,8 +45,12 @@ build_wot () {
 
 	# T6 : eid on a NON-f/u uid ; the f/u uid (the plain one) has no eid.
 	_gen "Al6 (u4=$EID1) <a6@example.org>" "Plain6 <b6@example.org>" ; T6=$RF ; _imp "$RH" "$T6" ; rm -rf "$RH"
+	# 'uid N' is an INDEX and gpg promotes the effective primary uid to the front :
+	# hardcoding 2 signs the wrong uid whenever the clock ticks between the mints.
+	local i6
+	i6=$(gpg --no-options --homedir "$HA" --with-colons -k "$T6" | awk -F: '/^pub:/ { if (i>0) exit } /^(uid|uat):/ { i+=1 ; if ($10 ~ /b6@example.org/) { print i ; exit } }')
 	gpg "${B[@]}" --homedir "$HA" --command-fd 0 --edit-key "$T6" >/dev/null 2>&1 <<-EOF
-	uid 2
+	uid ${i6:?}
 	sign
 	y
 	save

@@ -236,3 +236,13 @@ The keep-one guard guarantees there is always an address left to re-pin on.
 minted within the same second come back in an unstable order, which makes such
 a test pass and fail on alternate runs — measured. Read subpacket 25 out of
 `gpg --list-packets` instead; the bats suite does.
+
+The same instability reaches `--edit-key`, where `uid N` is an **index** into
+that very listing (a string matches nothing). gpg promotes the effective
+primary uid to the front, so uids minted back to back keep their packet order
+only as long as they land in the same second: let the clock tick between two
+mints and every hardcoded index shifts. Read the index back from
+`--with-colons` right before the edit-key session — `bl_pgpid_image` does, and
+the T6 test fixture now does too. `ksprefrd`'s `uid 1` is safe for the opposite
+reason: it means *whatever gpg currently considers primary*, which is exactly
+what that code wants.
