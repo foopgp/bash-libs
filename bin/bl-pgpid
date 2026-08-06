@@ -764,7 +764,7 @@ bl_pgpid_get() {
 	local maxfromks=100
 	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 	local helpmsg="
-"$"Output fingerprints, emails and OpenPGP IDentifier of certificates matching NAME|U4|U5|EMAIL.""
+"$"Output fingerprints, emails and eid of certificates matching NAME|U4|U5|EMAIL.""
 "$"May also get or refresh certificates from keyservers.""
 
 OPTIONS:
@@ -889,7 +889,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			if [[ "$cfpr" != $prevfpr ]] ; then
 				id=" $(gpg --homedir "$gpghome" --with-colons $gpgaction "0x$cfpr" | _bl_pgpid_eids_of)"
 				if [[ "$id" == *$'\n'* ]] ; then
-					printf "$FUNCNAME: Warning: "$"Certificate %s contain more than one OpenPGP ID string.""\n" "0x$cfpr" >&2
+					printf "$FUNCNAME: Warning: "$"Certificate %s contains more than one eid.""\n" "0x$cfpr" >&2
 					id=" -"
 				elif [[ "$id" == \  ]] ; then
 					id=" -"
@@ -996,7 +996,7 @@ bl_pgpid_gen_u4() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
-"$"Generate OpenPGP ID u4 string"". "$"Missing input will be asked interactively.""
+"$"Generate an eid u4 string"". "$"Missing input will be asked interactively.""
 "$"You may pass the Machine Readable Zone of an international passport as argument, but there are ~20% chances that generated *u4* is incorrect.""
 
 OPTIONS:
@@ -1137,7 +1137,7 @@ OPTIONS:
 	elif [[ "$str_in" =~ ${BL_PGPID_U5_REGEX} ]] ; then
 		u4h="$(echo "${BASH_REMATCH[0]}" | md5sum | xxd -r -p | basenc --base64url)"
 	else
-		printf "$FUNCNAME: Error: "$"No OpenPGP ID (u4 or u5) found in '%s'""...\n" "${str_in: 0:50}" >&2
+		printf "$FUNCNAME: Error: "$"No eid (u4 or u5) found in '%s'""...\n" "${str_in: 0:50}" >&2
 		return 2
 	fi
 
@@ -1217,7 +1217,7 @@ OPTIONS:
 	elif [[ "$pgpidu" =~ ${BL_PGPID_U5_REGEX} ]] ; then
 		pgpidu="u5${BASH_REMATCH[0]}"
 	elif [[ "$pgpidugiven" ]] ; then
-		printf "%s: Error: No OpenPGP ID string in given '%s'.\n" "$FUNCNAME" "$pgpidu" >&2
+		printf "%s: Error: No eid in given '%s'.\n" "$FUNCNAME" "$pgpidu" >&2
 		return 2
 	else
 		pgpidu="u4$(bl_pgpid_gen_u4 --verify)"
@@ -1475,8 +1475,8 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		# Sanity: the certificate must already carry exactly one eid (its own
 		# UID:urn:eid:… since the vCard-uid process ; a UID comment before that).
 		ids=($(_bl_pgpid_eids_of <<<"$uids"))
-		(( ${#ids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No OpenPGP ID string (u4|u5) in %s certificate.""\n" "$user" >&2 ; return 1 ;}
-		(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary OpenPGP ID string (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
+		(( ${#ids[@]} > 0 )) || { printf "$FUNCNAME: Error: "$"No eid (u4|u5) in %s certificate.""\n" "$user" >&2 ; return 1 ;}
+		(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary eid (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
 		[[ -z "$extracomment" ]] || printf "$FUNCNAME: Notice: "$"--extra-comment is ignored: a note is carried by its own NOTE: vCard uid""\n" >&2
 	fi
 
@@ -2153,7 +2153,7 @@ OPTIONS:
 
 	# Should be in 'Login data' field, but who knows ? (yet...) 
 	ids=($(sed --silent --regexp-extended "s,.*4.?(${BL_PGPID_U4_REGEX}).*,u4\1,p ; s,.*5.?(${BL_PGPID_U5_REGEX}).*,u5\1,p" <<<"${cardstatus}" | sort -u))
-	(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary OpenPGP ID string (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
+	(( ${#ids[@]} < 2 )) || { printf "$FUNCNAME: Error: "$"Supernumerary eid (%s).""\n" "${ids[*]}" >&2 ; return 1 ;}
 	aaname[pgpid_id]="${ids[0]}"
 
 	aaname[token_AVersion]="${ttype} ${tversion}"
@@ -2311,7 +2311,7 @@ bl_pgpid_certify() {
 	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
 
 	local helpmsg="
-"$"Certify somebody else, identified by its OpenPGP ID TARGET_U4.""
+"$"Certify somebody else, identified by its eid TARGET_U4.""
 "$"Missing input will be asked interactively."" E.g.: "$"Civil status to calculate TARGET_U4.""
 
 "$"Certification means : I know this other certificate belongs to this real person.""

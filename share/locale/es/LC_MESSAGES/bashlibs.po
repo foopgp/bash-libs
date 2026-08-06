@@ -33,7 +33,7 @@ msgid ""
 msgstr ""
 
 msgid ""
-"OpenPGP entity identifier - else asked interactively when possible (empty "
+"Entity identifier (eid) - else asked interactively when possible (empty "
 "allowed: no UID property)"
 msgstr ""
 
@@ -65,10 +65,10 @@ msgstr ""
 msgid "Invalid character '/' in name"
 msgstr ""
 
-msgid "OpenPGP entity identifier (u4 or u5, empty for none)"
+msgid "Entity identifier (u4 or u5, empty for none)"
 msgstr ""
 
-msgid "No OpenPGP ID (u4 or u5) found in '%s'"
+msgid "No eid (u4 or u5) found in '%s'"
 msgstr ""
 
 msgid "File already exists:"
@@ -361,7 +361,7 @@ msgstr ""
 msgid "Need root power (sudo)."
 msgstr ""
 
-msgid "substitued by your OpenPGP ID"
+msgid "replaced by your eid"
 msgstr ""
 
 msgid "User surname (family name) at birth"
@@ -987,8 +987,8 @@ msgid ""
 msgstr ""
 
 msgid ""
-"Output fingerprints, emails and OpenPGP IDentifier of certificates matching "
-"NAME|U4|U5|EMAIL."
+"Output fingerprints, emails and eid of certificates matching NAME|U4|U5|"
+"EMAIL."
 msgstr ""
 
 msgid "May also get or refresh certificates from keyservers."
@@ -1062,7 +1062,7 @@ msgstr ""
 msgid "No certificate for"
 msgstr ""
 
-msgid "Certificate %s contain more than one OpenPGP ID string."
+msgid "Certificate %s contains more than one eid."
 msgstr ""
 
 msgid "%s certificates for %s input params."
@@ -1097,7 +1097,7 @@ msgstr ""
 msgid "Can't reformat birthdate '%s'."
 msgstr ""
 
-msgid "Generate OpenPGP ID u4 string"
+msgid "Generate an eid u4 string"
 msgstr ""
 
 msgid ""
@@ -1280,10 +1280,10 @@ msgstr ""
 msgid "Increase verbosity"
 msgstr ""
 
-msgid "No OpenPGP ID string (u4|u5) in %s certificate."
+msgid "No eid (u4|u5) in %s certificate."
 msgstr ""
 
-msgid "Supernumerary OpenPGP ID string (%s)."
+msgid "Supernumerary eid (%s)."
 msgstr ""
 
 msgid ""
@@ -1523,7 +1523,7 @@ msgid ""
 "uncertified, 197 if any revoked, 198 if any broken."
 msgstr ""
 
-msgid "Certify somebody else, identified by its OpenPGP ID TARGET_U4."
+msgid "Certify somebody else, identified by its eid TARGET_U4."
 msgstr ""
 
 msgid "Civil status to calculate TARGET_U4."

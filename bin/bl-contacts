@@ -200,7 +200,7 @@ bl_contact_new() {
 "$"KIND (u4 => individual) and GEO (u5 => coord14) are inferred from the eid.""
 
 OPTIONS:
-  -e, --eid U4|U5             "$"OpenPGP entity identifier - else asked interactively when possible (empty allowed: no UID property)""
+  -e, --eid U4|U5             "$"Entity identifier (eid) - else asked interactively when possible (empty allowed: no UID property)""
   -p, --path UETREE           "$"File into this uetree instead of the default one"" - "$"Environment variable: ""BL_CONTACT_TREE
   -j, --json                  "$"Generate a jCard (RFC 7095) entity.json instead of entity.vcf""
   -E, --email EMAIL           "$"Add an EMAIL property (may be used more than once)""
@@ -244,13 +244,13 @@ OPTIONS:
 	# passport MRZ ; a broader interactive u4/u5 generator is still missing in
 	# bl-pgpid.
 	if ((! eidgiven)) && [[ -t 0 ]] ; then
-		eid=$(bl_input $"OpenPGP entity identifier (u4 or u5, empty for none)") || true
+		eid=$(bl_input $"Entity identifier (u4 or u5, empty for none)") || true
 	fi
 	local eidtype="" norm
 	if [[ "$eid" ]] ; then
 		# NB: a $( ) failure would be swallowed by read <<<"$( )" — check it apart.
 		norm=$(_bl_contact_eid_norm "$eid") \
-			|| { printf "$FUNCNAME: Error: "$"No OpenPGP ID (u4 or u5) found in '%s'""...\n" "${eid: 0:50}" >&2 ; return 2 ; }
+			|| { printf "$FUNCNAME: Error: "$"No eid (u4 or u5) found in '%s'""...\n" "${eid: 0:50}" >&2 ; return 2 ; }
 		read -r eidtype eid <<<"$norm"
 	fi
 

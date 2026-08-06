@@ -101,7 +101,7 @@ msgstr ""
 
 #: ../bin/bl-contacts:203
 msgid ""
-"OpenPGP entity identifier - else asked interactively when possible (empty "
+"Entity identifier (eid) - else asked interactively when possible (empty "
 "allowed: no UID property)"
 msgstr ""
 
@@ -143,11 +143,11 @@ msgid "Invalid character '/' in name"
 msgstr ""
 
 #: ../bin/bl-contacts:247
-msgid "OpenPGP entity identifier (u4 or u5, empty for none)"
+msgid "Entity identifier (u4 or u5, empty for none)"
 msgstr ""
 
 #: ../bin/bl-contacts:253 ../bin/bl-pgpid:1140
-msgid "No OpenPGP ID (u4 or u5) found in '%s'"
+msgid "No eid (u4 or u5) found in '%s'"
 msgstr ""
 
 #: ../bin/bl-contacts:259
@@ -541,7 +541,7 @@ msgid "Need root power (sudo)."
 msgstr ""
 
 #: ../bin/bl-djibian:206
-msgid "substitued by your OpenPGP ID"
+msgid "replaced by your eid"
 msgstr ""
 
 #: ../bin/bl-djibian:215
@@ -1374,8 +1374,8 @@ msgstr ""
 
 #: ../bin/bl-pgpid:767
 msgid ""
-"Output fingerprints, emails and OpenPGP IDentifier of certificates matching "
-"NAME|U4|U5|EMAIL."
+"Output fingerprints, emails and eid of certificates matching NAME|U4|U5|"
+"EMAIL."
 msgstr ""
 
 #: ../bin/bl-pgpid:768
@@ -1476,7 +1476,7 @@ msgid "No certificate for"
 msgstr ""
 
 #: ../bin/bl-pgpid:892
-msgid "Certificate %s contain more than one OpenPGP ID string."
+msgid "Certificate %s contains more than one eid."
 msgstr ""
 
 #: ../bin/bl-pgpid:919
@@ -1522,7 +1522,7 @@ msgid "Can't reformat birthdate '%s'."
 msgstr ""
 
 #: ../bin/bl-pgpid:999
-msgid "Generate OpenPGP ID u4 string"
+msgid "Generate an eid u4 string"
 msgstr ""
 
 #: ../bin/bl-pgpid:1000
@@ -1763,11 +1763,11 @@ msgid "Increase verbosity"
 msgstr ""
 
 #: ../bin/bl-pgpid:1478
-msgid "No OpenPGP ID string (u4|u5) in %s certificate."
+msgid "No eid (u4|u5) in %s certificate."
 msgstr ""
 
 #: ../bin/bl-pgpid:1479 ../bin/bl-pgpid:2156
-msgid "Supernumerary OpenPGP ID string (%s)."
+msgid "Supernumerary eid (%s)."
 msgstr ""
 
 #: ../bin/bl-pgpid:1480
@@ -2072,7 +2072,7 @@ msgid ""
 msgstr ""
 
 #: ../bin/bl-pgpid:2314
-msgid "Certify somebody else, identified by its OpenPGP ID TARGET_U4."
+msgid "Certify somebody else, identified by its eid TARGET_U4."
 msgstr ""
 
 #: ../bin/bl-pgpid:2315
