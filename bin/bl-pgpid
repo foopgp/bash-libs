@@ -681,7 +681,7 @@ See bash-libs-implementation(7)
 		(( created < newestdate )) || { newestdate=$created ; newest=$u ; }
 	done < <(gpg --homedir "$gpghome" --with-colons --list-secret-key "$user" | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { printf "%s:%s\n", $6, $10 }')
 	[[ "$newest" ]] || { printf "${FUNCNAME[1]}: Warning: "$"No address left on %s certificate to carry the primary User ID flag.""\n" "$user" >&2 ; return 0 ; }
-	printf "${FUNCNAME[1]}: Notice: "$"Main identity is no more an address: moving the primary User ID flag to %s.""\n" "$newest" >&2
+	printf "${FUNCNAME[1]}: Notice: "$"Main identity is no longer an address: moving the primary User ID flag to %s.""\n" "$newest" >&2
 	gpg --homedir "$gpghome" --batch --quick-set-primary-uid "$user" "$newest" 2> >( $gpgfilter || grep "^\(\[\|gpg:\)" >&2 ) || { echo "${FUNCNAME[1]}: Error: "$"Can't set the primary User ID - good PIN ?." >&2 ; return 1 ;}
 }
 

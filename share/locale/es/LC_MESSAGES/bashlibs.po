@@ -971,6 +971,16 @@ msgstr ""
 msgid "Can't revoke - good PIN ?."
 msgstr ""
 
+msgid "No address left on %s certificate to carry the primary User ID flag."
+msgstr ""
+
+msgid ""
+"Main identity is no longer an address: moving the primary User ID flag to %s."
+msgstr ""
+
+msgid "Can't set the primary User ID - good PIN ?."
+msgstr ""
+
 msgid ""
 "Upgrading %s certificate to the vCard-uid process (legacy uids kept : the "
 "web of trust rests on them)…"
@@ -1546,13 +1556,8 @@ msgid "Guess it from connected token, else ask"
 msgstr ""
 
 msgid ""
-"Also certify every OpenPGP uid containing an email (for compatibility with "
-"some legacy software)"
-msgstr ""
-
-msgid ""
-"Certify ONLY the uids carrying an email, never the eid anchor. For when you "
-"could check the address but not the civil status behind the eid"
+"Also certify every OpenPGP uid containing an email. For compatibility with "
+"some legacy software."
 msgstr ""
 
 msgid "Revoke your previous certifications on someone else's certificate"
@@ -1613,10 +1618,8 @@ msgid "Enter the first 8 hexadecimal characters of target's key fingerprint:"
 msgstr ""
 
 msgid ""
-"No uid carrying an email on certificate %s - nothing to certify with %s."
-msgstr ""
-
-msgid "No uid. Certificate is probably corrupted."
+"No OpenPGP uid containing '%s' on certificate %s. Certificate is probably "
+"corrupted."
 msgstr ""
 
 msgid "%s is non-sense, then ignored, when revoking."
@@ -1626,16 +1629,7 @@ msgid ""
 "The sub-layer (%s) return no error, but it may have found nothing to revoke."
 msgstr ""
 
-msgid ""
-"Successfully signed %d email uid(s) inside certificate %s - the eid anchor "
-"was NOT certified."
-msgstr ""
-
-msgid "Successfully sign %d '%s' inside certificate %s."
-msgstr ""
-
-msgid ""
-"%s: ownertrust left '%s' - the identity behind the eid was not certified."
+msgid "Successfully sign %d uid(s) inside certificate %s."
 msgstr ""
 
 msgid "Recompute the GnuPG trustdb using given ownertrust delegations."
