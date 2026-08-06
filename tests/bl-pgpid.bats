@@ -287,7 +287,7 @@ ut () { LC_ALL=C "${TARGET}" update_trustdb "$@" 2>&1 ; }
 	assert_output --partial "backed up"
 	assert_output --partial "+$FFPR:5:"
 	assert_equal "$(gpg --no-options --homedir "$UH" --export-ownertrust | grep -c "^$FFPR:5:")" "1"
-	assert_equal "$(ls "$UH"/ownertrust-backups/ | wc -l)" "1"
+	assert_equal "$(find "$UH"/ownertrust-backups/ -maxdepth 1 -type f | wc -l)" "1"
 }
 
 @test "update_trustdb is idempotent : re-applying leaves the ownertrust unchanged" {
@@ -491,7 +491,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 
 @test "gen_key pins the address uid as the primary user ID, not the eid anchor" {
 	local H="${BATS_TEST_TMPDIR}/genh" ; mkdir -p "$H" ; chmod 700 "$H"
-	run "${TARGET}" gen_key -N Alice -E "u4$EID1" -C 'hi, there; ok' -p x -H "$H" alice@example.org
+	run "${TARGET}" gen_key -N Alice -c "u4$EID1" -C 'hi, there; ok' -p x -H "$H" alice@example.org
 	assert_success
 	local F ; F=$(gpg --no-options --homedir "$H" --with-colons -K | awk -F: '$1=="fpr"{print $10;exit}')
 	# primary marks the holder's main ADDRESS : mail clients read the signer
