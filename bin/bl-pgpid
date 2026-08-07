@@ -404,7 +404,7 @@ BL_PGPID_chelpmsg="
 
 MAIN OPTIONS:
   -f, --frontend PROGRAM  "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND
-  -H, --homedir GNUPGHOME "$"GnuPG home directory (default: ~/.gnupg). "$"Set the environnement variable: ""\$GNUPGHOME"
+  -H, --homedir GNUPGHOME "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME"
 
 ### external functions ###
 

@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPKEY
 section: 1
 header: User Commands
-footer: bash-libs 0.4.0
+footer: bash-libs 0.4.1
 ---
 
 # NAME
@@ -39,6 +39,11 @@ unexpected issues.
 
 :   Select a frontend program {NONE,whiptail,dialog,zenity} -
     Environment variable: BL_INTERACTIVE_FRONTEND
+
+**-H**, **\--homedir** GNUPGHOME
+
+:   GnuPG home directory (default: \~/.gnupg). Set the environnement
+    variable: \$GNUPGHOME
 
 **-h**, **\--help**
 
