@@ -372,17 +372,17 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 
 @test "property phone : vCard parameters ignored, kept under --raw" {
 	vkey
-	run --separate-stderr "${TARGET}" property phone -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property phone --info -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output "pgpid_TEL[0]='+33612345678'"
-	run --separate-stderr "${TARGET}" property phone --raw -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" to_vcard --raw -H "$VH" "0x$VFPR"
 	assert_success
-	assert_line --index 0 "TEL;TYPE=home:+33612345678"
+	assert_output --partial "TEL;TYPE=home:+33612345678"
 }
 
-@test "property --show-all : every property and the identity eid uid" {
+@test "to_vcard --info : every recognized uid, the identity eid included" {
 	vkey
-	run --separate-stderr "${TARGET}" property --show-all -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" to_vcard --info -H "$VH" "0x$VFPR"
 	assert_success
 	assert_line "pgpid_UID='urn:eid:u4$EID1'"
 	assert_line "pgpid_FN='Alice Test'"
@@ -393,11 +393,11 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 
 @test "property name --add : mono, previous FN revoked, primary left alone" {
 	vkey
-	run --separate-stderr "${TARGET}" property name -y -A 'Alice Renamed' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property name --info -y -A 'Alice Renamed' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output "pgpid_FN='Alice Renamed'"
 	sleep 1
-	run --separate-stderr "${TARGET}" property name --show-revoked -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property name --show-revoked --info -H "$VH" "0x$VFPR"
 	assert_success
 	assert_line "pgpid_FN_REVOKED[0]='Alice Test'"
 	assert_line "pgpid_FN='Alice Renamed'"
@@ -428,7 +428,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 
 @test "property phone --revoke-all : no keeper, then 'Nothing to revoke' warning" {
 	vkey
-	run --separate-stderr env LC_ALL=C "${TARGET}" property phone -y --revoke-all -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr env LC_ALL=C "${TARGET}" property phone --info -y --revoke-all -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	refute_output --partial "pgpid_TEL["
 	run --separate-stderr env LC_ALL=C "${TARGET}" property phone -y --revoke-all -K '' -H "$VH" "0x$VFPR"
@@ -456,35 +456,35 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 
 @test "property note : multiline value survives the RFC 6350 backslash-n roundtrip" {
 	vkey
-	run --separate-stderr "${TARGET}" property note -A $'line1\nline2 : gnop' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property note --info -A $'line1\nline2 : gnop' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output "pgpid_NOTE=$'line1\nline2 : gnop'"
 	# stored form : ONE uid line, the newline RFC 6350-escaped
-	run --separate-stderr "${TARGET}" property note --raw -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" to_vcard --raw -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output --partial 'NOTE:line1\nline2 : gnop'
 	sleep 1
-	run --separate-stderr "${TARGET}" property note -y -R $'line1\nline2 : gnop' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property note --info -y -R $'line1\nline2 : gnop' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	refute_output --partial "pgpid_NOTE="
 }
 
 @test "property note : comma and semicolon are RFC 6350-escaped, decoded on display" {
 	vkey
-	run --separate-stderr "${TARGET}" property note -A 'a, b; c' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property note --info -A 'a, b; c' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output "pgpid_NOTE='a, b; c'"
-	run --separate-stderr "${TARGET}" property note --raw -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" to_vcard --raw -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output --partial 'NOTE:a\, b\; c'
 }
 
 @test "property address : structural ';' kept, literal ',' escaped" {
 	vkey
-	run --separate-stderr "${TARGET}" property address -A ';;1 rue A, B;Ville;;75000;FR' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property address --info -A ';;1 rue A, B;Ville;;75000;FR' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output "pgpid_ADR[0]=';;1 rue A, B;Ville;;75000;FR'"
-	run --separate-stderr "${TARGET}" property address --raw -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" to_vcard --raw -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output --partial 'ADR:;;1 rue A\, B;Ville;;75000;FR'
 }
@@ -508,11 +508,11 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 
 @test "property note : a colon inside the value survives the x3a escaping roundtrip" {
 	vkey
-	run --separate-stderr "${TARGET}" property note -A 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property note --info -A 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output "pgpid_NOTE='see: https://foopgp.org'"
 	sleep 1
-	run --separate-stderr "${TARGET}" property note -y -R 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property note --info -y -R 'see: https://foopgp.org' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	refute_output --partial "pgpid_NOTE="
 }
@@ -520,11 +520,11 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 @test "property ksprefrd : add/replace the primary uid's preferred keyserver, read it back, guards" {
 	vkey
 	# none yet on the primary (the UID:urn:eid: uid)
-	run --separate-stderr "${TARGET}" property ksprefrd --raw -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property ksprefrd -H "$VH" "0x$VFPR"
 	assert_success ; assert_output ""
 	# add → subpacket 24 on the primary uid only, read back (eval then --raw)
-	"${TARGET}" property ksprefrd --add hkps://keys.foopgp.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
-	run --separate-stderr "${TARGET}" property ksprefrd -H "$VH" "0x$VFPR"
+	"${TARGET}" property ksprefrd --info --add hkps://keys.foopgp.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
+	run --separate-stderr "${TARGET}" property ksprefrd --info -H "$VH" "0x$VFPR"
 	assert_output "pgpid_ksprefrd='hkps://keys.foopgp.org'"
 	# only ONE uid (the primary) carries it, and the primary flag survives
 	run bash -c "gpg --no-options --homedir '$VH' --export '0x$VFPR' 2>/dev/null | gpg --no-options --list-packets 2>/dev/null | grep -c 'preferred keyserver'"
@@ -534,7 +534,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	# --replace-to (synonym of --add) swaps it (sleep : distinct self-sig second)
 	sleep 1
 	"${TARGET}" property ksprefrd --replace-to hkp://foopgp.org:11371 -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
-	run --separate-stderr "${TARGET}" property ksprefrd --raw -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property ksprefrd -H "$VH" "0x$VFPR"
 	assert_output "hkp://foopgp.org:11371"
 	# a non-hkp(s) value is refused
 	run --separate-stderr env LC_ALL=C "${TARGET}" property ksprefrd --add https://foo -K '' -H "$VH" "0x$VFPR"
@@ -543,15 +543,15 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	run --separate-stderr env LC_ALL=C "${TARGET}" property ksprefrd --revoke x -H "$VH" "0x$VFPR"
 	assert_failure 2
 	# it is not a uid : never shown by --show-all
-	run --separate-stderr "${TARGET}" property --show-all -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" to_vcard --info -H "$VH" "0x$VFPR"
 	refute_output --partial "ksprefrd"
 }
 
-@test "property --to-vcard : vCard 4.0 wrapper, EMAIL;PREF, KEY;MEDIATYPE from subpacket 24, KEY inline" {
+@test "to_vcard : vCard 4.0 wrapper, EMAIL;PREF, KEY;MEDIATYPE from subpacket 24, KEY inline" {
 	vkey
 	"${TARGET}" property ksprefrd --add hkp://foopgp.org:11371 -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
 	# strip CRLF and unfold (CRLF + leading space) so whole-line asserts work
-	run bash -c "'${TARGET}' property --to-vcard -H '$VH' '0x$VFPR' 2>/dev/null | tr -d '\r' | sed ':a;N;\$!ba;s/\n //g'"
+	run bash -c "'${TARGET}' to_vcard -H '$VH' '0x$VFPR' 2>/dev/null | tr -d '\r' | sed ':a;N;\$!ba;s/\n //g'"
 	assert_success
 	assert_line "BEGIN:VCARD"
 	assert_line "VERSION:4.0"
@@ -570,7 +570,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	sleep 1
 	# … a different one planted on another (non-revoked) uid, uid 3
 	printf 'uid 3\nkeyserver\nhkp://foopgp.org:11371\ny\nsave\n' | gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH" --command-fd 0 --edit-key "0x$VFPR" >/dev/null 2>&1
-	run --separate-stderr env LC_ALL=C "${TARGET}" property ksprefrd --raw -H "$VH" "0x$VFPR"
+	run --separate-stderr env LC_ALL=C "${TARGET}" property ksprefrd -H "$VH" "0x$VFPR"
 	assert_success
 	assert_output "hkps://keys.foopgp.org"                 # the primary's value wins
 	[[ "$stderr" == *"Several preferred keyservers"* ]]    # divergence flagged
@@ -636,7 +636,7 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 	assert_line "alice.pro@example.org"
 	assert_line "alice@example.org"
 	assert_line "carol@example.org"
-	run --separate-stderr "${TARGET}" property --show-all -H "$LH" "0x$LFPR"
+	run --separate-stderr "${TARGET}" to_vcard --info -H "$LH" "0x$LFPR"
 	assert_line "pgpid_UID='urn:eid:u4$EID1'"
 	assert_line "pgpid_FN='Alice Legacy'"
 	# the legacy uids are NOT revoked (the web of trust rests on them)
@@ -734,13 +734,13 @@ signed_uids () {	# uids of $TF carrying a signature from the anchor $AF
 	assert_output --partial "IRREVERSIBLE"
 	assert_output --partial "Revocation cancelled"
 	# the phone survived : nothing was revoked
-	run --separate-stderr "${TARGET}" property phone -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property phone --info -H "$VH" "0x$VFPR"
 	assert_line "pgpid_TEL[0]='+33612345678'"
 }
 
 @test "property revoke -y skips the confirmation and revokes" {
 	vkey
-	run --separate-stderr "${TARGET}" property phone -y -R '+33612345678' -K '' -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property phone --info -y -R '+33612345678' -K '' -H "$VH" "0x$VFPR"
 	assert_success
 	refute_output --partial "pgpid_TEL["
 }

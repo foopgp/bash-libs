@@ -37,6 +37,9 @@ ICAO 9303, ISO/IEC 7816, many others RFC.
 :   Select a frontend program {NONE,whiptail,dialog,zenity} -
     Environment variable: BL_INTERACTIVE_FRONTEND
 
+**-H**, **\--homedir** GNUPGHOME GnuPG home directory (default:
+\~/.gnupg). Set the environnement variable: \$GNUPGHOME
+
 **-h**, **\--help**
 
 :   Show help and exit.
@@ -79,6 +82,10 @@ avatar
 email
 
 :   Display and add or revoke emails inside OpenPGP certificate.
+
+to_vcard
+
+:   Convert OpenPGP certificate to vCard (format 4.0).
 
 property
 

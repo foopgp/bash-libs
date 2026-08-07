@@ -933,6 +933,12 @@ msgid ""
 "international standards: POSIX, ICAO 9303, ISO/IEC 7816, many others RFC."
 msgstr ""
 
+msgid "GnuPG home directory (default: ~/.gnupg). "
+msgstr ""
+
+msgid "Set the environnement variable: "
+msgstr ""
+
 msgid "Unsupported MRZ"
 msgstr ""
 
@@ -1030,9 +1036,6 @@ msgstr ""
 
 msgid ""
 "Import the smallest certificate possible, removing almost all signatures"
-msgstr ""
-
-msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr ""
 
 msgid "Environnement variable: "
@@ -1307,6 +1310,37 @@ msgstr ""
 msgid "Nothing to revoke."
 msgstr ""
 
+msgid "Convert OpenPGP certificate to vCard (format 4.0)."
+msgstr ""
+
+msgid "Write into given FILE instead of standard output"
+msgstr ""
+
+msgid ""
+"Don't convert, but raw output all OpenPGP uids strings, separated by empty "
+"lines"
+msgstr ""
+
+msgid ""
+"Don't convert, but output all recognized OpenPGP uids as pairs key=value "
+"ready to be evaluated in bash"
+msgstr ""
+
+msgid "Decrease verbosity"
+msgstr ""
+
+msgid "--raw and --info are exclusive"
+msgstr ""
+
+msgid "Can't write %s"
+msgstr ""
+
+msgid "Written into %s"
+msgstr ""
+
+msgid "Some non-vCard uids were skipped - use --raw to display them."
+msgstr ""
+
 msgid ""
 "Display and add or revoke vCard-property uids inside OpenPGP certificate."
 msgstr ""
@@ -1325,14 +1359,8 @@ msgid ""
 msgstr ""
 
 msgid ""
-"Without modification options, output the usable (non-revoked and non-"
-"expired) PROPERTY values, ready to be evaluated in bash."
-msgstr ""
-
-msgid ""
 "Free-text values (name, note) with , ; \\\\ or newlines are stored RFC 6350-"
-"escaped and decoded back on display (address keeps its structural ';') ; --"
-"raw shows the stored form"
+"escaped and decoded back on display (address keeps its structural ';')"
 msgstr ""
 
 msgid ""
@@ -1351,28 +1379,23 @@ msgstr ""
 msgid "Revoke every usable PROPERTY uid — all but the newest for {name,email}"
 msgstr ""
 
+msgid "Also display expired uids"
+msgstr ""
+
+msgid "Also display revoked uids"
+msgstr ""
+
+msgid "Also display expired or revoked uids — synonym of:"
+msgstr ""
+
 msgid ""
-"Display every vCard-property uid of the certificate, including its Entity ID "
-"(UID:urn:eid:…)"
-msgstr ""
-
-msgid "Also display revoked or expired uids"
-msgstr ""
-
-msgid ""
-"Display raw uid strings (vCard parameters kept), separated by empty lines"
-msgstr ""
-
-msgid "Output vCard (override any other options)"
-msgstr ""
-
-msgid "Unrecognized property"
+"output the PROPERTY values as pairs key=value ready to be evaluated in bash"
 msgstr ""
 
 msgid "Missing PROPERTY argument"
 msgstr ""
 
-msgid "Modification options need a PROPERTY argument"
+msgid "Unrecognized property"
 msgstr ""
 
 msgid ""
@@ -1406,9 +1429,6 @@ msgid "No revokable %s inside certificate %s (in %s)."
 msgstr ""
 
 msgid "At least one %s must be retained."
-msgstr ""
-
-msgid "Some non-vCard uids were skipped - use --raw to display them."
 msgstr ""
 
 msgid ""
@@ -1803,9 +1823,6 @@ msgid ""
 msgstr ""
 
 msgid "Output"
-msgstr ""
-
-msgid "Decrease verbosity"
 msgstr ""
 
 msgid "Change GnuPG passphrase protecting secret parts of an OpenPGP key."
