@@ -1324,13 +1324,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	local user fprs
 
-	if [[ "$1" ]] ; then
-		user=$1
-	else
-		local -A cardinfo
-		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
-		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
-	fi
+	[[ "$1" ]] && user=$1 || user=$(_bl_pgpid_default_key "$gpghome") || return $?
 
 	mkdir -p "$tmpdir" || return $?
 
@@ -1452,18 +1446,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 
 	local user fprs
 
-	if [[ "$1" ]] ; then
-		user=$1
-	else
-		local -A cardinfo
-		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
-		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
-	fi
-
-	# Check that $user match only one certificate
-	local fprs
-	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --no-fetch -- "$user")) || return $?
-	user=${fprs[0]}
+	user=$(_bl_pgpid_resolve_key "$gpghome" "$1") || return $?
 
 	if [[ "$toadd" ]] ; then
 		local uids ids
@@ -1616,16 +1599,29 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	return $ret
 }
 
-# Resolve which certificate an action works on: the given TARGET, else the
-# one on the connected security token, else ask. Echoes a single fingerprint,
-# or fails as bl_pgpid_get does. $1 = GNUPGHOME, $2 = TARGET (may be empty).
+# Which key to work on when the caller gave no target: the one carried by the
+# connected security token, else ask. $1 = GNUPGHOME, $2 = card field to
+# prefer — pgpid_Skeyfpr, or pgpid_Ckeyfpr where the certification key itself
+# is what the caller needs — $3 = prompt for the interactive fallback.
+_bl_pgpid_default_key() {
+	local gpghome=$1 field=${2:-pgpid_Skeyfpr} prompt=${3:-}
+	local -A cardinfo
+	bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
+	if [[ "${cardinfo[$field]}" ]] ; then
+		printf '%s' "${cardinfo[$field]}"
+	elif [[ "$prompt" ]] ; then
+		_bl_pgp_choose_seckeyid --homedir "$gpghome" --text "$prompt"
+	else
+		_bl_pgp_choose_seckeyid --homedir "$gpghome"
+	fi
+}
+
+# The same, then resolved to exactly one certificate fingerprint. For the
+# actions that need a certificate rather than a key identifier ; the others
+# stop at _bl_pgpid_default_key. $1 = GNUPGHOME, $2 = TARGET (may be empty).
 _bl_pgpid_resolve_key() {
 	local gpghome=$1 user=$2
-	if [[ -z "$user" ]] ; then
-		local -A cardinfo
-		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
-		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
-	fi
+	[[ "$user" ]] || user=$(_bl_pgpid_default_key "$gpghome") || return $?
 	local fprs
 	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --no-fetch -- "$user")) || return $?
 	printf '%s' "${fprs[0]}"
@@ -1880,18 +1876,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	done
 
 	local user
-	if [[ "$target" ]] ; then
-		user=$target
-	else
-		local -A cardinfo
-		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
-		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
-	fi
-
-	# Check that $user match only one certificate
-	local fprs
-	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --no-fetch -- "$user")) || return $?
-	user=${fprs[0]}
+	user=$(_bl_pgpid_resolve_key "$gpghome" "$target") || return $?
 
 	local ret=0 modified=0
 
@@ -2482,9 +2467,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	done
 
 	if [[ -z "$keyid" ]] ; then
-		local -A cardinfo
-		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
-		[[ "${cardinfo[pgpid_Ckeyfpr]}" ]] && keyid=${cardinfo[pgpid_Ckeyfpr]} || keyid=$(_bl_pgp_choose_seckeyid --homedir "$gpghome" --text $"Private key to use ? (KeyID of your Certification Key)")
+		keyid=$(_bl_pgpid_default_key "$gpghome" pgpid_Ckeyfpr $"Private key to use ? (KeyID of your Certification Key)") || return $?
 	fi
 
 	# Get fpr for private key to use
@@ -2731,10 +2714,7 @@ OPTIONS:
 	if [[ "$1" ]] ; then
 		user=$1
 	else
-		local -A cardinfo
-		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
-		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} ||
-			user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome" --text $"Select certificate to print")
+		user=$(_bl_pgpid_default_key "$gpghome" pgpid_Skeyfpr $"Select certificate to print") || return $?
 	fi
 
 	if [[ "$user" =~ ^${BL_INTERACTIVE_EMAIL_REGEX}$ ]] ; then
