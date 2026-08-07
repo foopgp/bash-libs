@@ -1286,7 +1286,7 @@ bl_pgpid_avatar() {
 
 OPTIONS:
   -E, --extract-all           "$"Extract also all revoked or expired existing images from OpenPGP certificate""
-  -A, --addfrom IMAGE         "$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image)""
+  -A, --replace-to IMAGE      "$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image)""
   -R, --revoke                "$"Just revoke all existing images inside OpenPGP certificate""
   -W, --workdir DIRECTORY     "$"Working directory. Will contain previous and new resized images. "$"Default: ""$tmpdir .
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
@@ -1300,7 +1300,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		case "$1" in
 			-E|--extract-all)
 				listopts+=",show-unusable-uids" ;;
-			-A|--add|--addfrom|--add-from)
+			-A|--add|--addfrom|--add-from|--replaceto|--replace-to)
 				shift ; image=${1:?} ;&
 			-R|--revoke)
 				revoke="." ;;
@@ -1616,6 +1616,25 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	return $ret
 }
 
+bl_pgpid_to_vcard() {
+	local name
+	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
+	local usage="Usage: $name PROPERTY [OPTIONS]... [NAME|EMAIL|KEYID|U4|U5]"
+	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
+	local helpmsg="
+"$"Convert OpenPGP certificate to vCard (format 4.0).""
+"$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
+
+OPTIONS:
+  -o, --output FILE           "$"Write into given FILE instead of standard output""
+      --raw                   "$"Don't convert, but raw output all OpenPGP uids strings, separated by empty lines""
+      --info                  "$"Don't convert, but output all recognized OpenPGP uids as pairs key=value ready to be evaluated in bash""
+  -q, --quiet                 "$"Decrease verbosity""
+  -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
+"
+…
+}
+
 bl_pgpid_property() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
@@ -1627,8 +1646,7 @@ bl_pgpid_property() {
 "$"Email addresses are not vCard-property uids (they keep the 'Name <addr>' shape every mail client understands): manage them with '""$BL_PGPID_NAME email'.
 "$"'ksprefrd' is preferred certificate server. This is not stored as a vCard-property uid, but used when generating vCard.""
 "$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
-"$"Without modification options, output the usable (non-revoked and non-expired) PROPERTY values, ready to be evaluated in bash.""
-"$"Free-text values (name, note) with , ; \\ or newlines are stored RFC 6350-escaped and decoded back on display (address keeps its structural ';') ; --raw shows the stored form""
+"$"Free-text values (name, note) with , ; \\ or newlines are stored RFC 6350-escaped and decoded back on display (address keeps its structural ';')""
 
 OPTIONS:
   -A, --add VALUE             "$"Add ({name,note,ksprefrd} ⇒ replace) a PROPERTY uid (may be used more than once)""
@@ -1636,10 +1654,11 @@ OPTIONS:
   -R, --revoke VALUE          "$"Revoke the PROPERTY uid carrying VALUE (may be used more than once)""
       --revoke-all            "$"Revoke every usable PROPERTY uid — all but the newest for {name,email}""
   -y, --yes                   "$"Assume yes: skip the irreversible-revocation confirmation""
-      --show-all              "$"Display every vCard-property uid of the certificate, including its Entity ID (UID:urn:eid:…)""
-      --show-revoked          "$"Also display revoked or expired uids""
-      --raw                   "$"Display raw uid strings (vCard parameters kept), separated by empty lines""
-      --to-vcard              "$"Output vCard (override any other options)""
+      --show-expired          "$"Also display expired uids""
+      --show-revoked          "$"Also display revoked uids""
+      --show-all              "$"Also display expired or revoked uids — synonym of:"" --show-revoked --show-expired""
+      --info                  "$"output the PROPERTY values as pairs key=value ready to be evaluated in bash""
+  -q, --quiet                 "$"Decrease verbosity""
   -v, --verbose               "$"Increase verbosity""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
   -K, --keyservers KEYSERVERS "$"If non-empty, send updated certificate to this keyservers. "$"Default: ""
