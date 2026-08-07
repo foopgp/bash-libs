@@ -1,3 +1,16 @@
+bash-libs (0.4.1-1) unstable; urgency=medium
+
+  [ jjbrucker ]
+  * bl-pgpkey,bl-pgpid: now --homedir is also a global option
+  * Clarify UX related bl_pgpid_property() (and broke experimental 0.4.0 interface !)
+
+  [ Mnêmê ]
+  * bl-pgpid: to_vcard becomes an action of its own
+  * bl-pgpid property: one property, plain values, composable --show flags
+  * bl-pgpid: minor extra factorization + udate doc
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Fri, 07 Aug 2026 23:34:39 +0200
+
 bash-libs (0.4.0-1) unstable; urgency=medium
 
   [ jjbrucker ]
