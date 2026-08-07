@@ -185,6 +185,61 @@ is how well vouched the address is, not how many uids happen to carry it.
 - `--only-email` — certifying the address while deliberately leaving the eid
   anchor out. Written, then reverted before any release (JJB, 2026-08-06).
 
+# PROPERTIES, AND THE VCARD VIEWS
+
+One action does one thing (JJB, 2026-08-07). `property` handles one property
+of one certificate ; the views that span the whole certificate belong to
+`to_vcard`, which offers three:
+
+| command | scope |
+|---|---|
+| `to_vcard` | the vCard itself — uats plus the recognized uids |
+| `to_vcard --info` | the recognized uids as `key=value`, ready for eval |
+| `to_vcard --raw` | every uid, transposable or not |
+| `property <p> --info` | the values of *that* property, as `key=value` |
+
+So `property` always requires a PROPERTY, and `--show-all` no longer means
+"every property": it is the synonym of `--show-revoked --show-expired`, which
+used to be one flag gating `r` and `e` together.
+
+## The default output is for the eye
+
+`property <p>` prints the values themselves, one per line. `--info` is what
+makes the output parseable, and it alone marks the revoked and the expired
+apart, by the `_REVOKED` suffix on the variable name. A multi-line note
+therefore prints across several lines under the default: making it
+unambiguous is `--info`'s job, not the default's.
+
+## Two traps for anyone calling this from outside bash
+
+**`${value@Q}` quotes two ways.** Plain `'value'` most of the time, but bash
+ANSI-C `$'value'` as soon as the value holds a newline or a quote — which a
+NOTE routinely does. A parser that reads only the first form sees an empty
+list where a multi-line note sits, and an empty list is indistinguishable
+from an empty certificate. This cost an afternoon in the Tauri application;
+it is the reason the default output is now the bare value.
+
+**Omitting the key selector costs ~415 ms.** Without a trailing
+NAME|EMAIL|KEYID|U4|U5, bl-pgpid asks scdaemon which key to work on: ~660 ms
+against ~245 ms with the certificate fingerprint, measured. An interface that
+reads six properties per refresh pays it six times over. Pass the fingerprint
+whenever you already hold one — and note that `pgpid_Ckeyfpr` is read from
+the certificate, so it can be missing offline, where the scdaemon path is the
+correct fallback.
+
+## Key resolution, in two levels
+
+"Take the target, else the key on the connected token, else ask" was written
+out at five call sites, and they were not all doing the same thing: only
+`email` and `property` went on to resolve the answer to exactly one
+certificate. Hence two helpers rather than one — `_bl_pgpid_default_key` for
+the choice, `_bl_pgpid_resolve_key` for the choice plus the resolution.
+
+The card field is a parameter, not a hidden default: `certify` wants
+`pgpid_Ckeyfpr` because the certification key is precisely what it needs,
+where the others want `pgpid_Skeyfpr`. Written out five times that difference
+read as an inconsistency; as an argument it reads as the intent it is.
+
 # THE PRIMARY-USER-ID FLAG BELONGS TO THE MAIN ADDRESS
 
 Subpacket 25 marks, by long-standing OpenPGP convention, the holder's **main
