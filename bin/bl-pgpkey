@@ -101,7 +101,8 @@ BL_PGPKEY_chelpmsg="
 "$"Note: OpenPGP ID is a specific OpenPGP configuration managed by bl-pgpid. Using bl-pgpkey with other OpenPGP configuration should cause unexpected issues.""
 
 MAIN OPTIONS:
-  -f, --frontend PROGRAM   "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND"
+  -f, --frontend PROGRAM   "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND
+  -H, --homedir GNUPGHOME  "$"GnuPG home directory (default: ~/.gnupg). "$"Set the environnement variable: ""\$GNUPGHOME"
 
 ### external functions ###
 
@@ -116,6 +117,7 @@ _bl_pgpkey_parseoptions() {
 	for ((;$#;)) ; do
 		case "$1" in
 			-f|--frontend) shift; frontend="$1";; # Will be passed to bl-interactive
+			-H|--homedir) shift ; export GNUPGHOME=${1:?} ;;
 			-h|--help) printf "%s\n%s%s" "$BL_PGPKEY_usage" "$BL_PGPKEY_chelpmsg" "$BL_PGPKEY_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_PGPKEY_NAME" "$BL_PGPKEY_VERSION" ; return 1 ;;
 			--) shift ; break ;;

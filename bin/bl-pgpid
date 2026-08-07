@@ -403,7 +403,8 @@ BL_PGPID_chelpmsg="
 "$"It combines the power of OpenPGP (RFC 9580) with those of others open international standards: POSIX, ICAO 9303, ISO/IEC 7816, many others RFC.""
 
 MAIN OPTIONS:
-  -f, --frontend PROGRAM  "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND"
+  -f, --frontend PROGRAM  "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND
+  -H, --homedir GNUPGHOME "$"GnuPG home directory (default: ~/.gnupg). "$"Set the environnement variable: ""\$GNUPGHOME"
 
 ### external functions ###
 
@@ -417,6 +418,7 @@ _bl_pgpid_parseoptions() {
 	for ((;$#;)) ; do
 		case "$1" in
 			-f|--frontend) shift; frontend="$1";; # Will be passed to bl-interactive
+			-H|--homedir) shift ; export GNUPGHOME=${1:?} ;;
 			-h|--help) printf "%s\n%s%s" "$BL_PGPID_usage" "$BL_PGPID_chelpmsg" "$BL_PGPID_shelpmsg" ; return 1 ;;
 			-V|--version) printf "%s %s\n" "$BL_PGPID_NAME" "$BL_PGPID_VERSION" ; return 1 ;;
 			--) shift ; break ;;
