@@ -1616,11 +1616,25 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	return $ret
 }
 
+# Resolve which certificate an action works on: the given TARGET, else the
+# one on the connected security token, else ask. Echoes a single fingerprint,
+# or fails as bl_pgpid_get does. $1 = GNUPGHOME, $2 = TARGET (may be empty).
+_bl_pgpid_resolve_key() {
+	local gpghome=$1 user=$2
+	if [[ -z "$user" ]] ; then
+		local -A cardinfo
+		bl_pgpid_token_check --homedir "$gpghome" --no-fetch --quiet --aaname cardinfo || true
+		[[ "${cardinfo[pgpid_Skeyfpr]}" ]] && user=${cardinfo[pgpid_Skeyfpr]} || user=$(_bl_pgp_choose_seckeyid --homedir "$gpghome")
+	fi
+	local fprs
+	fprs=($(bl_pgpid_get --fingerprint --errexit-g=1 --homedir "$gpghome" --no-fetch -- "$user")) || return $?
+	printf '%s' "${fprs[0]}"
+}
+
 bl_pgpid_to_vcard() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
-	local usage="Usage: $name PROPERTY [OPTIONS]... [NAME|EMAIL|KEYID|U4|U5]"
-	local keyserv keyservs=("${BL_PGPID_KEYSERVERS[@]}")
+	local usage="Usage: $name [OPTIONS]... [NAME|EMAIL|KEYID|U4|U5]"
 	local helpmsg="
 "$"Convert OpenPGP certificate to vCard (format 4.0).""
 "$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
@@ -1632,7 +1646,116 @@ OPTIONS:
   -q, --quiet                 "$"Decrease verbosity""
   -H, --homedir GNUPGHOME     "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME .
 "
-…
+	local gpghome=${GNUPGHOME:-~/.gnupg}
+	local output="" raw=0 info=0 quiet=0 target=""
+	for ((;$#;)) ; do
+		case "$1" in
+			-o|--output)   shift ; output=${1:?} ;;
+			--raw)         raw=1 ;;
+			--info)        info=1 ;;
+			-q|--quiet)    quiet=1 ;;
+			-H|--homedir)  shift ; gpghome=${1:?} ;;
+			-h|--h*)       printf "%s\n%s\n" "$usage" "$helpmsg" ; return ;;
+			-V|--version)  printf "%s %s\n" "$FUNCNAME" "$BL_PGPID_VERSION" ; return ;;
+			--) shift ; [[ -z "$target" ]] && target=${1:-} ; break ;;
+			-*) printf "$FUNCNAME: Error: "$"Unrecognized option"" '$1'.\n\n"$"Try '%s --help' for more information"".\n" "$name" >&2 ; return 2 ;;
+			*)  [[ "$target" ]] && printf "$FUNCNAME: Warning: "$"Ignoring extra args '%s'…""\n" "$1" >&2 || target=$1 ;;
+		esac
+		shift
+	done
+	((! raw)) || ((! info)) || { printf "$FUNCNAME: Error: "$"--raw and --info are exclusive"".\n" >&2 ; return 2 ; }
+
+	local user
+	user=$(_bl_pgpid_resolve_key "$gpghome" "$target") || return $?
+
+	# Redirect once, so every branch below just writes to stdout.
+	if [[ "$output" ]] ; then
+		exec {BL_tmp_fd}>&1 || return 1
+		exec >"$output" || { printf "$FUNCNAME: Error: "$"Can't write %s"".\n" "'$output'" >&2 ; return 1 ; }
+	fi
+	local ret=0
+	_bl_pgpid_vcard_render "$gpghome" "$user" "$raw" "$info" "$quiet" || ret=$?
+	if [[ "$output" ]] ; then
+		exec 1>&${BL_tmp_fd} {BL_tmp_fd}>&- || true
+		((quiet)) || printf "$FUNCNAME: Notice: "$"Written into %s"".\n" "'$output'" >&2
+	fi
+	return $ret
+}
+
+# The three views to_vcard offers, sharing one pass over the uids:
+#   raw  = every uid string, transposable or not, blank-line separated
+#   info = the recognized ones as key=value, ready to be eval'd in bash
+#   else = the vCard 4.0 itself: uats + recognized uids
+_bl_pgpid_vcard_render() {
+	local gpghome=$1 user=$2 raw=$3 info=$4 quiet=$5
+	local rawu u
+	local mono=" FN NOTE "
+
+
+	if ((raw || info)) ; then
+		local P value suffix legacy=0 line validity created
+		local -A idx=()
+		while IFS=: read -r validity created rawu ; do
+			u=$(printf '%b' "$rawu")
+			((! raw)) || { printf '%s\n\n' "$u" ; continue ; }
+			[[ "$u" =~ ^([A-Z]+)(\;[^:]*)?:\ ?(.*)$ ]] || { legacy=1 ; continue ; }
+			P=${BASH_REMATCH[1]} ; value=${BASH_REMATCH[3]}
+			case "$P" in
+				FN|NOTE|ADR)
+					# RFC 6350 unescape — a sentinel keeps '\\' clear of the other passes.
+					value=${value//'\\'/$'\x01'} ; value=${value//'\n'/$'\n'} ; value=${value//'\,'/,}
+					[[ "$P" == ADR ]] || value=${value//'\;'/;}
+					value=${value//$'\x01'/\\}
+					;;
+			esac
+			suffix="" ; [[ "$validity" != [re] ]] || suffix="_REVOKED"
+			# Same shape as 'property --info': no index for the singular
+			# properties, so an eval gives a scalar rather than a 1-element array.
+			if [[ -z "$suffix" ]] && { [[ "$P" == UID ]] || [[ "$mono" == *" $P "* ]] ; } ; then
+				printf 'pgpid_%s=%s\n' "$P" "${value@Q}"
+			else
+				printf 'pgpid_%s[%d]=%s\n' "$P$suffix" "${idx[$P$suffix]:-0}" "${value@Q}"
+				idx[$P$suffix]=$(( ${idx[$P$suffix]:-0} + 1 ))
+			fi
+		done < <(gpg --homedir "$gpghome" --with-colons --list-key "$user" 2>/dev/null \
+			| awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" { i+=1 ; printf "%s:%s:%s\n", $2, $6, $10 }')
+		((! legacy)) || ((quiet)) || printf "$FUNCNAME: Notice: "$"Some non-vCard uids were skipped - use --raw to display them.""\n" >&2
+		return 0
+	fi
+
+	local pref=0 kspref keyurl photofile
+	printf 'BEGIN:VCARD\r\nVERSION:4.0\r\n'
+	while IFS= read -r rawu ; do
+		u=$(printf '%b' "$rawu")
+		if [[ "$u" =~ ^([A-Z]+)(\;[^:]*)?:\ ?(.*)$ ]] ; then
+			if [[ "${BASH_REMATCH[1]}" == EMAIL ]] ; then
+				# Legacy 'EMAIL: <addr>' uid — still rendered so that
+				# certificates minted during that experiment keep working.
+				u=${BASH_REMATCH[3]} ; u=${u#<} ; u=${u%>}
+				pref=$((pref+1)) ; _bl_pgpid_vfold "EMAIL;PREF=${pref}:${u}"
+			else
+				_bl_pgpid_vfold "$u"                             # already a valid, escaped vCard line
+			fi
+		elif [[ "$u" =~ \<([^\<\>]+)\>[[:space:]]*$ ]] ; then
+			# Plain 'Name <addr>' uid : only its address becomes a vCard
+			# line (the name is carried by FN:, the eid by UID:urn:eid:…).
+			pref=$((pref+1)) ; _bl_pgpid_vfold "EMAIL;PREF=${pref}:${BASH_REMATCH[1]}"
+		fi
+	done < <(gpg --homedir "$gpghome" --with-colons --list-key "$user" 2>/dev/null | awk -F: '/^pub:/ { if (i>0) exit } $1=="uid" && $2 !~ /[re]/ { print $10 }')
+	# KEY;MEDIATYPE : retrievable-cert URL from the preferred keyserver
+	# (subpacket 24 ; default BL_PGPID_KEYSERVERS[0]).
+	kspref=$(bl_pgpid_property ksprefrd --homedir "$gpghome" -- "$user" 2>/dev/null)
+	keyurl=$(_bl_pgpid_ks_to_keyurl "${kspref:-${BL_PGPID_KEYSERVERS[0]}}" "${user,,}")   # lowercase fpr, matching pgp2vcard.html
+	[[ -z "$keyurl" ]] || _bl_pgpid_vfold "KEY;MEDIATYPE=application/pgp-keys:${keyurl}"
+	# KEY inline : minimised export (no third-party sigs, no photo attributes).
+	_bl_pgpid_vfold "KEY:data:application/pgp-keys;base64,$(gpg --homedir "$gpghome" --export --export-options export-minimal,no-export-attributes "$user" 2>/dev/null | base64 --wrap=0)"
+	# PHOTO : the first UAT image, extracted through gpg's photo-viewer hook.
+	photofile=$(mktemp) && {
+		gpg --homedir "$gpghome" --photo-viewer "cp %I $photofile" --list-options show-photos --list-key "$user" >/dev/null 2>&1
+		[[ ! -s "$photofile" ]] || _bl_pgpid_vfold "PHOTO:data:image/jpeg;base64,$(base64 --wrap=0 "$photofile")"
+		rm -f "$photofile"
+	}
+	printf 'END:VCARD\r\n'
 }
 
 bl_pgpid_property() {
