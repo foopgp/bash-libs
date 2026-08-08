@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPKEY
 section: 1
 header: User Commands
-footer: bash-libs 0.4.1
+footer: bash-libs 0.4.2
 ---
 
 # NAME
@@ -42,8 +42,8 @@ unexpected issues.
 
 **-H**, **\--homedir** GNUPGHOME
 
-:   GnuPG home directory (default: \~/.gnupg). Set the environnement
-    variable: \$GNUPGHOME
+:   GnuPG home directory (default: \~/.gnupg). Environnement variable:
+    \$GNUPGHOME
 
 **-h**, **\--help**
 

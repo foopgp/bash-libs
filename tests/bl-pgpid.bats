@@ -380,15 +380,21 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	assert_output --partial "TEL;TYPE=home:+33612345678"
 }
 
-@test "to_vcard --info : every recognized uid, the identity eid included" {
+@test "the whole certificate, seen through the views that remain" {
 	vkey
-	run --separate-stderr "${TARGET}" to_vcard --info -H "$VH" "0x$VFPR"
+	# to_vcard --raw is the only one that spans every uid, the eid anchor
+	# included — property works on one property, email on the addresses.
+	run --separate-stderr "${TARGET}" to_vcard --raw -H "$VH" "0x$VFPR"
 	assert_success
-	assert_line "pgpid_UID='urn:eid:u4$EID1'"
-	assert_line "pgpid_FN='Alice Test'"
-	# no EMAIL here : an address is not a vCard-property uid any more
-	refute_line --partial "alice@example.org"
-	assert_line "pgpid_TEL[0]='+33612345678'"
+	assert_output --partial "UID:urn:eid:u4$EID1"
+	run --separate-stderr "${TARGET}" property name --info -H "$VH" "0x$VFPR"
+	assert_output "pgpid_FN='Alice Test'"
+	run --separate-stderr "${TARGET}" property phone --info -H "$VH" "0x$VFPR"
+	assert_output "pgpid_TEL[0]='+33612345678'"
+	# The address is not a vCard-property uid: it belongs to 'email', and
+	# that is the set the vCard publishes.
+	run --separate-stderr "${TARGET}" email --info -H "$VH" "0x$VFPR"
+	assert_output "pgpid_EMAIL[0]='alice@example.org'"
 }
 
 @test "property name --add : mono, previous FN revoked, primary left alone" {
@@ -397,9 +403,9 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	assert_success
 	assert_output "pgpid_FN='Alice Renamed'"
 	sleep 1
-	run --separate-stderr "${TARGET}" property name --show-revoked --info -H "$VH" "0x$VFPR"
+	run --separate-stderr "${TARGET}" property name --show-unusable --info -H "$VH" "0x$VFPR"
 	assert_success
-	assert_line "pgpid_FN_REVOKED[0]='Alice Test'"
+	assert_line "pgpid_FN_UNUSABLE[0]='Alice Test'"
 	assert_line "pgpid_FN='Alice Renamed'"
 	# property must not move the primary flag : it belongs to the main address.
 	# Asserted on subpacket 25 itself, never on listing order — gpg's uid order
@@ -542,8 +548,8 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	# --revoke is meaningless here
 	run --separate-stderr env LC_ALL=C "${TARGET}" property ksprefrd --revoke x -H "$VH" "0x$VFPR"
 	assert_failure 2
-	# it is not a uid : never shown by --show-all
-	run --separate-stderr "${TARGET}" to_vcard --info -H "$VH" "0x$VFPR"
+	# it is not a uid : never shown among them
+	run --separate-stderr "${TARGET}" to_vcard --raw -H "$VH" "0x$VFPR"
 	refute_output --partial "ksprefrd"
 }
 
@@ -636,9 +642,10 @@ lkey () {	# a fresh throwaway LEGACY key (name (u4=…) <email> uids) per test
 	assert_line "alice.pro@example.org"
 	assert_line "alice@example.org"
 	assert_line "carol@example.org"
-	run --separate-stderr "${TARGET}" to_vcard --info -H "$LH" "0x$LFPR"
-	assert_line "pgpid_UID='urn:eid:u4$EID1'"
-	assert_line "pgpid_FN='Alice Legacy'"
+	run --separate-stderr "${TARGET}" to_vcard --raw -H "$LH" "0x$LFPR"
+	assert_output --partial "UID:urn:eid:u4$EID1"
+	run --separate-stderr "${TARGET}" property name --info -H "$LH" "0x$LFPR"
+	assert_output "pgpid_FN='Alice Legacy'"
 	# the legacy uids are NOT revoked (the web of trust rests on them)
 	run bash -c "gpg --no-options --homedir '$LH' --with-colons -k 2>/dev/null | grep -c '^uid:u:.*Alice Legacy (u4='"
 	assert_output "2"
