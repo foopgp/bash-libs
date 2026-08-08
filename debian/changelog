@@ -1,3 +1,14 @@
+bash-libs (0.4.2-1) unstable; urgency=medium
+
+  [ jjbrucker ]
+  * bl_pgpkey_print(): improve output (print raw uids, whithout Markdown interpretation)
+
+  [ Mnêmê ]
+  * bl-pgpkey totoken: drop --name, the DO 5E carries the eid alone
+  * bl-pgpid: whole-certificate views to to_vcard, and a uid either stands or it does not
+
+ -- jjbrucker <jjbrucker@foopgp.org>  Sat, 08 Aug 2026 16:30:37 +0200
+
 bash-libs (0.4.1-1) unstable; urgency=medium
 
   [ jjbrucker ]
