@@ -1004,14 +1004,13 @@ OPTIONS:
   -P, --passfrom FILE          "$"Get passphrase from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
   -U, --certurl URL            "$"URL to retrieve your OpenPGP certificate"" (default: https://{KEYSERVER}/pks/lookup?op=get&search=0x{KEYFPR} )
   -L, --lang LANG              "$"Security token (OpenPGP smartcard) prefered language"" (default: $lang)
-  -N, --name NAME              "$"Customize name of security token's cardholder""
   -k, --keyserver KEYSERVER    "$"Send OpenPGP certificate to this public keys server. Also modify default URL"" (see --certurl, default: $hkpsserv)
   -K, --pubkey FILE            "$"Also write armored OpenPGP certificate to given FILE""
   -v, --verbose                "$"Increase verbosity""
       --force                  "$"Don't ask before resetting unempty security token (OpenPGP smartcard)""
 "
 
-	local passphrase certurl username force=0 pubkeyfile
+	local passphrase certurl force=0 pubkeyfile
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local gpgfilter="grep ^gpg"
 	for ((;$#;)) ; do
@@ -1028,11 +1027,6 @@ OPTIONS:
 				shift ; certurl=$1 ;;
 			-L|--lang)
 				shift ; lang=$(sed -nE ' s,.*([A-Za-z]{2}).*,\L\1,p ' <<<"${1:: 2}") ;;
-			-N|--name)
-				# Force the locale so [:print:] keeps UTF-8 letters (in the C
-				# locale it collapses to ASCII 0x20-0x7E and would strip accents
-				# silently from any user whose shell isn't already *.UTF-8).
-				shift ; username=" # $(LC_CTYPE=C.UTF-8 sed 's,[^[:print:]],,g' <<<"$1")" ;;
 			-K|--pubkey)
 				shift ; pubkeyfile="$1" ;;
 			-v|--verbose) gpgfilter="cat" ;;
@@ -1105,7 +1099,7 @@ OPTIONS:
 
 	printf "%s: Notice: Configuring OpenPGP security token...\n" "$FUNCNAME" >&2
 
-	echo -e "admin\nlogin\n${ids[0]:-${emails[0]}}${username}\nurl\n${certurl}\nlang\n$lang\nname\n${emails[0]}\n\n" | \
+	echo -e "admin\nlogin\n${ids[0]:-${emails[0]}}\nurl\n${certurl}\nlang\n$lang\nname\n${emails[0]}\n\n" | \
 	gpg --homedir "$gpghome" --command-fd 0 --batch --pinentry-mode loopback --passphrase "12345678" --card-edit 2> >( $gpgfilter ) || { printf "Setting OpenPGP card holder FAIL ($?)\n" >&2 ; return 1 ;}
 
 	echo -e "admin\nkey-attr\n2\n1\n2\n1\n2\n1\nquit" | \
