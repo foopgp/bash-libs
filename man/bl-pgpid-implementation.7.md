@@ -188,7 +188,7 @@ was removed rather than fixed. Addresses are `email`'s business, which is where
 
 `property <p>` prints the values themselves, one per line. `--info` is what
 makes the output parseable, and it alone marks the uids that no longer stand,
-by a `_DONTUSE` suffix on the variable name. A multi-line note therefore prints
+by a `_UNUSABLE` suffix on the variable name. A multi-line note therefore prints
 across several lines under the default: making it unambiguous is `--info`'s
 job, not the default's.
 
@@ -200,7 +200,7 @@ out for *keys*, leaves their meaning on uids and uats largely implicit, and
 warns that "additional information may follow" one we already know. We first
 split the output into `_REVOKED` and `_EXPIRED`; the honest reading is coarser
 (JJB, 2026-08-08) — a uid either still stands or it does not. One suffix,
-`_DONTUSE`, one flag, `--show-unusable`.
+`_UNUSABLE`, one flag, `--show-unusable`.
 
 `_bl_pgpid_uid_stands()` is therefore an **allow** list, not a deny list: a
 letter we have never seen counts as unusable, because defaulting to "usable" is

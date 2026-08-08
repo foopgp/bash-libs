@@ -1608,7 +1608,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			_bl_pgpid_uid_stands "$validity" || ((showunusable)) || continue
 			[[ "$uid" =~ \<([^\<\>]+)\>[[:space:]]*$ ]] || continue
 			addr=${BASH_REMATCH[1]}
-			suffix="" ; _bl_pgpid_uid_stands "$validity" || suffix="_DONTUSE"
+			suffix="" ; _bl_pgpid_uid_stands "$validity" || suffix="_UNUSABLE"
 			[[ -z "${seen[$suffix$addr]}" ]] || continue   # one address, one line per bucket
 			seen[$suffix$addr]=.
 			if (( ! info )) ; then
@@ -2096,7 +2096,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 		if (( ! info )) ; then
 			printf '%s\n' "$value" ; continue
 		fi
-		suffix="" ; _bl_pgpid_uid_stands "$validity" || suffix="_DONTUSE"
+		suffix="" ; _bl_pgpid_uid_stands "$validity" || suffix="_UNUSABLE"
 		if [[ -z "$suffix" ]] && [[ "$mono" == *" $P "* ]] ; then
 			printf 'pgpid_%s=%s\n' "$P" "${value@Q}"
 		else

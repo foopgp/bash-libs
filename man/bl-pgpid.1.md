@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-3.0-only
 title: BL-PGPID
 section: 1
 header: User Commands
-footer: bash-libs 0.4.1
+footer: bash-libs 0.4.2
 ---
 
 # NAME
@@ -38,7 +38,7 @@ ICAO 9303, ISO/IEC 7816, many others RFC.
     Environment variable: BL_INTERACTIVE_FRONTEND
 
 **-H**, **\--homedir** GNUPGHOME GnuPG home directory (default:
-\~/.gnupg). Set the environnement variable: \$GNUPGHOME
+\~/.gnupg). Environnement variable: \$GNUPGHOME
 
 **-h**, **\--help**
 

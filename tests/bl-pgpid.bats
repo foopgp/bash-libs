@@ -405,7 +405,7 @@ vkey () {	# a fresh throwaway vCard-uid key (secret, passphrase-less) per test
 	sleep 1
 	run --separate-stderr "${TARGET}" property name --show-unusable --info -H "$VH" "0x$VFPR"
 	assert_success
-	assert_line "pgpid_FN_DONTUSE[0]='Alice Test'"
+	assert_line "pgpid_FN_UNUSABLE[0]='Alice Test'"
 	assert_line "pgpid_FN='Alice Renamed'"
 	# property must not move the primary flag : it belongs to the main address.
 	# Asserted on subpacket 25 itself, never on listing order — gpg's uid order
