@@ -41,51 +41,32 @@ The last row is the exception, and it was learned the hard way.
 
 ## The EMAIL: <addr> false trail (July to August 2026)
 
-**The idea.** One uid per piece of information, every uid aligned on a vCard
-property. It is a good model: it makes each fact separately certifiable, gives
-`--to-vcard` a trivial mapping, and frees the uid comment field — which the eid
-had been squatting as `Alice (u4=…) <alice@example.org>`. Addresses were made to
-follow the same rule, as `EMAIL: <alice@example.org>`.
+Addresses were briefly minted as vCard-property uids too — `EMAIL:
+<alice@example.org>` — so that every uid would follow one rule. GnuPG accepted
+the string and the suite was green, but a mail client does not read a uid as a
+structured record: it parses RFC 5322 *name-addr*, so the display name came out
+literally `EMAIL:`. Evolution could not send to the address at all; Thunderbird
+pasted `EMAIL:` into the `To:` field. An earlier bench had already found that
+*discovery by email* failed for every shape but a bare addr-spec — the same root
+cause one layer earlier, which we read as a lookup quirk and papered over with a
+space after the colon.
 
-**Why it looked fine.** GnuPG accepts the string, the uid appears in listings,
-key lookup by fingerprint works, and the test suite was green. Nothing in the
-OpenPGP layer objects.
+Addresses went back to `Name <addr>` (JJB, 2026-08-02); every other property
+stayed. What survives is the substantial half: the eid now has its **own
+self-certified uid** instead of squatting the comment field of an address uid,
+so the anchor is a first-class identity that the web of trust signs directly.
 
-**Why it broke.** A mail client does not read a uid as a structured record. It
-parses it as an RFC 5322 *name-addr*: display-name followed by `<addr-spec>`.
-`EMAIL: <alice@example.org>` therefore parses as a display name literally equal
-to `EMAIL:`. Observed on real clients:
+In the code, `property` no longer knows about email; `email` mints the uid
+itself (`--name`, else the certificate's `FN:`, else the local part); the legacy
+upgrade stopped minting an address uid, a legacy uid being name-addr already;
+`--revoke` drains the deprecated `EMAIL:` shape first; `to_vcard` sources its
+EMAIL lines from name-addr uids, so the emitted vCard never changed.
 
-- **Evolution** — could not send to the address at all.
-- **Thunderbird** (desktop and mobile) — sent, but pasted `EMAIL:` into the
-  `To:` field.
-
-**The warning we under-weighted.** An earlier bench test had already found that
-*discovery by email* failed for every shape except a bare addr-spec. We read it
-as a lookup quirk and worked around it by putting a space after the colon. It
-was the same root cause, showing up one layer earlier.
-
-**The decision** (JJB, 2026-08-02). Addresses leave the vCard-property family
-and go back to `Name <addr>`. Every other property stays as it is.
-
-**What survives from the experiment** — and it is the substantial part: the eid
-now has its **own self-certified uid** instead of living in a comment field. The
-address uid no longer has to carry `(u4=…)`, and the anchor is a first-class
-identity that the web of trust signs directly.
-
-**Consequences in the code.** `bl_pgpid_property` no longer knows about email;
-`bl_pgpid_email` mints the uid itself (`--name`, else the certificate's `FN:`,
-else the local part); the legacy upgrade stopped minting an address uid, since a
-legacy uid is already name-addr and a second one would only split its
-third-party certifications; `--revoke` drains the deprecated `EMAIL:` shape
-first; `--to-vcard` sources its `EMAIL` lines from name-addr uids, so the
-emitted vCard is unchanged. Storage shape and output format are now independent.
-
-**What to take away.** An OpenPGP uid is not a free-form record. Anything
-containing an address will be parsed as a name-addr by third-party software, so
-the display-name slot is not ours to repurpose. Test a new uid shape **in a real
-mail client** before minting it on a published certificate: a uid revocation is
-permanent, and the exact revoked string can never be added again.
+**The lesson.** An OpenPGP uid is not a free-form record: anything containing an
+address gets parsed as a name-addr by third-party software, so the display-name
+slot is not ours to repurpose. Try a new uid shape **in a real mail client**
+before minting it on a published certificate — a uid revocation is permanent,
+and the exact revoked string can never be added again.
 
 # UNIX USER IDS DERIVED FROM AN EID
 
@@ -194,21 +175,38 @@ of one certificate ; the views that span the whole certificate belong to
 | command | scope |
 |---|---|
 | `to_vcard` | the vCard itself — uats plus the recognized uids |
-| `to_vcard --info` | the recognized uids as `key=value`, ready for eval |
 | `to_vcard --raw` | every uid, transposable or not |
 | `property <p> --info` | the values of *that* property, as `key=value` |
+| `email --info` | the addresses, as `key=value` |
 
-So `property` always requires a PROPERTY, and `--show-all` no longer means
-"every property": it is the synonym of `--show-revoked --show-expired`, which
-used to be one flag gating `r` and `e` together.
+`to_vcard` briefly had an `--info` of its own. It answered the wrong question —
+the vCard's EMAIL lines come from name-addr uids, which are not properties — and
+was removed rather than fixed. Addresses are `email`'s business, which is where
+`--info` and `--show-unusable` went.
 
 ## The default output is for the eye
 
 `property <p>` prints the values themselves, one per line. `--info` is what
-makes the output parseable, and it alone marks the revoked and the expired
-apart, by the `_REVOKED` suffix on the variable name. A multi-line note
-therefore prints across several lines under the default: making it
-unambiguous is `--info`'s job, not the default's.
+makes the output parseable, and it alone marks the uids that no longer stand,
+by a `_DONTUSE` suffix on the variable name. A multi-line note therefore prints
+across several lines under the default: making it unambiguous is `--info`'s
+job, not the default's.
+
+## Usable, or not — nothing finer
+
+Field 2 of `gpg --with-colons` mixes two axes: web-of-trust validity
+(`o i n m f u q -`) and lifecycle (`r e d`). GnuPG's DETAILS spells the letters
+out for *keys*, leaves their meaning on uids and uats largely implicit, and
+warns that "additional information may follow" one we already know. We first
+split the output into `_REVOKED` and `_EXPIRED`; the honest reading is coarser
+(JJB, 2026-08-08) — a uid either still stands or it does not. One suffix,
+`_DONTUSE`, one flag, `--show-unusable`.
+
+`_bl_pgpid_uid_stands()` is therefore an **allow** list, not a deny list: a
+letter we have never seen counts as unusable, because defaulting to "usable" is
+the dangerous side to be wrong on. `m` belongs in it — marginal validity says
+the web of trust vouches for the key weakly, not that the uid is dead. Leaving
+it out hid a third of the addresses on a real contact's certificate.
 
 ## Two traps for anyone calling this from outside bash
 

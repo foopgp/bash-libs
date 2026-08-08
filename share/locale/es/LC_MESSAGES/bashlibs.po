@@ -936,7 +936,7 @@ msgstr ""
 msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr ""
 
-msgid "Set the environnement variable: "
+msgid "Environnement variable: "
 msgstr ""
 
 msgid "Unsupported MRZ"
@@ -1036,9 +1036,6 @@ msgstr ""
 
 msgid ""
 "Import the smallest certificate possible, removing almost all signatures"
-msgstr ""
-
-msgid "Environnement variable: "
 msgstr ""
 
 msgid "Search and refresh certificates from this keyservers. "
@@ -1280,6 +1277,14 @@ msgid ""
 "kept."
 msgstr ""
 
+msgid ""
+"Also display the uids that no longer stand: revoked, expired, or without a "
+"valid self-signature"
+msgstr ""
+
+msgid "Output the emails as pairs key=value ready to be evaluated in bash"
+msgstr ""
+
 msgid "Increase verbosity"
 msgstr ""
 
@@ -1321,24 +1326,13 @@ msgid ""
 "lines"
 msgstr ""
 
-msgid ""
-"Don't convert, but output all recognized OpenPGP uids as pairs key=value "
-"ready to be evaluated in bash"
-msgstr ""
-
 msgid "Decrease verbosity"
-msgstr ""
-
-msgid "--raw and --info are exclusive"
 msgstr ""
 
 msgid "Can't write %s"
 msgstr ""
 
 msgid "Written into %s"
-msgstr ""
-
-msgid "Some non-vCard uids were skipped - use --raw to display them."
 msgstr ""
 
 msgid ""
@@ -1377,15 +1371,6 @@ msgid "Revoke the PROPERTY uid carrying VALUE (may be used more than once)"
 msgstr ""
 
 msgid "Revoke every usable PROPERTY uid — all but the newest for {name,email}"
-msgstr ""
-
-msgid "Also display expired uids"
-msgstr ""
-
-msgid "Also display revoked uids"
-msgstr ""
-
-msgid "Also display expired or revoked uids — synonym of:"
 msgstr ""
 
 msgid ""
@@ -2084,9 +2069,6 @@ msgid "URL to retrieve your OpenPGP certificate"
 msgstr ""
 
 msgid "Security token (OpenPGP smartcard) prefered language"
-msgstr ""
-
-msgid "Customize name of security token's cardholder"
 msgstr ""
 
 msgid ""

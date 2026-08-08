@@ -1090,7 +1090,7 @@ msgstr ""
 msgid "GnuPG home directory (default: ~/.gnupg). "
 msgstr "Répertoire personnel de GnuPG (par défaut : ~/.gnupg). "
 
-msgid "Set the environnement variable: "
+msgid "Environnement variable: "
 msgstr "Variable d’environnement : "
 
 msgid "Unsupported MRZ"
@@ -1215,9 +1215,6 @@ msgid ""
 msgstr ""
 "Importer le certificat le plus petit possible, en retirant presque toutes "
 "les signatures"
-
-msgid "Environnement variable: "
-msgstr "Variable d’environnement : "
 
 msgid "Search and refresh certificates from this keyservers. "
 msgstr "Chercher et rafraîchir les certificats depuis ces serveurs de clés. "
@@ -1494,6 +1491,17 @@ msgstr ""
 "(séparé par tabulation). Si un email apparaît dans plusieurs UID, seul le "
 "décompte maximum est retenu."
 
+msgid ""
+"Also display the uids that no longer stand: revoked, expired, or without a "
+"valid self-signature"
+msgstr ""
+"Afficher aussi les uids qui ne tiennent plus : révoqués, expirés, ou sans "
+"auto-signature valide"
+
+msgid "Output the emails as pairs key=value ready to be evaluated in bash"
+msgstr ""
+"Afficher les courriels en paires clé=valeur, prêtes à être évaluées par bash"
+
 msgid "Increase verbosity"
 msgstr "Augmenter le niveau de verbosité"
 
@@ -1542,27 +1550,14 @@ msgstr ""
 "Ne pas convertir, mais afficher bruts tous les uid OpenPGP, séparés par des "
 "lignes vides"
 
-msgid ""
-"Don't convert, but output all recognized OpenPGP uids as pairs key=value "
-"ready to be evaluated in bash"
-msgstr ""
-"Ne pas convertir, mais afficher tous les uid OpenPGP reconnus en paires "
-"clé=valeur, prêtes à être évaluées par bash"
-
 msgid "Decrease verbosity"
 msgstr "Diminuer le niveau de verbosité"
-
-msgid "--raw and --info are exclusive"
-msgstr "--raw et --info sont exclusives"
 
 msgid "Can't write %s"
 msgstr "Impossible d’écrire %s"
 
 msgid "Written into %s"
 msgstr "Écrit dans %s"
-
-msgid "Some non-vCard uids were skipped - use --raw to display them."
-msgstr "Des uids non-vCard ont été sautés - utiliser --raw pour les afficher."
 
 msgid ""
 "Display and add or revoke vCard-property uids inside OpenPGP certificate."
@@ -1618,15 +1613,6 @@ msgid "Revoke every usable PROPERTY uid — all but the newest for {name,email}"
 msgstr ""
 "Révoquer tous les uids PROPERTY utilisables — tous sauf le plus récent pour "
 "{name,email}"
-
-msgid "Also display expired uids"
-msgstr "Afficher aussi les uids expirés"
-
-msgid "Also display revoked uids"
-msgstr "Afficher aussi les uids révoqués"
-
-msgid "Also display expired or revoked uids — synonym of:"
-msgstr "Afficher aussi les uids expirés ou révoqués — synonyme de :"
 
 msgid ""
 "output the PROPERTY values as pairs key=value ready to be evaluated in bash"
@@ -2459,9 +2445,6 @@ msgstr "URL pour récupérer votre certificat OpenPGP"
 msgid "Security token (OpenPGP smartcard) prefered language"
 msgstr "Langue préférée de la clé de sécurité (carte OpenPGP)"
 
-msgid "Customize name of security token's cardholder"
-msgstr "Personnaliser le nom du titulaire de la carte de sécurité"
-
 msgid ""
 "Send OpenPGP certificate to this public keys server. Also modify default URL"
 msgstr ""
@@ -2935,6 +2918,35 @@ msgstr "aucune action fournie"
 
 msgid "unrecognized action"
 msgstr "action non reconnue"
+
+#~ msgid "Set the environnement variable: "
+#~ msgstr "Variable d’environnement : "
+
+#~ msgid "Also display expired uids"
+#~ msgstr "Afficher aussi les uids expirés"
+
+#~ msgid "Also display revoked uids"
+#~ msgstr "Afficher aussi les uids révoqués"
+
+#~ msgid "Also display expired or revoked uids — synonym of:"
+#~ msgstr "Afficher aussi les uids expirés ou révoqués — synonyme de :"
+
+#~ msgid "Customize name of security token's cardholder"
+#~ msgstr "Personnaliser le nom du titulaire de la carte de sécurité"
+
+#~ msgid ""
+#~ "Don't convert, but output all recognized OpenPGP uids as pairs key=value "
+#~ "ready to be evaluated in bash"
+#~ msgstr ""
+#~ "Ne pas convertir, mais afficher tous les uid OpenPGP reconnus en paires "
+#~ "clé=valeur, prêtes à être évaluées par bash"
+
+#~ msgid "--raw and --info are exclusive"
+#~ msgstr "--raw et --info sont exclusives"
+
+#~ msgid "Some non-vCard uids were skipped - use --raw to display them."
+#~ msgstr ""
+#~ "Des uids non-vCard ont été sautés - utiliser --raw pour les afficher."
 
 #~ msgid ""
 #~ "Without modification options, output the usable (non-revoked and non-"
