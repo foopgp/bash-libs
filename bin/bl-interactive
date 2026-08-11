@@ -302,7 +302,7 @@ OPTIONS:
 				done
 				echo >&2
 			else
-				read -rp "  $question"$' \e[1m?\e[0m ' rep
+				read -rp "  $question"$' \e[1m?\e[0m ' rep || return 42
 			fi
 		fi
 		rep=${rep:-$def}
@@ -368,7 +368,14 @@ OPTIONS:
 	[[ -z "$ttle" ]] || echo $'\e[2m'"$ttle"$'\e[0m' >&2
 	while true ; do
 		echo "$pr" >&2
-		read -rp "  $question"$' \e[1m?\e[0m ' rep
+		# No input left to read: end the question instead of asking it again.
+		# stdin at EOF makes 'read' return at once with an empty REPLY, which
+		# the checks below reject, which loops — and a loop that neither waits
+		# nor sleeps is one core burnt until someone kills it. Measured
+		# 2026-08-11: 35 orphaned bl-pgpid, up to two days old, 40% CPU each,
+		# all of them here. 42 is the code this library already uses for "the
+		# user did not answer", which is exactly what an empty stdin means.
+		read -rp "  $question"$' \e[1m?\e[0m ' rep || return 42
 		rep=${rep:-$def}
 		case "${rep,,}" in
 		  y|yes|oui|'sí'|ja|si|'да')
@@ -474,7 +481,7 @@ OPTIONS:
 		((!def)) || question+=" [$def]"
 		# the '!' in following test allow to re-ask the question if ret is not a number
 		while ! ((ret>0 && ret<=n)) ; do
-			read -rp "  $question"$' \e[1m?\e[0m ' ret
+			read -rp "  $question"$' \e[1m?\e[0m ' ret || return 42
 			ret=${ret:-$def}
 		done
 	fi
