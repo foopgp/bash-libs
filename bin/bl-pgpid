@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Bash library and executable that manage id compliant with foopgp: OpenPGP ID.
+# Bash library and executable that manage id compliant with foopgp: PGP ID.
 #
 # Copyright © 2025-2026 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
@@ -399,7 +399,7 @@ if ((BL_PGPID_isprogram)) ; then
 fi
 
 BL_PGPID_chelpmsg="
-"$"Generate and manage OpenPGP ID, an OpenPGP configuration providing universal and decentralized civil status to secure your digital life (emails, git, ssh, avatar, sso, etc.).""
+"$"Generate and manage PGP ID, an OpenPGP configuration providing universal and decentralized civil status to secure your digital life (emails, git, ssh, avatar, sso, etc.).""
 "$"It combines the power of OpenPGP (RFC 9580) with those of others open international standards: POSIX, ICAO 9303, ISO/IEC 7816, many others RFC.""
 
 MAIN OPTIONS:
@@ -929,7 +929,7 @@ bl_pgpid_mrz_to_u4() {
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [MRZ]..."
 	local helpmsg="
-Calculate and output a OpenPGP ID u4, from the Machine Readable Zone of an icao9303 passport.
+Calculate and output an EID (u4), from the Machine Readable Zone of an icao9303 passport.
 If MRZ is not passed as argument, it will we read from STDIN.
 
 OPTIONS:
@@ -1153,7 +1153,7 @@ bl_pgpid_gen_key() {
 	local usage="Usage: $name [OPTIONS]... EMAIL"
 	local keyserv="${BL_PGPID_KEYSERVERS[0]}"
 	local helpmsg="
-"$"Generate an OpenPGP key pair (public and secret) according to OpenPGP ID standards.""
+"$"Generate an OpenPGP key pair (public and secret) according to PGP ID standards.""
 "$"Missing input will be asked interactively.""
 "$"Output 3 lines for each fingerprints:""
 * "$"main key"" (Sign Certify)
@@ -2682,7 +2682,7 @@ bl_pgpid_print() (
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]... [NAME|EMAIL|KEYID|U4|U5]"
 	local helpmsg="
-"$"Produce or print an OpenPGP ID stamp or business card.""
+"$"Produce or print a PGP ID stamp or business card.""
 "$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
 "$"A single email appears on the output: if the argument is an email it is used verbatim; otherwise the most recent non-revoked email of the certificate is picked.""
 

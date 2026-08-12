@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Bash library and executable that backup or restore OpenPGP ID using printed
-# QR codes and Shamir's secret sharing, configure Yubikeys or Nitrokeys for OpenPGP ID.
+# Bash library and executable that backup or restore PGP ID using printed
+# QR codes and Shamir's secret sharing, configure Yubikeys or Nitrokeys for PGP ID.
 #
 # Copyright © 2025-2026 Jean-Jacques Brucker <jjbrucker@foopgp.org>
 #
@@ -95,10 +95,10 @@ if ((BL_PGPKEY_isprogram)) ; then
 fi
 
 BL_PGPKEY_chelpmsg="
-"$"Backup or restore OpenPGP ID using printed QR codes and Shamir's secret sharing. Configure Yubikeys or Nitrokeys for OpenPGP ID.""
+"$"Backup or restore PGP ID using printed QR codes and Shamir's secret sharing. Configure Yubikeys or Nitrokeys for PGP ID.""
 "$"Also facilitate changing passphrase protecting OpenPGP keys, or (PIN or Admin) codes of OpenPGP security tokens (YubiKey, …).""
 
-"$"Note: OpenPGP ID is a specific OpenPGP configuration managed by bl-pgpid. Using bl-pgpkey with other OpenPGP configuration should cause unexpected issues.""
+"$"Note: PGP ID is a specific OpenPGP configuration managed by bl-pgpid. Using bl-pgpkey with other OpenPGP configuration should cause unexpected issues.""
 
 MAIN OPTIONS:
   -f, --frontend PROGRAM   "$"Select a frontend program"" {NONE,whiptail,dialog,zenity} - "$"Environment variable: ""BL_INTERACTIVE_FRONTEND

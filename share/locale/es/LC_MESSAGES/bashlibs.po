@@ -340,7 +340,7 @@ msgstr ""
 msgid "Get user data from OpenPGP certificate identified by given FINGERPRINT"
 msgstr ""
 
-msgid "Get user data from OpenPGP ID smartcard (eg: yubikey, nitrokey, …)"
+msgid "Get user data from PGP ID smartcard (eg: yubikey, nitrokey, …)"
 msgstr ""
 
 msgid "Resume input data for verification"
@@ -923,9 +923,9 @@ msgid "write journald entry"
 msgstr ""
 
 msgid ""
-"Generate and manage OpenPGP ID, an OpenPGP configuration providing universal "
-"and decentralized civil status to secure your digital life (emails, git, "
-"ssh, avatar, sso, etc.)."
+"Generate and manage PGP ID, an OpenPGP configuration providing universal and "
+"decentralized civil status to secure your digital life (emails, git, ssh, "
+"avatar, sso, etc.)."
 msgstr ""
 
 msgid ""
@@ -1143,7 +1143,7 @@ msgid "Option %s overide given argument '%s'"
 msgstr ""
 
 msgid ""
-"Generate an OpenPGP key pair (public and secret) according to OpenPGP ID "
+"Generate an OpenPGP key pair (public and secret) according to PGP ID "
 "standards."
 msgstr ""
 
@@ -1452,8 +1452,7 @@ msgstr ""
 msgid "Return value:"
 msgstr ""
 
-msgid ""
-"0 if no error and security token is correctly configured for PGP ID."
+msgid "0 if no error and security token is correctly configured for PGP ID."
 msgstr ""
 
 msgid "100 + number of missing PGP ID data fields."
@@ -1694,7 +1693,7 @@ msgstr ""
 msgid "to restore the previous trust: "
 msgstr ""
 
-msgid "Produce or print an OpenPGP ID stamp or business card."
+msgid "Produce or print a PGP ID stamp or business card."
 msgstr ""
 
 msgid ""
@@ -1757,8 +1756,8 @@ msgid "Printing %s %s on %s…"
 msgstr ""
 
 msgid ""
-"Backup or restore OpenPGP ID using printed QR codes and Shamir's secret "
-"sharing. Configure Yubikeys or Nitrokeys for OpenPGP ID."
+"Backup or restore PGP ID using printed QR codes and Shamir's secret sharing. "
+"Configure Yubikeys or Nitrokeys for PGP ID."
 msgstr ""
 
 msgid ""
@@ -1767,9 +1766,8 @@ msgid ""
 msgstr ""
 
 msgid ""
-"Note: OpenPGP ID is a specific OpenPGP configuration managed by bl-pgpid. "
-"Using bl-pgpkey with other OpenPGP configuration should cause unexpected "
-"issues."
+"Note: PGP ID is a specific OpenPGP configuration managed by bl-pgpid. Using "
+"bl-pgpkey with other OpenPGP configuration should cause unexpected issues."
 msgstr ""
 
 msgid "Status word (SW) is four hexa digits, as defined by ISO 7816-4."
