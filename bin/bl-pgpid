@@ -2114,7 +2114,7 @@ bl_pgpid_token_check()
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
 	local usage="Usage: $name [OPTIONS]..."
 	local helpmsg="
-"$"Check if security token is correctly configured for OpenPGP ID ; may output informations.""
+"$"Check if security token is correctly configured for PGP ID ; may output informations.""
 "$"Will try to import cleaned certificate indicated in 'URL of public key' field.""
 
 OPTIONS:
@@ -2127,8 +2127,8 @@ OPTIONS:
   -H, --homedir GNUPGHOME "$"GnuPG home directory (default: ~/.gnupg). "$"Environnement variable: ""\$GNUPGHOME
 
 "$"Return value:""
--   "$"0 if no error and security token is correctly configured for OpenPGP ID.""
-- "$"100 + number of missing OpenPGP ID data fields.""
+-   "$"0 if no error and security token is correctly configured for PGP ID.""
+- "$"100 + number of missing PGP ID data fields.""
 - "$"then 107 if all required data are missing (OpenPGP card is probably empty).""
 - "$"Other non-zero on other errors.""
 "
@@ -2271,13 +2271,13 @@ OPTIONS:
 	for key in pgpid_name pgpid_id pgpid_email pgpid_Skeyfpr pgpid_Ekeyfpr pgpid_Akeyfpr pgpid_certurl ; do
 		if [[ -z "${aaname[$key]}" ]] ; then
 			((ret = ret ? ret+1 : 101))
-			((quiet)) || printf "$FUNCNAME: Notice: "$"Invalid OpenPGP ID token, missing:"" '${key}'.\n" >&2
+			((quiet)) || printf "$FUNCNAME: Notice: "$"Invalid PGP ID token, missing:"" '${key}'.\n" >&2
 		fi
 	done
 
 	! ((ret)) || return $ret
 
-	((quiet)) || printf "$FUNCNAME: Info: "$"Valid OpenPGP ID token"", pgpid_Ckeyfpr='${aaname[pgpid_Ckeyfpr]}', pgpid_id='${aaname[pgpid_id]}'.\n" >&2
+	((quiet)) || printf "$FUNCNAME: Info: "$"Valid PGP ID token"", pgpid_Ckeyfpr='${aaname[pgpid_Ckeyfpr]}', pgpid_id='${aaname[pgpid_id]}'.\n" >&2
 	return 0
 }
 

@@ -1417,7 +1417,7 @@ msgid "At least one %s must be retained."
 msgstr ""
 
 msgid ""
-"Check if security token is correctly configured for OpenPGP ID ; may output "
+"Check if security token is correctly configured for PGP ID ; may output "
 "informations."
 msgstr ""
 
@@ -1453,10 +1453,10 @@ msgid "Return value:"
 msgstr ""
 
 msgid ""
-"0 if no error and security token is correctly configured for OpenPGP ID."
+"0 if no error and security token is correctly configured for PGP ID."
 msgstr ""
 
-msgid "100 + number of missing OpenPGP ID data fields."
+msgid "100 + number of missing PGP ID data fields."
 msgstr ""
 
 msgid ""
@@ -1477,10 +1477,10 @@ msgstr ""
 msgid "Supernumerary emails (%d), skipping %s …"
 msgstr ""
 
-msgid "Invalid OpenPGP ID token, missing:"
+msgid "Invalid PGP ID token, missing:"
 msgstr ""
 
-msgid "Valid OpenPGP ID token"
+msgid "Valid PGP ID token"
 msgstr ""
 
 msgid ""
