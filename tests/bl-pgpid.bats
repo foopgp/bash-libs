@@ -767,3 +767,37 @@ signed_uids () {	# uids of $TF carrying a signature from the anchor $AF
 	# the address did not come back to life
 	refute_output --partial "alice@example.org"
 }
+
+# A certificate carrying several standing images is out of spec, yet real: one
+# arrived on 2026-08-17 with two, and the two callers of this action disagreed
+# on which line to read. The current avatar is now the first line, always.
+photokey () {	# a throwaway key wearing two standing images, oldest added first
+	vkey
+	local B=(gpg --no-options --batch --pinentry-mode loopback --passphrase '' --homedir "$VH")
+	gm convert -size 180x180 'xc:#204080' jpeg:"$BATS_TEST_TMPDIR/old.jpg"
+	gm convert -size 180x180 'xc:#c04020' jpeg:"$BATS_TEST_TMPDIR/new.jpg"
+	# addphoto rather than the action's --replace-to, which would revoke the
+	# first one and hide the very case under test.
+	"${B[@]}" --command-fd 0 --edit-key "$VFPR" <<<$'addphoto\n'"$BATS_TEST_TMPDIR/old.jpg"$'\ny\nsave\n' 2>/dev/null
+	sleep 1
+	"${B[@]}" --command-fd 0 --edit-key "$VFPR" <<<$'addphoto\n'"$BATS_TEST_TMPDIR/new.jpg"$'\ny\nsave\n' 2>/dev/null
+}
+
+pixels () { gm convert "$1" -depth 8 rgb:- | md5sum | cut --characters=1-32 ; }
+
+@test "avatar outputs the image that stands today, not the one that came first" {
+	photokey
+	run --separate-stderr "${TARGET}" avatar -H "$VH" "0x$VFPR"
+	assert_success
+	[ "${#lines[@]}" -eq 1 ]
+	[ "$(pixels "${lines[0]}")" = "$(pixels "$BATS_TEST_TMPDIR/new.jpg")" ]
+}
+
+@test "avatar --extract-all keeps the current one first" {
+	photokey
+	run --separate-stderr "${TARGET}" avatar --extract-all -H "$VH" "0x$VFPR"
+	assert_success
+	[ "${#lines[@]}" -eq 2 ]
+	[ "$(pixels "${lines[0]}")" = "$(pixels "$BATS_TEST_TMPDIR/new.jpg")" ]
+	[ "$(pixels "${lines[1]}")" = "$(pixels "$BATS_TEST_TMPDIR/old.jpg")" ]
+}

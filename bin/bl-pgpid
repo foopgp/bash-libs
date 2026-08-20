@@ -1272,6 +1272,27 @@ OPTIONS:
 	gpg --homedir "$gpghome" --list-secret-keys --with-colons "$email" | sed -n 's,^fpr:.*:\([[:xdigit:]]\{40\}\):,\1,p'
 }
 
+_bl_pgpid_avatar_order() {
+	# gpg prints the photos in packet order and --with-colons walks that same
+	# order, so zipping the two gives every extracted file its creation date.
+	# Without it "the avatar" is whichever packet came first, which is the
+	# oldest one — the bug seen on a certificate carrying several.
+	local gpghome=$1 user=$2 imglist=$3 all=$4
+	local -a dates imgs
+	mapfile -t imgs < "$imglist"
+	mapfile -t dates < <(gpg --homedir "$gpghome" --with-colons --list-key "$user" 2>/dev/null \
+		| awk -F: -v all="$all" '
+			/^uat:/ { if (all || $2 != "r") print ($6 ? $6 : 0) }')
+	# A selector matching several certificates breaks the pairing; say so
+	# rather than silently sorting on a mismatch.
+	if (( ${#dates[@]} != ${#imgs[@]} )) ; then
+		printf '%s\n' "${imgs[@]}"
+		return 0
+	fi
+	paste <(printf '%s\n' "${dates[@]}") <(printf '%s\n' "${imgs[@]}") \
+		| sort --key=1,1 --numeric-sort --reverse --stable | cut --fields=2-
+}
+
 bl_pgpid_avatar() {
 	local name
 	((BL_PGPID_isprogram)) && name="$BL_PGPID_NAME ${FUNCNAME:9}" || name="$FUNCNAME"
@@ -1282,10 +1303,10 @@ bl_pgpid_avatar() {
 "$"Extract or add image inside OpenPGP certificate.""
 "$"Missing NAME|EMAIL|KEYID|U4|U5 => Guess it using security token, or interactively ask KEYID of secret key.""
 "$"New IMAGE should be 180x180 pixels, or it will be resized.""
-"$"Output path(s) of extracted image(s).""
+"$"Output the path of the image that stands today, newest first when several do.""
 
 OPTIONS:
-  -E, --extract-all           "$"Extract also all revoked or expired existing images from OpenPGP certificate""
+  -E, --extract-all           "$"Output every image, revoked and expired ones included, newest first""
   -A, --replace-to IMAGE      "$"Resize and add new IMAGE inside OpenPGP certificate (revoking any previous image)""
   -R, --revoke                "$"Just revoke all existing images inside OpenPGP certificate""
   -W, --workdir DIRECTORY     "$"Working directory. Will contain previous and new resized images. "$"Default: ""$tmpdir .
@@ -1293,13 +1314,13 @@ OPTIONS:
   -K, --keyservers KEYSERVERS "$"If non-empty, send updated certificate to this keyservers. "$"Default: ""
 $(printf -- "%80s\n" ${keyservs[@]})
 "
-	local image revoke
+	local image revoke extractall=0
 	local gpghome=${GNUPGHOME:-~/.gnupg}
 	local listopts="show-photos"
 	for ((;$#;)) ; do
 		case "$1" in
 			-E|--extract-all)
-				listopts+=",show-unusable-uids" ;;
+				extractall=1 ; listopts+=",show-unusable-uids" ;;
 			-A|--add|--addfrom|--add-from|--replaceto|--replace-to)
 				shift ; image=${1:?} ;&
 			-R|--revoke)
@@ -1375,7 +1396,14 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	fi
 
 	if [[ -s "$tmpdir/imglist" ]] ; then
-		cat "$tmpdir/imglist"
+		# One line, the avatar that stands today. Callers took the first line
+		# or the last one and disagreed; the current one now comes first, and
+		# --extract-all is what asks for the rest.
+		if ((extractall)) ; then
+			_bl_pgpid_avatar_order "$gpghome" "$user" "$tmpdir/imglist" 1
+		else
+			_bl_pgpid_avatar_order "$gpghome" "$user" "$tmpdir/imglist" 0 | sed 1q
+		fi
 	else
 		printf "%s: Notice: No image extracted from %s certificate...\n" "$FUNCNAME" "$user" >&2
 	fi

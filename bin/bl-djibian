@@ -350,7 +350,7 @@ bl_djibian_confhome4pgp()
 	grep --quiet "^\[user\]" ~/.gitconfig || echo -e "\n[user]" >> ~/.gitconfig || return $?
 	sed -i '/^\[user\]/,/^\[/ { /^[[:space:]]*signingKey\>/d } ; /^\[user\]/a\\tsigningKey = '"$keyfpr # set $(date -I) by $FUNCNAME"  ~/.gitconfig || return $?
 
-	local avatar=$(bl_pgpid_avatar "$keyfpr" | tail -n 1)
+	local avatar=$(bl_pgpid_avatar "$keyfpr" | head --lines=1)
 	if [[ -f "$avatar" ]] ; then
 		touch ~/.face || return $?
 		printf "$FUNCNAME: Info: " >&2
