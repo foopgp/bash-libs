@@ -9,7 +9,7 @@
 # Public actions (check, resolve, leaves, promote, aliases, …) come in
 # subsequent commits.
 #
-# Copyright © 2026 Jean-Jacques Brucker (u4=sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76) <jjbrucker@foopgp.org>
+# Copyright © 2026 Jean-Jacques Brucker (u4sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76) <jjbrucker@foopgp.org>
 # Copyright © 2026 Mnêmê (u5001777236237.945e_43.30_005.38) <mneme@foopgp.org>
 #
 # SPDX-License-Identifier: LGPL-3.0-only
@@ -770,7 +770,8 @@ OPTIONS:
 		return 0
 	fi
 	[[ "$eid" != - ]] || { printf "$FUNCNAME: Error: "$"%s is certified but carries no eid""\n" "$fpr" >&2 ; return 1 ; }
-	eid="${eid:0:2}=${eid:2}"           # cert_check renders u4value ; promote's paths/UID use u4=value
+	eid="${eid:0:2}=${eid:2}"           # cert_check renders u4value ; _bl_uetree_relpath_eid splits on the '='
+	                                    # The UID keeps the glued form, as the certificates do.
 
 	local canonrel canondir
 	canonrel=$(_bl_uetree_relpath_eid "$eid") || { printf "$FUNCNAME: Error: "$"malformed eid %s""\n" "$eid" >&2 ; return 1 ; }
@@ -788,7 +789,7 @@ OPTIONS:
 		[[ -e "$f" ]] || continue
 		mv -n "$f" "$canondir/"
 	done
-	sed -i -E "s,^UID:.*,UID:urn:uetree:eid:${eid%%=*}:${eid#*=}," "$canondir/$BL_UETREE_RECORD"
+	sed -i -E "s,^UID:.*,UID:urn:eid:${eid/=/}," "$canondir/$BL_UETREE_RECORD"
 	bl_uetree_aliases --rebuild "$root" >/dev/null
 
 	((! verbose)) || printf "$FUNCNAME: Info: "$"promoted %s → %s""\n" "$email" "$canonrel" >&2

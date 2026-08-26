@@ -3,7 +3,7 @@
 # Bash library and executable to manage vCard 4.0 (RFC 6350) contact records,
 # filed inside a uetree (by-name/ at this stage — far from promotion).
 #
-# Copyright © 2026 Jean-Jacques Brucker (u4=sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76) <jjbrucker@foopgp.org>
+# Copyright © 2026 Jean-Jacques Brucker (u4sRyUhEbNU5OwyLEjfSwaXAe_42.17-002.76) <jjbrucker@foopgp.org>
 # Copyright © 2026 Mnêmê (u5001777236237.945e_43.30_005.38) <mneme@foopgp.org>
 #
 # SPDX-License-Identifier: LGPL-3.0-only

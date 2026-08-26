@@ -26,7 +26,7 @@ build_tree () {
 	cat > "$L/entity.vcf" <<-VCF
 	BEGIN:VCARD
 	VERSION:4.0
-	UID:urn:uetree:eid:u4:$U4
+	UID:urn:eid:u4$U4
 	KIND:individual
 	FN:Jean-Jacques Brucker
 	EMAIL:jjbrucker@foopgp.org
