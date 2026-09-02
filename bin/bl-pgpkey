@@ -1091,7 +1091,7 @@ OPTIONS:
 	fi
 
 	((tcheck_rvalue==107)) || ((force)) || bl_yesno --text "${tcheck_info[token_MSN]} " \
-		$"Factory reset OpenPGP security token" $"(This will wipe all the OpenPGP data stored there!)" || exit 42
+		$"Factory reset OpenPGP security token" $"(This will wipe all the OpenPGP data stored there!)" || return 42
 
 	printf "%s: Notice: Resetting OpenPGP security token...\n" "$FUNCNAME" >&2
 
