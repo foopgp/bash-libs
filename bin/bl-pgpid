@@ -837,7 +837,20 @@ $(printf -- "%80s\n" ${keyservs[@]})
 	done
 
 	[[ "$1" ]] || { printf "$usage\n" >&2 ; return 2 ; }
-	local users=("$@")
+	# While existing certificates are being migrated from the separated eid
+	# ("u4=VALUE") to the glued one ("u4VALUE"), an eid may be spelled either
+	# way — on the keyservers, which index whole WORDS, and in the local
+	# keyring, which matches uids by SUBSTRING. Neither spelling finds the
+	# other, so every eid given is carried in both forms from here on. To be
+	# dropped once no certificate carries a separator any more.
+	local users=() u
+	for u in "$@" ; do
+		if [[ "$u" =~ ^u(did)?([45])(=|:|.x3a)?(${BL_PGPID_UX_REGEX})$ ]] ; then
+			users+=("u${BASH_REMATCH[2]}${BASH_REMATCH[4]}" "u${BASH_REMATCH[2]}=${BASH_REMATCH[4]}")
+		else
+			users+=("$u")
+		fi
+	done
 
 	if ((maxfromks>0)) ; then
 		local -a ksfprs user
@@ -861,7 +874,13 @@ $(printf -- "%80s\n" ${keyservs[@]})
 				! [[ "$user" =~ ^([0-9abcdefABCDEF]{24}){0,2}[0-9abcdefABCDEF]{16}$ ]] || user="0x$user"
 				ksfprs=($(curl --no-progress-meter --location --get --data-urlencode 'op=index' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | sed -n 's,^pub:\([[:xdigit:]]*\):.*,\1,p'))
 				if [[ -z "${ksfprs[@]}" ]] ; then
-					printf "$FUNCNAME: Notice: "$"No certificate for %s on %s.""\n" "'$user'" "'$keyserv'" >&2
+					# An eid is asked for in both spellings while the
+					# migration lasts ; the one the certificate does not
+					# carry is expected to find nothing, and saying so
+					# every time would cry wolf.
+					if ! [[ "$user" =~ ^u(did)?[45](=|:|.x3a)?(${BL_PGPID_UX_REGEX})$ ]] ; then
+						printf "$FUNCNAME: Notice: "$"No certificate for %s on %s.""\n" "'$user'" "'$keyserv'" >&2
+					fi
 					continue
 				elif ((${#ksfprs[@]} <= maxfromks )) ; then
 					curl --no-progress-meter --location --get --data-urlencode 'op=get' --data-urlencode "search=$user" --data-urlencode "options=mr" "$ksurl" | gpg --homedir "$gpghome" --import-options ${importclean},${importminimal} --import || true
