@@ -823,13 +823,19 @@ OPTIONS:
                                   * "$"1 to 3: Only numbers, use to be a date: YYYYMMDD.""
                                   * "$"4 to 5: No need for extra passphrase (in addition to the ones defined in RFC9580).""
   -P, --passfrom FILE           "$"Get extra passphrase from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
+  -s, --strip-passphrase        "$"Take the extra passphrase off the rebuilt key instead of writing it to WORKDIR/passphrase""
+                                  "$"The passphrase protects the fragments and the key they rebuild, so totoken needs it again.""
+                                  "$"Without this option it is left in WORKDIR/passphrase for the next command to read.""
   -H, --homedir GNUPGHOME       "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
 "
 
 	local -a passphrase
+	local strip=0
 	local tmpdir gpghome=${GNUPGHOME:-~/.gnupg}
 	for ((;$#;)) ; do
 		case "$1" in
+			-s|--strip-passphrase)
+				strip=1 ;;
 			-p|--passphrase)
 				shift ; passphrase=$1 ;;
 			-P|--passfrom|--pass-from)
@@ -980,11 +986,24 @@ OPTIONS:
 	done
 
 	gpg --homedir "$gpghome" --batch --pinentry-mode loopback --passphrase-fd 0 --import "$tmpdir/s.gpg" <<<"${passphrase[*]}" || return $?
-	[[ -z "${passphrase[*]}" ]] || echo "${passphrase[*]}" > "$tmpdir/passphrase"
+	# The extra passphrase protects the fragments AND the key they rebuild, so
+	# whoever moves that key onto a card needs it a second time. Two ways to
+	# give it to them: take it off here, where it is already in hand, or write
+	# it down beside the key for the next process to read — which leaves the
+	# key and what protects it side by side in one directory.
+	# Read once, used twice: to say which key was rebuilt, and to name it if
+	# its passphrase is to come off.
+	local fpr
+	fpr=$(gpg --list-packets "$tmpdir/s.gpg" | sed -n --regexp-extended  '/issuer.*[0-9ABCDEF]{40}/ { s,.*([0-9ABCDEF]{40}).*,\1,p ; q }') || return $?
 
-	# Output certification key fpr
-	gpg --list-packets "$tmpdir/s.gpg" | sed -n --regexp-extended  '/issuer.*[0-9ABCDEF]{40}/ { s,.*([0-9ABCDEF]{40}).*,\1,p ; q }'
-	return ${PIPESTATUS[0]}
+	if ((strip)) ; then
+		[[ -z "${passphrase[*]}" ]] || bl_pgpkey_change_passphrase --homedir "$gpghome" \
+			--passfrom /dev/stdin --newpassphrase "" "$fpr" <<<"${passphrase[*]}" >&2 || return $?
+	else
+		[[ -z "${passphrase[*]}" ]] || echo "${passphrase[*]}" > "$tmpdir/passphrase"
+	fi
+
+	echo "$fpr"
 )
 
 bl_pgpkey_totoken() {
