@@ -2214,7 +2214,7 @@ OPTIONS:
 	[[ -d "$gpghome" ]] || ( mkdir -p "$gpghome" && chmod go-rwx "$gpghome" ) || return $?
 
 	local cardstatus
-	cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
+	cardstatus=$(LC_ALL=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 
 	# Try Import/Refresh Key from URL metadata (as email may be in public certificate only)
 	aaname[pgpid_certurl]=$(sed -n ' /^URL/ { s,[^:]*: ,,p ; q }' <<<"$cardstatus")
@@ -2222,7 +2222,7 @@ OPTIONS:
 	if [[ "${aaname[pgpid_certurl]}" ]] && ((fetch)) ; then
 		((quiet)) || printf "$FUNCNAME: Notice: "$"Getting pubkey from %s …""\n" "${aaname[pgpid_certurl]}" >&2
 		if curl --no-progress-meter "${aaname[pgpid_certurl]}" | gpg --homedir "$gpghome" --import ; then
-			cardstatus=$(LANG=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
+			cardstatus=$(LC_ALL=C.UTF-8 gpg --homedir "$gpghome" --card-status) || return $?
 		fi
 	fi
 
