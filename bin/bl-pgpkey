@@ -993,6 +993,10 @@ bl_pgpkey_totoken() {
 	local name
 	((BL_PGPKEY_isprogram)) && name="$BL_PGPKEY_NAME ${FUNCNAME:10}" || name="$FUNCNAME"
 	local hkpsserv=${BL_PGPID_KEYSERVERS[0]##*//}
+	# Where to send and what to engrave are two questions: --keyserver moves
+	# the first only. It used to move both, so sending a copy elsewhere for a
+	# day wrote that elsewhere on the card for the life of the key.
+	local urlserv=$hkpsserv
 	local lang="${LANG:: 2}"
 	local usage="Usage: $name [OPTIONS]... [KEY ID|FPR]"
 	local helpmsg="
@@ -1005,9 +1009,11 @@ OPTIONS:
   -H, --homedir GNUPGHOME      "$"GnuPG home directory"" - "$"Environment variable: ""GNUPGHOME, "$"default: ""'~/.gnupg'
   -p, --passphrase PASSPHRASE  "$"Passphrase to access secret parts of OpenPGP key""
   -P, --passfrom FILE          "$"Get passphrase from first line of FILE"" (eg: fifo, tmpfs, /dev/stdin ...)
-  -U, --certurl URL            "$"URL to retrieve your OpenPGP certificate"" (default: https://{KEYSERVER}/pks/lookup?op=get&search=0x{KEYFPR} )
+  -U, --certurl URL            "$"URL to retrieve your OpenPGP certificate""
+                               "$"Default: ""https://${urlserv}/pks/lookup?op=get&search=0x{KEYFPR}
   -L, --lang LANG              "$"Security token (OpenPGP smartcard) prefered language"" (default: $lang)
-  -k, --keyserver KEYSERVER    "$"Send OpenPGP certificate to this public keys server. Also modify default URL"" (see --certurl, default: $hkpsserv)
+  -k, --keyserver KEYSERVER    "$"Send OpenPGP certificate to this public keys server""
+                               "$"Does not change --certurl"" - "$"Default: ""$hkpsserv
   -K, --pubkey FILE            "$"Also write armored OpenPGP certificate to given FILE""
   -v, --verbose                "$"Increase verbosity""
       --force                  "$"Don't ask before resetting unempty security token (OpenPGP smartcard)""
@@ -1063,7 +1069,7 @@ OPTIONS:
 	keyid=$(grep -o -m1 "\<[0-9ABCDEF]\{40\}\>" <<<"${secstatus}") || { printf "$FUNCNAME: Error: "$"Can't get fingerprint (maybe due to incompatible gpg's version)"".\n" "$keyid" "$gpghome" >&2 ; return 1 ; }
 
 	# If no URL to get certificate, set one, assuming HKPS protocol.
-	[[ "$certurl" ]] || certurl="https://${hkpsserv}/pks/lookup?op=get&search=0x${keyid}"
+	[[ "$certurl" ]] || certurl="https://${urlserv}/pks/lookup?op=get&search=0x${keyid}"
 
 	# Write possibly given $pubkeyfile
 	[[ -z "$pubkeyfile" ]] || gpg --homedir "$gpghome" --export --armor "$keyid" > "$pubkeyfile" || return $?
