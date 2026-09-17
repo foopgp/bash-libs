@@ -961,8 +961,8 @@ msgid "Choosing the only one editable OpenPGP certificate (%s)"
 msgstr ""
 
 msgid ""
-"Revoking a User ID is IRREVERSIBLE: OpenPGP keeps it on the certificate "
-"forever (marked revoked), and an identical User ID can never be added again."
+"Revoking a User ID leaves it on the certificate, marked revoked, and whoever "
+"holds it keeps it until they refresh."
 msgstr ""
 
 msgid "Revoke this User ID"
@@ -1205,11 +1205,11 @@ msgstr ""
 msgid "New IMAGE should be 180x180 pixels, or it will be resized."
 msgstr ""
 
-msgid "Output path(s) of extracted image(s)."
+msgid ""
+"Output the path of the image that stands today, newest first when several do."
 msgstr ""
 
-msgid ""
-"Extract also all revoked or expired existing images from OpenPGP certificate"
+msgid "Output every image, revoked and expired ones included, newest first"
 msgstr ""
 
 msgid ""
@@ -1268,7 +1268,7 @@ msgstr ""
 msgid "Add EMAIL as a 'Name <EMAIL>' uid. Enable the --name option"
 msgstr ""
 
-msgid "Assume yes: skip the irreversible-revocation confirmation"
+msgid "Assume yes: skip the revocation confirmation"
 msgstr ""
 
 msgid ""
@@ -1302,8 +1302,8 @@ msgid "%s certificate already carries %s"
 msgstr ""
 
 msgid ""
-"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked "
-"User IDs on the certificate and gpg refuses an identical one."
+"%s was revoked earlier: gpg refuses an identical User ID, and 'pgpid "
+"cert_email' is what signs it again."
 msgstr ""
 
 msgid "No revokable email %s inside %s certificate (in %s)."
@@ -1408,6 +1408,11 @@ msgid "Can't set preferred keyserver - good PIN ?."
 msgstr ""
 
 msgid "Several preferred keyservers across uids (%s) — kept '%s'."
+msgstr ""
+
+msgid ""
+"%s was revoked earlier: gpg refuses an identical User ID, and 'pgpid "
+"cert_property' is what signs it again."
 msgstr ""
 
 msgid "No revokable %s inside certificate %s (in %s)."
@@ -2054,6 +2059,14 @@ msgstr ""
 msgid "Get extra passphrase from first line of FILE"
 msgstr ""
 
+msgid ""
+"For versions 1 to 3 it is written to WORKDIR/passphrase: there, the same "
+"passphrase also protected"
+msgstr ""
+
+msgid "the rebuilt key, so the totoken action needed it again."
+msgstr ""
+
 msgid "Move OpenPGP secrets to security token (OpenPGP smartcard)."
 msgstr ""
 
@@ -2069,8 +2082,10 @@ msgstr ""
 msgid "Security token (OpenPGP smartcard) prefered language"
 msgstr ""
 
-msgid ""
-"Send OpenPGP certificate to this public keys server. Also modify default URL"
+msgid "Send OpenPGP certificate to this public keys server"
+msgstr ""
+
+msgid "Does not change --certurl"
 msgstr ""
 
 msgid "Also write armored OpenPGP certificate to given FILE"

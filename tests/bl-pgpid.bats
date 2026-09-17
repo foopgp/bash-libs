@@ -758,11 +758,12 @@ signed_uids () {	# uids of $TF carrying a signature from the anchor $AF
 	"${TARGET}" email -A bob@example.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
 	sleep 1
 	"${TARGET}" email -y -R alice@example.org -K '' -H "$VH" "0x$VFPR" >/dev/null 2>&1
-	# re-adding it : OpenPGP keeps the revoked uid, gpg would refuse an identical
-	# one — say so clearly instead of blaming the PIN.
+	# re-adding it : gpg would refuse an identical uid, so say so clearly, and
+	# say where it can be signed again, instead of blaming the PIN.
 	run --separate-stderr env LC_ALL=C "${TARGET}" email -A alice@example.org -K '' -H "$VH" "0x$VFPR"
 	assert_success
-	[[ "$stderr" == *"revoked earlier and cannot be added again"* ]]
+	[[ "$stderr" == *"revoked earlier"* ]]
+	[[ "$stderr" == *"pgpid cert_email"* ]]
 	[[ "$stderr" != *"PIN"* ]]
 	# the address did not come back to life
 	refute_output --partial "alice@example.org"

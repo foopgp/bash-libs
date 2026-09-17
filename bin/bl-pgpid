@@ -650,13 +650,15 @@ _bl_pgpid_vcard_esc() {   # VALUE [KEEP_SEMICOLON] → escaped
 
 _bl_pgpid_revoke_uid() {
 	# $3 = the real (already unescaped) uid string to revoke inside $2 certificate.
-	# $5 = 1 to skip the irreversibility confirmation (--yes / non-interactive callers).
+	# $5 = 1 to skip the revocation confirmation (--yes / non-interactive callers).
 	local gpghome=$1 user=$2 ruid=$3 gpgfilter=${4:-false} assumeyes=${5:-0}
-	# A revocation is IRREVERSIBLE : OpenPGP keeps the revoked User ID on the
-	# certificate forever (marked revoked), and gpg refuses to add an identical
-	# one afterwards. Confirm, showing the full uid, unless the caller assumed yes.
+	# A revocation leaves the User ID on the certificate, marked revoked, and
+	# whoever holds it keeps it until they refresh. Not the end of it: a
+	# self-signature made afterwards supersedes the revocation, which is what
+	# `pgpid cert_property` and `pgpid cert_email` do when the same value is
+	# added again. Confirm, showing the full uid, unless the caller assumed yes.
 	if (( ! assumeyes )) ; then
-		local warn=$"Revoking a User ID is IRREVERSIBLE: OpenPGP keeps it on the certificate forever (marked revoked), and an identical User ID can never be added again."
+		local warn=$"Revoking a User ID leaves it on the certificate, marked revoked, and whoever holds it keeps it until they refresh."
 		bl_yesno --default=no --text "$warn"$'\n\n'"  $ruid" $"Revoke this User ID" \
 			|| { printf "${FUNCNAME[1]}: Notice: "$"Revocation cancelled.""\n" >&2 ; return 1 ; }
 	fi
@@ -1444,7 +1446,7 @@ OPTIONS:
   -R, --revoke EMAIL          "$"Revoke existing EMAIL (may be used more than once)""
       --revoke-all            "$"Revoke every usable email uid but the newest""
   -A, --add EMAIL             "$"Add EMAIL as a 'Name <EMAIL>' uid. Enable the --name option""
-  -y, --yes                   "$"Assume yes: skip the irreversible-revocation confirmation""
+  -y, --yes                   "$"Assume yes: skip the revocation confirmation""
   -c, --certs-count           "$"Also output the count of external valid certifications per email (tab-separated). If an email appears in several UIDs, only the maximum count is kept.""
       --show-unusable         "$"Also display the uids that no longer stand: revoked, expired, or without a valid self-signature""
       --info                  "$"Output the emails as pairs key=value ready to be evaluated in bash""
@@ -1546,12 +1548,13 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
 		done
 		((! dup)) || { printf "$FUNCNAME: Notice: "$"%s certificate already carries %s""\n" "$user" "'$uidstr'" >&2 ; continue ; }
-		# A revoked twin keeps its string on the certificate forever and gpg
-		# refuses an identical one : say so instead of blaming the PIN.
+		# A revoked twin keeps its string on the certificate and gpg refuses an
+		# identical one : say so, and say where it can be signed again, instead
+		# of blaming the PIN.
 		for u in "${revuids[@]}" ; do
 			[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
 		done
-		((! dup)) || { printf "$FUNCNAME: Notice: "$"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked User IDs on the certificate and gpg refuses an identical one.""\n" "'$uidstr'" >&2 ; continue ; }
+		((! dup)) || { printf "$FUNCNAME: Notice: "$"%s was revoked earlier: gpg refuses an identical User ID, and 'pgpid cert_email' is what signs it again.""\n" "'$uidstr'" >&2 ; continue ; }
 		printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'$uidstr'" "$user" >&2
 		gpg --homedir "$gpghome" --batch --quick-add-uid "$user" "$uidstr" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
 	done
@@ -1839,7 +1842,7 @@ OPTIONS:
       --replace-to VALUE      "$"Exact synonym of --add — terminolgy is just more relevant for {name,note,ksprefrd}""
   -R, --revoke VALUE          "$"Revoke the PROPERTY uid carrying VALUE (may be used more than once)""
       --revoke-all            "$"Revoke every usable PROPERTY uid — all but the newest for {name,email}""
-  -y, --yes                   "$"Assume yes: skip the irreversible-revocation confirmation""
+  -y, --yes                   "$"Assume yes: skip the revocation confirmation""
       --show-unusable         "$"Also display the uids that no longer stand: revoked, expired, or without a valid self-signature""
       --info                  "$"output the PROPERTY values as pairs key=value ready to be evaluated in bash""
   -q, --quiet                 "$"Decrease verbosity""
@@ -2016,8 +2019,9 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			[[ ! "$u" =~ ^${vprop}(\;[^:]*)?:\ ?(.*)$ ]] || prevuids+=("$u")
 		done < <(awk -F: '$1=="uid" && $2 ~ /^[ounmfqws-]/ { print $10 }' <<<"$uids")
 		# Revoked/expired twins of this property : gpg refuses to re-add a uid
-		# string identical to one already on the key (revocation keeps it there
-		# forever), so a match here is unaddable and gets its own clear message.
+		# string identical to one already on the key (a revocation keeps it
+		# there), so a match here gets its own clear message — and points at
+		# `pgpid cert_property`, which signs the same string again.
 		revuids=()
 		while IFS= read -r rawu ; do
 			u=$(printf '%b' "$rawu")
@@ -2034,7 +2038,7 @@ $(printf -- "%80s\n" ${keyservs[@]})
 			for u in "${revuids[@]}" ; do
 				[[ "$u" != "$uidstr" ]] || { dup=1 ; break ; }
 			done
-			((! dup)) || { printf "$FUNCNAME: Notice: "$"%s was revoked earlier and cannot be added again — OpenPGP keeps revoked User IDs on the certificate and gpg refuses an identical one.""\n" "'$uidstr'" >&2 ; continue ; }
+			((! dup)) || { printf "$FUNCNAME: Notice: "$"%s was revoked earlier: gpg refuses an identical User ID, and 'pgpid cert_property' is what signs it again.""\n" "'$uidstr'" >&2 ; continue ; }
 			printf "%s: Notice: Adding %s into %s certificate...\n" "$FUNCNAME" "'$uidstr'" "$user" >&2
 			gpg --homedir "$gpghome" --batch --quick-add-uid "$user" "$uidstr" 2> >( $gpgfilter || grep "^\( *[A-Z«]\|gpg:\)" >&2 ) || { printf "%s: Error: Can't %s - good PIN ?.\n" "$FUNCNAME" "adduid" >&2 ; return 1 ;}
 			modified=1
