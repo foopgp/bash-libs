@@ -759,7 +759,9 @@ OPTIONS:
 		basenc --base64url --wrap 0 < "$tmpdir/s.gpg" > "$tmpdir/s.gpg.b64url"
 		split "$tmpdir/s.gpg.b64url" -d -n "$splitn" "$tmpdir/SECRET-"
 	elif ((qrversion==3)) || ((qrversion==5)) ; then
-		gfsplit -n ${thresn} -m ${splitn} "$tmpdir/s.gpg" "$tmpdir/SECRET"
+		# -m before -n: gfsplit checks the threshold against the number of shares
+		# as it stands when it reads -n, which is 5 until -m has been read.
+		gfsplit -m ${splitn} -n ${thresn} "$tmpdir/s.gpg" "$tmpdir/SECRET"
 		cd "$tmpdir/"
 		for f in "SECRET."* ; do
 			basenc --base64url --wrap 0 < "$f" > "${f/./-}"

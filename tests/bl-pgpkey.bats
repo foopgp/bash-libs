@@ -19,6 +19,21 @@ BIN="${BATS_TEST_DIRNAME}/../bin"
 	shellcheck -x "${BIN}/bl-qrkey"
 }
 
+@test "print gives gfsplit -m before -n, or no threshold above five works" {
+	# gfsplit checks -n against the number of shares known when it reads it,
+	# its default of 5 until -m has been read.
+	if ! command -v gfsplit >/dev/null ; then
+		skip "gfsplit not installed"
+	fi
+	head -c 64 /dev/urandom > "${BATS_TEST_TMPDIR}/s"
+	run gfsplit -n 6 -m 7 "${BATS_TEST_TMPDIR}/s" "${BATS_TEST_TMPDIR}/A"
+	assert_failure
+	run gfsplit -m 7 -n 6 "${BATS_TEST_TMPDIR}/s" "${BATS_TEST_TMPDIR}/B"
+	assert_success
+	run grep --count -- 'gfsplit -m ${splitn} -n ${thresn}' "${BIN}/bl-pgpkey"
+	assert_output "1"
+}
+
 @test "bl-pgpkey --help lists the actions" {
 	run --separate-stderr "${TARGET}" --help
 	assert_success
