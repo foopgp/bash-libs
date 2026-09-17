@@ -34,6 +34,15 @@ BIN="${BATS_TEST_DIRNAME}/../bin"
 	assert_output "1"
 }
 
+@test "print reduces a threshold above the split count to that count" {
+	# The reduction once assigned an unset variable, which left the threshold
+	# empty and gfsplit refusing it.
+	run grep --count -- 'thresn=$split$' "${BIN}/bl-pgpkey"
+	assert_output "0"
+	run grep --count -- 'thresn=$splitn$' "${BIN}/bl-pgpkey"
+	assert_output "1"
+}
+
 @test "bl-pgpkey --help lists the actions" {
 	run --separate-stderr "${TARGET}" --help
 	assert_success

@@ -710,7 +710,7 @@ OPTIONS:
 
 	if ((splitn<thresn)) ; then
 		printf "%s: Warning: threshold can't be greater than number of split, reducing threshold to splits number (%d).\n" "$FUNCNAME" "$splitn" >&2
-		thresn=$split
+		thresn=$splitn
 	fi
 
 	# If number of shares equal number of threshold, don't use shamir's secret sharing
